@@ -410,6 +410,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <span class="nav-section">Outils</span>
     <button class="nav-item" onclick="nav('brevo')"><i class="ti ti-refresh"></i>Sync Brevo</button>
     <button class="nav-item" onclick="nav('settings')"><i class="ti ti-settings"></i>Paramètres</button>
+    <button class="nav-item" onclick="nav('help')"><i class="ti ti-help-circle"></i>Guide & Aide</button>
     <div style="padding:8px 10px;display:flex;gap:5px;border-top:1px solid var(--border)">
       <button class="btn btn-sm btn-primary" style="flex:1;justify-content:center;font-size:11px" onclick="saveBackup()" title="Sauvegarder toutes les données en fichier JSON">
         <i class="ti ti-device-floppy"></i>Sauvegarder
@@ -846,7 +847,185 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       </div>
     </div>
 
-    <!-- SETTINGS -->
+    <!-- AIDE -->
+<div class="view" id="view-help">
+  <div class="page-header"><div class="page-title">📚 Guide & Aide</div></div>
+
+  <!-- Recherche rapide -->
+  <div class="search-wrap" style="margin-bottom:18px">
+    <i class="ti ti-search"></i>
+    <input type="text" placeholder="Rechercher dans l'aide…" oninput="searchHelp(this.value)" id="help-search">
+  </div>
+
+  <!-- Navigation rapide -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+    <button class="btn btn-sm" onclick="scrollToHelp('h-dashboard')">📊 Dashboard</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-contacts')">👥 Contacts</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-prospection')">🎯 Prospection</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-missions')">📋 Missions</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-facturation')">📄 Facturation</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-emails')">✉️ Emails</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-agenda')">📅 Agenda</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-faq')">❓ FAQ</button>
+  </div>
+
+  <div id="help-content">
+
+  <!-- DASHBOARD -->
+  <div class="settings-section" id="h-dashboard">
+    <div class="settings-title">📊 Dashboard</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Vue d'ensemble de toute votre activité commerciale.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px">
+        <div style="font-size:11px;font-weight:600;margin-bottom:5px">KPIs principaux</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.6">• Contacts totaux + clients actifs<br>• Missions du mois<br>• CA HT/TTC (cliquer pour basculer)<br>• Doublons détectés</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px">
+        <div style="font-size:11px;font-weight:600;margin-bottom:5px">Email tracking</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.6">• Emails envoyés trackés<br>• Taux d'ouverture<br>• Taux de clic<br>• Réponses / Sans suite</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
+      ✅ <strong>Astuce :</strong> Utilisez le filtre par mois pour analyser vos performances sur une période précise.
+    </div>
+  </div>
+
+  <!-- CONTACTS -->
+  <div class="settings-section" id="h-contacts">
+    <div class="settings-title">👥 Contacts & Agences</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Centralisez tous vos contacts professionnels.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Ajouter un contact</strong> → bouton "+ Nouveau contact"<br>
+      <strong>Ouvrir une fiche</strong> → cliquer sur une ligne du tableau<br>
+      <strong>Filtrer</strong> → boutons Tous / Clients actifs / Cibles / Brevo / Notion / Doublons<br>
+      <strong>Rechercher</strong> → barre de recherche (nom, email, entreprise)<br>
+      <strong>Envoyer un email</strong> → icône ✉️ à droite de chaque ligne
+    </div>
+    <div style="margin-top:10px;background:var(--blue-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--blue-text)">
+      ℹ️ La fiche contact contient 4 onglets : Informations, Commandes (missions + factures), Emails & tracking, Modifier.
+    </div>
+  </div>
+
+  <!-- PROSPECTION -->
+  <div class="settings-section" id="h-prospection">
+    <div class="settings-title">🎯 Pipeline de Prospection</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Suivez vos prospects à travers 8 étapes.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+      ${[
+        ['À contacter','#888780','#F1F0EC'],
+        ['Email envoyé','#185FA5','#E6F1FB'],
+        ['Email ouvert','#378ADD','#EAF3FB'],
+        ['Réponse reçue','#639922','#EAF3DE'],
+        ['RDV planifié','#854F0B','#FAEEDA'],
+        ['Devis envoyé','#5B3DA5','#EEEDFE'],
+        ['Gagné ✅','#3B6D11','#D6EDCA'],
+        ['Perdu ❌','#A32D2D','#FCEBEB'],
+      ].map(([label,color,bg])=>`<div style="background:${bg};border-left:3px solid ${color};padding:6px 8px;border-radius:var(--radius);font-size:11px;color:${color};font-weight:500">${label}</div>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Déplacer un prospect</strong> → boutons → sur chaque carte<br>
+      <strong>Modifier un prospect</strong> → cliquer sur la carte<br>
+      <strong>Supprimer</strong> → bouton ✕ en haut à droite de la carte<br>
+      <strong>Analyse CA</strong> → bouton en haut pour voir le CA des prospects Gagnés
+    </div>
+    <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
+      ✅ <strong>Astuce :</strong> Quand un prospect passe en "Gagné", renseignez le CA mensuel estimé — il sera ajouté automatiquement au Pipeline commercial.
+    </div>
+  </div>
+
+  <!-- MISSIONS -->
+  <div class="settings-section" id="h-missions">
+    <div class="settings-title">📋 Missions EDL</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Planifiez et suivez tous vos états des lieux.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Créer une mission</strong> → "+ Nouvelle mission" → remplir agence, type, adresse, date, montant<br>
+      <strong>Modifier</strong> → icône ✏️ à droite de la ligne<br>
+      <strong>Supprimer</strong> → icône 🗑️ à droite de la ligne<br>
+      <strong>Changer le statut</strong> → menu déroulant directement dans le tableau<br>
+      <strong>Générer une facture</strong> → icône 📄 à droite de la ligne
+    </div>
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div style="background:var(--blue-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--blue-text)">📅 <strong>Planifiée</strong><br>Mission programmée</div>
+      <div style="background:var(--amber-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--amber-text)">⏳ <strong>En cours</strong><br>Mission en réalisation</div>
+      <div style="background:var(--teal-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--teal-text)">🏁 <strong>Terminée</strong><br>Réalisée, non facturée</div>
+      <div style="background:var(--green-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--green-text)">✅ <strong>Facturée</strong><br>Facture générée</div>
+    </div>
+  </div>
+
+  <!-- FACTURATION -->
+  <div class="settings-section" id="h-facturation">
+    <div class="settings-title">📄 Facturation</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Générez des factures PDF professionnelles automatiquement.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Facture par mission</strong> → icône 📄 à droite de chaque mission<br>
+      <strong>Facture mensuelle groupée</strong> → bouton "Facture mensuelle" → saisir le client et le mois<br>
+      <strong>Facture particulier</strong> → bouton "Facture particulier" → saisir les infos manuellement<br>
+      <strong>Re-télécharger</strong> → fiche contact → onglet Commandes → bouton ⬇️
+    </div>
+    <div style="margin-top:10px;background:var(--amber-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--amber-text)">
+      ⚠️ <strong>Important :</strong> Configurez vos informations de facturation dans Paramètres avant de générer la première facture (SIRET, IBAN, logo, etc.)
+    </div>
+  </div>
+
+  <!-- EMAILS -->
+  <div class="settings-section" id="h-emails">
+    <div class="settings-title">✉️ Emails & Campagnes</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Envoyez et trackez vos emails via Brevo.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Envoyer un email</strong> → Composer → saisir destinataire → rédiger → Envoyer via Brevo<br>
+      <strong>Utiliser un modèle</strong> → bouton "Modèle" ou liste à droite (11 modèles disponibles)<br>
+      <strong>Rédiger avec l'IA</strong> → bouton "✨ Rédiger avec IA" → décrire l'email souhaité<br>
+      <strong>Annuler un envoi</strong> → bouton Annuler dans le toast (15 secondes après clic)<br>
+      <strong>Tracking</strong> → visible dans la liste à droite du Composer et dans chaque fiche contact
+    </div>
+    <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
+      ✅ <strong>Astuce IA :</strong> Configurez votre clé Mistral gratuite dans Paramètres pour générer des emails personnalisés en un clic.
+    </div>
+  </div>
+
+  <!-- AGENDA -->
+  <div class="settings-section" id="h-agenda">
+    <div class="settings-title">📅 Agenda</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Visualisez RDV et missions dans un calendrier.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Vue semaine</strong> → 7 jours glissants, navigation ← →<br>
+      <strong>Vue mois</strong> → grille mensuelle complète<br>
+      <strong>Ajouter un RDV</strong> → "+ Nouveau RDV" → titre, date, durée, type<br>
+      <strong>Google Agenda</strong> → icône 📅 sur chaque événement pour l'ajouter en 1 clic<br>
+      <strong>Aujourd'hui</strong> → bouton pour revenir à la semaine/période actuelle
+    </div>
+    <div style="margin-top:10px;background:var(--blue-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--blue-text)">
+      ℹ️ Les missions apparaissent en <span style="color:var(--green);font-weight:600">vert</span>, les RDV en <span style="color:var(--blue);font-weight:600">bleu</span> dans le calendrier.
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="settings-section" id="h-faq">
+    <div class="settings-title">❓ FAQ — Questions Fréquentes</div>
+    <div id="faq-list">
+      ${[
+        ['Comment envoyer un email via Brevo ?', 'Composer → saisir le destinataire → rédiger → cliquer "Envoyer via Brevo". La clé API Brevo doit être configurée dans Paramètres.'],
+        ['Pourquoi mes données disparaissent ?', 'Les données sont sauvegardées dans le cloud Supabase ET dans le navigateur. Faire des sauvegardes JSON régulières via le bouton "💾 Sauvegarder" dans le menu.'],
+        ['Comment générer une facture groupée ?', 'Missions → "Facture mensuelle" → saisir le nom exact de l\'agence et le mois → "Générer la facture".'],
+        ['Comment récupérer les emails Gmail ?', 'Fiche contact → onglet "Emails & tracking" → "Charger les emails Gmail". Nécessite le Google Refresh Token configuré.'],
+        ['Le taux de conversion est à 0% ?', 'Normal si aucun prospect n\'est passé en "Gagné". Le taux = prospects Gagnés / total × 100.'],
+        ['Comment ajouter à Google Agenda ?', 'Après création d\'un RDV, cliquer sur l\'icône 📅 dans la liste des événements de l\'agenda.'],
+        ['Comment fusionner les doublons ?', 'Sync Brevo → bouton "Fusionner tous les doublons". Ou Contacts → filtre "Doublons" pour les voir un par un.'],
+        ['Le CRM fonctionne sur mobile ?', 'Oui ! Menu hamburger ☰ en haut à gauche, navigation rapide en bas de l\'écran.'],
+      ].map(([q,a],i)=>`
+        <div style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden">
+          <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.faq-arrow').textContent=this.nextElementSibling.style.display==='none'?'▼':'▲'"
+            style="padding:10px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--bg2)">
+            <span style="font-size:12px;font-weight:600">${q}</span>
+            <span class="faq-arrow" style="font-size:10px;color:var(--text2)">▼</span>
+          </div>
+          <div style="display:none;padding:10px 12px;font-size:11px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border)">${a}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  </div><!-- end help-content -->
+</div><!-- SETTINGS -->
     <div class="view" id="view-settings">
       <div class="page-header"><div class="page-title">Paramètres</div></div>
       <div class="settings-section">
@@ -4431,7 +4610,17 @@ setTimeout(()=>{
   startAutoSync();
   silentSyncBrevo(); // Sync immédiate au démarrage
 }, 2000);
-</script>
+function scrollToHelp(id){
+  const el=document.getElementById(id);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function searchHelp(val){
+  const q=val.toLowerCase();
+  const sections=document.querySelectorAll('#help-content .settings-section');
+  sections.forEach(s=>{
+    s.style.display=(!q||s.textContent.toLowerCase().includes(q))?'block':'none';
+  });
+}</script>
 
 <!-- NAV BAR MOBILE -->
 <div id="mobile-nav-bar">
