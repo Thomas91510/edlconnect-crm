@@ -1,12 +1,13 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
+    { "source": "/api/app-config", "destination": "/api/app-config.js" },
     { "source": "/api/brevo-contacts", "destination": "/api/brevo-contacts.js" },
     { "source": "/api/brevo-tracking", "destination": "/api/brevo-tracking.js" },
     { "source": "/api/calendar-list", "destination": "/api/calendar-list.js" },
-    { "source": "/api/config", "destination": "/api/config.js" },
     { "source": "/api/gmail-emails", "destination": "/api/gmail-emails.js" },
     { "source": "/api/send-email", "destination": "/api/send-email.js" },
-    { "source": "/", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
