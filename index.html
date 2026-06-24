@@ -1,0 +1,12 @@
+// api/config.js — Config publique (clé Brevo masquée côté serveur)
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // On ne renvoie PAS la clé Brevo en clair au frontend en prod
+  // Le frontend utilisera /api/send-email directement
+  return res.status(200).json({
+    brevo_configured: !!process.env.BREVO_API_KEY,
+    version: '2.0'
+  });
+}

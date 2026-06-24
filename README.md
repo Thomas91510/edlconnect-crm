@@ -1,0 +1,12 @@
+{
+  "name": "edlconnect-crm",
+  "version": "2.0.0",
+  "description": "EDLConnect CRM — Logiciel de gestion pour experts EDL",
+  "private": true,
+  "dependencies": {
+    "googleapis": "^140.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

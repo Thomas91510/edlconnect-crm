@@ -1,0 +1,37 @@
+# EDLConnect CRM — Guide de déploiement Vercel
+
+## Structure du projet
+```
+edlconnect/
+├── index.html          → Le CRM (frontend complet)
+├── vercel.json         → Configuration Vercel
+├── package.json        → Dépendances Node.js
+└── api/
+    ├── send-email.js   → Envoi email via Brevo
+    ├── gmail-emails.js → Emails Gmail d'un contact
+    ├── brevo-contacts.js → Sync contacts Brevo
+    ├── brevo-tracking.js → Tracking emails Brevo
+    ├── calendar-create.js → Créer événement Google Calendar
+    ├── calendar-list.js   → Lister événements Google Calendar
+    └── config.js          → Config publique
+```
+
+## Variables d'environnement à configurer dans Vercel
+
+| Variable | Description |
+|---|---|
+| `BREVO_API_KEY` | Ta clé API Brevo (xkeysib-...) |
+| `GOOGLE_CLIENT_ID` | ID client Google OAuth |
+| `GOOGLE_CLIENT_SECRET` | Secret client Google OAuth |
+| `GOOGLE_REFRESH_TOKEN` | Refresh token Google (extrait de gmail_token.json) |
+
+## Étapes de déploiement
+
+1. Push ce dossier sur GitHub
+2. Connecter le repo GitHub à Vercel
+3. Configurer les variables d'environnement dans Vercel
+4. Deploy !
+
+## Récupérer le Refresh Token Google
+
+Dans ton dossier CRM local, ouvre `gmail_token.json` et copie la valeur de `refresh_token`.
