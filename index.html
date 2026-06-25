@@ -3925,7 +3925,7 @@ function goToday(){
 
 // ─── BREVO SYNC ───────────────────────────────────────────
 async function loadBrevo(){
-  document.getElementById('brevo-status').textContent='Chargement de brevo_contacts.json…';
+  document.getElementById('brevo-status').textContent='Chargement des contacts Brevo…';
   document.getElementById('brevo-table-wrap').style.display='none';
   setSyncStatus('loading');
 
@@ -3936,9 +3936,9 @@ async function loadBrevo(){
     if(!resp.ok)throw new Error('Fichier non trouvé');
     all=await resp.json();
   }catch(e){
-    document.getElementById('brevo-status').textContent='❌ Impossible de lire brevo_contacts.json — vérifie que le script Python tourne et que le fichier est dans le même dossier que le CRM.';
+    document.getElementById('brevo-status').textContent='❌ Impossible de charger les contacts Brevo — vérifie ta clé API dans Paramètres.';
     setSyncStatus('error');
-    notify('Erreur lecture brevo_contacts.json','err');
+    notify('Erreur chargement contacts Brevo','err');
     return;
   }
 
