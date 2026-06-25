@@ -5051,7 +5051,7 @@ async function onAuthSuccess(user){
   // Charger les paramètres depuis Supabase d'abord
   await loadSettingsFromSupabase();
   // Puis charger les données
-  loadFromSupabase().then(synced => {
+  loadFromSupabase().then(async synced => {
     if(synced){
       renderDashboard();
       renderCalendar();
