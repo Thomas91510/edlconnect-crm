@@ -4679,8 +4679,99 @@ function searchHelp(val){
     s.style.display=(!q||s.textContent.toLowerCase().includes(q))?'block':'none';
   });
 }
-// AUTH
-let _currentUser = null;
+// ─── ONBOARDING ───────────────────────────────────────────
+function showOnboarding(){
+  document.getElementById('onboarding-screen').style.display='flex';
+}
+function hideOnboarding(){
+  document.getElementById('onboarding-screen').style.display='none';
+}
+function obUpdateSteps(currentStep){
+  document.querySelectorAll('.ob-step').forEach(el=>{
+    const step=parseInt(el.dataset.step);
+    const circle=el.querySelector('div');
+    if(step<currentStep){
+      el.style.color='var(--green)';
+      if(circle){circle.style.background='var(--green)';circle.style.color='#fff';circle.innerHTML='✓';}
+    } else if(step===currentStep){
+      el.style.color='var(--blue)';
+      if(circle){circle.style.background='var(--blue)';circle.style.color='#fff';circle.textContent=step;}
+    } else {
+      el.style.color='var(--text3)';
+      if(circle){circle.style.background='var(--bg3)';circle.style.color='var(--text3)';circle.textContent=step;}
+    }
+  });
+}
+function obNext(step){
+  if(step===1){
+    const company=document.getElementById('ob-company').value.trim();
+    const name=document.getElementById('ob-name').value.trim();
+    if(!company||!name){
+      alert('Le nom de votre entreprise et votre nom sont requis.');
+      return;
+    }
+    // Sauvegarder étape 1
+    localStorage.setItem('edl_co_name', company);
+    localStorage.setItem('edl_user_name', name);
+    const address=document.getElementById('ob-address').value.trim();
+    if(address) localStorage.setItem('edl_co_address', address);
+    const sidebarName=document.getElementById('sidebar-company-name');
+    if(sidebarName) sidebarName.textContent=company;
+    document.getElementById('ob-page-1').style.display='none';
+    document.getElementById('ob-page-2').style.display='block';
+    obUpdateSteps(2);
+  } else if(step===2){
+    // Sauvegarder étape 2
+    const siret=document.getElementById('ob-siret').value.trim();
+    const tva=document.getElementById('ob-tva').value.trim();
+    const iban=document.getElementById('ob-iban').value.trim();
+    const bic=document.getElementById('ob-bic').value.trim();
+    if(siret) localStorage.setItem('edl_co_siret', siret);
+    if(tva) localStorage.setItem('edl_co_tva', tva);
+    if(iban) localStorage.setItem('edl_co_iban', iban);
+    if(bic) localStorage.setItem('edl_co_bic', bic);
+    document.getElementById('ob-page-2').style.display='none';
+    document.getElementById('ob-page-3').style.display='block';
+    obUpdateSteps(3);
+  }
+}
+function obBack(step){
+  if(step===2){
+    document.getElementById('ob-page-2').style.display='none';
+    document.getElementById('ob-page-1').style.display='block';
+    obUpdateSteps(1);
+  } else if(step===3){
+    document.getElementById('ob-page-3').style.display='none';
+    document.getElementById('ob-page-2').style.display='block';
+    obUpdateSteps(2);
+  }
+}
+async function obFinish(){
+  // Sauvegarder étape 3
+  const brevo=document.getElementById('ob-brevo').value.trim();
+  const mistral=document.getElementById('ob-mistral').value.trim();
+  if(brevo) localStorage.setItem('edl_brevo_key', brevo);
+  if(mistral) localStorage.setItem('edl_claude_key', mistral);
+  // Marquer l'onboarding comme complété
+  localStorage.setItem('edl_onboarding_done_'+(_currentUser?.id||''), '1');
+  // Pousser les settings vers Supabase
+  const settingsData={
+    companyName: localStorage.getItem('edl_co_name')||'',
+    companyAddress: localStorage.getItem('edl_co_address')||'',
+    companySiret: localStorage.getItem('edl_co_siret')||'',
+    companyTva: localStorage.getItem('edl_co_tva')||'',
+    companyIban: localStorage.getItem('edl_co_iban')||'',
+    companyBic: localStorage.getItem('edl_co_bic')||'',
+    brevoKey: brevo||'',
+    claudeKey: mistral||''
+  };
+  await saveSettingsToSupabase(settingsData);
+  hideOnboarding();
+  notify('🎉 Configuration terminée — bienvenue sur EDLConnect !');
+  renderDashboard();
+}
+
+
 function authTab(tab, btn) {
   document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
   if(btn) btn.classList.add('active');
@@ -4764,6 +4855,11 @@ async function onAuthSuccess(user){
     } else {
       // Première connexion → pousser les données locales
       pushAllToSupabase();
+    }
+    // Vérifier si l'onboarding a déjà été fait pour cet utilisateur
+    const obDone = localStorage.getItem('edl_onboarding_done_'+(user.id||''));
+    if(!obDone && !localStorage.getItem('edl_co_name')){
+      showOnboarding();
     }
   });
 }
@@ -4857,6 +4953,97 @@ async function checkAuth(){
       </button>
     </div>
     <div style="text-align:center;margin-top:20px;font-size:10px;color:var(--text3)">Vos données sont sécurisées et isolées 🔒</div>
+  </div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboarding-screen" style="display:none;position:fixed;inset:0;z-index:9998;background:linear-gradient(135deg,#f8f8f6 0%,#e8f0f8 100%);align-items:center;justify-content:center;overflow-y:auto">
+  <div style="background:#fff;border-radius:16px;padding:40px;width:520px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.12);margin:20px auto">
+    <!-- Étapes -->
+    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:28px" id="ob-steps">
+      <div class="ob-step ob-step-active" data-step="1" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--blue)">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">1</div>
+        Votre entreprise
+      </div>
+      <div style="color:var(--border2);font-size:16px;margin-top:2px">›</div>
+      <div class="ob-step" data-step="2" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text3)">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">2</div>
+        Facturation
+      </div>
+      <div style="color:var(--border2);font-size:16px;margin-top:2px">›</div>
+      <div class="ob-step" data-step="3" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text3)">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">3</div>
+        Intégrations
+      </div>
+    </div>
+
+    <!-- Étape 1 : Votre entreprise -->
+    <div id="ob-page-1">
+      <div style="font-size:22px;font-weight:700;color:var(--blue);margin-bottom:4px">👋 Bienvenue sur EDLConnect !</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Configurons votre espace en 3 minutes. Commençons par votre entreprise.</div>
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-top:0">Nom de votre entreprise *</label>
+      <input type="text" id="ob-company" placeholder="Ex : EDL Bretagne, Check&State, Mon EDL Pro…" style="margin-bottom:12px;width:100%">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Votre nom complet *</label>
+      <input type="text" id="ob-name" placeholder="Ex : Marie Dupont" style="margin-bottom:12px;width:100%">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Adresse du siège</label>
+      <input type="text" id="ob-address" placeholder="Ex : 12 rue de la Paix, 75001 Paris" style="margin-bottom:12px;width:100%">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Téléphone professionnel</label>
+      <input type="tel" id="ob-phone" placeholder="Ex : 06 12 34 56 78" style="margin-bottom:24px;width:100%">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:13px" onclick="obNext(1)">
+        Continuer <i class="ti ti-arrow-right"></i>
+      </button>
+    </div>
+
+    <!-- Étape 2 : Facturation -->
+    <div id="ob-page-2" style="display:none">
+      <div style="font-size:20px;font-weight:700;color:var(--blue);margin-bottom:4px">📄 Informations de facturation</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Ces infos apparaîtront sur vos factures PDF. Vous pourrez les modifier plus tard.</div>
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-top:0">SIRET</label>
+      <input type="text" id="ob-siret" placeholder="Ex : 123 456 789 00012" style="margin-bottom:12px;width:100%">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">N° TVA intracommunautaire</label>
+      <input type="text" id="ob-tva" placeholder="Ex : FR12 345678901" style="margin-bottom:12px;width:100%">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">IBAN</label>
+      <input type="text" id="ob-iban" placeholder="Ex : FR76 XXXX XXXX XXXX XXXX XXXX XXX" style="margin-bottom:12px;width:100%">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">BIC</label>
+      <input type="text" id="ob-bic" placeholder="Ex : XXXXXXXX" style="margin-bottom:24px;width:100%">
+      <div style="display:flex;gap:10px">
+        <button class="btn" style="flex:1;justify-content:center;padding:12px" onclick="obBack(2)">
+          <i class="ti ti-arrow-left"></i> Retour
+        </button>
+        <button class="btn btn-primary" style="flex:2;justify-content:center;padding:12px;font-size:13px" onclick="obNext(2)">
+          Continuer <i class="ti ti-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Étape 3 : Intégrations -->
+    <div id="ob-page-3" style="display:none">
+      <div style="font-size:20px;font-weight:700;color:var(--blue);margin-bottom:4px">🔌 Connectez vos outils</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Optionnel — vous pourrez configurer ces clés plus tard dans Paramètres.</div>
+      <div style="background:var(--blue-bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--blue-text);margin-bottom:4px">📧 Brevo — Envoi d'emails</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Permet d'envoyer des emails à vos contacts directement depuis EDLConnect.</div>
+        <input type="password" id="ob-brevo" placeholder="xkeysib-…" style="width:100%">
+        <div style="font-size:10px;color:var(--text2);margin-top:4px">Obtenir une clé gratuite sur <a href="https://app.brevo.com/settings/keys/api" target="_blank" style="color:var(--blue)">app.brevo.com</a></div>
+      </div>
+      <div style="background:var(--bg2);border-radius:var(--radius);padding:12px 14px;margin-bottom:24px">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">✨ Mistral IA — Rédaction emails</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Permet de générer des emails professionnels automatiquement.</div>
+        <input type="password" id="ob-mistral" placeholder="Clé API Mistral…" style="width:100%">
+        <div style="font-size:10px;color:var(--text2);margin-top:4px">Clé gratuite sur <a href="https://console.mistral.ai/api-keys" target="_blank" style="color:var(--blue)">console.mistral.ai</a></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn" style="flex:1;justify-content:center;padding:12px" onclick="obBack(3)">
+          <i class="ti ti-arrow-left"></i> Retour
+        </button>
+        <button class="btn btn-primary" style="flex:2;justify-content:center;padding:12px;font-size:13px" onclick="obFinish()">
+          <i class="ti ti-check"></i> Commencer !
+        </button>
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <button onclick="obFinish()" style="background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;text-decoration:underline">Passer cette étape →</button>
+      </div>
+    </div>
   </div>
 </div>
 
