@@ -1319,6 +1319,43 @@ const SUPA_TABLES = {
   invoices : 'invoices'
 };
 
+// ─── SETTINGS SUPABASE (clés API par utilisateur) ──────────
+async function saveSettingsToSupabase(settingsData){
+  if(!_supaReady||!_currentUser)return;
+  try{
+    const{error}=await supabaseClient.from('settings').upsert({
+      user_id:_currentUser.id,
+      data:settingsData,
+      updated_at:new Date().toISOString()
+    },{onConflict:'user_id'});
+    if(error)console.warn('Erreur save settings:',error.message);
+  }catch(e){console.warn('Erreur saveSettingsToSupabase:',e);}
+}
+
+async function loadSettingsFromSupabase(){
+  if(!_supaReady||!_currentUser)return;
+  try{
+    const{data,error}=await supabaseClient.from('settings').select('data').eq('user_id',_currentUser.id).single();
+    if(error||!data)return;
+    const s=data.data;
+    if(!s)return;
+    // Appliquer les settings chargés
+    if(s.brevoKey){localStorage.setItem('edl_brevo_key',s.brevoKey);}
+    if(s.notionToken){localStorage.setItem('edl_notion_token',s.notionToken);}
+    if(s.notionPageId){localStorage.setItem('edl_notion_page',s.notionPageId);}
+    if(s.claudeKey){localStorage.setItem('edl_claude_key',s.claudeKey);}
+    if(s.companyName){localStorage.setItem('edl_co_name',s.companyName);}
+    if(s.companyAddress){localStorage.setItem('edl_co_address',s.companyAddress);}
+    if(s.companySiret){localStorage.setItem('edl_co_siret',s.companySiret);}
+    if(s.companyTva){localStorage.setItem('edl_co_tva',s.companyTva);}
+    if(s.companyIban){localStorage.setItem('edl_co_iban',s.companyIban);}
+    if(s.companyBic){localStorage.setItem('edl_co_bic',s.companyBic);}
+    if(s.companyLogo){localStorage.setItem('edl_co_logo',s.companyLogo);}
+    if(s.companyPaymentTerms){localStorage.setItem('edl_co_payterms',s.companyPaymentTerms);}
+    console.log('✅ Paramètres chargés depuis Supabase');
+  }catch(e){console.warn('Erreur loadSettingsFromSupabase:',e);}
+}
+
 // ─── CHARGEMENT INITIAL DEPUIS SUPABASE (format JSONB) ─────
 async function fetchAllRowsForUser(table){
   // Récupérer uniquement les lignes de l'utilisateur connecté
@@ -4570,7 +4607,23 @@ function saveSettings(){
   CFG.companyIban=document.getElementById('set-co-iban').value.trim();
   CFG.companyBic=document.getElementById('set-co-bic').value.trim();
   CFG.companyPaymentTerms=document.getElementById('set-co-payterms').value.trim()||'Paiement à réception de facture';
-  notify('✅ Paramètres enregistrés en sécurité !');
+  // Sauvegarder dans Supabase (lié au user_id)
+  const settingsData={
+    brevoKey:CFG.brevoKey,
+    notionToken:CFG.notionToken,
+    notionPageId:CFG.notionPageId,
+    claudeKey:claudeKey||'',
+    companyName:document.getElementById('set-name')?.value||CFG.companyName,
+    companyAddress:CFG.companyAddress,
+    companySiret:CFG.companySiret,
+    companyTva:CFG.companyTva,
+    companyIban:CFG.companyIban,
+    companyBic:CFG.companyBic,
+    companyLogo:CFG.companyLogo||'',
+    companyPaymentTerms:CFG.companyPaymentTerms
+  };
+  saveSettingsToSupabase(settingsData);
+  notify('✅ Paramètres enregistrés et synchronisés !');
 }
 
 // ─── INIT ─────────────────────────────────────────────────
@@ -4697,7 +4750,9 @@ function onAuthSuccess(user){
   if(footerEl)footerEl.textContent=user.email;
   addLogoutButton();
   notify('Connecté : '+user.email);
-  // Charger les données de cet utilisateur depuis Supabase
+  // Charger les paramètres depuis Supabase d'abord
+  await loadSettingsFromSupabase();
+  // Puis charger les données
   loadFromSupabase().then(synced => {
     if(synced){
       renderDashboard();
