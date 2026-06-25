@@ -1335,7 +1335,7 @@ async function saveSettingsToSupabase(settingsData){
 async function loadSettingsFromSupabase(){
   if(!_supaReady||!_currentUser)return;
   try{
-    const{data,error}=await supabaseClient.from('settings').select('data').eq('user_id',_currentUser.id).single();
+    const{data,error}=await supabaseClient.from('settings').select('data').eq('user_id',_currentUser.id).maybeSingle();
     if(error||!data)return;
     const s=data.data;
     if(!s)return;
