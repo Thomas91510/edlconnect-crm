@@ -425,6 +425,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <button class="nav-item" onclick="nav('brevo')"><i class="ti ti-refresh"></i>Sync Brevo</button>
     <button class="nav-item" onclick="nav('settings')"><i class="ti ti-settings"></i>Paramètres</button>
     <button class="nav-item" onclick="nav('help')"><i class="ti ti-help-circle"></i>Guide & Aide</button>
+    <button class="nav-item" id="nav-admin" style="display:none;color:var(--amber)" onclick="nav('admin')"><i class="ti ti-shield-lock"></i>Admin</button>
     <div style="padding:8px 10px;display:flex;gap:5px;border-top:1px solid var(--border)">
       <button class="btn btn-sm btn-primary" style="flex:1;justify-content:center;font-size:11px" onclick="saveBackup()" title="Sauvegarder toutes les données en fichier JSON">
         <i class="ti ti-device-floppy"></i>Sauvegarder
@@ -1013,6 +1014,35 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
   </div>
 </div><!-- SETTINGS -->
+
+    <!-- ADMIN -->
+    <div class="view" id="view-admin">
+      <div class="page-header">
+        <div class="page-title">🛡️ Panneau Admin</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="loadAdminData()"><i class="ti ti-refresh"></i>Actualiser</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-plan')"><i class="ti ti-plus"></i>Ajouter un client</button>
+        </div>
+      </div>
+      <!-- KPIs admin -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+        <div class="kpi"><div class="kpi-label">Total clients</div><div class="kpi-value" id="adm-total">—</div></div>
+        <div class="kpi"><div class="kpi-label">Abonnements actifs</div><div class="kpi-value" id="adm-active" style="color:var(--green)">—</div></div>
+        <div class="kpi"><div class="kpi-label">Plan Pro</div><div class="kpi-value" id="adm-pro" style="color:var(--blue)">—</div></div>
+        <div class="kpi"><div class="kpi-label">Plan Gratuit</div><div class="kpi-value" id="adm-free" style="color:var(--amber)">—</div></div>
+      </div>
+      <!-- Tableau clients -->
+      <div class="card">
+        <div class="card-head">Comptes clients</div>
+        <div style="overflow-x:auto">
+          <table class="tbl" style="min-width:700px">
+            <thead><tr><th>Email</th><th>Plan</th><th>Statut</th><th>Expiration</th><th>Inscription</th><th>Notes</th><th></th></tr></thead>
+            <tbody id="admin-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <div class="view" id="view-settings">
       <div class="page-header"><div class="page-title">Paramètres</div></div>
       <div class="settings-section">
@@ -1289,6 +1319,34 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 </div>
 
 <div class="notif" id="notif"></div>
+
+<!-- MODAL ADMIN PLAN -->
+<div class="modal-bg" id="modal-add-plan">
+  <div class="modal">
+    <div class="modal-title">Gérer le plan client <button class="modal-close" onclick="closeModal('modal-add-plan')"><i class="ti ti-x"></i></button></div>
+    <label>Email du client</label><input id="adm-email" placeholder="client@email.com">
+    <label>Plan</label>
+    <select id="adm-plan">
+      <option value="free">Gratuit (max 100 contacts, 20 missions)</option>
+      <option value="starter">Starter (max 500 contacts, 100 missions)</option>
+      <option value="pro">Pro (illimité)</option>
+    </select>
+    <label>Statut</label>
+    <select id="adm-status">
+      <option value="active">Actif</option>
+      <option value="suspended">Suspendu</option>
+      <option value="expired">Expiré</option>
+    </select>
+    <label>Date d'expiration (optionnel)</label>
+    <input type="date" id="adm-expires">
+    <label>Notes internes</label>
+    <textarea id="adm-notes" style="min-height:60px" placeholder="Ex: Paiement reçu le 01/06/2026..."></textarea>
+    <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal('modal-add-plan')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveAdminPlan()"><i class="ti ti-check"></i>Enregistrer</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -4143,6 +4201,7 @@ async function syncAll(){
 
 // ─── SAVE FORMS ───────────────────────────────────────────
 function saveContact(){
+  if(!checkPlanLimit('contact')) return;
   const ent=document.getElementById('c-ent').value.trim();
   if(!ent){notify('⚠️ Entreprise requise','warn');return;}
   DB.contacts.push({id:'local_'+Date.now(),entreprise:ent,contact:document.getElementById('c-contact').value,email:document.getElementById('c-email').value,tel:document.getElementById('c-tel').value,statut:document.getElementById('c-statut').value,source:document.getElementById('c-source').value,notes:document.getElementById('c-notes').value,presence:'notion'});
@@ -4197,6 +4256,7 @@ function selectMissionContact(id){
 }
 
 function saveMission(){
+  if(!checkPlanLimit('mission')) return;
   const agence=document.getElementById('m-agence').value.trim();
   if(!agence){notify('⚠️ Agence/Client requis','warn');return;}
   const email=(document.getElementById('m-email')?.value||'').trim();
@@ -4680,6 +4740,147 @@ function searchHelp(val){
   });
 }
 // ─── ONBOARDING ───────────────────────────────────────────
+// ─── ADMIN ────────────────────────────────────────────────
+const ADMIN_EMAILS = ['contact@edl-idf.com'];
+const PLAN_LIMITS = {
+  free    : { contacts: 100, missions: 20,  label: 'Gratuit'  },
+  starter : { contacts: 500, missions: 100, label: 'Starter'  },
+  pro     : { contacts: Infinity, missions: Infinity, label: 'Pro' }
+};
+
+let _userPlan = null; // plan de l'utilisateur connecté
+
+function isAdmin(){ return _currentUser && ADMIN_EMAILS.includes(_currentUser.email); }
+
+async function loadUserPlan(){
+  if(!_supaReady || !_currentUser) return;
+  try{
+    const { data } = await supabaseClient
+      .from('user_plans')
+      .select('*')
+      .eq('user_id', _currentUser.id)
+      .maybeSingle();
+    _userPlan = data || { plan: 'free', status: 'active' };
+  } catch(e){
+    _userPlan = { plan: 'free', status: 'active' };
+  }
+}
+
+function checkPlanLimit(type){
+  if(!_userPlan) return true; // pas encore chargé → laisser passer
+  if(isAdmin()) return true;  // admin sans limite
+  const limits = PLAN_LIMITS[_userPlan.plan] || PLAN_LIMITS.free;
+  if(_userPlan.status !== 'active'){
+    notify('⚠️ Votre abonnement est suspendu — contactez le support','warn');
+    return false;
+  }
+  if(type === 'contact' && DB.contacts.length >= limits.contacts){
+    notify(`⚠️ Limite atteinte : ${limits.contacts} contacts max (plan ${limits.label}). Passez au plan supérieur !`,'warn');
+    return false;
+  }
+  if(type === 'mission' && DB.missions.length >= limits.missions){
+    notify(`⚠️ Limite atteinte : ${limits.missions} missions max (plan ${limits.label}). Passez au plan supérieur !`,'warn');
+    return false;
+  }
+  return true;
+}
+
+function getPlanBadge(plan, status){
+  if(status === 'suspended') return '<span class="badge b-red">Suspendu</span>';
+  if(status === 'expired')   return '<span class="badge b-gray">Expiré</span>';
+  if(plan === 'pro')         return '<span class="badge b-green">Pro</span>';
+  if(plan === 'starter')     return '<span class="badge b-blue">Starter</span>';
+  return '<span class="badge b-amber">Gratuit</span>';
+}
+
+async function loadAdminData(){
+  if(!isAdmin()){ notify('Accès refusé','err'); return; }
+  try{
+    // Charger tous les plans
+    const { data: plans } = await supabaseClient
+      .from('user_plans')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    // Charger tous les utilisateurs auth (via admin API — non dispo côté client)
+    // On utilise uniquement les plans enregistrés
+    const list = plans || [];
+    document.getElementById('adm-total').textContent   = list.length;
+    document.getElementById('adm-active').textContent  = list.filter(p=>p.status==='active').length;
+    document.getElementById('adm-pro').textContent     = list.filter(p=>p.plan==='pro').length;
+    document.getElementById('adm-free').textContent    = list.filter(p=>p.plan==='free'||!p.plan).length;
+
+    document.getElementById('admin-tbody').innerHTML = list.length ? list.map(p=>`
+      <tr>
+        <td style="font-size:11px;font-weight:500">${p.email||'—'}</td>
+        <td>${getPlanBadge(p.plan, p.status)}</td>
+        <td><span class="badge ${p.status==='active'?'b-green':p.status==='suspended'?'b-red':'b-gray'}">${p.status||'active'}</span></td>
+        <td style="font-size:11px">${p.expires_at?new Date(p.expires_at).toLocaleDateString('fr-FR'):'—'}</td>
+        <td style="font-size:11px;color:var(--text2)">${p.created_at?new Date(p.created_at).toLocaleDateString('fr-FR'):'—'}</td>
+        <td style="font-size:11px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis">${p.notes||'—'}</td>
+        <td>
+          <button class="btn btn-sm" onclick="editAdminPlan('${p.user_id}','${p.email||''}','${p.plan||'free'}','${p.status||'active'}','${p.expires_at||''}','${(p.notes||'').replace(/'/g,'')}')">
+            <i class="ti ti-edit" style="font-size:11px"></i>
+          </button>
+        </td>
+      </tr>`).join('') : '<tr><td colspan="7" class="empty">Aucun client enregistré</td></tr>';
+  } catch(e){
+    notify('Erreur chargement admin: '+e.message,'err');
+  }
+}
+
+let _editingUserId = null;
+function editAdminPlan(userId, email, plan, status, expires, notes){
+  _editingUserId = userId;
+  document.getElementById('adm-email').value   = email;
+  document.getElementById('adm-email').readOnly = true;
+  document.getElementById('adm-plan').value    = plan;
+  document.getElementById('adm-status').value  = status;
+  document.getElementById('adm-expires').value = expires ? expires.split('T')[0] : '';
+  document.getElementById('adm-notes').value   = notes;
+  openModal('modal-add-plan');
+}
+
+async function saveAdminPlan(){
+  if(!isAdmin()) return;
+  const email   = document.getElementById('adm-email').value.trim();
+  const plan    = document.getElementById('adm-plan').value;
+  const status  = document.getElementById('adm-status').value;
+  const expires = document.getElementById('adm-expires').value;
+  const notes   = document.getElementById('adm-notes').value.trim();
+  if(!email){ notify('Email requis','warn'); return; }
+  try{
+    const row = {
+      email, plan, status, notes,
+      expires_at: expires ? new Date(expires).toISOString() : null,
+      updated_at: new Date().toISOString()
+    };
+    if(_editingUserId){
+      row.user_id = _editingUserId;
+    } else {
+      // Chercher le user_id depuis l'email
+      const { data: users } = await supabaseClient
+        .from('user_plans')
+        .select('user_id')
+        .eq('email', email)
+        .maybeSingle();
+      if(users) row.user_id = users.user_id;
+      else {
+        notify('⚠️ Utilisateur non trouvé — il doit se connecter au moins une fois','warn');
+        return;
+      }
+    }
+    await supabaseClient.from('user_plans').upsert(row, { onConflict: 'user_id' });
+    notify('✅ Plan mis à jour !');
+    closeModal('modal-add-plan');
+    _editingUserId = null;
+    document.getElementById('adm-email').readOnly = false;
+    loadAdminData();
+  } catch(e){
+    notify('Erreur: '+e.message,'err');
+  }
+}
+
 function showOnboarding(){
   document.getElementById('onboarding-screen').style.display='flex';
 }
@@ -4842,6 +5043,11 @@ async function onAuthSuccess(user){
   if(footerEl)footerEl.textContent=user.email;
   addLogoutButton();
   notify('Connecté : '+user.email);
+  // Afficher le bouton admin si admin
+  const navAdmin = document.getElementById('nav-admin');
+  if(navAdmin && ADMIN_EMAILS.includes(user.email)) navAdmin.style.display='flex';
+  // Charger le plan de l'utilisateur
+  await loadUserPlan();
   // Charger les paramètres depuis Supabase d'abord
   await loadSettingsFromSupabase();
   // Puis charger les données
@@ -4855,6 +5061,20 @@ async function onAuthSuccess(user){
     } else {
       // Première connexion → pousser les données locales
       pushAllToSupabase();
+    }
+    // Enregistrer le client dans user_plans s'il n'existe pas encore
+    if(!isAdmin()){
+      try{
+        const { data: existingPlan } = await supabaseClient
+          .from('user_plans').select('user_id').eq('user_id', user.id).maybeSingle();
+        if(!existingPlan){
+          await supabaseClient.from('user_plans').insert({
+            user_id: user.id, email: user.email,
+            plan: 'free', status: 'active',
+            created_at: new Date().toISOString()
+          });
+        }
+      } catch(e){ console.warn('Erreur enregistrement plan:', e); }
     }
     // Vérifier si l'onboarding a déjà été fait pour cet utilisateur
     const obDone = localStorage.getItem('edl_onboarding_done_'+(user.id||''));
