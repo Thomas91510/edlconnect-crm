@@ -4606,18 +4606,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ─── INIT SUPABASE (cloud sync multi-appareils) ────────────
+// Le chargement Supabase se fait après auth dans onAuthSuccess
 (async () => {
-  const synced = await loadFromSupabase();
-  if(synced){
-    renderDashboard();
-    renderCalendar();
-    if(typeof renderProspection==='function') renderProspection();
-    if(typeof renderMissions==='function') renderMissions();
-    if(typeof renderPipeline==='function') renderPipeline();
-  } else if(_supaReady){
-    // Pas de données cloud encore → pousser les données locales actuelles
-    pushAllToSupabase();
-  }
   subscribeRealtime();
 })();
 
@@ -4702,6 +4692,19 @@ function onAuthSuccess(user){
   if(footerEl)footerEl.textContent=user.email;
   addLogoutButton();
   notify('Connecté : '+user.email);
+  // Charger les données de cet utilisateur depuis Supabase
+  loadFromSupabase().then(synced => {
+    if(synced){
+      renderDashboard();
+      renderCalendar();
+      if(typeof renderProspection==='function') renderProspection();
+      if(typeof renderMissions==='function') renderMissions();
+      if(typeof renderPipeline==='function') renderPipeline();
+    } else {
+      // Première connexion → pousser les données locales
+      pushAllToSupabase();
+    }
+  });
 }
 function addLogoutButton(){
   const footer=document.querySelector('.sidebar-footer');
