@@ -7,8 +7,6 @@ export default async function handler(req) {
   };
 
   return new Response(JSON.stringify({
-    supabaseUrl: process.env.SUPABASE_URL || '',
-    supabaseKey: process.env.SUPABASE_ANON_KEY || '',
-    brevoKey: process.env.BREVO_API_KEY ? 'ok' : 'missing',
+    brevo_api_key: process.env.BREVO_API_KEY || '',
   }), { status: 200, headers });
 }
