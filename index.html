@@ -4565,15 +4565,19 @@ function saveSettings(){
     }
   } catch(e){ console.warn('brevo_config.json non trouvé:', e); }
 })();
-loadFromStorage();
-renderDashboard();
-renderCalendar();
-updateBackupDate();
-// Montrer l'écran login immédiatement
-document.getElementById('auth-screen').classList.add('show');
-document.querySelector('.crm').style.display='none';
-// Puis vérifier si session existante
-checkAuth();
+document.addEventListener('DOMContentLoaded', function() {
+  loadFromStorage();
+  renderDashboard();
+  renderCalendar();
+  updateBackupDate();
+  // Montrer l'écran login immédiatement
+  const authScreen = document.getElementById('auth-screen');
+  const crmEl = document.querySelector('.crm');
+  if(authScreen) authScreen.classList.add('show');
+  if(crmEl) crmEl.style.display='none';
+  // Puis vérifier si session existante
+  checkAuth();
+});
 
 // ─── INIT SUPABASE (cloud sync multi-appareils) ────────────
 (async () => {
