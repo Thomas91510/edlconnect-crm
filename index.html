@@ -376,7 +376,21 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
 @media (max-width: 480px) {
   .page-header .btn i { margin:0 !important; }
-}</style>
+}
+/* AUTH */
+#auth-screen{display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#f8f8f6 0%,#e8f0f8 100%);align-items:center;justify-content:center}
+#auth-screen.show{display:flex}
+.auth-card{background:#fff;border-radius:16px;padding:40px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.12)}
+.auth-logo{font-size:28px;font-weight:700;color:var(--blue);margin-bottom:4px}
+.auth-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+.auth-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
+.auth-tab{padding:10px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:all .12s}
+.auth-tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.auth-error{background:var(--red-bg);color:var(--red-text);padding:10px 14px;border-radius:var(--radius);font-size:12px;margin-bottom:12px;display:none}
+.auth-error.show{display:block}
+.auth-success{background:var(--green-bg);color:var(--green-text);padding:10px 14px;border-radius:var(--radius);font-size:12px;margin-bottom:12px;display:none}
+.auth-success.show{display:block}
+</style>
 </head>
 <body>
 
@@ -4555,6 +4569,7 @@ loadFromStorage();
 renderDashboard();
 renderCalendar();
 updateBackupDate();
+checkAuth();
 
 // ─── INIT SUPABASE (cloud sync multi-appareils) ────────────
 (async () => {
@@ -4594,7 +4609,92 @@ function searchHelp(val){
   sections.forEach(s=>{
     s.style.display=(!q||s.textContent.toLowerCase().includes(q))?'block':'none';
   });
-}</script>
+}
+// AUTH
+let _currentUser = null;
+function authTab(tab, btn) {
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById('auth-login').style.display  = tab==='login'  ? 'block' : 'none';
+  document.getElementById('auth-signup').style.display = tab==='signup' ? 'block' : 'none';
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('auth-success').classList.remove('show');
+}
+function showAuthError(msg){const el=document.getElementById('auth-error');el.textContent=msg;el.classList.add('show');}
+function showAuthSuccess(msg){const el=document.getElementById('auth-success');el.textContent=msg;el.classList.add('show');document.getElementById('auth-error').classList.remove('show');}
+async function doLogin(){
+  const email=document.getElementById('auth-email').value.trim();
+  const password=document.getElementById('auth-password').value;
+  if(!email||!password){showAuthError('Email et mot de passe requis');return;}
+  const btn=document.getElementById('login-btn');
+  btn.innerHTML='<i class="ti ti-loader"></i> Connexion…';btn.disabled=true;
+  try{
+    const{data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    onAuthSuccess(data.user);
+  }catch(e){
+    showAuthError(e.message==='Invalid login credentials'?'Email ou mot de passe incorrect':e.message);
+    btn.innerHTML='<i class="ti ti-login"></i> Se connecter';btn.disabled=false;
+  }
+}
+async function doSignup(){
+  const email=document.getElementById('signup-email').value.trim();
+  const password=document.getElementById('signup-password').value;
+  const company=document.getElementById('signup-company').value.trim();
+  if(!email||!password){showAuthError('Email et mot de passe requis');return;}
+  if(password.length<6){showAuthError('Mot de passe trop court (min. 6 caractères)');return;}
+  const btn=document.getElementById('signup-btn');
+  btn.innerHTML='<i class="ti ti-loader"></i> Création…';btn.disabled=true;
+  try{
+    const{data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{company_name:company}}});
+    if(error)throw error;
+    if(data.user&&!data.user.confirmed_at){
+      showAuthSuccess('Compte créé ! Vérifiez votre email pour confirmer.');
+    }else{onAuthSuccess(data.user);}
+  }catch(e){showAuthError(e.message);}
+  btn.innerHTML='<i class="ti ti-user-plus"></i> Créer mon compte';btn.disabled=false;
+}
+async function showForgotPassword(){
+  const email=document.getElementById('auth-email').value.trim();
+  if(!email){showAuthError('Entrez votre email');return;}
+  await supabaseClient.auth.resetPasswordForEmail(email);
+  showAuthSuccess('Email de réinitialisation envoyé !');
+}
+function onAuthSuccess(user){
+  _currentUser=user;
+  document.getElementById('auth-screen').classList.remove('show');
+  const footerEl=document.querySelector('.sidebar-footer div:last-child');
+  if(footerEl)footerEl.textContent=user.email;
+  addLogoutButton();
+  notify('Connecté : '+user.email);
+}
+function addLogoutButton(){
+  const footer=document.querySelector('.sidebar-footer');
+  if(!footer||footer.querySelector('#logout-btn'))return;
+  const btn=document.createElement('button');
+  btn.id='logout-btn';btn.className='btn btn-sm';
+  btn.style.cssText='width:100%;margin-top:8px;justify-content:center;font-size:11px';
+  btn.innerHTML='<i class="ti ti-logout"></i> Déconnexion';
+  btn.onclick=doLogout;footer.appendChild(btn);
+}
+async function doLogout(){
+  await supabaseClient.auth.signOut();_currentUser=null;
+  document.getElementById('auth-screen').classList.add('show');
+  const b=document.getElementById('logout-btn');if(b)b.remove();
+  notify('Déconnecté');
+}
+async function checkAuth(){
+  if(!_supaReady)return;
+  const{data:{session}}=await supabaseClient.auth.getSession();
+  if(session){onAuthSuccess(session.user);}
+  else{document.getElementById('auth-screen').classList.add('show');}
+  supabaseClient.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_IN'&&session)onAuthSuccess(session.user);
+    if(event==='SIGNED_OUT')document.getElementById('auth-screen').classList.add('show');
+  });
+}
+
+</script>
 
 <!-- NAV BAR MOBILE -->
 <div id="mobile-nav-bar">
@@ -4616,5 +4716,43 @@ function searchHelp(val){
     </button>
   </div>
 </div>
+
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">EDLConnect</div>
+    <div class="auth-sub">CRM professionnel pour experts en état des lieux</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="authTab('login',this)">Connexion</button>
+      <button class="auth-tab" onclick="authTab('signup',this)">Créer un compte</button>
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+    <div id="auth-success" class="auth-success"></div>
+    <div id="auth-login">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Email</label>
+      <input type="email" id="auth-email" placeholder="contact@monentreprise.fr" style="margin-bottom:12px;width:100%">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Mot de passe</label>
+      <input type="password" id="auth-password" placeholder="••••••••" style="margin-bottom:20px;width:100%" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doLogin()" id="login-btn">
+        <i class="ti ti-login"></i> Se connecter
+      </button>
+      <div style="text-align:center;margin-top:12px;font-size:11px">
+        <a href="#" onclick="showForgotPassword()" style="color:var(--blue)">Mot de passe oublié ?</a>
+      </div>
+    </div>
+    <div id="auth-signup" style="display:none">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Email professionnel</label>
+      <input type="email" id="signup-email" placeholder="contact@monentreprise.fr" style="margin-bottom:12px;width:100%">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Mot de passe (min. 6 caractères)</label>
+      <input type="password" id="signup-password" placeholder="••••••••" style="margin-bottom:12px;width:100%">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Nom de votre entreprise</label>
+      <input type="text" id="signup-company" placeholder="EDL IDF" style="margin-bottom:20px;width:100%" onkeydown="if(event.key==='Enter')doSignup()">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doSignup()" id="signup-btn">
+        <i class="ti ti-user-plus"></i> Créer mon compte
+      </button>
+    </div>
+    <div style="text-align:center;margin-top:20px;font-size:10px;color:var(--text3)">Vos données sont sécurisées et isolées 🔒</div>
+  </div>
+</div>
+
 </body>
 </html>
