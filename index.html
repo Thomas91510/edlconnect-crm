@@ -403,8 +403,8 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
   <div class="sidebar" id="sidebar">
 
     <div class="logo">
-      <div class="logo-title">EDL IDF</div>
-      <div class="logo-sub">CRM Pro</div>
+      <div class="logo-title" id="sidebar-company-name">EDLConnect</div>
+      <div class="logo-sub" id="sidebar-user-email">CRM Pro</div>
       <div class="logo-badges">
         <span class="lbadge lbadge-green"><i class="ti ti-brand-notion" style="font-size:10px"></i> Notion</span>
         <span class="lbadge lbadge-blue"><i class="ti ti-mail" style="font-size:10px"></i> Brevo</span>
@@ -437,7 +437,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <div class="sidebar-footer">
       <div class="sync-row"><div class="sync-dot" id="sync-dot"></div><span id="sync-text" style="font-size:11px">Synchronisé</span></div>
       <div id="last-backup-date" style="font-size:10px;color:var(--text3)"></div>
-      <div>contact@edl-idf.com</div>
+      <div id="sidebar-footer-email" style="font-size:11px;color:var(--text2)"></div>
     </div>
   </div>
 
@@ -4612,6 +4612,9 @@ function saveSettings(){
     companyPaymentTerms:CFG.companyPaymentTerms
   };
   saveSettingsToSupabase(settingsData);
+  // Rafraîchir le nom de la sidebar
+  const sidebarName = document.getElementById('sidebar-company-name');
+  if(sidebarName && settingsData.companyName) sidebarName.textContent = settingsData.companyName;
   notify('✅ Paramètres enregistrés et synchronisés !');
 }
 
@@ -4728,6 +4731,15 @@ async function showForgotPassword(){
 }
 async function onAuthSuccess(user){
   _currentUser=user;
+  // Personnaliser la sidebar avec les infos de l'utilisateur
+  const companyName = user.user_metadata?.company_name || localStorage.getItem('edl_co_name') || 'EDLConnect';
+  const userEmail = user.email || '';
+  const sidebarName = document.getElementById('sidebar-company-name');
+  const sidebarSub  = document.getElementById('sidebar-user-email');
+  const sidebarFooterEmail = document.getElementById('sidebar-footer-email');
+  if(sidebarName) sidebarName.textContent = companyName;
+  if(sidebarSub)  sidebarSub.textContent  = 'CRM Pro';
+  if(sidebarFooterEmail) sidebarFooterEmail.textContent = userEmail;
   // Mettre à jour le sync dot
   const dot=document.getElementById('sync-dot');
   const txt=document.getElementById('sync-text');
