@@ -4737,7 +4737,7 @@ async function showForgotPassword(){
   await supabaseClient.auth.resetPasswordForEmail(email);
   showAuthSuccess('Email de réinitialisation envoyé !');
 }
-function onAuthSuccess(user){
+async function onAuthSuccess(user){
   _currentUser=user;
   // Mettre à jour le sync dot
   const dot=document.getElementById('sync-dot');
