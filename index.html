@@ -4686,6 +4686,11 @@ async function showForgotPassword(){
 }
 function onAuthSuccess(user){
   _currentUser=user;
+  // Mettre à jour le sync dot
+  const dot=document.getElementById('sync-dot');
+  const txt=document.getElementById('sync-text');
+  if(dot)dot.style.background='var(--green)';
+  if(txt){txt.textContent='☁️ Sync cloud active';txt.style.color='var(--green)';}
   document.getElementById('auth-screen').classList.remove('show');
   document.querySelector('.crm').style.display='flex';
   const footerEl=document.querySelector('.sidebar-footer div:last-child');
@@ -4723,13 +4728,20 @@ async function doLogout(){
 }
 async function checkAuth(){
   if(!_supaReady)return;
-  const{data:{session}}=await supabaseClient.auth.getSession();
-  if(session){onAuthSuccess(session.user);}
-  else{document.getElementById('auth-screen').classList.add('show');document.querySelector('.crm').style.display='none';}
+  // Écouter les changements d'auth EN PREMIER
   supabaseClient.auth.onAuthStateChange((event,session)=>{
-    if(event==='SIGNED_IN'&&session)onAuthSuccess(session.user);
-    if(event==='SIGNED_OUT')document.getElementById('auth-screen').classList.add('show');
+    if(event==='SIGNED_IN'&&session){_currentUser=session.user;onAuthSuccess(session.user);}
+    if(event==='SIGNED_OUT'){_currentUser=null;document.getElementById('auth-screen').classList.add('show');}
   });
+  // Puis vérifier la session existante
+  const{data:{session}}=await supabaseClient.auth.getSession();
+  if(session){
+    _currentUser=session.user;
+    onAuthSuccess(session.user);
+  } else {
+    document.getElementById('auth-screen').classList.add('show');
+    document.querySelector('.crm').style.display='none';
+  }
 }
 
 </script>
