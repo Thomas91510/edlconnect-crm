@@ -3614,7 +3614,7 @@ async function sendEmail(){
 
   notify('📤 Envoi en cours…');
   try{
-    const brevoUrl='http://localhost:'+8766+'/send-email';
+    const brevoUrl='/api/send-email';
     const payload={
       sender:{name:'EDL IDF',email:'contact@edl-idf.com'},
       to:[{email:to}],
