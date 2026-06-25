@@ -5076,10 +5076,23 @@ async function onAuthSuccess(user){
         }
       } catch(e){ console.warn('Erreur enregistrement plan:', e); }
     }
-    // Vérifier si l'onboarding a déjà été fait pour cet utilisateur
+    // Vérifier si l'onboarding a déjà été fait — on vérifie Supabase (pas localStorage)
     const obDone = localStorage.getItem('edl_onboarding_done_'+(user.id||''));
-    if(!obDone && !localStorage.getItem('edl_co_name')){
-      showOnboarding();
+    if(!obDone){
+      try{
+        const { data: existingSettings } = await supabaseClient
+          .from('settings').select('data').eq('user_id', user.id).maybeSingle();
+        const hasSettings = existingSettings?.data?.companyName || existingSettings?.data?.brevoKey;
+        if(!hasSettings && !isAdmin()){
+          showOnboarding();
+        } else {
+          // Marquer comme fait pour éviter de revérifier à chaque connexion
+          localStorage.setItem('edl_onboarding_done_'+(user.id||''), '1');
+        }
+      } catch(e){
+        // En cas d'erreur, ne pas bloquer l'accès
+        console.warn('Erreur vérif onboarding:', e);
+      }
     }
   });
 }
