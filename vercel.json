@@ -1,6 +1,12 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "crons": [
+    {
+      "path": "/api/cron-trial",
+      "schedule": "0 8 * * *"
+    }
+  ],
   "rewrites": [
     { "source": "/api/app-config", "destination": "/api/app-config.js" },
     { "source": "/api/brevo-contacts", "destination": "/api/brevo-contacts.js" },
@@ -8,6 +14,9 @@
     { "source": "/api/calendar-list", "destination": "/api/calendar-list.js" },
     { "source": "/api/gmail-emails", "destination": "/api/gmail-emails.js" },
     { "source": "/api/send-email", "destination": "/api/send-email.js" },
+    { "source": "/api/send-welcome", "destination": "/api/send-welcome.js" },
+    { "source": "/api/cron-trial", "destination": "/api/cron-trial.js" },
+    { "source": "/api/config", "destination": "/api/config.js" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
