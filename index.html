@@ -4468,20 +4468,10 @@ Objet: [objet de l'email]
 [corps de l'email]`;
 
   try {
-    const geminiKey = localStorage.getItem('edl_claude_key') || '';
-    if(!geminiKey){
-      status.textContent = '⚠️ Clé API Mistral non configurée';
-      generateLocalEmail(prompt, to, subjEl, bodyEl);
-      btn.disabled = false; label.textContent = 'Générer';
-      notify('Configure ta clé Mistral gratuite dans Paramètres','warn');
-      return;
-    }
-
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+   const response = await fetch('/api/mistral', {
       method : 'POST',
       headers: {
         'Content-Type' : 'application/json',
-        'Authorization': `Bearer ${geminiKey}`
       },
       body: JSON.stringify({
         model      : 'mistral-small-latest',
