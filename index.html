@@ -5066,6 +5066,17 @@ async function obFinish(){
     claudeKey: mistral||''
   };
   await saveSettingsToSupabase(settingsData);
+  // Envoyer email de bienvenue
+  try {
+    await fetch('/api/send-welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: _currentUser?.email || '',
+        companyName: localStorage.getItem('edl_co_name') || ''
+      })
+    });
+  } catch(e) { console.warn('Email bienvenue non envoyé:', e); }
   hideOnboarding();
   notify('🎉 Configuration terminée — bienvenue sur EDLConnect !');
   renderDashboard();
