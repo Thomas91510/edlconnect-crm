@@ -1027,11 +1027,45 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         </div>
       </div>
       <!-- KPIs admin -->
-      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
         <div class="kpi"><div class="kpi-label">Total clients</div><div class="kpi-value" id="adm-total">—</div></div>
-        <div class="kpi"><div class="kpi-label">Abonnements actifs</div><div class="kpi-value" id="adm-active" style="color:var(--green)">—</div></div>
+        <div class="kpi"><div class="kpi-label">Actifs</div><div class="kpi-value" id="adm-active" style="color:var(--green)">—</div></div>
         <div class="kpi"><div class="kpi-label">Plan Pro</div><div class="kpi-value" id="adm-pro" style="color:var(--blue)">—</div></div>
         <div class="kpi"><div class="kpi-label">Plan Gratuit</div><div class="kpi-value" id="adm-free" style="color:var(--amber)">—</div></div>
+      </div>
+      <!-- KPIs revenus -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+        <div class="kpi" style="border-left:3px solid var(--green)">
+          <div class="kpi-label">💰 MRR estimé</div>
+          <div class="kpi-value" id="adm-mrr" style="color:var(--green)">—</div>
+          <div style="font-size:10px;color:var(--text2)">revenus mensuels</div>
+        </div>
+        <div class="kpi" style="border-left:3px solid var(--blue)">
+          <div class="kpi-label">📈 ARR estimé</div>
+          <div class="kpi-value" id="adm-arr" style="color:var(--blue)">—</div>
+          <div style="font-size:10px;color:var(--text2)">revenus annuels</div>
+        </div>
+        <div class="kpi" style="border-left:3px solid var(--amber)">
+          <div class="kpi-label">🔄 Taux conversion</div>
+          <div class="kpi-value" id="adm-conversion" style="color:var(--amber)">—</div>
+          <div style="font-size:10px;color:var(--text2)">essai → payant</div>
+        </div>
+        <div class="kpi" style="border-left:3px solid var(--teal)">
+          <div class="kpi-label">🆕 Ce mois</div>
+          <div class="kpi-value" id="adm-new-month" style="color:var(--teal)">—</div>
+          <div style="font-size:10px;color:var(--text2)">nouveaux inscrits</div>
+        </div>
+      </div>
+      <!-- Répartition plans -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+        <div class="card" style="padding:14px">
+          <div style="font-size:12px;font-weight:600;margin-bottom:12px">📊 Répartition des plans</div>
+          <div id="adm-plan-chart"></div>
+        </div>
+        <div class="card" style="padding:14px">
+          <div style="font-size:12px;font-weight:600;margin-bottom:12px">📅 Inscriptions ce mois</div>
+          <div id="adm-monthly-chart"></div>
+        </div>
       </div>
       <!-- Tableau clients -->
       <div class="card">
@@ -4798,19 +4832,82 @@ function getPlanBadge(plan, status){
 async function loadAdminData(){
   if(!isAdmin()){ notify('Accès refusé','err'); return; }
   try{
-    // Charger tous les plans
     const { data: plans } = await supabaseClient
       .from('user_plans')
       .select('*')
       .order('created_at', { ascending: false });
 
-    // Charger tous les utilisateurs auth (via admin API — non dispo côté client)
-    // On utilise uniquement les plans enregistrés
     const list = plans || [];
+    const active = list.filter(p=>p.status==='active');
+    const proCount = list.filter(p=>p.plan==='pro'&&p.status==='active').length;
+    const starterCount = list.filter(p=>p.plan==='starter'&&p.status==='active').length;
+    const freeCount = list.filter(p=>p.plan==='free'||!p.plan).length;
+    const payingCount = proCount + starterCount;
+    const mrr = (proCount * 35) + (starterCount * 15);
+    const arr = mrr * 12;
+    const convRate = list.length > 0 ? Math.round(payingCount / list.length * 100) : 0;
+
+    // Inscriptions ce mois
+    const now = new Date();
+    const thisMonth = list.filter(p=>{
+      if(!p.created_at) return false;
+      const d = new Date(p.created_at);
+      return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+    }).length;
+
     document.getElementById('adm-total').textContent   = list.length;
-    document.getElementById('adm-active').textContent  = list.filter(p=>p.status==='active').length;
-    document.getElementById('adm-pro').textContent     = list.filter(p=>p.plan==='pro').length;
-    document.getElementById('adm-free').textContent    = list.filter(p=>p.plan==='free'||!p.plan).length;
+    document.getElementById('adm-active').textContent  = active.length;
+    document.getElementById('adm-pro').textContent     = proCount;
+    document.getElementById('adm-free').textContent    = freeCount;
+    document.getElementById('adm-mrr').textContent     = mrr.toLocaleString('fr-FR') + ' €';
+    document.getElementById('adm-arr').textContent     = arr.toLocaleString('fr-FR') + ' €';
+    document.getElementById('adm-conversion').textContent = convRate + '%';
+    document.getElementById('adm-new-month').textContent  = thisMonth;
+
+    // Graphique répartition plans
+    const total = list.length || 1;
+    const planChart = document.getElementById('adm-plan-chart');
+    if(planChart){
+      const plans_data = [
+        {label:'Pro', count:proCount, color:'var(--blue)'},
+        {label:'Starter', count:starterCount, color:'var(--teal)'},
+        {label:'Gratuit', count:freeCount, color:'var(--amber)'},
+      ];
+      planChart.innerHTML = plans_data.map(p=>`
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+            <span style="font-weight:500">${p.label}</span>
+            <span style="color:var(--text2)">${p.count} (${Math.round(p.count/total*100)}%)</span>
+          </div>
+          <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(p.count/total*100)}%;background:${p.color};border-radius:4px;transition:width .4s"></div>
+          </div>
+        </div>`).join('');
+    }
+
+    // Inscriptions par mois (6 derniers mois)
+    const monthChart = document.getElementById('adm-monthly-chart');
+    if(monthChart){
+      const months = [];
+      for(let i=5;i>=0;i--){
+        const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+        const count = list.filter(p=>{
+          if(!p.created_at) return false;
+          const pd = new Date(p.created_at);
+          return pd.getMonth()===d.getMonth() && pd.getFullYear()===d.getFullYear();
+        }).length;
+        months.push({label:d.toLocaleDateString('fr-FR',{month:'short'}), count});
+      }
+      const maxCount = Math.max(...months.map(m=>m.count), 1);
+      monthChart.innerHTML = `<div style="display:flex;align-items:flex-end;gap:6px;height:80px">
+        ${months.map(m=>`
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div style="font-size:10px;color:var(--text2)">${m.count||''}</div>
+            <div style="width:100%;background:var(--blue);border-radius:3px 3px 0 0;height:${Math.round(m.count/maxCount*60)+4}px;opacity:${m.count?1:0.2}"></div>
+            <div style="font-size:9px;color:var(--text2)">${m.label}</div>
+          </div>`).join('')}
+      </div>`;
+    }
 
     document.getElementById('admin-tbody').innerHTML = list.length ? list.map(p=>`
       <tr>
