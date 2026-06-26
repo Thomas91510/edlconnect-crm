@@ -37,10 +37,22 @@ export default async function handler(req) {
         htmlContent: `
           <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
             <div style="background:#185FA5;padding:24px;text-align:center;border-radius:12px 12px 0 0">
-              <div style="background:#E6F1FB;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:11px;margin-bottom:8px">
-                <span style="font-size:22px;font-weight:700;color:#185FA5">ED</span>
+              <div style="background:#E6F1FB;display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;margin-bottom:10px">
+                <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
+                  <tr>
+                    <td style="padding:0;line-height:1">
+                      <span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:#185FA5;letter-spacing:-1px">E</span>
+                    </td>
+                    <td style="padding:0 0 0 1px;line-height:1">
+                      <span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:#185FA5">D</span>
+                    </td>
+                    <td style="padding:0 0 4px 2px;vertical-align:bottom;line-height:1">
+                      <span style="display:inline-block;width:8px;height:14px;border:2.5px solid #185FA5;border-left:none;border-radius:0 6px 6px 0"></span>
+                    </td>
+                  </tr>
+                </table>
               </div>
-              <div style="color:#fff;font-size:20px;font-weight:700">EDLConnect</div>
+              <div style="color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.5px">EDLConnect</div>
             </div>
             <div style="background:#fff;padding:32px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
               <h2 style="font-size:22px;margin-bottom:12px">Bienvenue sur EDLConnect ! 🎉</h2>
@@ -91,4 +103,3 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 }
-
