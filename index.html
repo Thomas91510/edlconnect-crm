@@ -5446,15 +5446,12 @@ function checkBookingMode(){
   const path = window.location.pathname;
   const params = new URLSearchParams(window.location.search);
   if(path === '/booking' || params.get('booking') === '1'){
-    // Masquer l'écran auth IMMÉDIATEMENT et afficher le booking
+    // Masquer l'écran auth IMMÉDIATEMENT
     const authScreen = document.getElementById('auth-screen');
+    if(authScreen){ authScreen.style.cssText = 'display:none!important'; authScreen.classList.remove('show'); }
+    // Afficher le CRM
     const crmEl = document.querySelector('.crm');
-    if(authScreen){ authScreen.style.display = 'none'; authScreen.classList.remove('show'); }
     if(crmEl){ crmEl.style.display = 'flex'; }
-    // Activer la vue booking
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    const bkView = document.getElementById('view-booking');
-    if(bkView) bkView.classList.add('active');
     // Masquer sidebar et mobile nav
     const sidebar = document.querySelector('.sidebar');
     const mobileNav = document.getElementById('mobile-nav-bar');
@@ -5462,6 +5459,13 @@ function checkBookingMode(){
     if(sidebar) sidebar.style.display = 'none';
     if(mobileNav) mobileNav.style.display = 'none';
     if(mobileBtn) mobileBtn.style.display = 'none';
+    // Masquer le main et afficher uniquement la vue booking
+    const mainEl = document.querySelector('.main');
+    if(mainEl) mainEl.style.cssText = 'flex:1;overflow-y:auto;background:#f8f8f6';
+    // Activer la vue booking
+    document.querySelectorAll('.view').forEach(v => { v.classList.remove('active'); v.style.display='none'; });
+    const bkView = document.getElementById('view-booking');
+    if(bkView){ bkView.classList.add('active'); bkView.style.display='block'; }
     // Pré-remplir agence si passée en URL
     const agencyName = params.get('name');
     if(agencyName){
