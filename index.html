@@ -437,6 +437,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <button class="nav-item" onclick="nav('campaigns')"><i class="ti ti-mail"></i>Campagnes</button>
     <button class="nav-item" onclick="nav('compose')"><i class="ti ti-send"></i>Composer</button>
     <span class="nav-section">Outils</span>
+    <button class="nav-item" onclick="nav('reservations')"><i class="ti ti-calendar-plus"></i>Réservations<span class="nav-badge" id="resa-nav-badge" style="display:none"></span></button>
     <button class="nav-item" onclick="nav('brevo')"><i class="ti ti-refresh"></i>Sync Brevo</button>
     <button class="nav-item" onclick="nav('settings')"><i class="ti ti-settings"></i>Paramètres</button>
     <button class="nav-item" onclick="nav('help')"><i class="ti ti-help-circle"></i>Guide & Aide</button>
@@ -1087,6 +1088,58 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
           <table class="tbl" style="min-width:700px">
             <thead><tr><th>Email</th><th>Plan</th><th>Statut</th><th>Expiration</th><th>Inscription</th><th>Notes</th><th></th></tr></thead>
             <tbody id="admin-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- RÉSERVATIONS -->
+    <div class="view" id="view-reservations">
+      <div class="page-header">
+        <div class="page-title">📥 Réservations entrantes</div>
+        <button class="btn btn-primary" onclick="loadReservations()"><i class="ti ti-refresh"></i>Actualiser</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+        <div class="kpi"><div class="kpi-label">Total reçues</div><div class="kpi-value" id="resa-total">—</div></div>
+        <div class="kpi" style="border-left:3px solid var(--amber)"><div class="kpi-label">⏳ En attente</div><div class="kpi-value" id="resa-pending" style="color:var(--amber)">—</div></div>
+        <div class="kpi" style="border-left:3px solid var(--green)"><div class="kpi-label">✅ Confirmées</div><div class="kpi-value" id="resa-confirmed" style="color:var(--green)">—</div></div>
+        <div class="kpi" style="border-left:3px solid var(--blue)"><div class="kpi-label">📅 Aujourd'hui</div><div class="kpi-value" id="resa-today" style="color:var(--blue)">—</div></div>
+      </div>
+
+      <div id="resa-loading" style="text-align:center;padding:40px;color:var(--text2);font-size:13px">
+        <div style="font-size:32px;margin-bottom:12px">📥</div>
+        Clique sur "Actualiser" pour charger les réservations
+      </div>
+
+      <div class="card" id="resa-table-wrap" style="display:none">
+        <div class="card-head">
+          <span id="resa-count">Réservations</span>
+          <div style="display:flex;gap:8px">
+            <select id="resa-filter" onchange="filterReservations()" style="font-size:11px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border2)">
+              <option value="all">Toutes</option>
+              <option value="pending">En attente</option>
+              <option value="confirmed">Confirmées</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tbl" style="min-width:800px">
+            <thead>
+              <tr>
+                <th>Date demande</th>
+                <th>Agence</th>
+                <th>Type EDL</th>
+                <th>Adresse</th>
+                <th>Date souhaitée</th>
+                <th>Locataire</th>
+                <th>Statut</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="resa-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -3114,6 +3167,7 @@ function nav(v){
   if(v==='campaigns')renderCampaigns();
   if(v==='compose')renderTracking();
   if(v==='agenda')renderCalendar();
+  if(v==='reservations')loadReservations();
   if(v==='settings')loadSettingsForm();
   if(v==='help'){}
   closeMobileSidebar(); // ferme le menu mobile après navigation
@@ -5647,6 +5701,152 @@ async function bkSubmit(){
 
 
 // ═══════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════
+// ─── RÉSERVATIONS ENTRANTES ────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+let _allReservations = [];
+
+async function loadReservations(){
+  if(!_supaReady || !_currentUser) { notify('⚠️ Connexion Supabase requise', 'warn'); return; }
+
+  document.getElementById('resa-loading').innerHTML = '<div style="font-size:32px;margin-bottom:12px">⏳</div>Chargement des réservations…';
+  document.getElementById('resa-table-wrap').style.display = 'none';
+
+  try {
+    // Lire TOUTES les missions avec source = booking via service key
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/missions?select=id,data,user_id&order=updated_at.desc`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+
+    if(!resp.ok) throw new Error('Erreur Supabase');
+    const rows = await resp.json();
+
+    // Filtrer uniquement les missions venant du booking
+    _allReservations = rows
+      .filter(r => r.data && r.data.source === 'booking')
+      .map(r => ({ ...r.data, _supaId: r.id, _userId: r.user_id }))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    updateReservationsKPIs();
+    renderReservations(_allReservations);
+
+    // Badge nav
+    const pending = _allReservations.filter(r => !r.rdvConfirme).length;
+    const badge = document.getElementById('resa-nav-badge');
+    if(pending > 0){ badge.style.display='inline'; badge.textContent=pending; }
+    else badge.style.display='none';
+
+  } catch(e) {
+    document.getElementById('resa-loading').innerHTML = '<div style="color:var(--red)">❌ Erreur : ' + e.message + '</div>';
+  }
+}
+
+function updateReservationsKPIs(){
+  const total = _allReservations.length;
+  const pending = _allReservations.filter(r => !r.rdvConfirme).length;
+  const confirmed = _allReservations.filter(r => r.rdvConfirme).length;
+  const today = _allReservations.filter(r => {
+    if(!r.createdAt) return false;
+    const d = new Date(r.createdAt);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  }).length;
+
+  document.getElementById('resa-total').textContent = total || '0';
+  document.getElementById('resa-pending').textContent = pending || '0';
+  document.getElementById('resa-confirmed').textContent = confirmed || '0';
+  document.getElementById('resa-today').textContent = today || '0';
+}
+
+function filterReservations(){
+  const filter = document.getElementById('resa-filter').value;
+  let list = _allReservations;
+  if(filter === 'pending') list = list.filter(r => !r.rdvConfirme);
+  if(filter === 'confirmed') list = list.filter(r => r.rdvConfirme);
+  renderReservations(list);
+}
+
+function renderReservations(list){
+  document.getElementById('resa-loading').style.display = 'none';
+  document.getElementById('resa-table-wrap').style.display = 'block';
+  document.getElementById('resa-count').textContent = list.length + ' réservation' + (list.length > 1 ? 's' : '');
+
+  if(!list.length){
+    document.getElementById('resa-tbody').innerHTML = '<tr><td colspan="8" class="empty">Aucune réservation trouvée</td></tr>';
+    return;
+  }
+
+  document.getElementById('resa-tbody').innerHTML = list.map(r => {
+    const dateDemande = r.createdAt ? fmtDate(r.createdAt) : '—';
+    const dateSouhaitee = r.dateSouhaitee ? new Date(r.dateSouhaitee).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'}) + (r.heure ? ' ' + r.heure : '') : '—';
+    const locataire = r.locataire ? (r.locataireNom || r.locataire.nom || '—') + '<br><span style="font-size:10px;color:var(--text2)">' + (r.locataire.tel || '') + '</span>' : '—';
+    const statut = r.rdvConfirme
+      ? '<span class="badge b-green">✅ Confirmé</span>'
+      : '<span class="badge b-amber">⏳ En attente</span>';
+
+    return `<tr>
+      <td style="font-size:11px">${dateDemande}</td>
+      <td style="font-weight:600;font-size:12px">${r.agence || '—'}</td>
+      <td style="font-size:11px">${r.typeEdl || r.type || '—'}</td>
+      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.adresse || '—'}</td>
+      <td style="font-size:11px;font-weight:600;color:var(--blue)">${dateSouhaitee}</td>
+      <td style="font-size:11px">${locataire}</td>
+      <td>${statut}</td>
+      <td>
+        <button class="btn btn-sm" onclick="createMissionFromReservation('${r.id || r._supaId}')" title="Créer la mission dans le CRM" style="padding:3px 7px;background:var(--green-bg);color:var(--green-text);border-color:var(--green);font-size:10px">
+          <i class="ti ti-plus" style="font-size:11px"></i> Importer
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function createMissionFromReservation(id){
+  const r = _allReservations.find(x => (x.id || x._supaId) === id);
+  if(!r){ notify('Réservation introuvable', 'warn'); return; }
+
+  // Créer la mission dans le CRM local
+  const mission = {
+    id: 'm_booking_' + Date.now(),
+    agence: r.agence || '',
+    emailClient: r.email || '',
+    contact: r.contact || '',
+    typeClient: 'Professionnel',
+    adresse: r.adresse || '',
+    bienType: r.bienType || '',
+    bienTypo: r.bienTypo || '',
+    bienMeuble: r.meuble || '',
+    acces: r.acces || '',
+    type: r.typeEdl || r.type || 'EDL entrant',
+    date: r.dateSouhaitee || '',
+    montant: 0,
+    statut: 'planifiée',
+    locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
+    locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
+    locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
+    notes: 'Importé depuis réservation booking
+' + (r.notes || ''),
+    source: 'booking',
+    createdAt: new Date().toISOString()
+  };
+
+  DB.missions.push(mission);
+  saveToStorage();
+  notify('✅ Mission créée ! Tu peux la retrouver dans Missions EDL.');
+
+  // Proposer d'ouvrir la confirmation RDV
+  setTimeout(() => {
+    if(confirm('Mission créée ! Veux-tu envoyer la confirmation de RDV maintenant ?')){
+      nav('missions');
+      setTimeout(() => openConfirmRdvModal(mission.id), 500);
+    }
+  }, 500);
+}
+
 // ─── CONFIRMATION RDV ──────────────────────────────────────
 // ═══════════════════════════════════════════════════════════
 let _confirmRdvMissionId = null;
