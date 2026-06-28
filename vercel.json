@@ -18,8 +18,7 @@
     { "source": "/api/cron-trial", "destination": "/api/cron-trial.js" },
     { "source": "/api/config", "destination": "/api/config.js" },
     { "source": "/api/booking-request", "destination": "/api/booking-request.js" },
-   { "source": "/booking", "destination": "/index.html" },
-{ "source": "/booking.html", "destination": "/booking.html" }
+    { "source": "/booking", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
