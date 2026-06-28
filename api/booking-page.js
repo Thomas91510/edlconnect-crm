@@ -181,24 +181,31 @@ textarea{min-height:75px;resize:vertical}
     <div class="card">
       <div class="card-head"><i class="ti ti-user"></i>Locataire</div>
       <div class="card-body">
-        <div class="form-row">
-          <div>
-            <label>Civilité <span class="req">*</span></label>
-            <select id="loc-civilite">
-              <option value="">— Choisir —</option>
-              <option value="M.">M. (Monsieur)</option>
-              <option value="Mme">Mme (Madame)</option>
-            </select>
+        <!-- Locataire 1 (principal) -->
+        <div id="locataires-list">
+          <div class="locataire-block" data-idx="0" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px">
+            <div style="font-size:11px;font-weight:600;color:var(--blue);margin-bottom:8px">👤 Locataire 1</div>
+            <div class="form-row">
+              <div>
+                <label>Civilité <span class="req">*</span></label>
+                <select class="loc-civilite">
+                  <option value="">— Choisir —</option>
+                  <option value="M.">M. (Monsieur)</option>
+                  <option value="Mme">Mme (Madame)</option>
+                </select>
+              </div>
+              <div><label>Nom complet <span class="req">*</span></label><input type="text" class="loc-nom" placeholder="Jean Martin"></div>
+            </div>
+            <div class="form-row">
+              <div><label>Téléphone <span class="req">*</span></label><input type="tel" class="loc-tel" placeholder="06 12 34 56 78"></div>
+              <div><label>Email</label><input type="email" class="loc-email" placeholder="jean.martin@email.fr"></div>
+            </div>
           </div>
-          <div><label>Nom complet <span class="req">*</span></label><input type="text" id="loc-nom" placeholder="Jean Martin"></div>
         </div>
-        <div class="form-row">
-          <div><label>Téléphone <span class="req">*</span></label><input type="tel" id="loc-tel" placeholder="06 12 34 56 78"></div>
-          <div></div>
-        </div>
-        <label>Email du locataire</label>
-        <input type="email" id="loc-email" placeholder="jean.martin@email.fr">
-        <div class="hint">Il recevra sa convocation une fois le RDV planifié</div>
+        <button type="button" onclick="addLocataire()" style="width:100%;border:1.5px dashed var(--blue);border-radius:var(--radius);padding:10px;background:var(--blue-light);color:var(--blue);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px">
+          + Ajouter un locataire
+        </button>
+        <div class="hint">Chaque locataire recevra sa convocation par email une fois le RDV planifié</div>
       </div>
     </div>
     <div class="card">
@@ -289,13 +296,47 @@ function buildRecap(){
   document.getElementById('recap').innerHTML = r;
 }
 
+let _locCount = 1;
+function addLocataire(){
+  _locCount++;
+  const list = document.getElementById('locataires-list');
+  const div = document.createElement('div');
+  div.className = 'locataire-block';
+  div.style.cssText = 'border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px';
+  div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:#185FA5">👤 Locataire '+_locCount+'</div><button type="button" onclick="removeLocataire(this)" style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:16px;padding:0">✕</button></div>'
+    +'<div class="form-row"><div><label>Civilité</label><select class="loc-civilite"><option value="">— Choisir —</option><option value="M.">M.</option><option value="Mme">Mme</option></select></div>'
+    +'<div><label>Nom complet</label><input type="text" class="loc-nom" placeholder="Marie Martin"></div></div>'
+    +'<div class="form-row"><div><label>Téléphone</label><input type="tel" class="loc-tel" placeholder="06 12 34 56 78"></div>'
+    +'<div><label>Email</label><input type="email" class="loc-email" placeholder="marie.martin@email.fr"></div></div>';
+  list.appendChild(div);
+}
+function removeLocataire(btn){
+  btn.closest('.locataire-block').remove();
+  document.querySelectorAll('.locataire-block').forEach((b,i)=>{
+    const t=b.querySelector('[style*="185FA5"]');
+    if(t) t.textContent='👤 Locataire '+(i+1);
+  });
+}
 async function submit(){
-  const locNom = document.getElementById('loc-nom').value.trim();
-  const locTel = document.getElementById('loc-tel').value.trim();
-  const locCivilite = document.getElementById('loc-civilite').value;
-  if(!locCivilite) return showErr('La civilité du locataire est requise.');
-  if(!locNom) return showErr('Le nom du locataire est requis.');
-  if(!locTel) return showErr('Le téléphone du locataire est requis.');
+  // Collecter tous les locataires
+  const locBlocks = document.querySelectorAll('.locataire-block');
+  const locataires = [];
+  for(let i = 0; i < locBlocks.length; i++){
+    const block = locBlocks[i];
+    const civ = block.querySelector('.loc-civilite').value;
+    const nom = block.querySelector('.loc-nom').value.trim();
+    const tel = block.querySelector('.loc-tel').value.trim();
+    const email = block.querySelector('.loc-email').value.trim();
+    if(i === 0){
+      if(!civ) return showErr('La civilité du locataire principal est requise.');
+      if(!nom) return showErr('Le nom du locataire principal est requis.');
+      if(!tel) return showErr('Le téléphone du locataire principal est requis.');
+    }
+    if(nom || tel) locataires.push({ civilite: civ, nom, tel, email });
+  }
+  const locNom = locataires[0]?.nom || '';
+  const locTel = locataires[0]?.tel || '';
+  const locCivilite = locataires[0]?.civilite || '';
   const btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Envoi…';
   const payload = {
@@ -313,12 +354,8 @@ async function submit(){
     dateSouhaitee: document.getElementById('date').value,
     heure: document.getElementById('heure').value,
     notes: document.getElementById('notes').value.trim(),
-    locataire: { 
-      civilite: document.getElementById('loc-civilite').value,
-      nom: locNom, 
-      tel: locTel, 
-      email: document.getElementById('loc-email').value.trim() 
-    }
+    locataire: locataires[0] || {},
+    locataires: locataires
   };
   try {
     const resp = await fetch('/api/booking-request', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
@@ -326,7 +363,8 @@ async function submit(){
       document.getElementById('p3').style.display='none';
       document.getElementById('success').style.display='block';
       const dateStr = new Date(payload.dateSouhaitee).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-      document.getElementById('success-recap').innerHTML = '<strong>📋 '+payload.typeEdl+'</strong><br>📍 '+payload.adresse+'<br>📅 '+dateStr+' · '+(payload.heure||'Flexible')+'<br>👤 '+locNom+' · '+locTel;
+      const locsList = (payload.locataires||[locataires[0]]).map(l => l.civilite+' '+l.nom+' · '+l.tel).join('<br>👤 ');
+      document.getElementById('success-recap').innerHTML = '<strong>📋 '+payload.typeEdl+'</strong><br>📍 '+payload.adresse+'<br>📅 '+dateStr+' · '+(payload.heure||'Flexible')+'<br>👤 '+locsList;
       window.scrollTo({top:0,behavior:'smooth'});
     } else {
       showErr("Erreur lors de l'envoi. Veuillez nous appeler au 01 89 29 14 29.");
