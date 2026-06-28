@@ -1415,10 +1415,22 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     </div>
     <label>Email de l'agent <span style="color:var(--red)">*</span></label>
     <input type="email" id="confirm-rdv-agent-email" placeholder="agent@agence.fr" style="margin-bottom:10px">
+    <div class="form-grid" style="margin-bottom:4px">
+      <div>
+        <label>Civilité du locataire</label>
+        <select id="confirm-rdv-civilite">
+          <option value="">— Choisir —</option>
+          <option value="M.">M. (Monsieur)</option>
+          <option value="Mme">Mme (Madame)</option>
+        </select>
+      </div>
+      <div>
+        <label>Nom du locataire</label>
+        <input type="text" id="confirm-rdv-loc-nom" placeholder="Jean Martin">
+      </div>
+    </div>
     <label>Email du locataire</label>
     <input type="email" id="confirm-rdv-loc-email" placeholder="locataire@email.fr" style="margin-bottom:10px">
-    <label>Nom du locataire</label>
-    <input type="text" id="confirm-rdv-loc-nom" placeholder="Jean Martin" style="margin-bottom:10px">
     <label>Message personnalisé (optionnel)</label>
     <textarea id="confirm-rdv-message" style="min-height:70px" placeholder="Ex: Merci de prévoir les clés et les relevés de compteurs..."></textarea>
     <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
@@ -5989,6 +6001,8 @@ function openConfirmRdvModal(missionId){
   document.getElementById('confirm-rdv-agent-email').value = m.emailClient || contact?.email || '';
   document.getElementById('confirm-rdv-loc-email').value = m.locataireEmail || '';
   document.getElementById('confirm-rdv-loc-nom').value = m.locataireNom || '';
+  const civEl = document.getElementById('confirm-rdv-civilite');
+  if(civEl) civEl.value = m.locataireCivilite || '';
   document.getElementById('confirm-rdv-message').value = '';
 
   const btn = document.getElementById('confirm-rdv-btn');
@@ -6037,6 +6051,7 @@ async function sendConfirmRdv(){
     agentNom: document.getElementById('confirm-rdv-agent-email').value.split('@')[0],
     locataireEmail: document.getElementById('confirm-rdv-loc-email').value.trim(),
     locataireNom: document.getElementById('confirm-rdv-loc-nom').value.trim(),
+    locataireCivilite: document.getElementById('confirm-rdv-civilite')?.value || '',
     message: document.getElementById('confirm-rdv-message').value.trim()
   };
 
