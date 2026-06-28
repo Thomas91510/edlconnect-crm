@@ -44,6 +44,7 @@ export default async function handler(req) {
         dateSouhaitee, heure,
         notes: notes || '',
         locataire: locataire || {},
+        locataireCivilite: locataire?.civilite || '',
         locataireNom: locataire?.nom || '',
         locataireTel: locataire?.tel || '',
         locataireEmail: locataire?.email || '',
