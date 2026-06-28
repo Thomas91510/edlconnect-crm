@@ -5804,6 +5804,7 @@ async function loadReservations(){
     const rows = await resp.json();
 
     _allReservations = (rows || [])
+      .filter(r => r.statut !== 'importee')
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     updateReservationsKPIs();
@@ -5914,6 +5915,22 @@ function createMissionFromReservation(id){
 
   DB.missions.push(mission);
   saveToStorage();
+
+  // Marquer la réservation comme importée dans Supabase
+  const supaId = r._supaId || r.id;
+  if(supaId && _supaReady) {
+    const updatedData = { ...r, statut: 'importee', importedAt: new Date().toISOString(), missionId: mission.id };
+    supabaseClient.from('bookings').update({
+      data: updatedData,
+      updated_at: new Date().toISOString()
+    }).eq('id', supaId).then(() => {
+      // Retirer de la liste locale
+      _allReservations = _allReservations.filter(x => (x._supaId || x.id) !== supaId);
+      updateReservationsKPIs();
+      filterReservations();
+    });
+  }
+
   notify('✅ Mission créée ! Tu peux la retrouver dans Missions EDL.');
 
   // Proposer d'ouvrir la confirmation RDV
