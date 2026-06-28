@@ -3284,7 +3284,7 @@ function getFilteredContacts(){
   else if(UI.contactFilter==='brevo')list=list.filter(c=>c.presence==='brevo'||c.presence==='both');
   else if(UI.contactFilter==='notion')list=list.filter(c=>c.presence==='notion'||c.presence==='both');
   else if(UI.contactFilter!=='all')list=list.filter(c=>c.statut===UI.contactFilter);
-  if(UI.contactSearch){const q=UI.contactSearch.toLowerCase();list=list.filter(c=>(c.entreprise+c.contact+c.email).toLowerCase().includes(q));}
+  if(UI.contactSearch){const q=UI.contactSearch.toLowerCase();list=list.filter(c=>((c.entreprise||'')+(c.contact||'')+(c.email||'')).toLowerCase().includes(q));}
   return list;
 }
 function renderContacts(){
