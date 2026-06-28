@@ -21,6 +21,7 @@
     { "source": "/api/booking-page", "destination": "/api/booking-page.js" },
     { "source": "/api/confirm-rdv", "destination": "/api/confirm-rdv.js" },
     { "source": "/booking", "destination": "/api/booking-page" },
+    { "source": "/api/get-reservations", "destination": "/api/get-reservations.js" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
