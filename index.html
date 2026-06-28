@@ -5828,8 +5828,7 @@ function createMissionFromReservation(id){
     locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
     locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
     locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
-    notes: 'Importé depuis réservation booking
-' + (r.notes || ''),
+    notes: 'Importé depuis réservation booking. ' + (r.notes || ''),
     source: 'booking',
     createdAt: new Date().toISOString()
   };
