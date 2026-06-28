@@ -1017,8 +1017,8 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       R : Composer → destinataire → message → "Envoyer via Brevo". Clé API Brevo requise dans Paramètres.<br><br>
       <strong>Q : Comment générer une facture groupée ?</strong><br>
       R : Missions → "Facture mensuelle" → nom exact de l'agence + mois → "Générer".<br><br>
-      <strong>Q : Comment récupérer les emails Gmail ?</strong><br>
-      R : Fiche contact → "Emails & tracking" → "Charger les emails Gmail".<br><br>
+      <strong>Q : Comment voir les emails envoyés à un contact ?</strong><br>
+      R : Fiche contact → onglet "Emails & tracking" → historique de tous les emails envoyés via EDLConnect.<br><br>
       <strong>Q : Mes données sont-elles sauvegardées ?</strong><br>
       R : Oui, via Supabase (cloud) + localStorage. Faire des sauvegardes JSON régulières via "💾 Sauvegarder".<br><br>
       <strong>Q : Comment fusionner les doublons ?</strong><br>
@@ -1687,6 +1687,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <label>Statut</label>
     <select id="adm-status">
       <option value="active">Actif</option>
+      <option value="signed">Client signé ✅</option>
       <option value="suspended">Suspendu</option>
       <option value="expired">Expiré</option>
     </select>
@@ -3137,13 +3138,7 @@ function renderFicheEmails(c){
   const fromHistory=(c.history||[]);
   const fromTracking=DB.trackings.filter(t=>(t.email||'').toLowerCase()===emailLower&&!fromHistory.find(h=>h.id===t.id));
   const allEmails=[...fromHistory,...fromTracking].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const gmailBtnHtml=c.email?`
-    <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px">
-      <button class="btn btn-sm" id="gmail-load-btn-${c.id}" onclick="loadGmailEmails('${c.id}','${c.email}')">
-        <i class="ti ti-brand-gmail"></i> Charger les emails Gmail
-      </button>
-      <span id="gmail-status-${c.id}" style="font-size:10px;color:var(--text2)"></span>
-    </div>`:'';
+  const gmailBtnHtml=''; // Gmail désactivé (invalid_client)
   const emailsHtml=allEmails.length?allEmails.map((t,i)=>`
     <div style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${t.direction==='recu'?'border-left:3px solid var(--blue)':''}">
       <div style="padding:10px 12px;background:var(--bg2);display:flex;justify-content:space-between;align-items:flex-start">
@@ -5137,6 +5132,7 @@ function checkPlanLimit(type){
 function getPlanBadge(plan, status){
   if(status === 'suspended') return '<span class="badge b-red">Suspendu</span>';
   if(status === 'expired')   return '<span class="badge b-gray">Expiré</span>';
+  if(status === 'signed')    return '<span class="badge b-green">✅ Client signé</span>';
   if(plan === 'pro')         return '<span class="badge b-green">Pro</span>';
   if(plan === 'starter')     return '<span class="badge b-blue">Starter</span>';
   return '<span class="badge b-amber">Gratuit</span>';
@@ -5248,6 +5244,7 @@ function editAdminPlan(userId, email, plan, status, expires, notes){
   document.getElementById('adm-email').readOnly = true;
   document.getElementById('adm-plan').value    = plan;
   document.getElementById('adm-status').value  = status;
+  document.getElementById('adm-status').dataset.prevStatus = status;
   document.getElementById('adm-expires').value = expires ? expires.split('T')[0] : '';
   document.getElementById('adm-notes').value   = notes;
   openModal('modal-add-plan');
@@ -5282,8 +5279,24 @@ async function saveAdminPlan(){
         return;
       }
     }
+    const prevStatus = document.getElementById('adm-status').dataset.prevStatus || '';
     await supabaseClient.from('user_plans').upsert(row, { onConflict: 'user_id' });
-    notify('✅ Plan mis à jour !');
+
+    // Envoyer email de bienvenue si passage en "Client signé"
+    if(status === 'signed' && prevStatus !== 'signed') {
+      try {
+        await fetch('/api/send-welcome-agency', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, companyName: document.getElementById('adm-notes').value.trim() || email.split('@')[0] })
+        });
+        notify('✅ Plan mis à jour + email de bienvenue envoyé !');
+      } catch(e) {
+        notify('✅ Plan mis à jour (email non envoyé : ' + e.message + ')');
+      }
+    } else {
+      notify('✅ Plan mis à jour !');
+    }
     closeModal('modal-add-plan');
     _editingUserId = null;
     document.getElementById('adm-email').readOnly = false;
