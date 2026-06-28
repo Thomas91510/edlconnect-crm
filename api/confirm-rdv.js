@@ -21,7 +21,10 @@ export default async function handler(req) {
   }
 
   try {
-    const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, message } = await req.json();
+    const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, locataires, message } = await req.json();
+    // Liste complète des locataires (principal + supplémentaires)
+    const allLocataires = locataires && locataires.length > 0 ? locataires : 
+      (locataireEmail ? [{ civilite: locataireCivilite||'', nom: locataireNom||'', tel:'', email: locataireEmail }] : []);
     const civilite = locataireCivilite || '';
     const isFemme = civilite === 'Mme';
     const isHomme = civilite === 'M.';
@@ -281,19 +284,26 @@ export default async function handler(req) {
       })
     }));
 
-    if(locataireEmail) {
+    // Envoyer à tous les locataires qui ont un email
+    allLocataires.forEach(loc => {
+      if(!loc.email) return;
+      const salutationLoc = loc.civilite && loc.nom ? loc.civilite + ' ' + loc.nom : loc.nom || '';
+      // Personnaliser le HTML pour ce locataire
+      const htmlPerso = locataireHtml
+        .replace(salutation ? salutation : '___NOREPLACE___', salutationLoc)
+        .replace(locataireNom || '___NOREPLACE___', loc.nom || '');
       emailsToSend.push(fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
           sender: { name: 'Thomas — EDLConnect', email: 'contact@edlconnect.fr' },
-          to: [{ email: locataireEmail, name: locataireNom || '' }],
+          to: [{ email: loc.email, name: (loc.civilite+' '+loc.nom).trim() || '' }],
           replyTo: { email: 'contact@edlconnect.fr', name: 'Thomas Langlade' },
           subject: sujetLocataire,
           htmlContent: locataireHtml
         })
       }));
-    }
+    });
 
     await Promise.all(emailsToSend);
 
