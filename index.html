@@ -1395,6 +1395,24 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <div style="background:var(--amber-bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--amber-text)">
       ⚡ <strong>Les emails seront envoyés immédiatement</strong> à l'agent et au locataire avec les informations ci-dessus.
     </div>
+    <div class="form-grid" style="margin-bottom:4px">
+      <div>
+        <label>📅 Date définitive *</label>
+        <input type="date" id="confirm-rdv-date">
+      </div>
+      <div>
+        <label>🕐 Heure définitive *</label>
+        <select id="confirm-rdv-heure">
+          <option value="">— Choisir —</option>
+          <option>08h00</option><option>08h30</option><option>09h00</option><option>09h30</option>
+          <option>10h00</option><option>10h30</option><option>11h00</option><option>11h30</option>
+          <option>12h00</option><option>13h00</option><option>13h30</option><option>14h00</option>
+          <option>14h30</option><option>15h00</option><option>15h30</option><option>16h00</option>
+          <option>16h30</option><option>17h00</option><option>17h30</option><option>18h00</option>
+          <option>18h30</option><option>19h00</option><option>19h30</option>
+        </select>
+      </div>
+    </div>
     <label>Email de l'agent <span style="color:var(--red)">*</span></label>
     <input type="email" id="confirm-rdv-agent-email" placeholder="agent@agence.fr" style="margin-bottom:10px">
     <label>Email du locataire</label>
@@ -5937,6 +5955,20 @@ function openConfirmRdvModal(missionId){
     </table>`;
 
   // Pré-remplir les emails
+  // Pré-remplir date et heure depuis la mission
+  if(m.date){
+    try{
+      const d = new Date(m.date);
+      const pad = n => String(n).padStart(2,'0');
+      document.getElementById('confirm-rdv-date').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+      const h = pad(d.getHours())+'h'+pad(d.getMinutes());
+      const heureEl = document.getElementById('confirm-rdv-heure');
+      // Chercher l'option la plus proche
+      const opts = [...heureEl.options].map(o => o.value);
+      if(opts.includes(h)) heureEl.value = h;
+      else heureEl.value = '';
+    }catch(e){}
+  }
   document.getElementById('confirm-rdv-agent-email').value = m.emailClient || contact?.email || '';
   document.getElementById('confirm-rdv-loc-email').value = m.locataireEmail || '';
   document.getElementById('confirm-rdv-loc-nom').value = m.locataireNom || '';
@@ -5960,13 +5992,25 @@ async function sendConfirmRdv(){
   btn.disabled = true;
   btn.innerHTML = '<i class="ti ti-loader"></i> Envoi en cours…';
 
+  // Construire la date/heure définitive depuis les champs de la modal
+  const rdvDate = document.getElementById('confirm-rdv-date').value;
+  const rdvHeure = document.getElementById('confirm-rdv-heure').value;
+  let rdvDatetime = m.date;
+  if(rdvDate){
+    const heureNum = rdvHeure ? rdvHeure.replace('h',':') : '09:00';
+    rdvDatetime = rdvDate + 'T' + heureNum + ':00';
+    // Mettre à jour la mission avec la date définitive
+    m.date = rdvDatetime;
+    saveToStorage();
+  }
+
   const payload = {
     mission: {
       id: m.id,
       agence: m.agence,
       type: m.type,
       adresse: m.adresse,
-      date: m.date,
+      date: rdvDatetime,
       bienType: m.bienType,
       bienTypo: m.bienTypo,
       bienMeuble: m.bienMeuble,
