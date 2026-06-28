@@ -9,41 +9,36 @@ export default async function handler(req) {
   const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
   if(!SUPABASE_SERVICE_KEY) {
-    return new Response(JSON.stringify({ error: 'Service key manquante' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'SUPABASE_SERVICE_KEY manquante' }), { status: 500 });
+  }
+  if(!SUPABASE_URL) {
+    return new Response(JSON.stringify({ error: 'SUPABASE_URL manquante' }), { status: 500 });
   }
 
   try {
-    // Lire TOUTES les missions avec la service key (bypass RLS)
-    let allRows = [];
-    let from = 0;
-    const pageSize = 1000;
-
-    while(true) {
-      const resp = await fetch(
-        `${SUPABASE_URL}/rest/v1/missions?select=id,data,user_id&range=${from}-${from + pageSize - 1}`,
-        {
-          headers: {
-            'apikey': SUPABASE_SERVICE_KEY,
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-            'Range-Unit': 'items'
-          }
-        }
-      );
-
-      if(!resp.ok) {
-        const err = await resp.text();
-        throw new Error('Supabase error: ' + err);
+    const url = `${SUPABASE_URL}/rest/v1/missions?select=id,data,user_id&limit=1000`;
+    
+    const resp = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json'
       }
+    });
 
-      const rows = await resp.json();
-      if(!rows || rows.length === 0) break;
-      allRows = allRows.concat(rows);
-      if(rows.length < pageSize) break;
-      from += pageSize;
+    if(!resp.ok) {
+      const errText = await resp.text();
+      return new Response(JSON.stringify({ 
+        error: 'Supabase error ' + resp.status, 
+        detail: errText,
+        url: url.replace(SUPABASE_URL, '[URL]')
+      }), { status: 500 });
     }
 
+    const rows = await resp.json();
+
     // Filtrer uniquement les missions venant du booking
-    const reservations = allRows
+    const reservations = (rows || [])
       .filter(r => r.data && r.data.source === 'booking')
       .map(r => ({ ...r.data, _supaId: r.id, _userId: r.user_id }));
 
