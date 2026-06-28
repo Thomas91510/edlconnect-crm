@@ -122,9 +122,8 @@ export default async function handler(req) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
       body: JSON.stringify({
-        sender: { name: 'Thomas — EDL IDF Expert en État des Lieux', email: 'contact@edlconnect.fr' },
+        sender: { name: 'Thomas — EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
         to: [{ email, name: companyName || email }],
-        replyTo: { email: 'contact@edl-idf.com', name: 'Thomas LANGLADE' },
         subject: `🤝 Bienvenue chez EDL IDF Expert en État des Lieux — Votre espace de réservation est prêt !`,
         htmlContent
       })
