@@ -21,7 +21,11 @@ export default async function handler(req) {
   }
 
   try {
-    const { mission, agentEmail, agentNom, locataireEmail, locataireNom, message } = await req.json();
+    const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, message } = await req.json();
+    const civilite = locataireCivilite || '';
+    const isFemme = civilite === 'Mme';
+    const isHomme = civilite === 'M.';
+    const salutation = civilite && locataireNom ? civilite + ' ' + locataireNom : (locataireNom || '');
 
     if(!agentEmail || !mission) {
       return new Response(JSON.stringify({ error: 'Données manquantes' }), { status: 400 });
@@ -37,212 +41,261 @@ export default async function handler(req) {
     const bien = [mission.bienType, mission.bienTypo, mission.bienMeuble].filter(Boolean).join(' · ') || 'Non précisé';
     const typeEdl = (mission.type || '').toLowerCase();
 
-    // ── Déterminer le type d'EDL ───────────────────────────
     const isEntrant = typeEdl.includes('entrant');
     const isSortant = typeEdl.includes('sortant') && !typeEdl.includes('entrant');
-    const isDoubleEdl = typeEdl.includes('sortant') && typeEdl.includes('entrant');
+    const isDouble = typeEdl.includes('sortant') && typeEdl.includes('entrant');
     const isPre = typeEdl.includes('pré') || typeEdl.includes('pre');
 
-    // ── EMAIL AGENT ────────────────────────────────────────
+    // ── EMAIL AGENT (identique pour tous les types) ────────
     const agentHtml = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px">
-    <div style="background:#E6F1FB;width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center">
-      <span style="font-size:16px;font-weight:700;color:#185FA5">ED</span>
-    </div>
-    <span style="color:#fff;font-size:18px;font-weight:700;margin-left:10px">EDLConnect</span>
+  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
+    <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <h2 style="font-size:20px;margin:0 0 6px 0">✅ Confirmation de votre état des lieux</h2>
-    <p style="color:#6b6b6b;margin-bottom:20px">Bonjour,<br><br>
-    Nous vous confirmons la réalisation de votre état des lieux aux conditions suivantes :</p>
-    <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:20px">
-      <div style="font-size:12px;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">📋 Détails de l'intervention</div>
-      <table style="width:100%;font-size:13px;border-collapse:collapse">
-        <tr><td style="color:#6b6b6b;padding:4px 0;width:35%">Type</td><td style="font-weight:600">${mission.type}</td></tr>
-        <tr><td style="color:#6b6b6b;padding:4px 0">Adresse</td><td style="font-weight:600">${mission.adresse}</td></tr>
-        <tr><td style="color:#6b6b6b;padding:4px 0">Bien</td><td>${bien}</td></tr>
-        <tr><td style="color:#6b6b6b;padding:4px 0">Date</td><td style="font-weight:600;color:#185FA5">${dateStr}</td></tr>
-        <tr><td style="color:#6b6b6b;padding:4px 0">Heure</td><td style="font-weight:600;color:#185FA5">${heureStr}</td></tr>
-        ${locataireNom ? `<tr><td style="color:#6b6b6b;padding:4px 0">Locataire</td><td>${locataireNom}</td></tr>` : ''}
-        ${mission.acces ? `<tr><td style="color:#6b6b6b;padding:4px 0">Accès</td><td>${mission.acces}</td></tr>` : ''}
-      </table>
-    </div>
-    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
+    <h2 style="font-size:20px;margin:0 0 16px 0">✅ Confirmation de votre état des lieux</h2>
+    <table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:20px">
+      <tr><td style="color:#6b6b6b;padding:5px 0;width:35%">Type</td><td style="font-weight:600">${mission.type}</td></tr>
+      <tr><td style="color:#6b6b6b;padding:5px 0">Adresse</td><td style="font-weight:600">${mission.adresse}</td></tr>
+      <tr><td style="color:#6b6b6b;padding:5px 0">Bien</td><td>${bien}</td></tr>
+      <tr><td style="color:#6b6b6b;padding:5px 0">Date</td><td style="font-weight:600;color:#185FA5">${dateStr}</td></tr>
+      <tr><td style="color:#6b6b6b;padding:5px 0">Heure</td><td style="font-weight:600;color:#185FA5">${heureStr}</td></tr>
+      ${locataireNom ? `<tr><td style="color:#6b6b6b;padding:5px 0">Locataire</td><td>${locataireNom}</td></tr>` : ''}
+      ${mission.acces ? `<tr><td style="color:#6b6b6b;padding:5px 0">Accès</td><td>${mission.acces}</td></tr>` : ''}
+    </table>
+    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
     <div style="background:#EAF3DE;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#27500A;line-height:1.7">
-      ✅ <strong>Notre expert sera présent à l'heure indiquée.</strong><br>
-      Le rapport vous sera transmis dans les <strong>24h</strong> avec signature électronique.
+      ✅ Notre expert sera présent à l'heure indiquée. Le rapport vous sera transmis dans les <strong>24h</strong> avec signature électronique.
     </div>
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
       <strong>Thomas Langlade — EDLConnect</strong><br>
-      📞 <a href="tel:0189291429" style="color:#185FA5">01 89 29 14 29</a> · 
+      📞 <a href="tel:0767630963" style="color:#185FA5">07 67 63 09 63</a> · 
       ✉️ <a href="mailto:contact@edlconnect.fr" style="color:#185FA5">contact@edlconnect.fr</a>
     </div>
   </div>
 </div>
 </body></html>`;
 
-    // ── EMAIL LOCATAIRE — contenu selon type d'EDL ─────────
-
-    // Bloc "à prévoir" selon le type
-    let titreEmail, introLocataire, blocPrevoir, blocInfo;
-
-    if(isEntrant) {
-      titreEmail = `🔑 Bienvenue — État des lieux d'entrée`;
-      introLocataire = `Bonjour${locataireNom ? ' <strong>' + locataireNom + '</strong>' : ''},<br><br>
-      Nous vous convoquons pour la réalisation de votre <strong>état des lieux d'entrée</strong>. Cet état des lieux marque officiellement le début de votre location.`;
-      blocPrevoir = `
-        <div style="background:#EAF3DE;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#27500A;line-height:1.9">
-          <strong>🔑 Ce que vous devez prévoir pour l'entrée :</strong><br>
-          ✓ Une pièce d'identité valide<br>
-          ✓ Votre contrat de bail signé<br>
-          ✓ Un justificatif d'assurance habitation <strong>(obligatoire)</strong><br>
-          ✓ Vos coordonnées bancaires pour le dépôt de garantie<br>
-          ✓ Stylo pour signer le rapport
-        </div>
-        <div style="background:#E6F1FB;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:1.7">
-          💡 <strong>Conseil :</strong> Relevez tous les compteurs (eau, gaz, électricité) dès votre arrivée et photographiez chaque pièce. Ces preuves vous seront utiles lors de votre sortie.
-        </div>`;
-      blocInfo = `L'expert EDLConnect réalisera un tour complet du logement avec vous. Le rapport détaillé vous sera transmis par email dans les <strong>24h</strong> avec votre signature électronique.`;
-    } else if(isSortant) {
-      titreEmail = `🚪 État des lieux de sortie — Préparez votre départ`;
-      introLocataire = `Bonjour${locataireNom ? ' <strong>' + locataireNom + '</strong>' : ''},<br><br>
-      Nous vous convoquons pour la réalisation de votre <strong>état des lieux de sortie</strong>. Cet état des lieux déterminera la restitution de votre dépôt de garantie.`;
-      blocPrevoir = `
-        <div style="background:#FAEEDA;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.9">
-          <strong>🚪 Ce que vous devez préparer pour votre sortie :</strong><br>
-          ✓ <strong>Toutes les clés du logement</strong> (boîte aux lettres, cave, parking inclus)<br>
-          ✓ Les relevés de compteurs (eau froide/chaude, gaz, électricité)<br>
-          ✓ Le logement entièrement <strong>vidé et nettoyé</strong><br>
-          ✓ Les équipements en état de fonctionnement<br>
-          ✓ Votre adresse de réexpédition du courrier<br>
-          ✓ Un RIB pour la restitution du dépôt de garantie
-        </div>
-        <div style="background:#FCEBEB;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#791F1F;line-height:1.7">
-          ⚠️ <strong>Important :</strong> Tout défaut non signalé lors de l'état des lieux d'entrée et constaté à la sortie pourra être imputé sur votre dépôt de garantie. Anticipez les petites réparations (trous, peinture, joints...).
-        </div>`;
-      blocInfo = `L'expert EDLConnect comparera l'état actuel du logement avec celui de votre entrée. Le rapport comparatif vous sera transmis dans les <strong>24h</strong> avec mention des éventuelles différences constatées.`;
-    } else if(isDoubleEdl) {
-      titreEmail = `🔄 État des lieux sortant/entrant`;
-      introLocataire = `Bonjour${locataireNom ? ' <strong>' + locataireNom + '</strong>' : ''},<br><br>
-      Nous vous convoquons pour la réalisation de votre <strong>état des lieux</strong>.`;
-      blocPrevoir = `
-        <div style="background:#FAEEDA;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.9">
-          <strong>📋 Ce que vous devez prévoir :</strong><br>
-          ✓ Une pièce d'identité valide<br>
-          ✓ Toutes les clés du logement<br>
-          ✓ Les relevés de compteurs<br>
-          ✓ Votre contrat de bail (si entrant)<br>
-          ✓ Justificatif d'assurance habitation (si entrant)
-        </div>`;
-      blocInfo = `Le rapport vous sera transmis dans les <strong>24h</strong> avec signature électronique.`;
-    } else {
-      // Pré-état des lieux
-      titreEmail = `🔍 Pré-état des lieux — Anticipez votre sortie`;
-      introLocataire = `Bonjour${locataireNom ? ' <strong>' + locataireNom + '</strong>' : ''},<br><br>
-      Nous vous convoquons pour la réalisation de votre <strong>pré-état des lieux</strong>. Cette visite préventive vous permet d'anticiper les travaux à réaliser avant votre départ officiel.`;
-      blocPrevoir = `
-        <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:1.9">
-          <strong>🔍 Comment profiter au mieux du pré-état des lieux :</strong><br>
-          ✓ Notez toutes vos questions sur l'état du logement<br>
-          ✓ Identifiez les éventuels dommages à réparer avant la sortie<br>
-          ✓ Comparez avec votre état des lieux d'entrée si possible<br>
-          ✓ Demandez conseil à l'expert sur les réparations prioritaires
-        </div>
-        <div style="background:#EAF3DE;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#27500A;line-height:1.7">
-          💡 <strong>Bon à savoir :</strong> Le pré-état des lieux n'a pas de valeur contractuelle. Il vous donne simplement le temps d'effectuer les réparations nécessaires avant l'état des lieux officiel de sortie.
-        </div>`;
-      blocInfo = `Un compte-rendu de visite vous sera transmis dans les <strong>24h</strong> avec les points de vigilance identifiés.`;
-    }
-
-    const locataireHtml = `<!DOCTYPE html>
+    // ── EMAIL LOCATAIRE — EDL ENTRANT ──────────────────────
+    const locataireEntrantHtml = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px">
-    <div style="background:#E6F1FB;width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center">
-      <span style="font-size:16px;font-weight:700;color:#185FA5">ED</span>
-    </div>
-    <span style="color:#fff;font-size:18px;font-weight:700;margin-left:10px">EDLConnect</span>
+  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
+    <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <h2 style="font-size:20px;margin:0 0 6px 0">${titreEmail}</h2>
-    <p style="color:#6b6b6b;margin-bottom:20px;line-height:1.7">${introLocataire}</p>
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + salutation + '</strong>' : ''},</p>
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
+      Je vous confirme notre rendez-vous pour l'état des lieux d'entrée de votre logement situé au :
+    </p>
 
-    <div style="background:#185FA5;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center">
-      <div style="color:rgba(255,255,255,0.8);font-size:12px;margin-bottom:4px">📅 Votre rendez-vous</div>
-      <div style="color:#fff;font-size:18px;font-weight:700">${dateStr}</div>
-      <div style="color:#E6F1FB;font-size:16px;font-weight:600">🕐 ${heureStr}</div>
-      <div style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:6px">📍 ${mission.adresse}</div>
+    <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
+      📍 <strong>${mission.adresse}</strong><br>
+      🏠 Type de bien : <strong>${bien}</strong><br>
+      📅 Date et heure : <strong>${dateStr} à ${heureStr}</strong><br>
+      ⏱️ Durée estimée : environ 60 à 90 minutes
     </div>
 
-    ${blocPrevoir}
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
+      Nous intervenons en tant que mandataires de la société <strong>${mission.agence}</strong>.
+    </p>
 
-    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message de votre expert :</strong><br>${message}</div>` : ''}
-
-    <div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#555;line-height:1.7">
-      ℹ️ ${blocInfo}
+    <div style="background:#f8f8f6;border-radius:8px;padding:16px;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:10px">📋 Merci de bien vouloir vous munir des documents suivants le jour du rendez-vous :</div>
+      <div style="font-size:13px;color:#444;line-height:2">
+        • 🪪 Votre pièce d'identité<br>
+        • 🛡️ Votre attestation d'assurance habitation <strong>(obligatoire avant la remise des clés)</strong>
+      </div>
     </div>
 
-    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
-      <strong>EDLConnect</strong> — Mandaté par <strong>${mission.agence}</strong><br>
-      📞 <a href="tel:0189291429" style="color:#185FA5;text-decoration:none">01 89 29 14 29</a> · 
-      ✉️ <a href="mailto:contact@edlconnect.fr" style="color:#185FA5;text-decoration:none">contact@edlconnect.fr</a>
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
+      Nous comptons sur votre ponctualité afin d'assurer le bon déroulement de l'état des lieux. 🙏
+    </p>
+
+    ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
+
+    <div style="border-top:1px dashed #e5e5e2;margin:20px 0;padding-top:20px">
+      <div style="font-size:13px;font-weight:700;color:#185FA5;margin-bottom:8px">💡 Astuce pour votre emménagement :</div>
+      <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 8px 0">
+        Afin de vous accompagner dans vos démarches (ouverture de compteurs, changement d'adresse, etc.), découvrez les services gratuits de BeMove :
+      </p>
+      <a href="https://www.bemove.fr/landing/immobilier/edl-idf/services" style="display:inline-block;background:#185FA5;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">
+        👉 Découvrir BeMove
+      </a>
+    </div>
+
+    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;margin-top:20px;line-height:1.8">
+      En cas d'empêchement ou pour toute question, n'hésitez pas à me contacter :<br>
+      📞 <a href="tel:0767630963" style="color:#185FA5;text-decoration:none">07 67 63 09 63</a><br>
+      ✉️ Par retour de mail<br><br>
+      Dans l'attente de vous rencontrer,<br>
+      Cordialement,<br>
+      <strong>Thomas LANGLADE</strong>
     </div>
   </div>
 </div>
 </body></html>`;
 
-    // ── Envoi des emails ───────────────────────────────────
-    const emails = [];
+    // ── EMAIL LOCATAIRE — EDL SORTANT ──────────────────────
+    const locataireSortantHtml = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:20px 0">
+  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
+    <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
+  </div>
+  <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">${civilite && locataireNom ? '<strong>' + civilite + ' ' + locataireNom + '</strong>,' : locataireNom ? 'Bonjour <strong>' + locataireNom + '</strong>,' : 'Madame, Monsieur,'}</p>
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
+      Suite à notre conversation, nous vous confirmons le rendez-vous pour effectuer l'état des lieux de sortie de votre logement, diligenté par <strong>${mission.agence}</strong>.
+    </p>
 
-    // Email agent
-    emails.push(fetch('https://api.brevo.com/v3/smtp/email', {
+    <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:24px;font-size:13px;color:#0C447C;line-height:2">
+      📅 Date : <strong>${dateStr}</strong><br>
+      🕘 Heure : <strong>${heureStr}</strong><br>
+      📍 Adresse : <strong>${mission.adresse}</strong>
+    </div>
+
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
+      Afin que l'état des lieux se déroule dans les meilleures conditions et conformément à la législation, nous vous remercions de bien vouloir respecter les points suivants :
+    </p>
+
+    <div style="margin-bottom:16px">
+      <div style="background:#FFF3CD;border-left:4px solid #FFA500;border-radius:0 8px 8px 0;padding:14px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:6px">📦 1. Le logement doit être entièrement vide</div>
+        <div style="font-size:13px;color:#444;line-height:1.7">
+          Tous vos meubles et effets personnels doivent avoir été déménagés. Aucun objet ne doit rester dans l'appartement, la cave, le garage ou le grenier.
+        </div>
+      </div>
+
+      <div style="background:#FFF3CD;border-left:4px solid #FFA500;border-radius:0 8px 8px 0;padding:14px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:6px">🧹 2. Le logement doit être parfaitement nettoyé</div>
+        <div style="font-size:13px;color:#444;line-height:1.7">
+          Cela inclut :<br>
+          • Les sols (aspirés et lavés)<br>
+          • Les murs (lessivés si nécessaire)<br>
+          • Les vitres et encadrements de fenêtres<br>
+          • La cuisine (plaques de cuisson, hotte, four, évier, placards)<br>
+          • La salle de bain (sanitaires, joints, aération)<br>
+          • Les balcons et terrasses
+        </div>
+      </div>
+
+      <div style="background:#FFF3CD;border-left:4px solid #FFA500;border-radius:0 8px 8px 0;padding:14px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:6px">🔑 3. L'ensemble des clés doit être restitué</div>
+        <div style="font-size:13px;color:#444;line-height:1.7">
+          Merci de préparer toutes les clés du logement, de la boîte aux lettres, de la cave, du garage, ainsi que les badges d'accès et les télécommandes.
+        </div>
+      </div>
+    </div>
+
+    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
+
+    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
+      Pour toute question ou en cas d'empêchement majeur, n'hésitez pas à nous contacter :<br>
+      📞 <a href="tel:0767630963" style="color:#185FA5;text-decoration:none">07 67 63 09 63</a><br>
+      ✉️ Par retour de mail<br><br>
+      Cordialement,<br>
+      <strong>Thomas LANGLADE</strong>
+    </div>
+  </div>
+</div>
+</body></html>`;
+
+    // ── EMAIL LOCATAIRE — PRÉ-ÉTAT DES LIEUX ──────────────
+    const locatairePreHtml = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:20px 0">
+  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
+    <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
+  </div>
+  <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">${civilite && locataireNom ? '<strong>' + civilite + ' ' + locataireNom + '</strong>,' : locataireNom ? 'Bonjour <strong>' + locataireNom + '</strong>,' : 'Madame, Monsieur,'}</p>
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
+      Nous vous confirmons le rendez-vous pour votre <strong>pré-état des lieux</strong>, diligenté par <strong>${mission.agence}</strong>.<br>
+      Cette visite préventive vous permettra d'anticiper les travaux à réaliser avant votre départ officiel.
+    </p>
+
+    <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
+      📅 Date : <strong>${dateStr}</strong><br>
+      🕘 Heure : <strong>${heureStr}</strong><br>
+      📍 Adresse : <strong>${mission.adresse}</strong>
+    </div>
+
+    <div style="background:#EAF3DE;border-radius:8px;padding:16px;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:#27500A;margin-bottom:8px">💡 Comment profiter au mieux de cette visite :</div>
+      <div style="font-size:13px;color:#27500A;line-height:1.9">
+        ✓ Notez toutes vos questions sur l'état du logement<br>
+        ✓ Identifiez les éventuels dommages à réparer avant la sortie<br>
+        ✓ Comparez avec votre état des lieux d'entrée si possible<br>
+        ✓ Demandez conseil à l'expert sur les réparations prioritaires
+      </div>
+    </div>
+
+    <div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#555;line-height:1.7">
+      ℹ️ <strong>Bon à savoir :</strong> Le pré-état des lieux n'a pas de valeur contractuelle. Il vous donne simplement le temps d'effectuer les réparations nécessaires avant l'état des lieux officiel de sortie.
+    </div>
+
+    ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
+
+    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
+      Pour toute question, n'hésitez pas à nous contacter :<br>
+      📞 <a href="tel:0767630963" style="color:#185FA5;text-decoration:none">07 67 63 09 63</a><br>
+      ✉️ Par retour de mail<br><br>
+      Cordialement,<br>
+      <strong>Thomas LANGLADE</strong>
+    </div>
+  </div>
+</div>
+</body></html>`;
+
+    // ── Choisir le bon template locataire ──────────────────
+    let locataireHtml, sujetLocataire;
+    if(isEntrant) {
+      locataireHtml = locataireEntrantHtml;
+      sujetLocataire = `🔑 Confirmation état des lieux d'entrée — ${dateStr} à ${heureStr}`;
+    } else if(isSortant || isDouble) {
+      locataireHtml = locataireSortantHtml;
+      sujetLocataire = `🚪 Confirmation état des lieux de sortie — ${dateStr} à ${heureStr}`;
+    } else {
+      locataireHtml = locatairePreHtml;
+      sujetLocataire = `🔍 Confirmation pré-état des lieux — ${dateStr} à ${heureStr}`;
+    }
+
+    // ── Envoi des emails ───────────────────────────────────
+    const emailsToSend = [];
+
+    emailsToSend.push(fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
       body: JSON.stringify({
         sender: { name: 'Thomas — EDLConnect', email: 'contact@edlconnect.fr' },
         to: [{ email: agentEmail }],
-        replyTo: { email: 'contact@edlconnect.fr', name: 'Thomas Langlade — EDLConnect' },
+        replyTo: { email: 'contact@edlconnect.fr', name: 'Thomas Langlade' },
         subject: `✅ Confirmation EDL — ${mission.type} · ${dateStr} · ${mission.adresse}`,
-        htmlContent: agentHtml,
-        headers: {
-          'X-Mailer': 'EDLConnect',
-          'List-Unsubscribe': '<mailto:contact@edlconnect.fr>'
-        }
+        htmlContent: agentHtml
       })
     }));
 
-    // Email locataire
     if(locataireEmail) {
-      const sujetLocataire = isEntrant
-        ? `🔑 Convocation état des lieux d'entrée — ${dateStr} à ${heureStr}`
-        : isSortant
-        ? `🚪 Convocation état des lieux de sortie — ${dateStr} à ${heureStr}`
-        : isPre
-        ? `🔍 Convocation pré-état des lieux — ${dateStr} à ${heureStr}`
-        : `📋 Convocation état des lieux — ${dateStr} à ${heureStr}`;
-
-      emails.push(fetch('https://api.brevo.com/v3/smtp/email', {
+      emailsToSend.push(fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
           sender: { name: 'Thomas — EDLConnect', email: 'contact@edlconnect.fr' },
           to: [{ email: locataireEmail, name: locataireNom || '' }],
-          replyTo: { email: 'contact@edlconnect.fr', name: 'Thomas Langlade — EDLConnect' },
+          replyTo: { email: 'contact@edlconnect.fr', name: 'Thomas Langlade' },
           subject: sujetLocataire,
-          htmlContent: locataireHtml,
-          headers: {
-            'X-Mailer': 'EDLConnect',
-            'List-Unsubscribe': '<mailto:contact@edlconnect.fr>'
-          }
+          htmlContent: locataireHtml
         })
       }));
     }
 
-    await Promise.all(emails);
+    await Promise.all(emailsToSend);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
