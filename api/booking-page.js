@@ -182,8 +182,19 @@ textarea{min-height:75px;resize:vertical}
       <div class="card-head"><i class="ti ti-user"></i>Locataire</div>
       <div class="card-body">
         <div class="form-row">
+          <div>
+            <label>Civilité <span class="req">*</span></label>
+            <select id="loc-civilite">
+              <option value="">— Choisir —</option>
+              <option value="M.">M. (Monsieur)</option>
+              <option value="Mme">Mme (Madame)</option>
+            </select>
+          </div>
           <div><label>Nom complet <span class="req">*</span></label><input type="text" id="loc-nom" placeholder="Jean Martin"></div>
+        </div>
+        <div class="form-row">
           <div><label>Téléphone <span class="req">*</span></label><input type="tel" id="loc-tel" placeholder="06 12 34 56 78"></div>
+          <div></div>
         </div>
         <label>Email du locataire</label>
         <input type="email" id="loc-email" placeholder="jean.martin@email.fr">
@@ -281,6 +292,8 @@ function buildRecap(){
 async function submit(){
   const locNom = document.getElementById('loc-nom').value.trim();
   const locTel = document.getElementById('loc-tel').value.trim();
+  const locCivilite = document.getElementById('loc-civilite').value;
+  if(!locCivilite) return showErr('La civilité du locataire est requise.');
   if(!locNom) return showErr('Le nom du locataire est requis.');
   if(!locTel) return showErr('Le téléphone du locataire est requis.');
   const btn = document.getElementById('submit-btn');
@@ -300,7 +313,12 @@ async function submit(){
     dateSouhaitee: document.getElementById('date').value,
     heure: document.getElementById('heure').value,
     notes: document.getElementById('notes').value.trim(),
-    locataire: { nom: locNom, tel: locTel, email: document.getElementById('loc-email').value.trim() }
+    locataire: { 
+      civilite: document.getElementById('loc-civilite').value,
+      nom: locNom, 
+      tel: locTel, 
+      email: document.getElementById('loc-email').value.trim() 
+    }
   };
   try {
     const resp = await fetch('/api/booking-request', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
