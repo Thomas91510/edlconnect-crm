@@ -5888,13 +5888,78 @@ function renderReservations(list){
       <td style="font-size:11px;font-weight:600;color:var(--blue)">${dateSouhaitee}</td>
       <td style="font-size:11px">${locataire}</td>
       <td>${statut}</td>
-      <td>
-        <button class="btn btn-sm" onclick="createMissionFromReservation('${r.id || r._supaId}')" title="Créer la mission dans le CRM" style="padding:3px 7px;background:var(--green-bg);color:var(--green-text);border-color:var(--green);font-size:10px">
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="confirmRdvFromReservation('${r.id || r._supaId}')" title="Confirmer le RDV et envoyer les convocations" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
+          <i class="ti ti-calendar-check" style="font-size:11px"></i> Confirmer
+        </button>
+        <button class="btn btn-sm" onclick="createMissionFromReservation('${r.id || r._supaId}')" title="Importer dans Missions EDL" style="padding:3px 7px;background:var(--green-bg);color:var(--green-text);border-color:var(--green);font-size:10px">
           <i class="ti ti-plus" style="font-size:11px"></i> Importer
         </button>
       </td>
     </tr>`;
   }).join('');
+}
+
+function confirmRdvFromReservation(id){
+  const r = _allReservations.find(x => (x.id || x._supaId) === id);
+  if(!r){ notify('Réservation introuvable', 'warn'); return; }
+
+  // Créer un objet mission temporaire depuis la réservation
+  const tempMission = {
+    id: r.id || r._supaId,
+    agence: r.agence || '',
+    emailClient: r.email || '',
+    type: r.typeEdl || r.type || 'EDL entrant',
+    adresse: r.adresse || '',
+    bienType: r.bienType || '',
+    bienTypo: r.bienTypo || '',
+    bienMeuble: r.meuble || '',
+    acces: r.acces || '',
+    date: r.dateSouhaitee || '',
+    locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
+    locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
+    locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
+    locataireCivilite: r.locataireCivilite || (r.locataire && r.locataire.civilite) || '',
+    locataires: r.locataires || []
+  };
+
+  // Stocker temporairement et ouvrir la modal
+  _confirmRdvMissionId = '__resa__' + id;
+  window._tempResaMission = tempMission;
+  window._tempResaId = id;
+
+  // Remplir la modal
+  const dateObj = r.dateSouhaitee ? new Date(r.dateSouhaitee) : null;
+  const dateStr = dateObj ? dateObj.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '—';
+  const bien = [r.bienType, r.bienTypo, r.meuble].filter(Boolean).join(' · ') || '—';
+
+  document.getElementById('confirm-rdv-recap').innerHTML = `
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue)">📋 ${tempMission.type} — ${tempMission.agence}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${tempMission.adresse||'—'}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${bien}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date souhaitée</td><td style="font-weight:600">${dateStr}</td></tr>
+    </table>`;
+
+  // Pré-remplir date/heure
+  if(r.dateSouhaitee){
+    const d = new Date(r.dateSouhaitee);
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('confirm-rdv-date').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  }
+  document.getElementById('confirm-rdv-heure').value = r.heure || '';
+  document.getElementById('confirm-rdv-agent-email').value = r.email || '';
+  document.getElementById('confirm-rdv-loc-email').value = tempMission.locataireEmail;
+  document.getElementById('confirm-rdv-loc-nom').value = tempMission.locataireNom;
+  const civEl = document.getElementById('confirm-rdv-civilite');
+  if(civEl) civEl.value = tempMission.locataireCivilite || '';
+  document.getElementById('confirm-rdv-message').value = '';
+
+  const btn = document.getElementById('confirm-rdv-btn');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-send"></i> Envoyer les confirmations';
+
+  openModal('modal-confirm-rdv');
 }
 
 function createMissionFromReservation(id){
@@ -6013,7 +6078,13 @@ function openConfirmRdvModal(missionId){
 }
 
 async function sendConfirmRdv(){
-  const m = DB.missions.find(x => x.id === _confirmRdvMissionId);
+  // Gérer le cas réservation directe (sans mission importée)
+  let m;
+  if(_confirmRdvMissionId && _confirmRdvMissionId.startsWith('__resa__')) {
+    m = window._tempResaMission;
+  } else {
+    m = DB.missions.find(x => x.id === _confirmRdvMissionId);
+  }
   if(!m) return;
 
   const agentEmail = document.getElementById('confirm-rdv-agent-email').value.trim();
@@ -6063,13 +6134,28 @@ async function sendConfirmRdv(){
     });
 
     if(resp.ok){
-      // Mettre à jour le statut de la mission
-      m.rdvConfirme = true;
-      m.rdvConfirmeAt = new Date().toISOString();
-      saveToStorage();
+      if(_confirmRdvMissionId && _confirmRdvMissionId.startsWith('__resa__')) {
+        // Marquer la réservation comme confirmée dans Supabase
+        const resaId = window._tempResaId;
+        const r = _allReservations.find(x => (x.id || x._supaId) === resaId);
+        if(r && _supaReady) {
+          const updatedData = { ...r, rdvConfirme: true, rdvConfirmeAt: new Date().toISOString() };
+          supabaseClient.from('bookings').update({
+            data: updatedData, updated_at: new Date().toISOString()
+          }).eq('id', r._supaId || r.id).then(() => {
+            _allReservations = _allReservations.filter(x => (x.id||x._supaId) !== resaId);
+            updateReservationsKPIs();
+            filterReservations();
+          });
+        }
+      } else {
+        m.rdvConfirme = true;
+        m.rdvConfirmeAt = new Date().toISOString();
+        saveToStorage();
+        renderMissions();
+      }
       closeModal('modal-confirm-rdv');
       notify('✅ Confirmations envoyées à l\'agent et au locataire !');
-      renderMissions();
     } else {
       const err = await resp.json();
       notify('❌ Erreur : ' + (err.error || 'Envoi impossible'), 'err');
