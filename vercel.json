@@ -17,6 +17,8 @@
     { "source": "/api/send-welcome", "destination": "/api/send-welcome.js" },
     { "source": "/api/cron-trial", "destination": "/api/cron-trial.js" },
     { "source": "/api/config", "destination": "/api/config.js" },
+    { "source": "/api/booking-request", "destination": "/api/booking-request.js" },
+    { "source": "/booking", "destination": "/booking.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
