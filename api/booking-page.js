@@ -82,7 +82,7 @@ textarea{min-height:75px;resize:vertical}
   </div>
   <div style="margin-left:auto;font-size:11px;color:var(--text2);text-align:right">
     📞 <a href="tel:0189291429" style="color:var(--blue);text-decoration:none">01 89 29 14 29</a><br>
-    <span style="font-size:10px">Lun–Sam · 8h–20h</span>
+    <span style="font-size:10px">Lun–Sam · 9h–19h30</span>
   </div>
 </div>
 
@@ -215,7 +215,7 @@ textarea{min-height:75px;resize:vertical}
   </div>
 
   <div class="footer">
-    <strong>EDLConnect</strong> — Expert en état des lieux en Île-de-France<br>
+    <strong>EDLConnect</strong> — Expert en État des Lieux<br>
     <a href="mailto:contact@edlconnect.fr" style="color:var(--blue)">contact@edlconnect.fr</a> · <a href="tel:0189291429" style="color:var(--blue)">01 89 29 14 29</a>
   </div>
 
@@ -328,4 +328,3 @@ async function submit(){
     headers: { 'Content-Type': 'text/html; charset=utf-8' }
   });
 }
-
