@@ -5714,21 +5714,15 @@ async function loadReservations(){
   document.getElementById('resa-table-wrap').style.display = 'none';
 
   try {
-    // Lire TOUTES les missions avec source = booking via service key
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/missions?select=id,data,user_id&order=updated_at.desc`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-      }
+    // Lire les réservations booking via l'API dédiée
+    const resp = await fetch('/api/get-reservations', {
+      headers: { 'Content-Type': 'application/json' }
     });
 
-    if(!resp.ok) throw new Error('Erreur Supabase');
+    if(!resp.ok) throw new Error('Erreur chargement réservations');
     const rows = await resp.json();
 
-    // Filtrer uniquement les missions venant du booking
-    _allReservations = rows
-      .filter(r => r.data && r.data.source === 'booking')
-      .map(r => ({ ...r.data, _supaId: r.id, _userId: r.user_id }))
+    _allReservations = (rows || [])
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     updateReservationsKPIs();
