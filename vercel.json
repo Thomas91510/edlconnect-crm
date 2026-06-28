@@ -19,8 +19,8 @@
     { "source": "/api/config", "destination": "/api/config.js" },
     { "source": "/api/booking-request", "destination": "/api/booking-request.js" },
     { "source": "/api/booking-page", "destination": "/api/booking-page.js" },
-    { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/api/confirm-rdv", "destination": "/api/confirm-rdv.js" },
+    { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
