@@ -21,7 +21,12 @@ export default async function handler(req) {
   }
 
   try {
-    const { email, companyName } = await req.json();
+    const { email, companyName, agencyId } = await req.json();
+    // Générer le lien booking personnalisé
+    const agencySlug = (companyName||'').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    const bookingLink = `https://app.edlconnect.fr/booking?agency=${agencySlug}&name=${encodeURIComponent(companyName||'')}`;
     if(!email) return new Response(JSON.stringify({ error: 'Email requis' }), { status: 400 });
 
     const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -69,12 +74,18 @@ export default async function handler(req) {
                   ✅ Connectez Brevo pour l'envoi d'emails
                 </div>
               </div>
-              <div style="text-align:center;margin-bottom:24px">
+              <div style="text-align:center;margin-bottom:20px">
                 <a href="https://app.edlconnect.fr" 
                    style="background:#185FA5;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;display:inline-block">
                   Accéder à mon CRM →
                 </a>
               </div>
+              ${companyName ? `
+              <div style="background:#EAF3DE;border-radius:8px;padding:16px;margin-bottom:20px">
+                <div style="font-weight:600;color:#3B6D11;margin-bottom:6px">🔗 Votre lien de réservation personnalisé</div>
+                <div style="font-size:12px;color:#27500A;margin-bottom:10px">Partagez ce lien à vos agences pour qu'elles puissent faire leurs demandes d'état des lieux directement :</div>
+                <a href="${bookingLink}" style="display:block;background:#fff;border:1px solid #3B6D11;border-radius:6px;padding:10px 14px;font-size:11px;color:#185FA5;text-decoration:none;word-break:break-all">${bookingLink}</a>
+              </div>` : ''}
               <div style="background:#f8f8f6;border-radius:8px;padding:14px;font-size:13px;color:#6b6b6b;line-height:1.7">
                 <strong>Une question ?</strong> Je suis disponible pour vous aider à bien démarrer.<br>
                 📞 <a href="tel:0185460033" style="color:#185FA5">01 85 46 00 33</a> · 
