@@ -75,7 +75,7 @@ export default async function handler(req) {
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
       <strong>Thomas Langlade — EDLConnect</strong><br>
       📞 <a href="tel:0767630963" style="color:#185FA5">07 67 63 09 63</a> · 
-      ✉️ <a href="mailto:contact@edlconnect.fr" style="color:#185FA5">contact@edlconnect.fr</a>
+      ✉️ <a href="mailto:contact@edl-idf.com" style="color:#185FA5">contact@edl-idf.com</a>
     </div>
   </div>
 </div>
@@ -276,9 +276,9 @@ export default async function handler(req) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
       body: JSON.stringify({
-        sender: { name: 'Thomas — EDLConnect', email: 'contact@edlconnect.fr' },
+        sender: { name: 'Thomas — EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
         to: [{ email: agentEmail }],
-        replyTo: { email: 'contact@edlconnect.fr', name: 'Thomas Langlade' },
+        replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
         subject: `✅ Confirmation EDL — ${mission.type} · ${dateStr} · ${mission.adresse}`,
         htmlContent: agentHtml
       })
@@ -296,9 +296,9 @@ export default async function handler(req) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
-          sender: { name: 'Thomas — EDLConnect', email: 'contact@edlconnect.fr' },
+          sender: { name: 'Thomas — EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
           to: [{ email: loc.email, name: (loc.civilite+' '+loc.nom).trim() || '' }],
-          replyTo: { email: 'contact@edlconnect.fr', name: 'Thomas Langlade' },
+          replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
           subject: sujetLocataire,
           htmlContent: locataireHtml
         })
