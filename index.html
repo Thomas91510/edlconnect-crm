@@ -6145,7 +6145,7 @@ function confirmRdvFromReservation(id){
     bienTypo: r.bienTypo || '',
     bienMeuble: r.meuble || '',
     acces: r.acces || '',
-    date: r.dateSouhaitee || '',
+    date: r.rdvDatetime || r.dateSouhaitee || '',
     locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
     locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
     locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
@@ -6209,7 +6209,7 @@ function createMissionFromReservation(id){
     bienMeuble: r.meuble || '',
     acces: r.acces || '',
     type: r.typeEdl || r.type || 'EDL entrant',
-    date: r.dateSouhaitee || '',
+    date: r.rdvDatetime || r.dateSouhaitee || '',
     montant: 0,
     statut: 'planifiée',
     locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
@@ -6369,7 +6369,7 @@ async function sendConfirmRdv(){
         const resaId = window._tempResaId;
         const r = _allReservations.find(x => (x.id || x._supaId) === resaId);
         if(r && _supaReady) {
-          const updatedData = { ...r, rdvConfirme: true, rdvConfirmeAt: new Date().toISOString() };
+          const updatedData = { ...r, rdvConfirme: true, rdvConfirmeAt: new Date().toISOString(), rdvDatetime: rdvDatetime, rdvHeure: rdvHeure };
           supabaseClient.from('bookings').update({
             data: updatedData, updated_at: new Date().toISOString()
           }).eq('id', r._supaId || r.id).then(() => {
