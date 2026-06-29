@@ -38,7 +38,13 @@ export default async function handler(req) {
   <!-- Header -->
   <div style="background:#185FA5;padding:24px;border-radius:12px 12px 0 0;text-align:center">
     <div style="background:#E6F1FB;display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:12px;margin-bottom:10px">
-      <span style="font-size:20px;font-weight:700;color:#185FA5;letter-spacing:-1px">ED</span>
+      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
+        <tr>
+          <td style="padding:0;line-height:1"><span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:#185FA5;letter-spacing:-1px">E</span></td>
+          <td style="padding:0 0 0 1px;line-height:1"><span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:#185FA5">D</span></td>
+          <td style="padding:0 0 4px 2px;vertical-align:bottom;line-height:1"><span style="display:inline-block;width:8px;height:14px;border:2.5px solid #185FA5;border-left:none;border-radius:0 6px 6px 0"></span></td>
+        </tr>
+      </table>
     </div>
     <div style="color:#fff;font-size:20px;font-weight:700">EDL IDF Expert en État des Lieux</div>
     <div style="color:rgba(255,255,255,0.75);font-size:12px;margin-top:4px">Votre partenaire état des lieux en Île-de-France</div>
