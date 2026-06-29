@@ -110,7 +110,16 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
+  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px">
+    <div style="background:#E6F1FB;width:44px;height:44px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
+      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
+        <tr>
+          <td style="padding:0;line-height:1"><span style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#185FA5;letter-spacing:-1px">E</span></td>
+          <td style="padding:0;line-height:1"><span style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#185FA5">D</span></td>
+          <td style="padding:0 0 3px 1px;vertical-align:bottom;line-height:1"><span style="display:inline-block;width:6px;height:11px;border:2px solid #185FA5;border-left:none;border-radius:0 4px 4px 0"></span></td>
+        </tr>
+      </table>
+    </div>
     <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
