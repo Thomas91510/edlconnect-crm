@@ -276,7 +276,7 @@ export default async function handler(req) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
       body: JSON.stringify({
-        sender: { name: 'Thomas — EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
+        sender: { name: 'Thomas — EDL IDF', email: 'contact@edl-idf.com' },
         to: [{ email: agentEmail }],
         replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
         subject: `✅ Confirmation EDL — ${mission.type} · ${dateStr} · ${mission.adresse}`,
@@ -296,7 +296,7 @@ export default async function handler(req) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
-          sender: { name: 'Thomas — EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
+          sender: { name: 'Thomas — EDL IDF', email: 'contact@edl-idf.com' },
           to: [{ email: loc.email, name: (loc.civilite+' '+loc.nom).trim() || '' }],
           replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
           subject: sujetLocataire,
@@ -319,3 +319,4 @@ export default async function handler(req) {
     });
   }
 }
+
