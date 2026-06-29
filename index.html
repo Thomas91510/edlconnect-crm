@@ -1452,7 +1452,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       <div><label>Email</label><input type="email" id="c-email" placeholder="m.dupont@orpi.com"></div>
       <div><label>Téléphone</label><input id="c-tel" placeholder="06 12 34 56 78"></div>
     </div>
-    <label>Statut</label><select id="c-statut"><option>Cible potentielle</option><option>Client actif</option><option>Partenaire</option><option>Inactif</option></select>
+    <label>Statut</label><select id="c-statut"><option>Cible potentielle</option><option>Client actif</option><option>Client signé ✅</option><option>Partenaire</option><option>Inactif</option></select>
     <label>Source</label><select id="c-source"><option>Démarchage</option><option>Recommandation</option><option>Relation</option><option>Site web</option><option>Brevo</option></select>
     <label>Notes</label><textarea id="c-notes" style="min-height:60px"></textarea>
     <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end">
@@ -1635,7 +1635,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       <div class="form-grid">
         <div>
           <label>Statut</label>
-          <select id="fe-statut"><option>Cible potentielle</option><option>Client actif</option><option>Partenaire</option><option>Inactif</option></select>
+          <select id="fe-statut" onchange="onContactStatusChange(this)"><option>Cible potentielle</option><option>Client actif</option><option>Client signé ✅</option><option>Partenaire</option><option>Inactif</option></select>
         </div>
         <div>
           <label>Type de client</label>
@@ -2636,7 +2636,7 @@ function fmtDate(d){if(!d)return '—';try{return new Date(d).toLocaleDateString
 function fmtDT(d){if(!d)return '—';try{const dt=new Date(d);return dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}catch(e){return d;}}
 function initials(n){const w=(n||'?').trim().split(' ');return((w[0]||'?')[0]+((w[1]||'')[0]||'')).toUpperCase();}
 function statusBadge(s){
-  const m={'Client actif':'b-green','Cible potentielle':'b-blue','Partenaire':'b-teal','Inactif':'b-gray','planifiée':'b-blue','en cours':'b-amber','terminée':'b-teal','facturée':'b-green','Gagné':'b-green','Négociation':'b-amber','Proposé':'b-blue','Qualifié':'b-teal','Prospect':'b-gray','Terminée':'b-gray','Active':'b-green','subscribed':'b-green','unsubscribed':'b-amber','bounced':'b-red','blocked':'b-red'};
+  const m={'Client actif':'b-green','Client signé ✅':'b-green','Cible potentielle':'b-blue','Partenaire':'b-teal','Inactif':'b-gray','planifiée':'b-blue','en cours':'b-amber','terminée':'b-teal','facturée':'b-green','Gagné':'b-green','Négociation':'b-amber','Proposé':'b-blue','Qualifié':'b-teal','Prospect':'b-gray','Terminée':'b-gray','Active':'b-green','subscribed':'b-green','unsubscribed':'b-amber','bounced':'b-red','blocked':'b-red'};
   return `<span class="badge ${m[s]||'b-gray'}">${s||'—'}</span>`;
 }
 function presenceBadge(p){
@@ -2936,12 +2936,25 @@ function ficheTab(tab,btn){
   if(el)el.style.display='block';
   if(btn)btn.classList.add('active');
 }
-function quickUpdateContact(id,field,value){
+async function quickUpdateContact(id,field,value){
   const c=DB.contacts.find(x=>x.id===id);
   if(!c)return;
+  const prevValue = c[field];
   c[field]=value;
   saveToStorage();
   notify('✅ Mis à jour !');
+  // Déclencher email si passage à "Client signé"
+  if(field === 'statut' && value === 'Client signé ✅' && prevValue !== 'Client signé ✅'){
+    if(c.email && confirm('Envoyer l\'email de bienvenue EDL IDF à ' + (c.entreprise||c.contact) + ' ?')){
+      try {
+        await fetch('/api/send-welcome-agency', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email:c.email, companyName:c.entreprise||c.contact||'', contactName:c.contact||'' })
+        });
+        notify('✅ Email de bienvenue envoyé !');
+      } catch(e){ notify('⚠️ Erreur envoi email','warn'); }
+    }
+  }
   // Rafraîchir le tableau contacts si visible
   if(document.getElementById('view-contacts').classList.contains('active'))renderContacts();
   renderDashboard();
@@ -3067,6 +3080,38 @@ function addMissionToFiche(){
       document.getElementById('m-email').value=c.email||'';
     }
   },100);
+}
+
+async function onContactStatusChange(select){
+  const newStatus = select.value;
+  if(newStatus !== 'Client signé ✅') return;
+  // Récupérer les infos du contact courant
+  const c = DB.contacts.find(x => x.id === currentFicheId);
+  if(!c) return;
+  if(!c.email){ notify('⚠️ Email du contact requis pour envoyer le lien booking', 'warn'); return; }
+  // Confirmer l'envoi
+  if(!confirm(`Envoyer l'email de bienvenue EDL IDF à ${c.entreprise || c.contact} (${c.email}) avec son lien booking ?`)) {
+    select.value = c.statut || 'Cible potentielle';
+    return;
+  }
+  try {
+    const resp = await fetch('/api/send-welcome-agency', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: c.email,
+        companyName: c.entreprise || c.contact || '',
+        contactName: c.contact || ''
+      })
+    });
+    if(resp.ok){
+      notify('✅ Email de bienvenue envoyé à ' + c.email + ' !');
+    } else {
+      notify('⚠️ Erreur envoi email — statut mis à jour quand même', 'warn');
+    }
+  } catch(e) {
+    notify('⚠️ Erreur réseau : ' + e.message, 'warn');
+  }
 }
 
 function saveContactEdit(){
