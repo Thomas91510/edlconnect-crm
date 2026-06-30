@@ -2847,7 +2847,9 @@ function saveBackup(){
     campaigns:DB.campaigns,
     rdvs:DB.rdvs,
     trackings:DB.trackings,
-    prospects:DB.prospects
+    prospects:DB.prospects,
+    invoices:DB.invoices,
+    agents:DB.agents
   };
   const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -2877,6 +2879,8 @@ function restoreBackup(input){
       if(data.rdvs)DB.rdvs=data.rdvs;
       if(data.trackings)DB.trackings=data.trackings;
       if(data.prospects)DB.prospects=data.prospects;
+      if(data.invoices)DB.invoices=data.invoices;
+      if(data.agents)DB.agents=data.agents;
       detectDuplicates();saveToStorage();renderDashboard();
       notify(`✅ Restauré — ${DB.contacts.length} contacts chargés !`);
       input.value='';
@@ -2888,9 +2892,27 @@ function restoreBackup(input){
 function updateBackupDate(){
   const last=localStorage.getItem('edl_last_backup');
   const el=document.getElementById('last-backup-date');
-  if(el&&last){
-    const d=new Date(last);
-    el.textContent='Sauvegardé le '+d.toLocaleDateString('fr-FR')+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  if(!el) return;
+  if(!last){
+    el.textContent='⚠️ Aucune sauvegarde effectuée';
+    el.style.color='var(--amber, #B45309)';
+    return;
+  }
+  const d=new Date(last);
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+  const overdue = (Date.now() - d.getTime()) > SEVEN_DAYS;
+  el.textContent=(overdue?'⚠️ ':'')+'Sauvegardé le '+d.toLocaleDateString('fr-FR')+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  el.style.color = overdue ? 'var(--amber, #B45309)' : 'var(--text3)';
+}
+
+function checkBackupReminder(){
+  const last = localStorage.getItem('edl_last_backup');
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+  const overdue = !last || (Date.now() - new Date(last).getTime()) > SEVEN_DAYS;
+  if(overdue){
+    setTimeout(() => {
+      notify('💾 Pense à faire ta sauvegarde hebdomadaire (bouton "Sauvegarder" en bas du menu) !', 'warn');
+    }, 2500);
   }
 }
 
@@ -5626,6 +5648,7 @@ async function onAuthSuccess(user){
   if(footerEl)footerEl.textContent=user.email;
   addLogoutButton();
   notify('Connecté : '+user.email);
+  checkBackupReminder();
   // Afficher le bouton admin si admin
   const navAdmin = document.getElementById('nav-admin');
   if(navAdmin && ADMIN_EMAILS.includes(user.email)) navAdmin.style.display='flex';
