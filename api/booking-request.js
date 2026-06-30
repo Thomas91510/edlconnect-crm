@@ -21,7 +21,7 @@ export default async function handler(req) {
 
   try {
     const data = await req.json();
-    const { agencyId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, acces, dateSouhaitee, heure, notes, locataire, locataires } = data;
+    const { agencyId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, dateSouhaitee, heure, notes, locataire, locataires } = data;
 
     if(!agence || !email || !typeEdl || !adresse) {
       return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400 });
@@ -40,6 +40,8 @@ export default async function handler(req) {
         bienType: bienType || '',
         bienTypo: bienTypo || '',
         meuble: meuble || '',
+        superficie: superficie || '',
+        dateEntree: dateEntree || '',
         acces: acces || '',
         dateSouhaitee, heure,
         notes: notes || '',
@@ -71,7 +73,8 @@ export default async function handler(req) {
     const dateFormatted = dateSouhaitee ? new Date(dateSouhaitee).toLocaleDateString('fr-FR', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     }) : '—';
-    const bienDesc = [bienType, bienTypo, meuble].filter(Boolean).join(' · ') || 'Non précisé';
+    let bienDesc = [bienType, bienTypo, meuble].filter(Boolean).join(' · ') || 'Non précisé';
+    if(superficie) bienDesc += (bienDesc !== 'Non précisé' ? ' · ' : '') + superficie + ' m²';
 
     if(BREVO_KEY) {
       await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -96,6 +99,7 @@ export default async function handler(req) {
                     <tr><td style="color:#6b6b6b;padding:4px 0">Adresse</td><td style="font-weight:600">${adresse}</td></tr>
                     <tr><td style="color:#6b6b6b;padding:4px 0">Bien</td><td>${bienDesc}</td></tr>
                     <tr><td style="color:#6b6b6b;padding:4px 0">Date souhaitée</td><td style="font-weight:600;color:#185FA5">${dateFormatted}${heure ? ' · ' + heure : ''}</td></tr>
+                    ${dateEntree ? `<tr><td style="color:#6b6b6b;padding:4px 0">Date d'entrée</td><td>${new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</td></tr>` : ''}
                     <tr><td style="color:#6b6b6b;padding:4px 0">Locataire</td><td>${locataire?.nom || '—'} · ${locataire?.tel || '—'}</td></tr>
                     ${notes ? `<tr><td style="color:#6b6b6b;padding:4px 0">Notes</td><td style="font-size:12px">${notes}</td></tr>` : ''}
                   </table>
@@ -136,6 +140,7 @@ export default async function handler(req) {
                   <tr><td style="color:#999;padding:5px 0">Adresse</td><td style="font-weight:600">${adresse}</td></tr>
                   <tr><td style="color:#999;padding:5px 0">Bien</td><td>${bienDesc}</td></tr>
                   <tr><td style="color:#999;padding:5px 0">Date souhaitée</td><td style="font-weight:600;color:#185FA5">${dateFormatted}${heure ? ' · ' + heure : ' · Flexible'}</td></tr>
+                  ${dateEntree ? `<tr><td style="color:#999;padding:5px 0">Date d'entrée</td><td>${new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</td></tr>` : ''}
                   ${acces ? `<tr><td style="color:#999;padding:5px 0">Accès</td><td>${acces}</td></tr>` : ''}
                   <tr><td style="color:#999;padding:5px 0">Locataire</td><td><strong>${locataire?.nom || '—'}</strong><br>📞 ${locataire?.tel || '—'}${locataire?.email ? '<br>✉️ ' + locataire.email : ''}</td></tr>
                   ${notes ? `<tr><td style="color:#999;padding:5px 0">Notes</td><td style="color:#6b6b6b">${notes}</td></tr>` : ''}
