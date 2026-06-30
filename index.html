@@ -12,7 +12,7 @@
 (function(){
   const params = new URLSearchParams(window.location.search);
   const path = window.location.pathname;
-  if(path === '/booking' || params.get('booking') === '1'){
+  if(path === '/booking' || params.get('booking') === '1' || path === '/extranet' || params.get('extranet') === '1'){
     document.addEventListener('DOMContentLoaded', function(){
       const authScreen = document.getElementById('auth-screen');
       if(authScreen){ authScreen.style.display='none'; authScreen.classList.remove('show'); }
@@ -1430,6 +1430,57 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       </div>
 
     </div>
+
+
+<!-- VUE EXTRANET CLIENT -->
+<div class="view" id="view-extranet" style="padding:0;background:#f8f8f6;min-height:100vh">
+  <div style="max-width:560px;margin:0 auto;padding:40px 20px">
+
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:28px;margin-bottom:6px">🔑</div>
+      <div style="font-size:20px;font-weight:700">Espace client EDLConnect</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">Retrouvez l'historique de vos commandes d'états des lieux</div>
+    </div>
+
+    <!-- État 1 : connexion -->
+    <div class="card" id="extranet-login-card">
+      <div style="padding:24px">
+        <label>Votre adresse email</label>
+        <input type="email" id="extranet-email" placeholder="contact@votre-agence.fr" style="margin-bottom:14px">
+        <button class="btn btn-primary" style="width:100%;justify-content:center" id="extranet-login-btn" onclick="extranetSendMagicLink()">
+          <i class="ti ti-mail"></i> Recevoir mon lien de connexion
+        </button>
+        <div id="extranet-login-msg" style="font-size:12px;margin-top:12px;text-align:center"></div>
+      </div>
+    </div>
+
+    <!-- État 2 : tableau de bord client -->
+    <div id="extranet-dashboard" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:13px;color:var(--text2)">Connecté en tant que <strong id="extranet-user-email"></strong></div>
+        <button class="btn btn-sm" onclick="extranetLogout()"><i class="ti ti-logout"></i> Déconnexion</button>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div style="padding:16px;display:flex;gap:20px">
+          <div>
+            <div style="font-size:11px;color:var(--text2)">Total commandes</div>
+            <div style="font-size:22px;font-weight:700" id="extranet-total">0</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text2)">En cours</div>
+            <div style="font-size:22px;font-weight:700;color:var(--amber-text)" id="extranet-pending">0</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text2)">Réalisées</div>
+            <div style="font-size:22px;font-weight:700;color:var(--green-text)" id="extranet-done">0</div>
+          </div>
+        </div>
+      </div>
+      <div id="extranet-orders-list"></div>
+    </div>
+
+  </div>
+</div>
 
 
 <!-- MODAL CONFIRM RDV -->
@@ -5209,6 +5260,7 @@ function saveSettings(){
 document.addEventListener('DOMContentLoaded', function() {
   // Vérifier si mode booking AVANT tout le reste
   if(checkBookingMode()) return; // Si mode booking, on s'arrête ici
+  if(checkExtranetMode()) return; // Si mode extranet client, on s'arrête ici aussi
 
   loadFromStorage();
   renderDashboard();
@@ -5785,6 +5837,139 @@ function checkBookingMode(){
   }
   return false;
 }
+
+// ═══════════════════════════════════════════════════════════
+// ─── EXTRANET CLIENT ───────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+function checkExtranetMode(){
+  const path = window.location.pathname;
+  const params = new URLSearchParams(window.location.search);
+  if(path === '/extranet' || params.get('extranet') === '1'){
+    const authScreen = document.getElementById('auth-screen');
+    if(authScreen){ authScreen.style.cssText = 'display:none!important'; authScreen.classList.remove('show'); }
+    const crmEl = document.querySelector('.crm');
+    if(crmEl){ crmEl.style.display = 'flex'; }
+    const sidebar = document.querySelector('.sidebar');
+    const mobileNav = document.getElementById('mobile-nav-bar');
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    if(sidebar) sidebar.style.display = 'none';
+    if(mobileNav) mobileNav.style.display = 'none';
+    if(mobileBtn) mobileBtn.style.display = 'none';
+    const mainEl = document.querySelector('.main');
+    if(mainEl) mainEl.style.cssText = 'flex:1;overflow-y:auto;background:#f8f8f6';
+    document.querySelectorAll('.view').forEach(v => { v.classList.remove('active'); v.style.display='none'; });
+    const exView = document.getElementById('view-extranet');
+    if(exView){ exView.classList.add('active'); exView.style.display='block'; }
+    initExtranetAuth();
+    return true;
+  }
+  return false;
+}
+
+async function initExtranetAuth(){
+  if(!supabaseClient){
+    document.getElementById('extranet-login-msg').textContent = 'Service momentanément indisponible, réessayez plus tard.';
+    return;
+  }
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(session && session.user && session.user.email){
+    showExtranetDashboard(session.user.email);
+  } else {
+    document.getElementById('extranet-login-card').style.display = 'block';
+    document.getElementById('extranet-dashboard').style.display = 'none';
+  }
+}
+
+async function extranetSendMagicLink(){
+  const emailEl = document.getElementById('extranet-email');
+  const email = emailEl.value.trim();
+  const msgEl = document.getElementById('extranet-login-msg');
+  if(!email || !email.includes('@')){
+    msgEl.style.color = 'var(--red-text)';
+    msgEl.textContent = '⚠️ Merci de saisir une adresse email valide.';
+    return;
+  }
+  const btn = document.getElementById('extranet-login-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader"></i> Envoi en cours…';
+  try{
+    const redirectTo = window.location.origin + '/extranet';
+    const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
+    if(error) throw error;
+    msgEl.style.color = 'var(--green-text)';
+    msgEl.textContent = '✅ Un lien de connexion vient de vous être envoyé par email. Cliquez dessus pour accéder à votre espace (vérifiez vos spams si besoin).';
+    btn.style.display = 'none';
+    emailEl.disabled = true;
+  } catch(e){
+    msgEl.style.color = 'var(--red-text)';
+    msgEl.textContent = '❌ Erreur lors de l\'envoi du lien : ' + (e.message || 'réessayez plus tard.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-mail"></i> Recevoir mon lien de connexion';
+  }
+}
+
+async function showExtranetDashboard(userEmail){
+  document.getElementById('extranet-login-card').style.display = 'none';
+  document.getElementById('extranet-dashboard').style.display = 'block';
+  document.getElementById('extranet-user-email').textContent = userEmail;
+
+  const listEl = document.getElementById('extranet-orders-list');
+  listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)"><i class="ti ti-loader"></i> Chargement de vos commandes…</div>';
+
+  try{
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch('/api/client-orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session?.access_token || '') }
+    });
+    if(!resp.ok) throw new Error('Erreur ' + resp.status);
+    const orders = await resp.json();
+
+    document.getElementById('extranet-total').textContent = orders.length;
+    document.getElementById('extranet-pending').textContent = orders.filter(o => o.statut !== 'realise' && o.statut !== 'confirmee').length;
+    document.getElementById('extranet-done').textContent = orders.filter(o => o.statut === 'realise').length;
+
+    if(!orders.length){
+      listEl.innerHTML = '<div class="card" style="padding:30px;text-align:center;color:var(--text3)">Aucune commande trouvée pour cette adresse email.</div>';
+      return;
+    }
+
+    const statutLabel = (s) => {
+      if(s === 'realise') return '<span style="color:var(--green-text);background:var(--green-bg);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600">✅ Réalisé</span>';
+      if(s === 'confirmee' || s === 'importee') return '<span style="color:var(--blue-text);background:var(--blue-bg);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600">📅 Confirmé</span>';
+      return '<span style="color:var(--amber-text);background:var(--amber-bg);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600">⏳ En attente</span>';
+    };
+
+    listEl.innerHTML = orders.map(o => `
+      <div class="card" style="margin-bottom:10px">
+        <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <div>
+            <div style="font-weight:600;font-size:13px">${o.typeEdl || 'État des lieux'}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">📍 ${o.adresse || '—'}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Demandé le ${o.createdAt ? new Date(o.createdAt).toLocaleDateString('fr-FR') : '—'}</div>
+          </div>
+          ${statutLabel(o.statut)}
+        </div>
+      </div>`).join('');
+  } catch(e){
+    listEl.innerHTML = '<div class="card" style="padding:30px;text-align:center;color:var(--red-text)">Erreur lors du chargement de vos commandes. Réessayez plus tard.</div>';
+  }
+}
+
+function extranetLogout(){
+  if(supabaseClient) supabaseClient.auth.signOut();
+  document.getElementById('extranet-login-card').style.display = 'block';
+  document.getElementById('extranet-dashboard').style.display = 'none';
+  document.getElementById('extranet-email').value = '';
+  document.getElementById('extranet-login-msg').textContent = '';
+  const btn = document.getElementById('extranet-login-btn');
+  btn.style.display = '';
+  document.getElementById('extranet-email').disabled = false;
+}
+
+
 
 let _bkSelectedType = '';
 function bkSelectType(type, btn){
