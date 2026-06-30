@@ -305,7 +305,7 @@ function buildRecap(){
   r += '<tr><td style="color:#999;padding:2px 0">Adresse</td><td>'+document.getElementById('adresse').value+'</td></tr>';
   if(dateEntree){
     const dEntreeStr = new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
-    r += '<tr><td style="color:#999;padding:2px 0">Date d\'entrée</td><td>'+dEntreeStr+'</td></tr>';
+    r += '<tr><td style="color:#999;padding:2px 0">Date d&#39;entrée</td><td>'+dEntreeStr+'</td></tr>';
   }
   if(bien) r += '<tr><td style="color:#999;padding:2px 0">Bien</td><td>'+bien+'</td></tr>';
   r += '<tr><td style="color:#999;padding:2px 0">Date</td><td style="font-weight:600;color:#185FA5">'+dateStr+' · '+heure+'</td></tr>';
