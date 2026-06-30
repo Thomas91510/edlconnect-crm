@@ -21,7 +21,7 @@ export default async function handler(req) {
   }
 
   try {
-    const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, locataires, message } = await req.json();
+    const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, locataires, expertNom, expertTel, message } = await req.json();
     // Liste complète des locataires (principal + supplémentaires)
     const allLocataires = locataires && locataires.length > 0 ? locataires : 
       (locataireEmail ? [{ civilite: locataireCivilite||'', nom: locataireNom||'', tel:'', email: locataireEmail }] : []);
@@ -49,6 +49,14 @@ export default async function handler(req) {
     const isDouble = typeEdl.includes('sortant') && typeEdl.includes('entrant');
     const isPre = typeEdl.includes('pré') || typeEdl.includes('pre');
 
+    // Bloc "Expert qui se déplace" (affiché si renseigné)
+    const expertBlockAgent = expertNom
+      ? `<tr><td style="color:#6b6b6b;padding:5px 0">Expert</td><td style="font-weight:600">${expertNom}${expertTel ? ' — 📱 ' + expertTel : ''}</td></tr>`
+      : '';
+    const expertBlockLoc = expertNom
+      ? `👤 Expert qui se déplacera : <strong>${expertNom}</strong>${expertTel ? '<br>📱 ' + expertTel : ''}<br>`
+      : '';
+
     // ── EMAIL AGENT (identique pour tous les types) ────────
     const agentHtml = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -65,6 +73,7 @@ export default async function handler(req) {
       <tr><td style="color:#6b6b6b;padding:5px 0">Bien</td><td>${bien}</td></tr>
       <tr><td style="color:#6b6b6b;padding:5px 0">Date</td><td style="font-weight:600;color:#185FA5">${dateStr}</td></tr>
       <tr><td style="color:#6b6b6b;padding:5px 0">Heure</td><td style="font-weight:600;color:#185FA5">${heureStr}</td></tr>
+      ${expertBlockAgent}
       ${locataireNom ? `<tr><td style="color:#6b6b6b;padding:5px 0">Locataire</td><td>${locataireNom}</td></tr>` : ''}
       ${mission.acces ? `<tr><td style="color:#6b6b6b;padding:5px 0">Accès</td><td>${mission.acces}</td></tr>` : ''}
     </table>
@@ -99,8 +108,8 @@ export default async function handler(req) {
       📍 <strong>${mission.adresse}</strong><br>
       🏠 Type de bien : <strong>${bien}</strong><br>
       📅 Date et heure : <strong>${dateStr} à ${heureStr}</strong><br>
-      ⏱️ Durée estimée : environ 60 à 90 minutes
-    </div>
+      ⏱️ Durée estimée : environ 60 à 90 minutes<br>
+      ${expertBlockLoc}    </div>
 
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
       Nous intervenons en tant que mandataires de la société <strong>${mission.agence}</strong>.
@@ -159,8 +168,8 @@ export default async function handler(req) {
     <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:24px;font-size:13px;color:#0C447C;line-height:2">
       📅 Date : <strong>${dateStr}</strong><br>
       🕘 Heure : <strong>${heureStr}</strong><br>
-      📍 Adresse : <strong>${mission.adresse}</strong>
-    </div>
+      📍 Adresse : <strong>${mission.adresse}</strong><br>
+      ${expertBlockLoc}    </div>
 
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
       Afin que l'état des lieux se déroule dans les meilleures conditions et conformément à la législation, nous vous remercions de bien vouloir respecter les points suivants :
@@ -226,8 +235,8 @@ export default async function handler(req) {
     <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
       📅 Date : <strong>${dateStr}</strong><br>
       🕘 Heure : <strong>${heureStr}</strong><br>
-      📍 Adresse : <strong>${mission.adresse}</strong>
-    </div>
+      📍 Adresse : <strong>${mission.adresse}</strong><br>
+      ${expertBlockLoc}    </div>
 
     <div style="background:#EAF3DE;border-radius:8px;padding:16px;margin-bottom:20px">
       <div style="font-size:13px;font-weight:700;color:#27500A;margin-bottom:8px">💡 Comment profiter au mieux de cette visite :</div>
