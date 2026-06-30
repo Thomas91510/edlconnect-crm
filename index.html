@@ -1199,6 +1199,16 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         <div style="font-size:11px;color:var(--text2);margin-top:4px">Obtenir une clé gratuite : <a href="https://console.mistral.ai/api-keys" target="_blank" style="color:var(--blue)">console.mistral.ai</a> → "API Keys" → "Create new key"</div>
       </div>
       <div class="settings-section">
+        <div class="settings-title"><i class="ti ti-users" style="font-size:18px"></i>Agents EDL</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Les agents ajoutés ici apparaissent dans le menu déroulant "Agent qui se déplace" lors de la confirmation d'un RDV, et leurs coordonnées sont insérées automatiquement dans la convocation envoyée au locataire.</div>
+        <div id="agents-list" style="margin-bottom:12px"></div>
+        <div class="form-grid">
+          <div><label>Nom complet</label><input id="new-agent-nom" placeholder="Jean Dupont"></div>
+          <div><label>Mobile</label><input id="new-agent-tel" placeholder="06 12 34 56 78"></div>
+        </div>
+        <button class="btn btn-sm" onclick="addAgent()" style="margin-top:8px"><i class="ti ti-user-plus"></i> Ajouter cet agent</button>
+      </div>
+      <div class="settings-section">
         <div class="settings-title"><i class="ti ti-user" style="font-size:18px"></i>Profil</div>
         <label>Nom</label><input id="set-name" value="Thomas Langlade">
         <label>Email</label><input id="set-email" value="contact@edl-idf.com">
@@ -1453,6 +1463,10 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     </div>
     <label>Email de l'agent <span style="color:var(--red)">*</span></label>
     <input type="email" id="confirm-rdv-agent-email" placeholder="agent@agence.fr" style="margin-bottom:10px">
+    <label>👤 Expert EDL qui se déplace</label>
+    <select id="confirm-rdv-expert" style="margin-bottom:10px">
+      <option value="">— Non précisé —</option>
+    </select>
     <div class="form-grid" style="margin-bottom:4px">
       <div>
         <label>Civilité du locataire</label>
@@ -2650,7 +2664,8 @@ let DB={
   trackings:[],
   prospects:[],
   dups:[],
-  brevoContacts:[]
+  brevoContacts:[],
+  agents:[]
 };
 
 let UI={contactFilter:'all',contactSearch:'',missionFilter:'all',calMonth:new Date().getMonth(),calYear:new Date().getFullYear()};
@@ -2810,7 +2825,7 @@ function loadFromStorage(){
   }catch(e){}
   // Garde-fou : si les données sauvegardées datent d'avant l'ajout d'un champ (ex: invoices),
   // s'assurer que tous les tableaux attendus existent pour éviter les erreurs "Cannot read properties of undefined"
-  const expectedArrays=['contacts','deals','missions','campaigns','rdvs','invoices','trackings','prospects','dups','brevoContacts'];
+  const expectedArrays=['contacts','deals','missions','campaigns','rdvs','invoices','trackings','prospects','dups','brevoContacts','agents'];
   expectedArrays.forEach(key=>{ if(!Array.isArray(DB[key])) DB[key]=[]; });
   // Dédoublonner les contacts au chargement (protection permanente)
   const seen=new Set();
@@ -5023,8 +5038,57 @@ EDL IDF — Expert en état des lieux
   notify('✅ Email généré (active Gemini dans Paramètres pour la rédaction IA personnalisée)');
 }
 
+function populateExpertDropdown(selectedId){
+  const sel = document.getElementById('confirm-rdv-expert');
+  if(!sel) return;
+  const agents = DB.agents || [];
+  sel.innerHTML = '<option value="">— Non précisé —</option>' +
+    agents.map(a => `<option value="${a.id}"${a.id===selectedId?' selected':''}>${a.nom}${a.tel ? ' — ' + a.tel : ''}</option>`).join('');
+}
+
+// ─── AGENTS EDL ────────────────────────────────────────────
+function renderAgentsSettings(){
+  const wrap = document.getElementById('agents-list');
+  if(!wrap) return;
+  if(!DB.agents || !DB.agents.length){
+    wrap.innerHTML = '<div style="font-size:11px;color:var(--text3)">Aucun agent enregistré pour l\'instant.</div>';
+    return;
+  }
+  wrap.innerHTML = DB.agents.map(a => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">${a.nom}</div>
+        <div style="font-size:11px;color:var(--text2)">📱 ${a.tel || '—'}</div>
+      </div>
+      <button class="btn btn-sm" onclick="removeAgent('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+
+function addAgent(){
+  const nomEl = document.getElementById('new-agent-nom');
+  const telEl = document.getElementById('new-agent-tel');
+  const nom = nomEl.value.trim();
+  const tel = telEl.value.trim();
+  if(!nom){ notify('⚠️ Le nom de l\'agent est requis', 'warn'); return; }
+  if(!DB.agents) DB.agents = [];
+  DB.agents.push({ id: 'agent_' + Date.now(), nom, tel });
+  saveToStorage();
+  nomEl.value = '';
+  telEl.value = '';
+  renderAgentsSettings();
+  notify('✅ Agent ajouté');
+}
+
+function removeAgent(id){
+  if(!confirm('Retirer cet agent de la liste ?')) return;
+  DB.agents = DB.agents.filter(a => a.id !== id);
+  saveToStorage();
+  renderAgentsSettings();
+}
+
 // ─── SETTINGS ─────────────────────────────────────────────
 function loadSettingsForm(){
+  renderAgentsSettings();
   document.getElementById('set-notion-token').value=CFG.notionToken||'';
   document.getElementById('set-notion-page').value=CFG.notionPageId||'';
   document.getElementById('set-brevo-key').value=CFG.brevoKey||'';
@@ -6202,7 +6266,8 @@ function confirmRdvFromReservation(id){
     locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
     locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
     locataireCivilite: r.locataireCivilite || (r.locataire && r.locataire.civilite) || '',
-    locataires: r.locataires || []
+    locataires: r.locataires || [],
+    expertId: r.expertId || ''
   };
 
   // Stocker temporairement et ouvrir la modal
@@ -6237,6 +6302,7 @@ function confirmRdvFromReservation(id){
   const civEl = document.getElementById('confirm-rdv-civilite');
   if(civEl) civEl.value = tempMission.locataireCivilite || '';
   document.getElementById('confirm-rdv-message').value = '';
+  populateExpertDropdown(tempMission.expertId || '');
 
   const btn = document.getElementById('confirm-rdv-btn');
   btn.disabled = false;
@@ -6269,6 +6335,7 @@ function createMissionFromReservation(id){
     locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
     locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
     locataires: r.locataires || [],
+    expertId: r.expertId || '',
     notes: 'Importé depuis réservation booking. ' + (r.notes || ''),
     source: 'booking',
     createdAt: new Date().toISOString()
@@ -6358,6 +6425,7 @@ function openConfirmRdvModal(missionId){
   const civEl = document.getElementById('confirm-rdv-civilite');
   if(civEl) civEl.value = m.locataireCivilite || '';
   document.getElementById('confirm-rdv-message').value = '';
+  populateExpertDropdown(m.expertId || '');
 
   const btn = document.getElementById('confirm-rdv-btn');
   btn.disabled = false;
@@ -6395,6 +6463,12 @@ async function sendConfirmRdv(){
     saveToStorage();
   }
 
+  // Expert EDL sélectionné pour se déplacer
+  const expertId = document.getElementById('confirm-rdv-expert')?.value || '';
+  const expertAgent = (DB.agents || []).find(a => a.id === expertId);
+  m.expertId = expertId;
+  if(!_confirmRdvMissionId.startsWith('__resa__')) saveToStorage();
+
   const payload = {
     mission: {
       id: m.id,
@@ -6413,6 +6487,8 @@ async function sendConfirmRdv(){
     locataireNom: document.getElementById('confirm-rdv-loc-nom').value.trim(),
     locataireCivilite: document.getElementById('confirm-rdv-civilite')?.value || '',
     locataires: (m.locataires && m.locataires.length > 0) ? m.locataires : [],
+    expertNom: expertAgent ? expertAgent.nom : '',
+    expertTel: expertAgent ? expertAgent.tel : '',
     message: document.getElementById('confirm-rdv-message').value.trim()
   };
 
