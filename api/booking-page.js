@@ -144,7 +144,14 @@ textarea{min-height:75px;resize:vertical}
         </div>
         <div class="form-row">
           <div><label>Meublé / Nu</label><select id="meuble"><option value="">— Choisir —</option><option>Meublé</option><option>Nu</option></select></div>
+          <div><label>Superficie (m²)</label><input type="number" id="superficie" placeholder="Ex: 45" min="1" step="0.1"></div>
+        </div>
+        <div class="form-row">
           <div><label>Accès (digicode…)</label><input type="text" id="acces" placeholder="Code : A1234"></div>
+          <div id="date-entree-wrap" style="display:none">
+            <label>Date d'entrée dans le logement</label>
+            <input type="date" id="date-entree">
+          </div>
         </div>
       </div>
     </div>
@@ -251,6 +258,9 @@ function selType(t, btn){
   type = t;
   document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
+  // Afficher le champ date d'entrée uniquement pour EDL sortant
+  const isSortant = t.toLowerCase().includes('sortant');
+  document.getElementById('date-entree-wrap').style.display = isSortant ? 'block' : 'none';
 }
 
 function showErr(msg){ const e=document.getElementById('err'); e.textContent='⚠️ '+msg; e.classList.add('show'); e.scrollIntoView({behavior:'smooth',block:'center'}); }
@@ -285,11 +295,18 @@ function buildRecap(){
   const date = document.getElementById('date').value;
   const dateStr = date ? new Date(date).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '';
   const heure = document.getElementById('heure').value || 'Flexible';
-  const bien = [document.getElementById('btype').value, document.getElementById('btypo').value, document.getElementById('meuble').value].filter(Boolean).join(' · ');
+  const superficie = document.getElementById('superficie').value.trim();
+  const dateEntree = document.getElementById('date-entree').value;
+  let bien = [document.getElementById('btype').value, document.getElementById('btypo').value, document.getElementById('meuble').value].filter(Boolean).join(' · ');
+  if(superficie) bien += (bien ? ' · ' : '') + superficie + ' m²';
   var r = '<table style="width:100%;border-collapse:collapse">';
   r += '<tr><td style="color:#999;padding:2px 0;width:35%">Agence</td><td style="font-weight:600">'+document.getElementById('agence').value+'</td></tr>';
   r += '<tr><td style="color:#999;padding:2px 0">Type</td><td style="font-weight:600">'+type+'</td></tr>';
   r += '<tr><td style="color:#999;padding:2px 0">Adresse</td><td>'+document.getElementById('adresse').value+'</td></tr>';
+  if(dateEntree){
+    const dEntreeStr = new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+    r += '<tr><td style="color:#999;padding:2px 0">Date d\'entrée</td><td>'+dEntreeStr+'</td></tr>';
+  }
   if(bien) r += '<tr><td style="color:#999;padding:2px 0">Bien</td><td>'+bien+'</td></tr>';
   r += '<tr><td style="color:#999;padding:2px 0">Date</td><td style="font-weight:600;color:#185FA5">'+dateStr+' · '+heure+'</td></tr>';
   r += '</table>';
@@ -350,6 +367,8 @@ async function submit(){
     bienType: document.getElementById('btype').value,
     bienTypo: document.getElementById('btypo').value,
     meuble: document.getElementById('meuble').value,
+    superficie: document.getElementById('superficie').value.trim(),
+    dateEntree: document.getElementById('date-entree').value,
     acces: document.getElementById('acces').value.trim(),
     dateSouhaitee: document.getElementById('date').value,
     heure: document.getElementById('heure').value,
