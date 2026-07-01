@@ -6191,7 +6191,7 @@ function feAddDoc(){
 }
 function feGetDocs(){ return _feDocs.filter(d => d.url && d.url.trim()); }
 
-
+function extranetToggleStats(){
   const statsEl = document.getElementById('extranet-stats');
   const btn = document.getElementById('extranet-stats-toggle');
   const visible = statsEl.style.display !== 'none';
