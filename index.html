@@ -1596,6 +1596,43 @@ html[data-mode="extranet"] #view-extranet{
       </div>
 
       <div id="extranet-orders-list"></div>
+
+      <!-- Section statistiques -->
+      <div id="extranet-stats" style="display:none;margin-top:8px">
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-head">📊 Activité mensuelle — <span id="extranet-stats-year"></span></div>
+          <div style="padding:16px">
+            <div id="extranet-chart-bars" style="display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:8px"></div>
+            <div style="display:flex;gap:16px;font-size:11px;color:var(--text2);flex-wrap:wrap">
+              <span><span style="display:inline-block;width:10px;height:10px;background:#185FA5;border-radius:2px;margin-right:4px"></span>EDL entrant</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#E67E22;border-radius:2px;margin-right:4px"></span>EDL sortant</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#27AE60;border-radius:2px;margin-right:4px"></span>Pré-EDL / Autre</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="card">
+            <div class="card-head">🔑 Par type d'EDL</div>
+            <div id="extranet-stats-types" style="padding:12px;font-size:12px"></div>
+          </div>
+          <div class="card">
+            <div class="card-head">🏠 Par typologie de bien</div>
+            <div id="extranet-stats-typo" style="padding:12px;font-size:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-sm" id="extranet-stats-toggle" onclick="extranetToggleStats()" style="width:100%;justify-content:center;margin-bottom:16px;display:none">
+        📊 Voir mes statistiques
+      </button>
+
+      <!-- Section documents -->
+      <div id="extranet-docs-section" style="display:none;margin-bottom:16px">
+        <div class="card">
+          <div class="card-head">📁 Mes documents</div>
+          <div id="extranet-docs-list" style="padding:12px"></div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -1885,6 +1922,12 @@ html[data-mode="extranet"] #view-extranet{
       </select>
       <label>Notes</label>
       <textarea id="fe-notes" style="min-height:70px" placeholder="Remarques, historique, infos importantes…"></textarea>
+
+      <label style="margin-top:14px;font-weight:600;display:block">📁 Documents extranet (liens Google Drive)</label>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Ces documents seront visibles par le client dans son espace extranet. Collez l'URL de partage Google Drive de chaque document.</div>
+      <div id="fe-docs-list"></div>
+      <button type="button" onclick="feAddDoc()" class="btn btn-sm" style="margin-top:6px"><i class="ti ti-plus"></i> Ajouter un document</button>
+
       <div style="margin-top:12px;display:flex;gap:7px;justify-content:flex-end">
         <button class="btn btn-danger btn-sm" onclick="deleteContact()"><i class="ti ti-trash"></i>Supprimer</button>
         <button class="btn btn-primary" onclick="saveContactEdit()"><i class="ti ti-check"></i>Enregistrer</button>
@@ -3162,6 +3205,7 @@ function openFiche(id){
   document.getElementById('fe-email').value=c.email||'';
   document.getElementById('fe-tel').value=c.tel||'';
   document.getElementById('fe-notes').value=c.notes||'';
+  feRenderDocs(c.documents || []);
   document.getElementById('fe-statut').value=c.statut||'Cible potentielle';
   document.getElementById('fe-type-client').value=c.typeClient||'Professionnel';
   document.getElementById('fe-source').value=c.source||'Démarchage';
@@ -3371,6 +3415,7 @@ function saveContactEdit(){
   c.lastContact=document.getElementById('fe-last-contact').value;
   c.moyenContact=document.getElementById('fe-moyen-contact').value;
   c.notes=document.getElementById('fe-notes').value;
+  c.documents = feGetDocs();
   detectDuplicates();saveToStorage();closeModal('modal-fiche');
   notify('✅ Contact mis à jour !');renderContacts();renderDashboard();
 }
@@ -6068,8 +6113,12 @@ async function showExtranetDashboard(userEmail, accessToken){
 
     if(!orders.length){
       listEl.innerHTML = '<div class="card" style="padding:30px;text-align:center;color:var(--text3)">Aucune commande trouvée pour cette adresse email.</div>';
+      extranetRenderStats([]);
       return;
     }
+
+    extranetRenderStats(orders);
+    extranetRenderDocuments(userEmail);
 
     const statutLabel = (s) => {
       if(s === 'realise') return '<span style="color:var(--green-text);background:var(--green-bg);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600">✅ Réalisé</span>';
@@ -6113,6 +6162,137 @@ function exSelectType(type, btn){
   });
   btn.style.borderColor = 'var(--blue)';
   btn.style.background = 'var(--blue-bg)';
+}
+
+function feRenderDocs(docs){
+  const wrap = document.getElementById('fe-docs-list');
+  if(!wrap) return;
+  if(!docs || !docs.length){
+    wrap.innerHTML = '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Aucun document ajouté.</div>';
+    return;
+  }
+  wrap.innerHTML = docs.map((d,i) => `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <input type="text" value="${d.nom||''}" placeholder="Nom du document" onchange="feUpdateDoc(${i},'nom',this.value)" style="flex:1">
+      <input type="url" value="${d.url||''}" placeholder="https://drive.google.com/..." onchange="feUpdateDoc(${i},'url',this.value)" style="flex:2">
+      <button onclick="feRemoveDoc(${i})" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px">✕</button>
+    </div>`).join('');
+}
+
+let _feDocs = [];
+function feUpdateDoc(i, field, val){ _feDocs[i][field] = val; }
+function feRemoveDoc(i){ _feDocs.splice(i,1); feRenderDocs(_feDocs); }
+function feAddDoc(){
+  _feDocs.push({ nom:'', url:'' });
+  feRenderDocs(_feDocs);
+  // Focus sur le dernier champ nom
+  const inputs = document.querySelectorAll('#fe-docs-list input[type="text"]');
+  if(inputs.length) inputs[inputs.length-1].focus();
+}
+function feGetDocs(){
+  return _feDocs.filter(d => d.url && d.url.trim());
+}
+
+// Remplacer feRenderDocs au chargement pour initialiser _feDocs
+const _feRenderDocOrig = feRenderDocs;
+window.feRenderDocs = function(docs){
+  _feDocs = docs ? docs.map(d => ({...d})) : [];
+  _feRenderDocOrig(_feDocs);
+};
+
+
+  const statsEl = document.getElementById('extranet-stats');
+  const btn = document.getElementById('extranet-stats-toggle');
+  const visible = statsEl.style.display !== 'none';
+  statsEl.style.display = visible ? 'none' : 'block';
+  btn.innerHTML = visible ? '📊 Voir mes statistiques' : '📊 Masquer les statistiques';
+}
+
+function extranetRenderDocuments(userEmail){
+  const section = document.getElementById('extranet-docs-section');
+  const listEl = document.getElementById('extranet-docs-list');
+  if(!section || !listEl) return;
+  fetch('/api/client-documents', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: userEmail })
+  }).then(r => r.json()).then(docs => {
+    if(!docs || !docs.length){ section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    listEl.innerHTML = docs.map(d => `
+      <a href="${d.url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:var(--radius);text-decoration:none;color:var(--text);border:1px solid var(--border);margin-bottom:6px;background:#fff">
+        <span style="font-size:20px">📄</span>
+        <span style="flex:1;font-size:13px;font-weight:500">${d.nom}</span>
+        <span style="font-size:11px;color:var(--blue)">Ouvrir →</span>
+      </a>`).join('');
+  }).catch(() => { section.style.display = 'none'; });
+}
+
+function extranetRenderStats(orders){
+  const btn = document.getElementById('extranet-stats-toggle');
+  if(!orders || !orders.length){ if(btn) btn.style.display='none'; return; }
+  if(btn) btn.style.display='flex';
+
+  const year = new Date().getFullYear();
+  document.getElementById('extranet-stats-year').textContent = year;
+
+  const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+  const byMonth = Array.from({length:12}, () => ({ entrant:0, sortant:0, autre:0 }));
+  const byType = {};
+  const byTypo = {};
+
+  orders.forEach(o => {
+    const d = new Date(o.createdAt);
+    if(d.getFullYear() !== year) return;
+    const m = d.getMonth();
+    const type = (o.typeEdl || '').toLowerCase();
+    if(type.includes('entrant')) byMonth[m].entrant++;
+    else if(type.includes('sortant')) byMonth[m].sortant++;
+    else byMonth[m].autre++;
+    const typeLabel = o.typeEdl || 'Non précisé';
+    byType[typeLabel] = (byType[typeLabel] || 0) + 1;
+    const typoLabel = o.bienType || 'Non précisé';
+    byTypo[typoLabel] = (byTypo[typoLabel] || 0) + 1;
+  });
+
+  const maxVal = Math.max(1, ...byMonth.map(m => m.entrant + m.sortant + m.autre));
+  const barsEl = document.getElementById('extranet-chart-bars');
+  barsEl.innerHTML = MONTHS.map((label, i) => {
+    const total = byMonth[i].entrant + byMonth[i].sortant + byMonth[i].autre;
+    const hE = Math.round((byMonth[i].entrant / maxVal) * 100);
+    const hS = Math.round((byMonth[i].sortant / maxVal) * 100);
+    const hA = Math.round((byMonth[i].autre / maxVal) * 100);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px">
+      <div style="font-size:9px;color:var(--text2);margin-bottom:2px">${total||''}</div>
+      <div style="width:100%;display:flex;flex-direction:column;justify-content:flex-end;height:90px;gap:1px">
+        ${hA?`<div style="height:${hA}%;background:#27AE60;border-radius:2px 2px 0 0;min-height:2px"></div>`:''}
+        ${hS?`<div style="height:${hS}%;background:#E67E22;border-radius:${hA?'0':'2px 2px'} 0 0;min-height:2px"></div>`:''}
+        ${hE?`<div style="height:${hE}%;background:#185FA5;border-radius:${(hS||hA)?'0':'2px 2px'} 0 0;min-height:2px"></div>`:''}
+        ${!total?`<div style="height:2px;background:var(--border);border-radius:2px"></div>`:''}
+      </div>
+      <div style="font-size:9px;color:var(--text2);margin-top:3px">${label}</div>
+    </div>`;
+  }).join('');
+
+  const totalYear = orders.filter(o => new Date(o.createdAt).getFullYear() === year).length || 1;
+  const typesEl = document.getElementById('extranet-stats-types');
+  typesEl.innerHTML = Object.entries(byType).length
+    ? Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>${k}</span><span style="font-weight:600">${v}</span></div>
+          <div style="background:var(--border);border-radius:4px;height:4px"><div style="background:var(--blue);height:4px;border-radius:4px;width:${Math.round(v/totalYear*100)}%"></div></div>
+        </div>`).join('')
+    : '<div style="color:var(--text3)">Aucune donnée</div>';
+
+  const typoEl = document.getElementById('extranet-stats-typo');
+  typoEl.innerHTML = Object.entries(byTypo).length
+    ? Object.entries(byTypo).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>${k}</span><span style="font-weight:600">${v}</span></div>
+          <div style="background:var(--border);border-radius:4px;height:4px"><div style="background:#27AE60;height:4px;border-radius:4px;width:${Math.round(v/totalYear*100)}%"></div></div>
+        </div>`).join('')
+    : '<div style="color:var(--text3)">Aucune donnée</div>';
 }
 
 function extranetShowOrderForm(){
