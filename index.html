@@ -5889,6 +5889,13 @@ async function initExtranetAuth(){
     document.getElementById('extranet-login-msg').textContent = 'Service momentanément indisponible, réessayez plus tard.';
     return;
   }
+  // Écouter les changements d'état auth (notamment le retour après magic link)
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user?.email){
+      showExtranetDashboard(session.user.email);
+    }
+  });
+  // Vérifier aussi la session déjà active
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(session && session.user && session.user.email){
     showExtranetDashboard(session.user.email);
@@ -5936,10 +5943,27 @@ async function showExtranetDashboard(userEmail){
   listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)"><i class="ti ti-loader"></i> Chargement de vos commandes…</div>';
 
   try{
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    // Récupérer la session active — on réessaie jusqu'à 3 fois car Supabase
+    // peut mettre quelques instants à confirmer la session après un magic link
+    let token = '';
+    for(let i = 0; i < 3; i++){
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if(session?.access_token){ token = session.access_token; break; }
+      await new Promise(r => setTimeout(r, 800));
+    }
+
+    if(!token){
+      listEl.innerHTML = '<div class="card" style="padding:30px;text-align:center;color:var(--red-text)">Session expirée. Veuillez vous reconnecter.</div>';
+      setTimeout(() => {
+        document.getElementById('extranet-login-card').style.display = 'block';
+        document.getElementById('extranet-dashboard').style.display = 'none';
+      }, 2000);
+      return;
+    }
+
     const resp = await fetch('/api/client-orders', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session?.access_token || '') }
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
     });
     if(!resp.ok) throw new Error('Erreur ' + resp.status);
     const orders = await resp.json();
