@@ -1478,21 +1478,107 @@ html[data-mode="extranet"] #view-extranet{
         <button class="btn btn-sm" onclick="extranetLogout()"><i class="ti ti-logout"></i> Déconnexion</button>
       </div>
       <div class="card" style="margin-bottom:16px">
-        <div style="padding:16px;display:flex;gap:20px">
-          <div>
-            <div style="font-size:11px;color:var(--text2)">Total commandes</div>
-            <div style="font-size:22px;font-weight:700" id="extranet-total">0</div>
+        <div style="padding:16px;display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+          <div style="display:flex;gap:20px">
+            <div>
+              <div style="font-size:11px;color:var(--text2)">Total commandes</div>
+              <div style="font-size:22px;font-weight:700" id="extranet-total">0</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text2)">En cours</div>
+              <div style="font-size:22px;font-weight:700;color:var(--amber-text)" id="extranet-pending">0</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text2)">Réalisées</div>
+              <div style="font-size:22px;font-weight:700;color:var(--green-text)" id="extranet-done">0</div>
+            </div>
           </div>
-          <div>
-            <div style="font-size:11px;color:var(--text2)">En cours</div>
-            <div style="font-size:22px;font-weight:700;color:var(--amber-text)" id="extranet-pending">0</div>
+          <button class="btn btn-primary" onclick="extranetShowOrderForm()" id="extranet-new-order-btn">
+            <i class="ti ti-plus"></i> Nouvelle commande
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulaire de nouvelle commande intégré -->
+      <div id="extranet-order-form" style="display:none" class="card" style="margin-bottom:16px">
+        <div class="card-head">
+          <span><i class="ti ti-clipboard-plus"></i> Nouvelle demande d'état des lieux</span>
+          <button onclick="extranetHideOrderForm()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--text2)">✕</button>
+        </div>
+        <div style="padding:16px">
+
+          <div id="extranet-form-error" style="display:none;background:var(--red-bg);color:var(--red-text);border-radius:var(--radius);padding:10px 14px;font-size:12px;margin-bottom:14px"></div>
+
+          <!-- Type EDL -->
+          <label style="font-weight:600;margin-bottom:8px;display:block">Type d'état des lieux *</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+            <button type="button" onclick="exSelectType('EDL entrant',this)" class="ex-type-btn" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;background:#fff;text-align:left;font-family:inherit">
+              <div style="font-size:13px">🔑 EDL entrant</div><div style="font-size:11px;color:var(--text2)">État des lieux d\'entrée</div>
+            </button>
+            <button type="button" onclick="exSelectType('EDL sortant',this)" class="ex-type-btn" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;background:#fff;text-align:left;font-family:inherit">
+              <div style="font-size:13px">🏠 EDL sortant</div><div style="font-size:11px;color:var(--text2)">État des lieux de sortie</div>
+            </button>
+            <button type="button" onclick="exSelectType('EDL Sortant / Entrant',this)" class="ex-type-btn" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;background:#fff;text-align:left;font-family:inherit">
+              <div style="font-size:13px">🔄 EDL Sortant / Entrant</div><div style="font-size:11px;color:var(--text2)">Les deux le même jour</div>
+            </button>
+            <button type="button" onclick="exSelectType('Pré-état des lieux',this)" class="ex-type-btn" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;background:#fff;text-align:left;font-family:inherit">
+              <div style="font-size:13px">📋 Pré-état des lieux</div><div style="font-size:11px;color:var(--text2)">Avant la sortie du locataire</div>
+            </button>
           </div>
-          <div>
-            <div style="font-size:11px;color:var(--text2)">Réalisées</div>
-            <div style="font-size:22px;font-weight:700;color:var(--green-text)" id="extranet-done">0</div>
+
+          <!-- Adresse du bien -->
+          <label style="font-weight:600;margin-bottom:8px;display:block">Adresse du bien *</label>
+          <input type="text" id="ex-adresse" placeholder="12 rue de la Paix, 91000 Évry" style="margin-bottom:10px">
+          <div class="form-grid" style="margin-bottom:10px">
+            <div>
+              <label>Type de bien</label>
+              <select id="ex-bien-type"><option>Appartement</option><option>Maison</option><option>Studio</option><option>Local commercial</option><option>Parking</option><option>Autre</option></select>
+            </div>
+            <div>
+              <label>Meublé / Nu</label>
+              <select id="ex-meuble"><option>Nu</option><option>Meublé</option></select>
+            </div>
+          </div>
+          <label>Accès / Digicode</label>
+          <input type="text" id="ex-acces" placeholder="Code : A1234" style="margin-bottom:14px">
+
+          <!-- Date souhaitée -->
+          <label style="font-weight:600;margin-bottom:8px;display:block">Date souhaitée *</label>
+          <div class="form-grid" style="margin-bottom:14px">
+            <div><label>Date</label><input type="date" id="ex-date"></div>
+            <div>
+              <label>Heure souhaitée</label>
+              <select id="ex-heure">
+                <option value="">— Flexible —</option>
+                <option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option>
+                <option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option>
+                <option>16:00</option><option>17:00</option><option>18:00</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Locataire -->
+          <label style="font-weight:600;margin-bottom:8px;display:block">Locataire *</label>
+          <div class="form-grid" style="margin-bottom:8px">
+            <div><label>Nom complet</label><input type="text" id="ex-loc-nom" placeholder="Jean Martin"></div>
+            <div><label>Téléphone</label><input type="tel" id="ex-loc-tel" placeholder="06 12 34 56 78"></div>
+          </div>
+          <label>Email du locataire</label>
+          <input type="email" id="ex-loc-email" placeholder="jean.martin@email.fr" style="margin-bottom:14px">
+
+          <!-- Notes -->
+          <label>Informations complémentaires</label>
+          <textarea id="ex-notes" placeholder="Clés à récupérer à l'agence, présence du propriétaire..." style="min-height:80px;margin-bottom:16px"></textarea>
+
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px" id="ex-submit-btn" onclick="extranetSubmitOrder()">
+            <i class="ti ti-send"></i> Envoyer ma demande
+          </button>
+          <div id="ex-success" style="display:none;background:var(--green-bg);color:var(--green-text);border-radius:var(--radius);padding:14px;text-align:center;margin-top:12px;font-size:13px">
+            ✅ Votre demande a bien été envoyée ! Nous vous contacterons pour confirmer le rendez-vous.
           </div>
         </div>
       </div>
+
       <div id="extranet-orders-list"></div>
     </div>
 
@@ -6001,6 +6087,108 @@ function extranetLogout(){
   btn.style.display = '';
   document.getElementById('extranet-email').disabled = false;
 }
+
+let _exSelectedType = '';
+function exSelectType(type, btn){
+  _exSelectedType = type;
+  document.querySelectorAll('.ex-type-btn').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = '#fff';
+  });
+  btn.style.borderColor = 'var(--blue)';
+  btn.style.background = 'var(--blue-bg)';
+}
+
+function extranetShowOrderForm(){
+  _exSelectedType = '';
+  document.querySelectorAll('.ex-type-btn').forEach(b => { b.style.borderColor='var(--border)'; b.style.background='#fff'; });
+  ['ex-adresse','ex-acces','ex-loc-nom','ex-loc-tel','ex-loc-email','ex-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('ex-date').value = '';
+  document.getElementById('ex-heure').value = '';
+  document.getElementById('ex-success').style.display = 'none';
+  document.getElementById('extranet-form-error').style.display = 'none';
+  const btn = document.getElementById('ex-submit-btn');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-send"></i> Envoyer ma demande';
+  document.getElementById('extranet-order-form').style.display = 'block';
+  document.getElementById('extranet-order-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function extranetHideOrderForm(){
+  document.getElementById('extranet-order-form').style.display = 'none';
+}
+
+async function extranetSubmitOrder(){
+  const adresse = document.getElementById('ex-adresse').value.trim();
+  const locNom = document.getElementById('ex-loc-nom').value.trim();
+  const locTel = document.getElementById('ex-loc-tel').value.trim();
+  const errEl = document.getElementById('extranet-form-error');
+
+  if(!_exSelectedType){ errEl.textContent = 'Veuillez sélectionner un type d\'état des lieux.'; errEl.style.display='block'; return; }
+  if(!adresse){ errEl.textContent = 'L\'adresse du bien est requise.'; errEl.style.display='block'; return; }
+  if(!locNom){ errEl.textContent = 'Le nom du locataire est requis.'; errEl.style.display='block'; return; }
+  if(!locTel){ errEl.textContent = 'Le téléphone du locataire est requis.'; errEl.style.display='block'; return; }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('ex-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader"></i> Envoi en cours…';
+
+  const userEmail = document.getElementById('extranet-user-email').textContent;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  const locataire = { nom: locNom, tel: locTel, email: document.getElementById('ex-loc-email').value.trim() };
+
+  const payload = {
+    agencyId: '',
+    agence: userEmail,
+    contact: userEmail,
+    email: userEmail,
+    tel: '',
+    typeEdl: _exSelectedType,
+    adresse,
+    bienType: document.getElementById('ex-bien-type').value,
+    bienTypo: '',
+    meuble: document.getElementById('ex-meuble').value,
+    acces: document.getElementById('ex-acces').value.trim(),
+    dateSouhaitee: document.getElementById('ex-date').value,
+    heure: document.getElementById('ex-heure').value,
+    notes: document.getElementById('ex-notes').value.trim(),
+    locataire,
+    locataires: [locataire],
+    source: 'extranet'
+  };
+
+  try{
+    const resp = await fetch('/api/booking-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await resp.json();
+    if(result.success || resp.ok){
+      document.getElementById('ex-success').style.display = 'block';
+      btn.style.display = 'none';
+      // Recharger la liste des commandes après 2s
+      setTimeout(() => {
+        if(session?.access_token) showExtranetDashboard(userEmail, session.access_token);
+        extranetHideOrderForm();
+      }, 2500);
+    } else {
+      errEl.textContent = result.error || 'Erreur lors de l\'envoi. Réessayez.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-send"></i> Envoyer ma demande';
+    }
+  } catch(e){
+    errEl.textContent = 'Erreur réseau. Vérifiez votre connexion et réessayez.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-send"></i> Envoyer ma demande';
+  }
+}
+
+
 
 
 
