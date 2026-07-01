@@ -24,10 +24,10 @@ export default async function handler(req) {
     const token = authHeader.replace('Bearer ', '').trim();
 
     if (!token) {
-      return new Response(JSON.stringify({ error: 'Non authentifiÃ©' }), { status: 401 });
+      return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401 });
     }
 
-    // 1) VÃ©rifier le token et rÃ©cupÃ©rer l'email du client connectÃ©
+    // 1) Vérifier le token et récupérer l'email du client connecté
     const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
@@ -46,9 +46,10 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Email introuvable sur ce compte.' }), { status: 400 });
     }
 
-    // 2) RÃ©cupÃ©rer uniquement les commandes liÃ©es Ã  cette adresse email
-    //    (filtre direct cÃ´tÃ© base, on ne renvoie jamais les donnÃ©es des autres clients)
-    const filterUrl = `${SUPABASE_URL}/rest/v1/bookings?select=id,data,created_at&data->>email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc`;
+    // 2) Récupérer uniquement les commandes liées à cette adresse email
+    //    (filtre direct côté base, on ne renvoie jamais les données des autres clients)
+    // Filtre sur la colonne JSONB "data" — syntaxe PostgREST correcte
+    const filterUrl = `${SUPABASE_URL}/rest/v1/bookings?select=id,data,created_at&data->email=eq.%22${encodeURIComponent(userEmail)}%22&order=created_at.desc`;
 
     const bookingsResp = await fetch(filterUrl, {
       headers: {
@@ -58,7 +59,7 @@ export default async function handler(req) {
     });
 
     if (!bookingsResp.ok) {
-      return new Response(JSON.stringify({ error: 'Erreur lors de la rÃ©cupÃ©ration des commandes.' }), { status: 500 });
+      return new Response(JSON.stringify({ error: 'Erreur lors de la récupération des commandes.' }), { status: 500 });
     }
 
     const rows = await bookingsResp.json();
