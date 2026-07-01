@@ -905,6 +905,9 @@ html[data-mode="extranet"] #view-extranet{
     <button class="btn btn-sm" onclick="scrollToHelp('h-contacts')">👥 Contacts</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-prospection')">🎯 Prospection</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-missions')">📋 Missions</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-reservations')">📥 Réservations</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-extranet')">🔑 Extranet</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-agents')">👤 Agents</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-facturation')">📄 Facturation</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-emails')">✉️ Emails</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-agenda')">📅 Agenda</button>
@@ -1027,6 +1030,47 @@ html[data-mode="extranet"] #view-extranet{
     </div>
   </div>
 
+  <div class="settings-section" id="h-reservations">
+    <div class="settings-title">📥 Réservations entrantes</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Recevez et gérez les demandes d'état des lieux de vos agences clientes.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Lien de réservation</strong> → à communiquer à chaque agence : <code>app.edlconnect.fr/booking?agency=XXX</code><br>
+      <strong>Nouvelle demande</strong> → apparaît automatiquement dans l'onglet Réservations avec une alerte sonore<br>
+      <strong>Confirmer un RDV</strong> → bouton "Confirmer" → choisir date, heure, agent → envoie la convocation au(x) locataire(s)<br>
+      <strong>Importer en mission</strong> → bouton "Importer" → crée automatiquement une mission dans l'onglet Missions<br>
+      <strong>Plusieurs locataires</strong> → le formulaire permet d'ajouter plusieurs locataires, chacun reçoit sa convocation<br>
+      <strong>Actualisation auto</strong> → toutes les 2 minutes, avec notification push si activée
+    </div>
+    <div style="margin-top:10px;background:var(--blue-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--blue-text)">
+      ℹ️ L'agent EDL qui se déplace peut être sélectionné lors de la confirmation — ses coordonnées apparaissent dans la convocation.
+    </div>
+  </div>
+
+  <div class="settings-section" id="h-extranet">
+    <div class="settings-title">🔑 Extranet client</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Offrez à vos agences clientes un espace personnel pour suivre leurs commandes.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Activer pour un client</strong> → passer le contact en statut "Client signé ✅" → il reçoit un email de bienvenue avec son lien<br>
+      <strong>Lien d'accès</strong> → <code>app.edlconnect.fr/extranet</code> → connexion par lien magique (sans mot de passe)<br>
+      <strong>Ce que voit le client</strong> → ses commandes avec statuts, statistiques annuelles, formulaire nouvelle commande, documents<br>
+      <strong>Ajouter des documents</strong> → fiche contact → onglet "Modifier" → section "Documents extranet" → coller l'URL Google Drive<br>
+      <strong>Statuts synchronisés</strong> → quand vous confirmez un RDV, le client voit "Confirmé" dans son espace automatiquement
+    </div>
+    <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
+      ✅ Astuce : Le client peut passer commande directement depuis son extranet sans chercher son lien de réservation.
+    </div>
+  </div>
+
+  <div class="settings-section" id="h-agents">
+    <div class="settings-title">👤 Agents EDL</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Gérez les experts qui réalisent les états des lieux sur le terrain.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Ajouter un agent</strong> → Paramètres → section "Agents EDL" → nom + mobile → "Ajouter cet agent"<br>
+      <strong>Assigner à un RDV</strong> → lors de la confirmation d'un RDV → menu "Expert EDL qui se déplace"<br>
+      <strong>Dans la convocation</strong> → le nom et le mobile de l'agent apparaissent automatiquement dans l'email du locataire
+    </div>
+  </div>
+
   <div class="settings-section" id="h-faq">
     <div class="settings-title">❓ FAQ</div>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
@@ -1041,7 +1085,15 @@ html[data-mode="extranet"] #view-extranet{
       <strong>Q : Comment fusionner les doublons ?</strong><br>
       R : Sync Brevo → "Fusionner tous les doublons". Ou Contacts → filtre "Doublons".<br><br>
       <strong>Q : Le CRM fonctionne sur mobile ?</strong><br>
-      R : Oui ! Menu ☰ en haut à gauche, navigation rapide en bas de l'écran.
+      R : Oui ! Menu ☰ en haut à gauche, navigation rapide en bas de l'écran.<br><br>
+      <strong>Q : Comment envoyer le lien extranet à un client ?</strong><br>
+      R : Passez le contact en "Client signé ✅" → il reçoit automatiquement un email avec son lien d'accès.<br><br>
+      <strong>Q : Le client peut-il voir les commandes des autres agences ?</strong><br>
+      R : Non, chaque client ne voit que ses propres commandes — l'isolation est garantie par son email de connexion.<br><br>
+      <strong>Q : Comment ajouter un document pour un client dans l'extranet ?</strong><br>
+      R : Fiche contact → Modifier → "Documents extranet" → coller le nom + l'URL Google Drive → Enregistrer.<br><br>
+      <strong>Q : Comment sauvegarder mes données ?</strong><br>
+      R : Bouton "💾 Sauvegarder" en bas du menu de gauche → télécharge un fichier JSON complet. À faire toutes les semaines.
     </div>
   </div>
 
