@@ -1366,8 +1366,16 @@ html[data-mode="extranet"] #view-extranet{
                     <select id="bk-meuble"><option value="">— Choisir —</option><option>Meublé</option><option>Nu</option></select>
                   </div>
                   <div>
+                    <label>Superficie (m²)</label>
+                    <input type="number" id="bk-superficie" placeholder="45" min="1">
+                  </div>
+                  <div>
                     <label>Accès (digicode…)</label>
                     <input type="text" id="bk-acces" placeholder="Code : A1234">
+                  </div>
+                  <div>
+                    <label>Date d'entrée dans le logement</label>
+                    <input type="date" id="bk-date-entree">
                   </div>
                 </div>
               </div>
@@ -1537,6 +1545,14 @@ html[data-mode="extranet"] #view-extranet{
             <div>
               <label>Meublé / Nu</label>
               <select id="ex-meuble"><option>Nu</option><option>Meublé</option></select>
+            </div>
+            <div>
+              <label>Superficie (m²)</label>
+              <input type="number" id="ex-superficie" placeholder="45" min="1">
+            </div>
+            <div>
+              <label>Date d'entrée dans le logement</label>
+              <input type="date" id="ex-date-entree">
             </div>
           </div>
           <label>Accès / Digicode</label>
@@ -6105,6 +6121,8 @@ function extranetShowOrderForm(){
   ['ex-adresse','ex-acces','ex-loc-nom','ex-loc-tel','ex-loc-email','ex-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('ex-date').value = '';
   document.getElementById('ex-heure').value = '';
+  document.getElementById('ex-superficie').value = '';
+  document.getElementById('ex-date-entree').value = '';
   document.getElementById('ex-success').style.display = 'none';
   document.getElementById('extranet-form-error').style.display = 'none';
   const btn = document.getElementById('ex-submit-btn');
@@ -6150,6 +6168,8 @@ async function extranetSubmitOrder(){
     bienType: document.getElementById('ex-bien-type').value,
     bienTypo: '',
     meuble: document.getElementById('ex-meuble').value,
+    superficie: document.getElementById('ex-superficie')?.value || '',
+    dateEntree: document.getElementById('ex-date-entree')?.value || '',
     acces: document.getElementById('ex-acces').value.trim(),
     dateSouhaitee: document.getElementById('ex-date').value,
     heure: document.getElementById('ex-heure').value,
@@ -6321,6 +6341,8 @@ async function bkSubmit(){
     bienType : document.getElementById('bk-bien-type').value,
     bienTypo : document.getElementById('bk-bien-typo').value,
     meuble   : document.getElementById('bk-meuble').value,
+    superficie: document.getElementById('bk-superficie')?.value || '',
+    dateEntree: document.getElementById('bk-date-entree')?.value || '',
     acces    : document.getElementById('bk-acces').value.trim(),
     dateSouhaitee : document.getElementById('bk-date').value,
     heure    : document.getElementById('bk-heure').value,
