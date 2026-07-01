@@ -6956,7 +6956,7 @@ async function sendConfirmRdv(){
         const resaId = window._tempResaId;
         const r = _allReservations.find(x => (x.id || x._supaId) === resaId);
         if(r && _supaReady) {
-          const updatedData = { ...r, rdvConfirme: true, rdvConfirmeAt: new Date().toISOString() };
+          const updatedData = { ...r, rdvConfirme: true, statut: 'confirmee', rdvConfirmeAt: new Date().toISOString() };
           supabaseClient.from('bookings').update({
             data: updatedData, updated_at: new Date().toISOString()
           }).eq('id', r._supaId || r.id).then(() => {
@@ -6970,6 +6970,15 @@ async function sendConfirmRdv(){
         m.rdvConfirmeAt = new Date().toISOString();
         saveToStorage();
         renderMissions();
+        // Mettre aussi à jour le statut dans Supabase bookings si la mission a un _supaId
+        if(_supaReady && m._supaId){
+          supabaseClient.from('bookings').update({
+            data: { ...m, rdvConfirme: true, statut: 'confirmee', rdvConfirmeAt: new Date().toISOString() },
+            updated_at: new Date().toISOString()
+          }).eq('id', m._supaId).then(({ error }) => {
+            if(error) console.warn('Erreur mise à jour statut confirmee:', error);
+          });
+        }
       }
       closeModal('modal-confirm-rdv');
       notify('✅ Confirmations envoyées à l\'agent et au locataire !');
