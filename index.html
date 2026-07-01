@@ -5892,13 +5892,13 @@ async function initExtranetAuth(){
   // Écouter les changements d'état auth (notamment le retour après magic link)
   supabaseClient.auth.onAuthStateChange((event, session) => {
     if((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user?.email){
-      showExtranetDashboard(session.user.email);
+      showExtranetDashboard(session.user.email, session.access_token);
     }
   });
   // Vérifier aussi la session déjà active
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(session && session.user && session.user.email){
-    showExtranetDashboard(session.user.email);
+    showExtranetDashboard(session.user.email, session.access_token);
   } else {
     document.getElementById('extranet-login-card').style.display = 'block';
     document.getElementById('extranet-dashboard').style.display = 'none';
@@ -5934,7 +5934,7 @@ async function extranetSendMagicLink(){
   }
 }
 
-async function showExtranetDashboard(userEmail){
+async function showExtranetDashboard(userEmail, accessToken){
   document.getElementById('extranet-login-card').style.display = 'none';
   document.getElementById('extranet-dashboard').style.display = 'block';
   document.getElementById('extranet-user-email').textContent = userEmail;
@@ -5943,15 +5943,7 @@ async function showExtranetDashboard(userEmail){
   listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)"><i class="ti ti-loader"></i> Chargement de vos commandes…</div>';
 
   try{
-    // Récupérer la session active — on réessaie jusqu'à 3 fois car Supabase
-    // peut mettre quelques instants à confirmer la session après un magic link
-    let token = '';
-    for(let i = 0; i < 3; i++){
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if(session?.access_token){ token = session.access_token; break; }
-      await new Promise(r => setTimeout(r, 800));
-    }
-
+    const token = accessToken || '';
     if(!token){
       listEl.innerHTML = '<div class="card" style="padding:30px;text-align:center;color:var(--red-text)">Session expirée. Veuillez vous reconnecter.</div>';
       setTimeout(() => {
