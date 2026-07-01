@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace client EDLConnect</title>
+  <script>
+    // Redirige vers /?extranet=1 en conservant le hash (token Supabase magic link)
+    const hash = window.location.hash || '';
+    window.location.replace('/?extranet=1' + hash);
+  </script>
+</head>
+<body></body>
+</html>
