@@ -1167,7 +1167,10 @@ html[data-mode="extranet"] #view-extranet{
     <div class="view" id="view-reservations">
       <div class="page-header">
         <div class="page-title">📥 Réservations entrantes</div>
-        <button class="btn btn-primary" onclick="loadReservations()"><i class="ti ti-refresh"></i>Actualiser</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="openManualReservationModal()"><i class="ti ti-plus"></i> Saisie manuelle</button>
+          <button class="btn btn-primary" onclick="loadReservations()"><i class="ti ti-refresh"></i>Actualiser</button>
+        </div>
       </div>
 
       <!-- KPIs -->
@@ -1749,6 +1752,70 @@ html[data-mode="extranet"] #view-extranet{
       <button class="btn btn-primary" id="confirm-rdv-btn" onclick="sendConfirmRdv()">
         <i class="ti ti-send"></i> Envoyer les confirmations
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SAISIE MANUELLE RESERVATION -->
+<div class="modal-bg" id="modal-manual-resa">
+  <div class="modal" style="width:540px">
+    <div class="modal-title">
+      ✏️ Nouvelle réservation manuelle
+      <button class="modal-close" onclick="closeModal('modal-manual-resa')"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:16px;max-height:70vh;overflow-y:auto">
+      <div id="manual-resa-error" style="display:none;background:var(--red-bg);color:var(--red-text);border-radius:var(--radius);padding:10px 14px;font-size:12px;margin-bottom:12px"></div>
+
+      <div class="form-grid" style="margin-bottom:10px">
+        <div><label>Agence <span style="color:var(--red)">*</span></label><input type="text" id="mr-agence" placeholder="Nom de l'agence"></div>
+        <div><label>Email agence <span style="color:var(--red)">*</span></label><input type="email" id="mr-email" placeholder="contact@agence.fr"></div>
+      </div>
+      <div class="form-grid" style="margin-bottom:10px">
+        <div><label>Contact</label><input type="text" id="mr-contact" placeholder="Prénom Nom"></div>
+        <div><label>Tél agence</label><input type="tel" id="mr-tel" placeholder="01 23 45 67 89"></div>
+      </div>
+
+      <label style="font-weight:600;display:block;margin-bottom:8px">Type d'EDL <span style="color:var(--red)">*</span></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+        <button type="button" onclick="mrSelectType('EDL entrant',this)" class="mr-type-btn" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:8px;cursor:pointer;background:var(--bg);font-family:inherit;font-size:12px">🔑 EDL entrant</button>
+        <button type="button" onclick="mrSelectType('EDL sortant',this)" class="mr-type-btn" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:8px;cursor:pointer;background:var(--bg);font-family:inherit;font-size:12px">🏠 EDL sortant</button>
+        <button type="button" onclick="mrSelectType('EDL Sortant / Entrant',this)" class="mr-type-btn" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:8px;cursor:pointer;background:var(--bg);font-family:inherit;font-size:12px">🔄 Sortant / Entrant</button>
+        <button type="button" onclick="mrSelectType('Pré-état des lieux',this)" class="mr-type-btn" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:8px;cursor:pointer;background:var(--bg);font-family:inherit;font-size:12px">📋 Pré-état des lieux</button>
+      </div>
+
+      <label>Adresse du bien <span style="color:var(--red)">*</span></label>
+      <input type="text" id="mr-adresse" placeholder="12 rue de la Paix, 91000 Évry" style="margin-bottom:10px">
+
+      <div class="form-grid" style="margin-bottom:10px">
+        <div><label>Type de bien</label><select id="mr-bien-type"><option>Appartement</option><option>Maison</option><option>Studio</option><option>Local commercial</option><option>Parking</option><option>Autre</option></select></div>
+        <div><label>Meublé / Nu</label><select id="mr-meuble"><option>Nu</option><option>Meublé</option></select></div>
+        <div><label>Superficie (m²)</label><input type="number" id="mr-superficie" placeholder="45" min="1"></div>
+        <div><label>Date d'entrée</label><input type="date" id="mr-date-entree"></div>
+      </div>
+
+      <label>Accès / Digicode</label>
+      <input type="text" id="mr-acces" placeholder="Code : A1234" style="margin-bottom:10px">
+
+      <div class="form-grid" style="margin-bottom:10px">
+        <div><label>Date souhaitée <span style="color:var(--red)">*</span></label><input type="date" id="mr-date"></div>
+        <div><label>Heure souhaitée</label><select id="mr-heure"><option value="">— Flexible —</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option></select></div>
+      </div>
+
+      <label style="font-weight:600;display:block;margin-bottom:6px">Locataire <span style="color:var(--red)">*</span></label>
+      <div class="form-grid" style="margin-bottom:8px">
+        <div><label>Nom complet</label><input type="text" id="mr-loc-nom" placeholder="Jean Martin"></div>
+        <div><label>Téléphone</label><input type="tel" id="mr-loc-tel" placeholder="06 12 34 56 78"></div>
+      </div>
+      <label>Email du locataire</label>
+      <input type="email" id="mr-loc-email" placeholder="jean.martin@email.fr" style="margin-bottom:10px">
+
+      <label>Notes</label>
+      <textarea id="mr-notes" placeholder="Informations complémentaires..." style="min-height:60px;margin-bottom:16px"></textarea>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn" onclick="closeModal('modal-manual-resa')">Annuler</button>
+        <button class="btn btn-primary" id="mr-submit-btn" onclick="submitManualReservation()"><i class="ti ti-send"></i> Créer et envoyer les emails</button>
+      </div>
     </div>
   </div>
 </div>
@@ -6907,11 +6974,8 @@ function renderReservations(list){
       <td style="font-size:11px">${locataire}</td>
       <td>${statut}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
-        <button class="btn btn-sm" onclick="confirmRdvFromReservation('${r.id || r._supaId}')" title="Confirmer le RDV et envoyer les convocations" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
-          <i class="ti ti-calendar-check" style="font-size:11px"></i> Confirmer
-        </button>
-        <button class="btn btn-sm" onclick="createMissionFromReservation('${r.id || r._supaId}')" title="Importer dans Missions EDL" style="padding:3px 7px;background:var(--green-bg);color:var(--green-text);border-color:var(--green);font-size:10px">
-          <i class="ti ti-plus" style="font-size:11px"></i> Importer
+        <button class="btn btn-sm" onclick="confirmRdvFromReservation('${r.id || r._supaId}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
+          <i class="ti ti-calendar-check" style="font-size:11px"></i> Confirmer & Créer
         </button>
       </td>
     </tr>`;
@@ -7179,7 +7243,38 @@ async function sendConfirmRdv(){
         const resaId = window._tempResaId;
         const r = _allReservations.find(x => (x.id || x._supaId) === resaId);
         if(r && _supaReady) {
-          const updatedData = { ...r, rdvConfirme: true, statut: 'confirmee', rdvConfirmeAt: new Date().toISOString() };
+          // Créer automatiquement la mission dans le CRM
+          const mission = {
+            id: 'm_booking_' + Date.now(),
+            agence: r.agence || '',
+            emailClient: r.email || '',
+            contact: r.contact || '',
+            typeClient: 'Professionnel',
+            adresse: r.adresse || '',
+            bienType: r.bienType || '',
+            bienTypo: r.bienTypo || '',
+            bienMeuble: r.meuble || '',
+            acces: r.acces || '',
+            type: r.typeEdl || r.type || 'EDL entrant',
+            date: rdvDatetime,
+            montant: 0,
+            statut: 'planifiée',
+            rdvConfirme: true,
+            rdvConfirmeAt: new Date().toISOString(),
+            locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
+            locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
+            locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
+            locataires: r.locataires || [],
+            expertId: expertId || '',
+            notes: 'Importé automatiquement depuis réservation. ' + (r.notes || ''),
+            source: 'booking',
+            createdAt: new Date().toISOString()
+          };
+          DB.missions.push(mission);
+          saveToStorage();
+
+          // Marquer la réservation comme importée ET confirmée dans Supabase
+          const updatedData = { ...r, rdvConfirme: true, statut: 'importee', rdvConfirmeAt: new Date().toISOString(), missionId: mission.id };
           supabaseClient.from('bookings').update({
             data: updatedData, updated_at: new Date().toISOString()
           }).eq('id', r._supaId || r.id).then(() => {
@@ -7204,7 +7299,7 @@ async function sendConfirmRdv(){
         }
       }
       closeModal('modal-confirm-rdv');
-      notify('✅ Confirmations envoyées à l\'agent et au locataire !');
+      notify('✅ RDV confirmé et mission créée automatiquement dans Missions EDL !');
     } else {
       const err = await resp.json();
       notify('❌ Erreur : ' + (err.error || 'Envoi impossible'), 'err');
@@ -7218,7 +7313,117 @@ async function sendConfirmRdv(){
   }
 }
 
-// ─── BOOKING LINK GENERATOR ───────────────────────────────
+// ─── SAISIE MANUELLE RESERVATION ──────────────────────────
+let _mrSelectedType = '';
+
+function mrSelectType(type, btn){
+  _mrSelectedType = type;
+  document.querySelectorAll('.mr-type-btn').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--bg)';
+    b.style.color = 'var(--text)';
+  });
+  btn.style.borderColor = 'var(--blue)';
+  btn.style.background = 'var(--blue-bg)';
+  btn.style.color = 'var(--blue-text)';
+}
+
+function openManualReservationModal(){
+  _mrSelectedType = '';
+  document.querySelectorAll('.mr-type-btn').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--bg)';
+    b.style.color = 'var(--text)';
+  });
+  ['mr-agence','mr-email','mr-contact','mr-tel','mr-adresse','mr-acces','mr-loc-nom','mr-loc-tel','mr-loc-email','mr-notes'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('mr-date').value = '';
+  document.getElementById('mr-superficie').value = '';
+  document.getElementById('mr-date-entree').value = '';
+  document.getElementById('mr-heure').value = '';
+  document.getElementById('mr-submit-btn').disabled = false;
+  document.getElementById('mr-submit-btn').innerHTML = '<i class="ti ti-send"></i> Créer et envoyer les emails';
+  document.getElementById('manual-resa-error').style.display = 'none';
+  openModal('modal-manual-resa');
+}
+
+async function submitManualReservation(){
+  const errEl = document.getElementById('manual-resa-error');
+  const agence = document.getElementById('mr-agence').value.trim();
+  const email = document.getElementById('mr-email').value.trim();
+  const adresse = document.getElementById('mr-adresse').value.trim();
+  const locNom = document.getElementById('mr-loc-nom').value.trim();
+  const locTel = document.getElementById('mr-loc-tel').value.trim();
+  const date = document.getElementById('mr-date').value;
+
+  if(!agence){ errEl.textContent = 'Le nom de l\'agence est requis.'; errEl.style.display='block'; return; }
+  if(!email){ errEl.textContent = 'L\'email de l\'agence est requis.'; errEl.style.display='block'; return; }
+  if(!_mrSelectedType){ errEl.textContent = 'Sélectionnez un type d\'état des lieux.'; errEl.style.display='block'; return; }
+  if(!adresse){ errEl.textContent = 'L\'adresse du bien est requise.'; errEl.style.display='block'; return; }
+  if(!locNom){ errEl.textContent = 'Le nom du locataire est requis.'; errEl.style.display='block'; return; }
+  if(!locTel){ errEl.textContent = 'Le téléphone du locataire est requis.'; errEl.style.display='block'; return; }
+  if(!date){ errEl.textContent = 'La date souhaitée est requise.'; errEl.style.display='block'; return; }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('mr-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader"></i> Envoi en cours…';
+
+  const locataire = {
+    nom: locNom,
+    tel: locTel,
+    email: document.getElementById('mr-loc-email').value.trim()
+  };
+
+  const payload = {
+    agencyId: '',
+    agence,
+    contact: document.getElementById('mr-contact').value.trim() || agence,
+    email,
+    tel: document.getElementById('mr-tel').value.trim(),
+    typeEdl: _mrSelectedType,
+    adresse,
+    bienType: document.getElementById('mr-bien-type').value,
+    bienTypo: '',
+    meuble: document.getElementById('mr-meuble').value,
+    superficie: document.getElementById('mr-superficie').value || '',
+    dateEntree: document.getElementById('mr-date-entree').value || '',
+    acces: document.getElementById('mr-acces').value.trim(),
+    dateSouhaitee: date,
+    heure: document.getElementById('mr-heure').value,
+    notes: document.getElementById('mr-notes').value.trim(),
+    locataire,
+    locataires: [locataire],
+    source: 'manuel'
+  };
+
+  try {
+    const resp = await fetch('/api/booking-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await resp.json();
+    if(result.success || resp.ok){
+      closeModal('modal-manual-resa');
+      notify('✅ Réservation créée et emails envoyés à toutes les parties !');
+      setTimeout(() => loadReservations(), 800);
+    } else {
+      errEl.textContent = result.error || 'Erreur lors de l\'envoi. Réessayez.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-send"></i> Créer et envoyer les emails';
+    }
+  } catch(e) {
+    errEl.textContent = 'Erreur réseau. Vérifiez votre connexion.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-send"></i> Créer et envoyer les emails';
+  }
+}
+
+
 function copyBookingLink(){
   const c = DB.contacts.find(x => x.id === currentFicheId);
   if(!c) return;
