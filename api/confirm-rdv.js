@@ -63,7 +63,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
+    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <h2 style="font-size:20px;margin:0 0 16px 0">✅ Confirmation de votre état des lieux</h2>
@@ -82,7 +82,7 @@ export default async function handler(req) {
       ✅ Notre expert sera présent à l'heure indiquée. Le rapport vous sera transmis dans les <strong>24h</strong> avec signature électronique.
     </div>
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
-      <strong>Thomas Langlade — EDLConnect</strong><br>
+      <strong>Thomas Langlade — EDL IDF Expert en Etat des Lieux</strong><br>
       📞 <a href="tel:0767630963" style="color:#185FA5">07 67 63 09 63</a> · 
       ✉️ <a href="mailto:contact@edl-idf.com" style="color:#185FA5">contact@edl-idf.com</a>
     </div>
@@ -96,7 +96,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
+    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + salutation + '</strong>' : ''},</p>
@@ -157,7 +157,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
+    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">${civilite && locataireNom ? '<strong>' + civilite + ' ' + locataireNom + '</strong>,' : locataireNom ? 'Bonjour <strong>' + locataireNom + '</strong>,' : 'Madame, Monsieur,'}</p>
@@ -223,7 +223,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
+    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">${civilite && locataireNom ? '<strong>' + civilite + ' ' + locataireNom + '</strong>,' : locataireNom ? 'Bonjour <strong>' + locataireNom + '</strong>,' : 'Madame, Monsieur,'}</p>
