@@ -82,6 +82,32 @@ export default async function handler(req) {
       </div>
     </div>
 
+    <!-- Extranet client -->
+    <div style="margin-bottom:24px">
+      <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:10px">🔑 Votre espace client personnel</div>
+      <p style="font-size:13px;color:#444;line-height:1.8;margin:0 0 14px 0">
+        En tant que partenaire, vous bénéficiez d'un <strong>espace client privé</strong> pour suivre toutes vos commandes en temps réel, consulter vos statistiques et retrouver vos documents.
+      </p>
+      <div style="background:#E6F1FB;border-radius:8px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#185FA5;margin-bottom:8px">📊 Ce que vous retrouvez dans votre espace :</div>
+        <div style="font-size:13px;color:#0C447C;line-height:2">
+          ✅ Historique de toutes vos commandes et leur statut<br>
+          ✅ Passer une nouvelle commande directement<br>
+          ✅ Vos statistiques mensuelles<br>
+          ✅ Vos documents partagés (contrat, tarifs...)
+        </div>
+      </div>
+      <div style="background:#f8f8f6;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:#185FA5;margin-bottom:4px">🔗 Accéder à mon espace client</div>
+        <div style="font-size:12px;color:#444;margin-bottom:12px">Saisissez simplement votre adresse email sur la page — vous recevrez un lien de connexion instantané, aucun mot de passe à retenir.</div>
+        <a href="https://app.edlconnect.fr/extranet"
+           style="display:inline-block;background:#185FA5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;margin-bottom:8px">
+          Accéder à mon espace →
+        </a>
+        <div style="font-size:10px;color:#6b6b6b;margin-top:4px">app.edlconnect.fr/extranet</div>
+      </div>
+    </div>
+
     <!-- Contact dédié -->
     <div style="background:#f8f8f6;border-radius:8px;padding:16px;margin-bottom:20px">
       <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:8px">📞 Votre contact dédié :</div>
