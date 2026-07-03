@@ -6485,17 +6485,23 @@ async function extranetSendMagicLink(){
   btn.disabled = true;
   btn.innerHTML = '<i class="ti ti-loader"></i> Envoi en cours…';
   try{
-    const redirectTo = window.location.origin + '/extranet';
-    const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
-    if(error) throw error;
-    msgEl.style.color = 'var(--green-text)';
-    msgEl.textContent = '✅ Un lien de connexion vient de vous être envoyé par email. Cliquez dessus pour accéder à votre espace (vérifiez vos spams si besoin).';
-    btn.style.display = 'none';
-    emailEl.disabled = true;
+    const resp = await fetch('/api/send-magic-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const result = await resp.json();
+    if(result.success){
+      msgEl.style.color = 'var(--green-text)';
+      msgEl.textContent = '✅ Un lien de connexion vient de vous être envoyé par email. Cliquez dessus pour accéder à votre espace (vérifiez vos spams si besoin).';
+      btn.style.display = 'none';
+      emailEl.disabled = true;
+    } else {
+      throw new Error(result.error || 'Erreur inconnue');
+    }
   } catch(e){
     msgEl.style.color = 'var(--red-text)';
     msgEl.textContent = '❌ Erreur lors de l\'envoi du lien : ' + (e.message || 'réessayez plus tard.');
-  } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="ti ti-mail"></i> Recevoir mon lien de connexion';
   }
