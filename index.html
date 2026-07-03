@@ -40,23 +40,29 @@
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);height:100vh;overflow:hidden}
 .crm{display:none;height:100vh}
-/* SIDEBAR */
-.sidebar{width:210px;min-width:210px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
-.logo{padding:16px;border-bottom:1px solid var(--border)}
-.logo-title{font-size:15px;font-weight:600;color:var(--text)}
-.logo-sub{font-size:11px;color:var(--text2);margin-top:2px}
-.logo-badges{display:flex;gap:5px;margin-top:6px}
-.lbadge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500}
-.lbadge-green{background:var(--green-bg);color:var(--green-text)}
-.lbadge-blue{background:var(--blue-bg);color:var(--blue-text)}
-.nav-section{font-size:10px;font-weight:600;color:var(--text3);padding:12px 14px 3px;text-transform:uppercase;letter-spacing:.06em}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;cursor:pointer;font-size:13px;color:var(--text2);border:none;background:none;width:100%;text-align:left;transition:all .12s;border-left:3px solid transparent}
-.nav-item:hover{background:var(--bg);color:var(--text)}
-.nav-item.active{background:var(--bg);color:var(--blue);font-weight:500;border-left-color:var(--blue)}
-.nav-item i{font-size:16px}
-.nav-badge{margin-left:auto;background:var(--red-bg);color:var(--red-text);font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600}
-.sidebar-footer{margin-top:auto;padding:12px 14px;border-top:1px solid var(--border)}
-.sidebar-footer div{font-size:11px;color:var(--text2)}
+/* SIDEBAR — Design SaaS EDLConnect */
+.sidebar{width:220px;min-width:220px;background:#0d1929;border-right:none;display:flex;flex-direction:column;overflow-y:auto}
+.logo{padding:16px 14px 12px;border-bottom:1px solid rgba(24,95,165,0.2)}
+.logo-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.logo-icon{width:32px;height:32px;background:#185FA5;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+.logo-title{font-size:13px;font-weight:500;color:#ffffff}
+.logo-sub{font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px}
+.logo-badges{display:flex;gap:5px;margin-top:0}
+.lbadge{font-size:10px;padding:3px 10px;border-radius:20px;font-weight:500}
+.lbadge-green{background:rgba(24,95,165,0.2);color:#7bb8ef;border:0.5px solid rgba(55,138,221,0.3)}
+.lbadge-blue{background:rgba(55,138,221,0.12);color:#7bb8ef;border:0.5px solid rgba(55,138,221,0.2)}
+.lbadge-active-dot{display:inline-block;width:5px;height:5px;background:#378ADD;border-radius:50%;margin-right:4px;vertical-align:middle}
+.nav-section{font-size:9px;font-weight:500;color:rgba(255,255,255,0.22);padding:10px 12px 3px;text-transform:uppercase;letter-spacing:.09em}
+.nav-item{display:flex;align-items:center;gap:0;padding:0 10px;cursor:pointer;font-size:12.5px;color:rgba(255,255,255,0.45);border:none;background:none;width:100%;text-align:left;transition:background .12s;border-radius:8px;margin:1px 0;height:38px}
+.nav-item:hover{background:rgba(24,95,165,0.12);color:rgba(255,255,255,0.75)}
+.nav-item.active{background:rgba(24,95,165,0.22);color:#7bb8ef;font-weight:500}
+.nav-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:10px;font-size:15px}
+.nav-item i{font-size:15px}
+.nav-badge{margin-left:auto;font-size:10px;padding:1px 7px;border-radius:20px;font-weight:600}
+.nb-red{background:rgba(229,62,62,0.18);color:#fc8181;border:0.5px solid rgba(229,62,62,0.3)}
+.nb-amber{background:rgba(186,117,23,0.2);color:#f6c05e;border:0.5px solid rgba(186,117,23,0.3)}
+.sidebar-footer{margin-top:auto;padding:10px;border-top:1px solid rgba(24,95,165,0.2)}
+.sidebar-footer div{font-size:11px;color:rgba(255,255,255,0.25)}
 .sync-row{display:flex;align-items:center;gap:5px;margin-bottom:3px}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
 .sync-dot.loading{background:#EF9F27;animation:pulse 1s infinite}
@@ -435,43 +441,111 @@ html[data-mode="extranet"] #view-extranet{
   <div class="sidebar" id="sidebar">
 
     <div class="logo">
-      <div class="logo-title" id="sidebar-company-name">EDLConnect</div>
-      <div class="logo-sub" id="sidebar-user-email">CRM Pro</div>
+      <div class="logo-top">
+        <div class="logo-icon">EC</div>
+        <div>
+          <div class="logo-title" id="sidebar-company-name">EDLConnect</div>
+          <div class="logo-sub" id="sidebar-user-email">CRM Pro</div>
+        </div>
+      </div>
       <div class="logo-badges">
-        <span class="lbadge lbadge-green"><i class="ti ti-brand-notion" style="font-size:10px"></i> Notion</span>
-        <span class="lbadge lbadge-blue"><i class="ti ti-mail" style="font-size:10px"></i> Brevo</span>
+        <span class="lbadge lbadge-green"><span class="lbadge-active-dot"></span>Pro · Actif</span>
       </div>
     </div>
-    <span class="nav-section">Vue d'ensemble</span>
-    <button class="nav-item active" onclick="nav('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
-    <button class="nav-item" onclick="nav('agenda')"><i class="ti ti-calendar"></i>Agenda</button>
-    <span class="nav-section">Commercial</span>
-    <button class="nav-item" onclick="nav('contacts')"><i class="ti ti-building-store"></i>Contacts & Agences<span class="nav-badge" id="dup-nav-badge" style="display:none"></span></button>
-    <button class="nav-item" onclick="nav('prospection')"><i class="ti ti-target"></i>Prospection<span class="nav-badge" id="prosp-badge" style="display:none"></span></button>
-    <button class="nav-item" onclick="nav('pipeline')"><i class="ti ti-chart-arrows"></i>Pipeline</button>
-    <button class="nav-item" onclick="nav('missions')"><i class="ti ti-file-check"></i>Missions EDL</button>
-    <span class="nav-section">Emails</span>
-    <button class="nav-item" onclick="nav('campaigns')"><i class="ti ti-mail"></i>Campagnes</button>
-    <button class="nav-item" onclick="nav('compose')"><i class="ti ti-send"></i>Composer</button>
-    <span class="nav-section">Outils</span>
-    <button class="nav-item" onclick="nav('reservations')"><i class="ti ti-calendar-plus"></i>Réservations<span class="nav-badge" id="resa-nav-badge" style="display:none"></span></button>
-    <button class="nav-item" onclick="nav('brevo')"><i class="ti ti-refresh"></i>Sync Brevo</button>
-    <button class="nav-item" onclick="nav('settings')"><i class="ti ti-settings"></i>Paramètres</button>
-    <button class="nav-item" onclick="nav('help')"><i class="ti ti-help-circle"></i>Guide & Aide</button>
-    <button class="nav-item" id="nav-admin" style="display:none;color:var(--amber)" onclick="nav('admin')"><i class="ti ti-shield-lock"></i>Admin</button>
-    <div style="padding:8px 10px;display:flex;gap:5px;border-top:1px solid var(--border)">
-      <button class="btn btn-sm btn-primary" style="flex:1;justify-content:center;font-size:11px" onclick="saveBackup()" title="Sauvegarder toutes les données en fichier JSON">
-        <i class="ti ti-device-floppy"></i>Sauvegarder
+
+    <div style="padding:8px 10px;flex:1;display:flex;flex-direction:column;overflow-y:auto">
+
+      <button class="nav-item active" onclick="nav('dashboard')">
+        <div class="nav-icon" style="background:rgba(24,95,165,0.2)"><i class="ti ti-layout-dashboard" style="color:#7bb8ef"></i></div>
+        Accueil
       </button>
-      <label class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;cursor:pointer;margin:0" title="Restaurer depuis un fichier de sauvegarde">
-        <i class="ti ti-upload"></i>Restaurer
-        <input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none">
-      </label>
+
+      <span class="nav-section">Activité</span>
+      <button class="nav-item" onclick="nav('reservations')">
+        <div class="nav-icon" style="background:rgba(229,62,62,0.12)"><i class="ti ti-inbox" style="color:#fc8181"></i></div>
+        Réservations
+        <span class="nav-badge nb-red" id="resa-nav-badge" style="display:none"></span>
+      </button>
+      <button class="nav-item" onclick="nav('missions')">
+        <div class="nav-icon" style="background:rgba(56,161,105,0.12)"><i class="ti ti-clipboard-list" style="color:#68d391"></i></div>
+        Missions EDL
+      </button>
+      <button class="nav-item" onclick="nav('agenda')">
+        <div class="nav-icon" style="background:rgba(55,138,221,0.12)"><i class="ti ti-calendar" style="color:#7bb8ef"></i></div>
+        Agenda
+      </button>
+
+      <span class="nav-section">Commercial</span>
+      <button class="nav-item" onclick="nav('contacts')">
+        <div class="nav-icon" style="background:rgba(24,95,165,0.15)"><i class="ti ti-building-store" style="color:#7bb8ef"></i></div>
+        Contacts & Agences
+        <span class="nav-badge nb-amber" id="dup-nav-badge" style="display:none"></span>
+      </button>
+      <button class="nav-item" onclick="nav('prospection')">
+        <div class="nav-icon" style="background:rgba(186,117,23,0.12)"><i class="ti ti-target" style="color:#f6c05e"></i></div>
+        Prospection
+        <span class="nav-badge nb-amber" id="prosp-badge" style="display:none"></span>
+      </button>
+      <button class="nav-item" onclick="nav('pipeline')">
+        <div class="nav-icon" style="background:rgba(55,138,221,0.1)"><i class="ti ti-chart-bar" style="color:#7bb8ef"></i></div>
+        Pipeline
+      </button>
+
+      <span class="nav-section">Communication</span>
+      <button class="nav-item" onclick="nav('compose')">
+        <div class="nav-icon" style="background:rgba(24,95,165,0.15)"><i class="ti ti-send" style="color:#7bb8ef"></i></div>
+        Composer
+      </button>
+      <button class="nav-item" onclick="nav('campaigns')">
+        <div class="nav-icon" style="background:rgba(55,138,221,0.1)"><i class="ti ti-speakerphone" style="color:#7bb8ef"></i></div>
+        Campagnes
+      </button>
+
+      <span class="nav-section">Outils</span>
+      <button class="nav-item" onclick="nav('brevo')">
+        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-refresh" style="color:rgba(255,255,255,0.3)"></i></div>
+        Sync Brevo
+      </button>
+      <button class="nav-item" onclick="nav('settings')">
+        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-settings" style="color:rgba(255,255,255,0.3)"></i></div>
+        Paramètres
+      </button>
+      <button class="nav-item" onclick="nav('help')">
+        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-help-circle" style="color:rgba(255,255,255,0.3)"></i></div>
+        Guide & Aide
+      </button>
+      <button class="nav-item" id="nav-admin" style="display:none" onclick="nav('admin')">
+        <div class="nav-icon" style="background:rgba(186,117,23,0.12)"><i class="ti ti-shield-lock" style="color:#f6c05e"></i></div>
+        Admin
+      </button>
+
     </div>
-    <div class="sidebar-footer">
-      <div class="sync-row"><div class="sync-dot" id="sync-dot"></div><span id="sync-text" style="font-size:11px">Synchronisé</span></div>
-      <div id="last-backup-date" style="font-size:10px;color:var(--text3)"></div>
-      <div id="sidebar-footer-email" style="font-size:11px;color:var(--text2)"></div>
+
+    <div style="padding:10px;border-top:1px solid rgba(24,95,165,0.2)">
+      <div style="display:flex;gap:5px;margin-bottom:8px">
+        <button class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;background:rgba(24,95,165,0.15);border:0.5px solid rgba(55,138,221,0.25);color:rgba(255,255,255,0.5);border-radius:8px" onclick="saveBackup()" title="Sauvegarder">
+          <i class="ti ti-device-floppy"></i>Sauvegarder
+        </button>
+        <label class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;cursor:pointer;margin:0;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.35);border-radius:8px" title="Restaurer">
+          <i class="ti ti-upload"></i>Restaurer
+          <input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none">
+        </label>
+      </div>
+      <div id="last-backup-date" style="font-size:10px;color:rgba(255,255,255,0.22);margin-bottom:8px;padding:0 2px"></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 6px 2px">
+        <div style="width:28px;height:28px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600;flex-shrink:0" id="sidebar-avatar">TL</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:rgba(255,255,255,0.65);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-name">Thomas Langlade</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-email"></div>
+        </div>
+        <button onclick="supabaseClient&&supabaseClient.auth.signOut()" style="background:none;border:none;cursor:pointer;padding:4px" title="Déconnexion">
+          <i class="ti ti-logout" style="font-size:14px;color:rgba(255,255,255,0.2)"></i>
+        </button>
+      </div>
+      <div class="sync-row" style="padding:4px 6px 0">
+        <div class="sync-dot" id="sync-dot"></div>
+        <span id="sync-text" style="font-size:10px;color:rgba(255,255,255,0.25)">Synchronisé</span>
+      </div>
     </div>
   </div>
 
@@ -1693,6 +1767,26 @@ html[data-mode="extranet"] #view-extranet{
   </div>
 </div>
 
+
+<!-- MODAL DETAIL EVENEMENT AGENDA -->
+<div class="modal-bg" id="modal-evt-detail">
+  <div class="modal" style="width:480px">
+    <div class="modal-title" id="evt-detail-title">
+      Détail
+      <button class="modal-close" onclick="closeModal('modal-evt-detail')"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:16px">
+      <div id="evt-detail-body" style="margin-bottom:14px"></div>
+      <label style="font-weight:600;display:block;margin-bottom:6px">📝 Notes</label>
+      <textarea id="evt-detail-notes" style="min-height:90px;margin-bottom:12px" placeholder="Ajouter une note sur ce rendez-vous…"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn" onclick="closeModal('modal-evt-detail')">Fermer</button>
+        <button class="btn btn-primary" id="evt-detail-mission-btn" style="display:none" onclick="goToEvtMission()"><i class="ti ti-arrow-right"></i> Voir la mission</button>
+        <button class="btn btn-primary" onclick="saveEvtNotes()"><i class="ti ti-check"></i> Enregistrer les notes</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL CONFIRM RDV -->
 <div class="modal-bg" id="modal-confirm-rdv">
@@ -4763,8 +4857,8 @@ function renderCalendar(){
       const isT=d.getTime()===today.getTime();
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd));
       return `<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)" style="min-height:100px">
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':'ev-blue'}" style="font-size:10px;margin-bottom:2px">
-          ${fmtDT(e.date).split(' ')[1]||''} ${(e.titre||'').substring(0,20)}
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':'ev-blue'}" style="font-size:10px;margin-bottom:2px;cursor:pointer" onclick="event.stopPropagation();openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
+          ${fmtDT(e.date).split(' ')[1]||''} ${(e.titre||e.agence||'').substring(0,20)}
         </div>`).join('')}
         ${evts.length===0?'<div style="font-size:10px;color:var(--text3);padding:4px">Libre</div>':''}
       </div>`;
@@ -4776,10 +4870,10 @@ function renderCalendar(){
       const gcalUrl = e.evtType==='rdv'
         ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
         : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, '2h', e.adresse, `Agence: ${e.agence}\nMontant: ${e.montant}€ HT`);
-      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#185FA5'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0">
+      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#185FA5'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div style="font-size:11px;font-weight:600">${e.titre||e.agence||'—'}</div>
-          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#185FA5;text-decoration:none;flex-shrink:0;margin-left:6px">📅</a>`:''}
+          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#185FA5;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
         </div>
         <div style="font-size:10px;color:var(--text2)">${fmtDT(e.date)} · ${e.duree||'—'}</div>
         ${e.contact?`<div style="font-size:10px;color:var(--text3)">${e.contact}</div>`:''}
@@ -4806,7 +4900,7 @@ function renderCalendar(){
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd));
       html+=`<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)">
         <div class="cal-day-num">${d}</div>
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':'ev-blue'}">${(e.titre||'').split('—')[0].trim().substring(0,15)}</div>`).join('')}
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':'ev-blue'}" style="cursor:pointer" onclick="event.stopPropagation();openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">${(e.titre||e.agence||'').split('—')[0].trim().substring(0,15)}</div>`).join('')}
       </div>`;
     }
     const body=document.getElementById('cal-body');
@@ -4818,15 +4912,81 @@ function renderCalendar(){
       const gcalUrl = e.evtType==='rdv'
         ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
         : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, '2h', e.adresse, `Agence: ${e.agence}\nMontant: ${e.montant}€ HT`);
-      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#185FA5'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0">
+      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#185FA5'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div style="font-size:11px;font-weight:600">${e.titre||e.agence||'—'}</div>
-          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#185FA5;text-decoration:none;flex-shrink:0;margin-left:6px">📅</a>`:''}
+          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#185FA5;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
         </div>
         <div style="font-size:10px;color:var(--text2)">${fmtDT(e.date)} · ${e.duree||'—'}</div>
       </div>`;}).join(''):'<div class="empty">Aucun événement ce mois</div>';
   }
 }
+// ─── DETAIL EVENEMENT AGENDA ──────────────────────────────
+let _currentEvtType = '';
+let _currentEvtId = '';
+
+function openEvtDetail(type, id){
+  _currentEvtType = type;
+  _currentEvtId = id;
+
+  const allEvts = [
+    ...DB.rdvs.map(r => ({...r, evtType:'rdv'})),
+    ...DB.missions.map(m => ({...m, evtType:'mission'}))
+  ];
+  const e = allEvts.find(x => (x.id === id || x._supaId === id || String(x.id) === id));
+  if(!e) return;
+
+  const titleEl = document.getElementById('evt-detail-title');
+  const bodyEl = document.getElementById('evt-detail-body');
+  const notesEl = document.getElementById('evt-detail-notes');
+  const missionBtn = document.getElementById('evt-detail-mission-btn');
+
+  titleEl.innerHTML = `${type === 'mission' ? '🏠' : '📅'} ${e.titre||e.agence||'RDV'} <button class="modal-close" onclick="closeModal(\'modal-evt-detail\')"><i class="ti ti-x"></i></button>`;
+
+  const rows = [
+    e.agence        ? ['🏢 Agence',    e.agence]   : null,
+    e.type          ? ['📋 Type EDL',  e.type]      : null,
+    e.adresse       ? ['📍 Adresse',   e.adresse]   : null,
+    e.date          ? ['📅 Date',      fmtDT(e.date)] : null,
+    e.duree         ? ['⏱️ Durée',     e.duree]     : null,
+    e.contact       ? ['👤 Contact',   e.contact]   : null,
+    e.locataireNom  ? ['🧑 Locataire', `${e.locataireNom}${e.locataireTel?' — '+e.locataireTel:''}`] : null,
+    e.montant       ? ['💶 Montant',   e.montant+' € HT'] : null,
+    e.statut        ? ['🔖 Statut',    e.statut]    : null,
+  ].filter(Boolean);
+
+  bodyEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+    ${rows.map(([k,v]) => `<tr><td style="color:var(--text2);padding:4px 0;width:35%;vertical-align:top">${k}</td><td style="font-weight:500;padding:4px 0">${v}</td></tr>`).join('')}
+  </table>`;
+
+  notesEl.value = e.notes || '';
+  missionBtn.style.display = (type === 'mission') ? 'flex' : 'none';
+  openModal('modal-evt-detail');
+}
+
+function saveEvtNotes(){
+  const notes = document.getElementById('evt-detail-notes').value;
+  if(_currentEvtType === 'rdv'){
+    const rdv = DB.rdvs.find(r => String(r.id) === String(_currentEvtId));
+    if(rdv){ rdv.notes = notes; saveToStorage(); }
+  } else {
+    const m = DB.missions.find(x => String(x.id) === String(_currentEvtId));
+    if(m){ m.notes = notes; saveToStorage(); }
+  }
+  notify('✅ Notes enregistrées');
+  closeModal('modal-evt-detail');
+  renderCalendar();
+}
+
+function goToEvtMission(){
+  closeModal('modal-evt-detail');
+  nav('missions');
+  setTimeout(() => {
+    const m = DB.missions.find(x => String(x.id) === String(_currentEvtId));
+    if(m) notify(`📋 Mission : ${m.agence} — ${m.adresse||m.type||''}`);
+  }, 300);
+}
+
 function chMonth(d){chPeriod(d);}
 
 // FIX : clic sur jour calendrier — ouvre détail si événement, modal si vide
@@ -5972,11 +6132,17 @@ async function onAuthSuccess(user){
   if(sidebarName) sidebarName.textContent = companyName;
   if(sidebarSub)  sidebarSub.textContent  = 'CRM Pro';
   if(sidebarFooterEmail) sidebarFooterEmail.textContent = userEmail;
+  // Mettre à jour le nom et avatar dans le footer
+  const footerName = document.getElementById('sidebar-footer-name');
+  const sidebarAvatar = document.getElementById('sidebar-avatar');
+  const displayName = user.user_metadata?.full_name || userEmail.split('@')[0] || 'Utilisateur';
+  if(footerName) footerName.textContent = displayName;
+  if(sidebarAvatar) sidebarAvatar.textContent = displayName.substring(0,2).toUpperCase();
   // Mettre à jour le sync dot
   const dot=document.getElementById('sync-dot');
   const txt=document.getElementById('sync-text');
-  if(dot)dot.style.background='var(--green)';
-  if(txt){txt.textContent='☁️ Sync cloud active';txt.style.color='var(--green)';}
+  if(dot)dot.style.background='#22c55e';
+  if(txt){txt.textContent='Sync cloud active';txt.style.color='rgba(255,255,255,0.25)';}
   document.getElementById('auth-screen').classList.remove('show');
   document.querySelector('.crm').style.display='flex';
   const footerEl=document.querySelector('.sidebar-footer div:last-child');
