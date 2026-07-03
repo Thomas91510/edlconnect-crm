@@ -138,6 +138,7 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-t
 .cal-ev{font-size:9px;padding:1px 4px;border-radius:3px;margin-bottom:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .ev-blue{background:var(--blue-bg);color:var(--blue-text)}
 .ev-green{background:var(--green-bg);color:var(--green-text)}
+.ev-amber{background:var(--amber-bg);color:var(--amber-text)}
 /* TABS */
 .tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;gap:0}
 .tab{padding:8px 16px;font-size:12px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:all .12s}
@@ -2076,6 +2077,7 @@ html[data-mode="extranet"] #view-extranet{
     <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:14px">
       <button class="tab active" id="ftab-infos" onclick="ficheTab('infos',this)">Informations</button>
       <button class="tab" id="ftab-commandes" onclick="ficheTab('commandes',this)">Commandes <span id="ftab-commandes-count"></span></button>
+      <button class="tab" id="ftab-taches" onclick="ficheTab('taches',this)">Tâches <span id="ftab-taches-count" style="font-size:10px;background:var(--blue-bg);color:var(--blue-text);padding:1px 5px;border-radius:8px;margin-left:2px"></span></button>
       <button class="tab" id="ftab-emails" onclick="ficheTab('emails',this)">Emails & tracking</button>
       <button class="tab" id="ftab-edit" onclick="ficheTab('edit',this)">Modifier</button>
     </div>
@@ -2093,6 +2095,22 @@ html[data-mode="extranet"] #view-extranet{
       <div style="margin-top:10px">
         <button class="btn btn-primary btn-sm" onclick="addMissionToFiche()"><i class="ti ti-plus"></i>Ajouter une mission manuellement</button>
       </div>
+    </div>
+
+    <div id="fiche-taches" style="display:none">
+      <!-- Formulaire ajout tâche -->
+      <div class="card" style="margin-bottom:12px;padding:12px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text2)">Nouvelle tâche</div>
+        <input type="text" id="new-task-titre" placeholder="Titre de la tâche (ex: Rappeler ce client)" style="margin-bottom:8px">
+        <div class="form-grid" style="margin-bottom:8px">
+          <div><label>Date d'échéance</label><input type="date" id="new-task-date"></div>
+          <div><label>Heure</label><input type="time" id="new-task-heure" placeholder="09:00"></div>
+        </div>
+        <textarea id="new-task-notes" placeholder="Notes optionnelles…" style="min-height:50px;margin-bottom:8px"></textarea>
+        <button class="btn btn-primary btn-sm" onclick="addContactTask()"><i class="ti ti-plus"></i> Ajouter la tâche</button>
+      </div>
+      <!-- Liste des tâches -->
+      <div id="fiche-taches-list"></div>
     </div>
     <div id="fiche-emails" style="display:none">
       <div id="fiche-emails-list"></div>
@@ -3429,7 +3447,7 @@ function openFiche(id){
   openModal('modal-fiche');
 }
 function ficheTab(tab,btn){
-  ['infos','commandes','emails','edit'].forEach(t=>{
+  ['infos','commandes','taches','emails','edit'].forEach(t=>{
     const el=document.getElementById('fiche-'+t);
     if(el)el.style.display='none';
   });
@@ -3437,6 +3455,97 @@ function ficheTab(tab,btn){
   const el=document.getElementById('fiche-'+tab);
   if(el)el.style.display='block';
   if(btn)btn.classList.add('active');
+  if(tab==='taches') renderContactTasks();
+}
+
+function addContactTask(){
+  const titre = document.getElementById('new-task-titre').value.trim();
+  if(!titre){ notify('⚠️ Le titre est requis', 'warn'); return; }
+  const c = DB.contacts.find(x=>x.id===currentFicheId);
+  if(!c) return;
+  if(!c.tasks) c.tasks = [];
+  const date = document.getElementById('new-task-date').value;
+  const heure = document.getElementById('new-task-heure').value;
+  c.tasks.push({
+    id: 'task_' + Date.now(),
+    titre,
+    date,
+    heure,
+    notes: document.getElementById('new-task-notes').value.trim(),
+    done: false,
+    createdAt: new Date().toISOString(),
+    contactId: currentFicheId,
+    contactNom: c.entreprise || c.contact || ''
+  });
+  saveToStorage();
+  document.getElementById('new-task-titre').value = '';
+  document.getElementById('new-task-date').value = '';
+  document.getElementById('new-task-heure').value = '';
+  document.getElementById('new-task-notes').value = '';
+  renderContactTasks();
+  updateFicheTachesCount();
+  renderCalendar(); // rafraîchir l'agenda
+  notify('✅ Tâche ajoutée');
+}
+
+function renderContactTasks(){
+  const c = DB.contacts.find(x=>x.id===currentFicheId);
+  const tasks = (c && c.tasks) ? c.tasks : [];
+  const el = document.getElementById('fiche-taches-list');
+  if(!el) return;
+  if(!tasks.length){
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Aucune tâche pour ce contact.</div>';
+    return;
+  }
+  const sorted = [...tasks].sort((a,b) => {
+    if(a.done !== b.done) return a.done ? 1 : -1;
+    return (a.date||'9999') < (b.date||'9999') ? -1 : 1;
+  });
+  el.innerHTML = sorted.map(t => {
+    const isOverdue = t.date && !t.done && new Date(t.date + (t.heure?'T'+t.heure:'')) < new Date();
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius);background:${t.done?'var(--bg2)':'var(--bg)'};border:1px solid var(--border);margin-bottom:6px;opacity:${t.done?'0.6':'1'}">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')" style="margin-top:2px;cursor:pointer">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;${t.done?'text-decoration:line-through;color:var(--text3)':''}">${t.titre}</div>
+        ${t.date?`<div style="font-size:11px;color:${isOverdue?'var(--red-text)':'var(--text2)'};margin-top:2px">📅 ${t.date}${t.heure?' à '+t.heure:''}${isOverdue?' — En retard ⚠️':''}</div>`:''}
+        ${t.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${t.notes}</div>`:''}
+      </div>
+      <button onclick="deleteTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px" title="Supprimer">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleTask(taskId){
+  const c = DB.contacts.find(x=>x.id===currentFicheId);
+  if(!c || !c.tasks) return;
+  const t = c.tasks.find(x=>x.id===taskId);
+  if(t){ t.done = !t.done; saveToStorage(); renderContactTasks(); updateFicheTachesCount(); renderCalendar(); }
+}
+
+function deleteTask(taskId){
+  if(!confirm('Supprimer cette tâche ?')) return;
+  const c = DB.contacts.find(x=>x.id===currentFicheId);
+  if(!c || !c.tasks) return;
+  c.tasks = c.tasks.filter(x=>x.id!==taskId);
+  saveToStorage(); renderContactTasks(); updateFicheTachesCount(); renderCalendar();
+}
+
+function openTaskFromCalendar(contactId, taskId){
+  // Ouvrir la fiche contact sur l'onglet Tâches
+  const c = DB.contacts.find(x => x.id === contactId);
+  if(!c) return;
+  openFiche(contactId);
+  setTimeout(() => {
+    ficheTab('taches', document.getElementById('ftab-taches'));
+  }, 150);
+}
+
+function updateFicheTachesCount(){
+  const c = DB.contacts.find(x=>x.id===currentFicheId);
+  const tasks = (c && c.tasks) ? c.tasks : [];
+  const pending = tasks.filter(t=>!t.done).length;
+  const el = document.getElementById('ftab-taches-count');
+  if(el) el.textContent = pending > 0 ? pending : '';
 }
 async function quickUpdateContact(id,field,value){
   const c=DB.contacts.find(x=>x.id===id);
@@ -3503,6 +3612,9 @@ function renderFicheCommandes(c){
   // Badge nombre commandes
   const countEl=document.getElementById('ftab-commandes-count');
   if(countEl)countEl.textContent=missions.length>0?`(${missions.length})`:'';
+
+  // Badge tâches en attente
+  updateFicheTachesCount();
 
   // CA total ce contact
   const caTotal=missions.filter(m=>m.statut==='facturée'||m.statut==='terminée').reduce((s,m)=>s+(m.montant||0),0);
@@ -3985,10 +4097,10 @@ function renderPipeline(){
   board.innerHTML=STAGES.map(stage=>{
     const cards=DB.deals.filter(d=>d.etape===stage);
     const total=cards.reduce((s,d)=>s+(d.montant||0),0);
-    return `<div class="pipe-col"><div class="pipe-col-title"><span>${stage}</span><span>${cards.length}</span></div>
+    return `<div class="pipe-col" ondragover="event.preventDefault();this.style.background='var(--blue-bg)'" ondragleave="this.style.background=''" ondrop="dropDeal(event,'${stage}');this.style.background=''">
+      <div class="pipe-col-title"><span>${stage}</span><span>${cards.length}</span></div>
       ${cards.map(d=>{
-        const idx=DB.deals.indexOf(d);
-        return `<div class="pipe-card">
+        return `<div class="pipe-card" draggable="true" ondragstart="dragDeal(event,'${d.id}')" style="cursor:grab">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
             <div class="pipe-card-name" style="flex:1">${d.agence}</div>
             <button onclick="deleteDeal('${d.id}')" title="Supprimer"
@@ -4001,6 +4113,19 @@ function renderPipeline(){
       }).join('')}
       ${total?`<div style="font-size:10px;color:var(--text2);text-align:right;margin-top:5px">${total.toLocaleString('fr-FR')} €/m</div>`:''}</div>`;
   }).join('');
+}
+
+let _dragDealId = '';
+function dragDeal(event, id){ _dragDealId = id; event.dataTransfer.effectAllowed = 'move'; }
+function dropDeal(event, newStage){
+  event.preventDefault();
+  const d = DB.deals.find(x => String(x.id) === String(_dragDealId));
+  if(!d || d.etape === newStage) return;
+  d.etape = newStage;
+  saveToStorage();
+  renderPipeline();
+  renderDashboard();
+  notify(`✅ Déplacé → ${newStage}`);
 }
 
 function deleteDeal(id){
@@ -4817,9 +4942,19 @@ function renderCalendar(){
   const today=new Date();
   today.setHours(0,0,0,0);
 
+  const allTasks = DB.contacts.flatMap(c => (c.tasks||[]).filter(t=>!t.done).map(t=>({
+    ...t,
+    titre: `📌 ${t.titre}`,
+    evtType:'task',
+    date: t.date ? (t.heure ? t.date+'T'+t.heure : t.date) : null,
+    duree:'—',
+    contact: t.contactNom || ''
+  }))).filter(t=>t.date);
+
   const allEvts=[
     ...DB.rdvs.map(r=>({...r,evtType:'rdv'})),
-    ...DB.missions.map(m=>({...m,titre:'EDL — '+m.agence,evtType:'mission'}))
+    ...DB.missions.map(m=>({...m,titre:'EDL — '+m.agence,evtType:'mission'})),
+    ...allTasks
   ].filter(e=>e.date);
 
   if(UI.vue==='semaine'){
@@ -4857,7 +4992,7 @@ function renderCalendar(){
       const isT=d.getTime()===today.getTime();
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd));
       return `<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)" style="min-height:100px">
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':'ev-blue'}" style="font-size:10px;margin-bottom:2px;cursor:pointer" onclick="event.stopPropagation();openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" style="font-size:10px;margin-bottom:2px;cursor:pointer" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">
           ${fmtDT(e.date).split(' ')[1]||''} ${(e.titre||e.agence||'').substring(0,20)}
         </div>`).join('')}
         ${evts.length===0?'<div style="font-size:10px;color:var(--text3);padding:4px">Libre</div>':''}
@@ -4900,7 +5035,7 @@ function renderCalendar(){
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd));
       html+=`<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)">
         <div class="cal-day-num">${d}</div>
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':'ev-blue'}" style="cursor:pointer" onclick="event.stopPropagation();openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">${(e.titre||e.agence||'').split('—')[0].trim().substring(0,15)}</div>`).join('')}
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" style="cursor:pointer" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${(e.titre||e.agence||'').split('—')[0].trim().substring(0,15)}</div>`).join('')}
       </div>`;
     }
     const body=document.getElementById('cal-body');
