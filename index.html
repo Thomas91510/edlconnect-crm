@@ -6269,6 +6269,24 @@ async function showForgotPassword(){
 }
 async function onAuthSuccess(user){
   _currentUser=user;
+
+  // ── SÉCURITÉ EXTRANET ──────────────────────────────────────
+  // Si l'utilisateur n'est pas un compte CRM autorisé (vérifié via les plans Supabase),
+  // on vérifie s'il a un plan CRM. Sinon on le redirige vers l'extranet.
+  // Les comptes CRM ont forcément un enregistrement dans la table user_plans.
+  if(_supaReady){
+    try{
+      const { data: planData } = await supabaseClient
+        .from('user_plans').select('plan').eq('user_id', user.id).maybeSingle();
+      if(!planData){
+        // Pas de plan CRM → c'est un compte extranet client, on le redirige
+        supabaseClient.auth.signOut();
+        window.location.replace('/?extranet=1');
+        return;
+      }
+    } catch(e){ console.warn('Vérif plan:', e); }
+  }
+  // ── FIN SÉCURITÉ ──────────────────────────────────────────
   // Personnaliser la sidebar avec les infos de l'utilisateur
   const companyName = user.user_metadata?.company_name || localStorage.getItem('edl_co_name') || 'EDLConnect';
   const userEmail = user.email || '';
