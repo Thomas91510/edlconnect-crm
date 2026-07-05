@@ -4873,9 +4873,10 @@ async function sendEmail(){
       payload.attachment=[{content:_attachData, name:_attachName}];
       entry.objet += ' 📎';
     }
+    const _tk3=(await supabaseClient.auth.getSession()).data?.session?.access_token||'';
     const resp=await fetch(brevoUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+_tk3},
       body:JSON.stringify(payload)
     });
     const respStatus=resp.status;
@@ -7313,7 +7314,8 @@ function startResaAutoRefresh(){
 async function silentRefreshReservations(){
   if(!_supaReady || !_currentUser) return;
   try {
-    const resp = await fetch('/api/get-reservations');
+    const _tk1 = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const resp = await fetch('/api/get-reservations', { headers: { 'Authorization': 'Bearer ' + _tk1 } });
     if(!resp.ok) return;
     const rows = await resp.json();
     const newList = (rows || [])
@@ -7376,8 +7378,9 @@ async function loadReservations(){
 
   try {
     // Lire les réservations booking via l'API dédiée
+    const _tk2 = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
     const resp = await fetch('/api/get-reservations', {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _tk2 }
     });
 
     if(!resp.ok) throw new Error('Erreur chargement réservations');
