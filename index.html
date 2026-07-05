@@ -6269,28 +6269,6 @@ async function showForgotPassword(){
 }
 async function onAuthSuccess(user){
   _currentUser=user;
-
-  // ── SÉCURITÉ EXTRANET ──────────────────────────────────────
-  // Les comptes clients extranet (magic link) se connectent avec leur email agence.
-  // On les détecte en vérifiant qu'ils ont bien un plan CRM dans Supabase.
-  // Les comptes CRM (toi) ont toujours un enregistrement dans user_plans.
-  // Exception : les emails admin passent toujours.
-  const userEmail = user.email || '';
-  const isAdminEmail = ['contact@edl-idf.com','contact@edlconnect.fr'].includes(userEmail.toLowerCase());
-
-  if(!isAdminEmail && _supaReady){
-    try{
-      const { data: planData } = await supabaseClient
-        .from('user_plans').select('plan').eq('user_id', user.id).maybeSingle();
-      if(!planData){
-        // Pas de plan CRM → compte extranet client, on redirige
-        await supabaseClient.auth.signOut();
-        window.location.replace('/?extranet=1');
-        return;
-      }
-    } catch(e){ console.warn('Vérif plan CRM:', e); }
-  }
-  // ── FIN SÉCURITÉ ──────────────────────────────────────────
   // Personnaliser la sidebar avec les infos de l'utilisateur
   const companyName = user.user_metadata?.company_name || localStorage.getItem('edl_co_name') || 'EDLConnect';
   const userEmail = user.email || '';
