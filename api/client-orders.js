@@ -62,17 +62,47 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;export default asy
 
     const rows = await bookingsResp.json();
 
-    const orders = (rows || []).map(r => ({
-      id: r.id,
-      typeEdl: r.data?.typeEdl || '',
-      adresse: r.data?.adresse || '',
-      bienType: r.data?.bienType || '',
-      bienTypo: r.data?.bienTypo || '',
-      statut: r.data?.statut || 'en_attente',
-      dateSouhaitee: r.data?.dateSouhaitee || '',
-      heure: r.data?.heure || '',
-      createdAt: r.created_at
-    }));
+    // Récupérer aussi les missions liées à cet email pour synchroniser le statut "réalisé"
+    const missionsUrl = `${SUPABASE_URL}/rest/v1/missions?select=id,data&data->emailClient=eq.%22${encodeURIComponent(userEmail)}%22`;
+    let missionRows = [];
+    try {
+      const mResp = await fetch(missionsUrl, {
+        headers: {
+          'apikey': SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+        }
+      });
+      if(mResp.ok) missionRows = await mResp.json();
+    } catch(_){}
+
+    // Index des missions par missionId pour lookup rapide
+    const missionMap = {};
+    (missionRows || []).forEach(m => {
+      if(m.data?.missionId) missionMap[m.data.missionId] = m.data;
+      if(m.id) missionMap[m.id] = m.data;
+    });
+
+    const orders = (rows || []).map(r => {
+      // Chercher si une mission liée a un statut "réalisé"
+      const linkedMission = missionMap[r.data?.missionId] || null;
+      let statut = r.data?.statut || 'en_attente';
+      if(linkedMission && linkedMission.statut === 'réalisée') statut = 'realise';
+
+      return {
+        id: r.id,
+        typeEdl: r.data?.typeEdl || '',
+        adresse: r.data?.adresse || '',
+        bienType: r.data?.bienType || '',
+        bienTypo: r.data?.bienTypo || '',
+        meuble: r.data?.meuble || '',
+        statut,
+        dateSouhaitee: r.data?.dateSouhaitee || '',
+        heure: r.data?.heure || '',
+        locataireNom: r.data?.locataireNom || (r.data?.locataire?.nom) || '',
+        locataireTel: r.data?.locataireTel || (r.data?.locataire?.tel) || '',
+        createdAt: r.created_at
+      };
+    });
 
     return new Response(JSON.stringify(orders), {
       status: 200,
