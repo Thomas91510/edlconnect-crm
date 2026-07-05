@@ -3,12 +3,330 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Espace client EDLConnect</title>
-  <script>
-    // Redirige vers /?extranet=1 en conservant le hash (token Supabase magic link)
-    const hash = window.location.hash || '';
-    window.location.replace('/?extranet=1' + hash);
-  </script>
+  <title>Espace client — EDL IDF Expert en État des Lieux</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(160deg,#0d1929 0%,#1a2d4a 100%);min-height:100vh;color:#fff}
+    input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;padding:12px 14px;font-size:13px;font-family:inherit;outline:none}
+    input:focus{border-color:#378ADD}
+    input::placeholder{color:rgba(255,255,255,0.35)}
+    .btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,#185FA5,#378ADD);color:#fff;border:none;border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+    .btn-primary:disabled{opacity:0.6;cursor:not-allowed}
+    .btn-call{display:flex;align-items:center;gap:5px;background:#185FA5;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600}
+    .card{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+    .card:hover{background:rgba(24,95,165,0.15);border-color:rgba(55,138,221,0.3)}
+    .kpi{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;text-align:center}
+    .kpi.amber{background:rgba(186,117,23,0.15);border-color:rgba(186,117,23,0.25)}
+    .kpi.green{background:rgba(56,161,105,0.12);border-color:rgba(56,161,105,0.25)}
+    .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge-pending{background:rgba(186,117,23,0.2);color:#f6c05e;border:0.5px solid rgba(186,117,23,0.3)}
+    .badge-confirmed{background:rgba(24,95,165,0.2);color:#7bb8ef;border:0.5px solid rgba(55,138,221,0.3)}
+    .badge-done{background:rgba(56,161,105,0.2);color:#68d391;border:0.5px solid rgba(56,161,105,0.3)}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center;padding:16px}
+    .modal-overlay.open{display:flex}
+    .modal{background:#fff;border-radius:16px;width:100%;max-width:480px;overflow:hidden;color:#1a1a1a}
+    .modal-header{background:linear-gradient(135deg,#185FA5,#378ADD);padding:18px 20px;display:flex;align-items:center;justify-content:space-between}
+    .modal-close{background:rgba(255,255,255,0.15);border:none;cursor:pointer;color:#fff;font-size:16px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+    .section-label{font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+    .stats-bar{background:rgba(255,255,255,0.1);border-radius:4px;height:4px;margin-top:4px}
+    .stats-bar-fill{height:4px;border-radius:4px}
+    /* Formulaire nouvelle commande */
+    .form-section{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;margin-bottom:16px}
+    .form-label{font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:6px;display:block}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    select{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;padding:12px 14px;font-size:13px;font-family:inherit;outline:none}
+    select option{background:#1a2d4a;color:#fff}
+    textarea{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;padding:12px 14px;font-size:13px;font-family:inherit;outline:none;min-height:80px;resize:vertical}
+    .type-btn{border:1.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px;cursor:pointer;background:rgba(255,255,255,0.04);font-family:inherit;font-size:12px;color:rgba(255,255,255,0.7);text-align:left;transition:all .15s}
+    .type-btn.selected{border-color:#378ADD;background:rgba(24,95,165,0.2);color:#7bb8ef}
+    .msg-success{color:#68d391;font-size:12px;text-align:center;margin-top:10px}
+    .msg-error{color:#fc8181;font-size:12px;text-align:center;margin-top:10px}
+  </style>
 </head>
-<body></body>
+<body>
+
+<!-- HEADER -->
+<div style="background:rgba(13,25,41,0.95);backdrop-filter:blur(10px);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(55,138,221,0.2);position:sticky;top:0;z-index:50">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:36px;height:36px;background:#E6F1FB;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div style="font-size:13px;font-weight:700;color:#185FA5;line-height:1">E<span style="font-weight:300;color:#378ADD">)</span></div>
+      <div style="font-size:5px;font-weight:700;color:#185FA5;letter-spacing:0.5px">CONNECT</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#fff">EDL IDF Expert en État des Lieux</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.4)">Espace client</div>
+    </div>
+  </div>
+  <div id="header-right" style="display:none;align-items:center;gap:8px">
+    <a href="tel:0189291429" style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.5);text-decoration:none;background:rgba(255,255,255,0.06);padding:6px 10px;border-radius:20px;border:0.5px solid rgba(255,255,255,0.1)">
+      <i class="ti ti-phone" style="font-size:12px"></i> 01 89 29 14 29
+    </a>
+    <button id="logout-btn" onclick="doLogout()" style="background:none;border:0.5px solid rgba(255,255,255,0.15);border-radius:20px;padding:6px 10px;cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;display:flex;align-items:center;gap:4px">
+      <i class="ti ti-logout" style="font-size:12px"></i> Déconnexion
+    </button>
+  </div>
+</div>
+
+<div style="max-width:600px;margin:0 auto;padding:28px 20px">
+
+  <!-- ÉCRAN CONNEXION -->
+  <div id="login-screen">
+    <div style="text-align:center;padding:40px 0 32px">
+      <div style="width:64px;height:64px;background:linear-gradient(135deg,#185FA5,#378ADD);border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(24,95,165,0.4)">🔑</div>
+      <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:8px">Bienvenue</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.5)">Connectez-vous pour accéder à votre espace client</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px">
+      <label class="form-label">Votre adresse email</label>
+      <input type="email" id="login-email" placeholder="contact@votre-agence.fr" style="margin-bottom:14px">
+      <button class="btn-primary" id="login-btn" onclick="sendMagicLink()">
+        <i class="ti ti-mail"></i> Recevoir mon lien de connexion
+      </button>
+      <div id="login-msg"></div>
+    </div>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,0.25)">
+      Lien de connexion par email · Aucun mot de passe
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" style="display:none">
+    <div style="margin-bottom:20px">
+      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px">Bonjour 👋</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.5)" id="user-email-display"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="kpi"><div style="font-size:22px;font-weight:700;color:#fff" id="kpi-total">0</div><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">Total</div></div>
+      <div class="kpi amber"><div style="font-size:22px;font-weight:700;color:#f6c05e" id="kpi-pending">0</div><div style="font-size:10px;color:rgba(246,192,94,0.6);margin-top:2px">En cours</div></div>
+      <div class="kpi green"><div style="font-size:22px;font-weight:700;color:#68d391" id="kpi-done">0</div><div style="font-size:10px;color:rgba(104,211,145,0.6);margin-top:2px">Réalisées</div></div>
+    </div>
+
+    <button onclick="showOrderForm()" style="width:100%;background:linear-gradient(135deg,#185FA5,#378ADD);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px;box-shadow:0 4px 16px rgba(24,95,165,0.35)">
+      <i class="ti ti-plus" style="font-size:16px"></i> Nouvelle commande d'état des lieux
+    </button>
+
+    <div class="section-label">Mes commandes</div>
+    <div id="orders-list"><div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Chargement…</div></div>
+
+    <div id="docs-section" style="display:none;margin-top:16px">
+      <div class="section-label">Mes documents</div>
+      <div id="docs-list"></div>
+    </div>
+
+    <div style="background:rgba(24,95,165,0.15);border:1px solid rgba(55,138,221,0.2);border-radius:12px;padding:16px;margin-top:16px;display:flex;align-items:center;gap:14px">
+      <div style="width:40px;height:40px;background:#185FA5;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">👨‍💼</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:#7bb8ef">Une question ?</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Thomas Langlade · EDL IDF Expert en État des Lieux</div>
+      </div>
+      <a href="tel:0189291429" class="btn-call"><i class="ti ti-phone" style="font-size:13px"></i> Appeler</a>
+    </div>
+  </div>
+
+  <!-- FORMULAIRE NOUVELLE COMMANDE -->
+  <div id="order-form" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <button onclick="hideOrderForm()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px"><i class="ti ti-arrow-left"></i> Retour</button>
+      <div style="font-size:16px;font-weight:600;color:#fff">Nouvelle commande</div>
+    </div>
+    <div class="form-section">
+      <div class="form-label">Type d'état des lieux *</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <button class="type-btn" onclick="selectType('EDL entrant',this)">🔑 EDL entrant<br><span style="font-size:10px;opacity:.6">État des lieux d'entrée</span></button>
+        <button class="type-btn" onclick="selectType('EDL sortant',this)">🏠 EDL sortant<br><span style="font-size:10px;opacity:.6">État des lieux de sortie</span></button>
+        <button class="type-btn" onclick="selectType('EDL Sortant / Entrant',this)">🔄 Sortant / Entrant<br><span style="font-size:10px;opacity:.6">Les deux le même jour</span></button>
+        <button class="type-btn" onclick="selectType('Pré-état des lieux',this)">📋 Pré-état des lieux<br><span style="font-size:10px;opacity:.6">Avant la sortie</span></button>
+      </div>
+      <div class="form-label">Adresse du bien *</div>
+      <input id="f-adresse" placeholder="12 rue de la Paix, 91000 Évry" style="margin-bottom:10px">
+      <div class="form-grid" style="margin-bottom:10px">
+        <div><div class="form-label">Type de bien</div><select id="f-bien"><option>Appartement</option><option>Maison</option><option>Studio</option><option>Local commercial</option><option>Parking</option><option>Autre</option></select></div>
+        <div><div class="form-label">Meublé / Nu</div><select id="f-meuble"><option>Nu</option><option>Meublé</option></select></div>
+        <div><div class="form-label">Superficie (m²)</div><input id="f-superficie" type="number" placeholder="45" min="1"></div>
+        <div><div class="form-label">Date d'entrée</div><input id="f-date-entree" type="date"></div>
+      </div>
+      <div class="form-label">Accès / Digicode</div>
+      <input id="f-acces" placeholder="Code : A1234" style="margin-bottom:14px">
+      <div class="form-grid" style="margin-bottom:14px">
+        <div><div class="form-label">Date souhaitée *</div><input id="f-date" type="date"></div>
+        <div><div class="form-label">Heure souhaitée</div><select id="f-heure"><option value="">— Flexible —</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option></select></div>
+      </div>
+      <div class="form-label">Locataire *</div>
+      <div class="form-grid" style="margin-bottom:8px">
+        <div><input id="f-loc-nom" placeholder="Jean Martin"></div>
+        <div><input id="f-loc-tel" placeholder="06 12 34 56 78"></div>
+      </div>
+      <input id="f-loc-email" type="email" placeholder="jean.martin@email.fr" style="margin-bottom:14px">
+      <div class="form-label">Notes</div>
+      <textarea id="f-notes" placeholder="Informations complémentaires…"></textarea>
+    </div>
+    <div id="form-error" style="display:none;background:rgba(229,62,62,0.15);color:#fc8181;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:10px"></div>
+    <button class="btn-primary" id="form-submit-btn" onclick="submitOrder()"><i class="ti ti-send"></i> Envoyer ma demande</button>
+    <div id="form-success" style="display:none;background:rgba(56,161,105,0.15);color:#68d391;border-radius:8px;padding:14px;text-align:center;margin-top:12px;font-size:13px">✅ Votre demande a bien été envoyée !</div>
+  </div>
+</div>
+
+<!-- MODAL DÉTAIL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="color:#fff;font-size:14px;font-weight:600" id="detail-title">Détail</div>
+      <button class="modal-close" onclick="closeDetail()">×</button>
+    </div>
+    <div id="detail-body" style="padding:20px;max-height:70vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let _userEmail = '';
+let _accessToken = '';
+let _selectedType = '';
+
+// Auth au chargement
+sb.auth.onAuthStateChange((event, session) => {
+  if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+    _userEmail = session.user.email;
+    _accessToken = session.access_token;
+    showDashboard();
+  }
+  if (event === 'SIGNED_OUT') {
+    showLogin();
+  }
+});
+
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session?.user) {
+    _userEmail = session.user.email;
+    _accessToken = session.access_token;
+    showDashboard();
+  } else {
+    showLogin();
+  }
+});
+
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('order-form').style.display = 'none';
+  document.getElementById('header-right').style.display = 'none';
+}
+
+async function showDashboard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('order-form').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('header-right').style.display = 'flex';
+  document.getElementById('user-email-display').textContent = _userEmail;
+  await loadOrders();
+  await loadDocs();
+}
+
+async function sendMagicLink() {
+  const email = document.getElementById('login-email').value.trim();
+  const msgEl = document.getElementById('login-msg');
+  if (!email || !email.includes('@')) { msgEl.className='msg-error'; msgEl.textContent='⚠️ Email invalide.'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Envoi…';
+  try {
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: 'https://app.edlconnect.fr/extranet-app' }
+    });
+    if (error) throw error;
+    msgEl.className='msg-success'; msgEl.textContent='✅ Lien envoyé ! Vérifiez votre boîte mail.';
+    btn.style.display='none';
+    document.getElementById('login-email').disabled=true;
+  } catch(e) {
+    msgEl.className='msg-error'; msgEl.textContent='❌ Erreur : '+(e.message||'réessayez.');
+    btn.disabled=false; btn.innerHTML='<i class="ti ti-mail"></i> Recevoir mon lien de connexion';
+  }
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  showLogin();
+}
+
+async function loadOrders() {
+  document.getElementById('orders-list').innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Chargement…</div>';
+  try {
+    const resp = await fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken} });
+    const orders = await resp.json();
+    document.getElementById('kpi-total').textContent = orders.length;
+    document.getElementById('kpi-pending').textContent = orders.filter(o=>o.statut!=='realise'&&o.statut!=='confirmee').length;
+    document.getElementById('kpi-done').textContent = orders.filter(o=>o.statut==='realise').length;
+    if (!orders.length) { document.getElementById('orders-list').innerHTML='<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Aucune commande pour le moment.</div>'; return; }
+    document.getElementById('orders-list').innerHTML = orders.map(o => {
+      const badge = o.statut==='realise' ? '<span class="badge badge-done">✅ Réalisé</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
+      const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
+      return `<div class="card" onclick='openDetail(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
+        <div style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+            <div style="font-weight:600;font-size:13px;color:#fff">${o.typeEdl||'État des lieux'}</div>
+            <div style="display:flex;align-items:center;gap:6px">${badge}<i class="ti ti-chevron-right" style="color:rgba(255,255,255,0.25);font-size:13px"></i></div>
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse||'—'}</div>
+          ${dateRdv?`<div style="font-size:11px;color:#7bb8ef;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${o.heure?' à '+o.heure:''}</div>`:''}
+          <div style="font-size:11px;color:rgba(255,255,255,0.25)">Demandé le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR'):'—'}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { document.getElementById('orders-list').innerHTML='<div style="color:#fc8181;font-size:13px;padding:20px 0">Erreur de chargement.</div>'; }
+}
+
+async function loadDocs() {
+  try {
+    const resp = await fetch('/api/client-documents', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:_userEmail}) });
+    const docs = await resp.json();
+    if (!docs||!docs.length) return;
+    document.getElementById('docs-section').style.display = 'block';
+    document.getElementById('docs-list').innerHTML = docs.map(d=>`<a href="${d.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;text-decoration:none;color:#fff;border:1px solid rgba(255,255,255,0.1);margin-bottom:8px;background:rgba(255,255,255,0.05)"><span style="font-size:18px">📄</span><span style="flex:1;font-size:13px;font-weight:500">${d.nom}</span><span style="font-size:11px;color:#7bb8ef">Ouvrir →</span></a>`).join('');
+  } catch(e) {}
+}
+
+function openDetail(o) {
+  document.getElementById('detail-title').textContent = o.typeEdl||'État des lieux';
+  const badge = o.statut==='realise'?'<span class="badge badge-done" style="font-size:12px;padding:5px 14px">✅ Réalisé</span>':o.statut==='confirmee'||o.statut==='importee'?'<span class="badge badge-confirmed" style="font-size:12px;padding:5px 14px">📅 Confirmé</span>':'<span class="badge badge-pending" style="font-size:12px;padding:5px 14px">⏳ En attente</span>';
+  const rows = [['📋 Type',o.typeEdl||'—'],['📍 Adresse',o.adresse||'—'],['🏠 Bien',[o.bienType,o.bienTypo,o.meuble].filter(Boolean).join(' · ')||'—'],['📅 Date souhaitée',o.dateSouhaitee?new Date(o.dateSouhaitee).toLocaleDateString('fr-FR'):'—'],['🕐 Heure',o.heure||'—'],['🧑 Locataire',o.locataireNom||'—'],['📱 Téléphone',o.locataireTel||'—']].filter(([,v])=>v&&v!=='—');
+  document.getElementById('detail-body').innerHTML = `<div style="text-align:center;margin-bottom:20px">${badge}</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #f0f0f0"><td style="color:#6b6b6b;padding:10px 0;width:40%;vertical-align:top">${k}</td><td style="font-weight:500;padding:10px 0">${v}</td></tr>`).join('')}</table><div style="font-size:11px;color:#999;text-align:center">Commande reçue le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'—'}</div><div style="margin-top:16px"><button onclick="closeDetail()" style="width:100%;padding:12px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button></div>`;
+  document.getElementById('detail-modal').classList.add('open');
+}
+function closeDetail() { document.getElementById('detail-modal').classList.remove('open'); }
+
+function showOrderForm() { document.getElementById('dashboard').style.display='none'; document.getElementById('order-form').style.display='block'; _selectedType=''; document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected')}); }
+function hideOrderForm() { document.getElementById('order-form').style.display='none'; document.getElementById('dashboard').style.display='block'; }
+function selectType(t,btn) { _selectedType=t; document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
+
+async function submitOrder() {
+  const errEl = document.getElementById('form-error');
+  const adresse = document.getElementById('f-adresse').value.trim();
+  const locNom = document.getElementById('f-loc-nom').value.trim();
+  const locTel = document.getElementById('f-loc-tel').value.trim();
+  const date = document.getElementById('f-date').value;
+  if (!_selectedType) { errEl.textContent='Sélectionnez un type d\'état des lieux.'; errEl.style.display='block'; return; }
+  if (!adresse) { errEl.textContent='L\'adresse est requise.'; errEl.style.display='block'; return; }
+  if (!locNom) { errEl.textContent='Le nom du locataire est requis.'; errEl.style.display='block'; return; }
+  if (!locTel) { errEl.textContent='Le téléphone du locataire est requis.'; errEl.style.display='block'; return; }
+  if (!date) { errEl.textContent='La date souhaitée est requise.'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  const btn = document.getElementById('form-submit-btn');
+  btn.disabled=true; btn.innerHTML='<i class="ti ti-loader"></i> Envoi…';
+  const locataire = {nom:locNom,tel:locTel,email:document.getElementById('f-loc-email').value.trim()};
+  const payload = {agencyId:'',agence:_userEmail,contact:_userEmail,email:_userEmail,tel:'',typeEdl:_selectedType,adresse,bienType:document.getElementById('f-bien').value,bienTypo:'',meuble:document.getElementById('f-meuble').value,superficie:document.getElementById('f-superficie').value||'',dateEntree:document.getElementById('f-date-entree').value||'',acces:document.getElementById('f-acces').value.trim(),dateSouhaitee:date,heure:document.getElementById('f-heure').value,notes:document.getElementById('f-notes').value.trim(),locataire,locataires:[locataire],source:'extranet'};
+  try {
+    const resp = await fetch('/api/booking-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const r = await resp.json();
+    if(r.success||resp.ok){document.getElementById('form-success').style.display='block';btn.style.display='none';setTimeout(()=>{hideOrderForm();loadOrders();},2500);}
+    else throw new Error(r.error||'Erreur');
+  } catch(e){errEl.textContent='Erreur : '+(e.message||'réessayez.');errEl.style.display='block';btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Envoyer ma demande';}
+}
+</script>
+</body>
 </html>
