@@ -1637,6 +1637,17 @@ html[data-mode="extranet"] #view-extranet{
         </div>
       </div>
 
+      <!-- Modal détail commande -->
+      <div id="extranet-order-detail-modal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;padding:16px">
+        <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+          <div style="background:#185FA5;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+            <div style="color:#fff;font-size:14px;font-weight:600" id="extranet-detail-title">Détail de la commande</div>
+            <button onclick="closeExtranetOrderDetail()" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.7);font-size:20px;line-height:1">×</button>
+          </div>
+          <div id="extranet-detail-body" style="padding:20px;overflow-y:auto;max-height:70vh"></div>
+        </div>
+      </div>
+
       <!-- Formulaire de nouvelle commande intégré -->
       <div id="extranet-order-form" style="display:none" class="card" style="margin-bottom:16px">
         <div class="card-head">
@@ -6553,14 +6564,20 @@ async function showExtranetDashboard(userEmail, accessToken){
     };
 
     listEl.innerHTML = orders.map(o => `
-      <div class="card" style="margin-bottom:10px">
+      <div class="card" style="margin-bottom:10px;cursor:pointer;transition:box-shadow .15s" 
+           onmouseover="this.style.boxShadow='0 4px 12px rgba(24,95,165,0.12)'" 
+           onmouseout="this.style.boxShadow=''"
+           onclick="openExtranetOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})">
         <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px">
           <div>
             <div style="font-weight:600;font-size:13px">${o.typeEdl || 'État des lieux'}</div>
             <div style="font-size:12px;color:var(--text2);margin-top:2px">📍 ${o.adresse || '—'}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:2px">Demandé le ${o.createdAt ? new Date(o.createdAt).toLocaleDateString('fr-FR') : '—'}</div>
           </div>
-          ${statutLabel(o.statut)}
+          <div style="display:flex;align-items:center;gap:8px">
+            ${statutLabel(o.statut)}
+            <i class="ti ti-chevron-right" style="color:var(--text3);font-size:14px"></i>
+          </div>
         </div>
       </div>`).join('');
   } catch(e){
@@ -6617,7 +6634,56 @@ function feAddDoc(){
 }
 function feGetDocs(){ return _feDocs.filter(d => d.url && d.url.trim()); }
 
-function extranetToggleStats(){
+function openExtranetOrderDetail(o){
+  const modal = document.getElementById('extranet-order-detail-modal');
+  const title = document.getElementById('extranet-detail-title');
+  const body = document.getElementById('extranet-detail-body');
+
+  title.textContent = o.typeEdl || 'État des lieux';
+
+  const statutBadge = (s) => {
+    if(s === 'realise') return '<span style="color:#27AE60;background:#EAF3DE;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">✅ Réalisé</span>';
+    if(s === 'confirmee' || s === 'importee') return '<span style="color:#185FA5;background:#E6F1FB;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">📅 Confirmé</span>';
+    return '<span style="color:#B45309;background:#FEF3C7;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">⏳ En attente</span>';
+  };
+
+  const rows = [
+    ['📋 Type', o.typeEdl || '—'],
+    ['📍 Adresse', o.adresse || '—'],
+    ['🏠 Bien', [o.bienType, o.bienTypo, o.meuble].filter(Boolean).join(' · ') || '—'],
+    ['📅 Date souhaitée', o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR') : '—'],
+    ['🕐 Heure', o.heure || '—'],
+    ['🧑 Locataire', o.locataireNom || '—'],
+    ['📱 Tél. locataire', o.locataireTel || '—'],
+  ].filter(([,v]) => v !== '—');
+
+  body.innerHTML = `
+    <div style="text-align:center;margin-bottom:20px">${statutBadge(o.statut)}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px">
+      ${rows.map(([k,v]) => `
+        <tr style="border-bottom:1px solid #f0f0f0">
+          <td style="color:#6b6b6b;padding:10px 0;width:40%;vertical-align:top">${k}</td>
+          <td style="font-weight:500;padding:10px 0">${v}</td>
+        </tr>`).join('')}
+    </table>
+    <div style="font-size:11px;color:#999;text-align:center">
+      Commande reçue le ${o.createdAt ? new Date(o.createdAt).toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'}) : '—'}
+    </div>
+    <div style="margin-top:16px">
+      <button onclick="closeExtranetOrderDetail()" 
+        style="width:100%;padding:12px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+        Fermer
+      </button>
+    </div>`;
+
+  modal.style.display = 'flex';
+}
+
+function closeExtranetOrderDetail(){
+  document.getElementById('extranet-order-detail-modal').style.display = 'none';
+}
+
+
   const statsEl = document.getElementById('extranet-stats');
   const btn = document.getElementById('extranet-stats-toggle');
   const visible = statsEl.style.display !== 'none';
