@@ -2301,6 +2301,12 @@ const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
 
 let supabaseClient = null;
+
+// Helper : en-têtes avec jeton de session pour les appels API sécurisés
+async function _authHeaders(extra){
+  const t = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+  return Object.assign({ 'Authorization': 'Bearer ' + t }, extra || {});
+}
 let _supaReady = false;
 let _supaSyncing = false; // évite les boucles infinies pendant la sync
 
@@ -3656,7 +3662,7 @@ async function quickUpdateContact(id,field,value){
     if(c.email && confirm('Envoyer l\'email de bienvenue EDL IDF à ' + (c.entreprise||c.contact) + ' ?')){
       try {
         await fetch('/api/send-welcome-agency', {
-          method:'POST', headers:{'Content-Type':'application/json'},
+          method:'POST', headers: await _authHeaders({'Content-Type':'application/json'}),
           body: JSON.stringify({ email:c.email, companyName:c.entreprise||c.contact||'', contactName:c.contact||'' })
         });
         notify('✅ Email de bienvenue envoyé !');
@@ -3808,7 +3814,7 @@ async function onContactStatusChange(select){
   try {
     const resp = await fetch('/api/send-welcome-agency', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         email: c.email,
         companyName: c.entreprise || c.contact || '',
@@ -3856,7 +3862,7 @@ async function loadGmailEmails(contactId, email){
   if(btn)btn.disabled=true;
   if(status)status.textContent='Chargement…';
   try{
-    const resp=await fetch(`/api/gmail-emails?email=${encodeURIComponent(email)}`);
+    const resp=await fetch(`/api/gmail-emails?email=${encodeURIComponent(email)}`,{headers:await _authHeaders()});
     if(!resp.ok){
       const err=await resp.json();
       if(status)status.textContent='❌ '+(err.error||'Erreur');
@@ -5635,9 +5641,7 @@ Objet: [objet de l'email]
   try {
    const response = await fetch('/api/mistral', {
       method : 'POST',
-      headers: {
-        'Content-Type' : 'application/json',
-      },
+      headers: await _authHeaders({ 'Content-Type' : 'application/json' }),
       body: JSON.stringify({
         model      : 'mistral-small-latest',
         temperature: 0.7,
@@ -6188,7 +6192,7 @@ async function saveAdminPlan(){
       try {
         await fetch('/api/send-welcome-agency', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await _authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ email, companyName: document.getElementById('adm-notes').value.trim() || email.split('@')[0] })
         });
         notify('✅ Plan mis à jour + email de bienvenue envoyé !');
@@ -6297,7 +6301,7 @@ async function obFinish(){
   try {
     await fetch('/api/send-welcome', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         email: _currentUser?.email || '',
         companyName: localStorage.getItem('edl_co_name') || ''
@@ -7723,7 +7727,7 @@ async function sendConfirmRdv(){
   try {
     const resp = await fetch('/api/confirm-rdv', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload)
     });
 
