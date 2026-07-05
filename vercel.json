@@ -27,6 +27,7 @@
     { "source": "/api/reminder-rdv", "destination": "/api/reminder-rdv.js" },
     { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/extranet", "destination": "/index.html" },
+    { "source": "/extranet-app", "destination": "/extranet-app.html" },
     { "source": "/api/get-reservations", "destination": "/api/get-reservations.js" },
     { "source": "/api/send-welcome-agency", "destination": "/api/send-welcome-agency.js" },
     { "source": "/(.*)", "destination": "/index.html" }
