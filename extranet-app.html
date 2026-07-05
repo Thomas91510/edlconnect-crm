@@ -279,7 +279,7 @@ async function loadOrders() {
 
 async function loadDocs() {
   try {
-    const resp = await fetch('/api/client-documents', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:_userEmail}) });
+    const resp = await fetch('/api/client-documents', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body:JSON.stringify({email:_userEmail}) });
     const docs = await resp.json();
     if (!docs||!docs.length) return;
     document.getElementById('docs-section').style.display = 'block';
