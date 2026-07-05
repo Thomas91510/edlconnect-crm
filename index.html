@@ -404,6 +404,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 }
 /* AUTH */
 /* ─── MODE EXTRANET CLIENT (isolé en plein écran, indépendant de toute mise en page parente) ─── */
+html[data-mode="extranet"] body { background: linear-gradient(160deg,#0d1929 0%,#1a2d4a 100%) !important; min-height: 100vh; }
 html[data-mode="extranet"] #auth-screen{display:none!important}
 html[data-mode="extranet"] .sidebar,
 html[data-mode="extranet"] #mobile-nav-bar,
@@ -411,11 +412,7 @@ html[data-mode="extranet"] #mobile-menu-btn,
 html[data-mode="extranet"] .mobile-menu-btn,
 html[data-mode="extranet"] .crm{display:none!important}
 html[data-mode="extranet"] .view{display:none!important}
-html[data-mode="extranet"] #view-extranet{
-  display:block!important;position:fixed!important;inset:0!important;
-  width:100vw!important;height:100vh!important;max-width:none!important;
-  overflow-y:auto!important;z-index:10000!important;background:#f8f8f6!important;
-}
+html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!important;max-width:none!important;min-height:100vh!important;position:relative!important;background:transparent!important;overflow-y:auto!important;z-index:10000!important}
 
 #auth-screen{display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#f8f8f6 0%,#e8f0f8 100%);align-items:center;justify-content:center}
 #auth-screen.show{display:flex}
@@ -1588,7 +1585,7 @@ html[data-mode="extranet"] #view-extranet{
 
 
 <!-- VUE EXTRANET CLIENT -->
-<div class="view" id="view-extranet" style="padding:0;background:linear-gradient(160deg,#0d1929 0%,#1a2d4a 100%);min-height:100vh">
+<div class="view" id="view-extranet" style="padding:0;background:transparent;min-height:100vh">
 
   <!-- Header fixe -->
   <div style="background:rgba(13,25,41,0.95);backdrop-filter:blur(10px);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(55,138,221,0.2);position:sticky;top:0;z-index:100">
