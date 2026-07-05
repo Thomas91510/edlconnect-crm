@@ -47,7 +47,9 @@ module.exports = async function handler(req, res) {
         sender: { name: 'EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
         to: [{ email }],
         subject: '🔑 Votre lien de connexion — Espace client EDLConnect',
-        htmlContent
+        htmlContent,
+        trackOpens: false,
+        trackClicks: false
       })
     });
 
