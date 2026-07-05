@@ -50,7 +50,7 @@ export default async function handler(req) {
         type: 'magiclink',
         email: email,
         options: {
-          redirect_to: 'https://app.edlconnect.fr/extranet'
+          redirect_to: 'https://app.edlconnect.fr/?extranet=1'
         }
       })
     });
