@@ -5945,7 +5945,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ─── INIT SUPABASE (cloud sync multi-appareils) ────────────
 // Le chargement Supabase se fait après auth dans onAuthSuccess
 (async () => {
-  subscribeRealtime();
+  if(!window._EXTRANET_MODE) subscribeRealtime();
 })();
 
 // Charger objectifs CA sauvegardés
@@ -5955,8 +5955,9 @@ setTimeout(()=>{
   if(ot)ot.value=localStorage.getItem('edl_obj_trim')||'';
   if(oa)oa.value=localStorage.getItem('edl_obj_annuel')||'';
 },500);
-// Démarrer la sync automatique toutes les 5 min
+// Démarrer la sync automatique toutes les 5 min (seulement en mode CRM)
 setTimeout(()=>{
+  if(window._EXTRANET_MODE) return;
   startAutoSync();
   silentSyncBrevo(); // Sync immédiate au démarrage
 }, 2000);
