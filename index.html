@@ -5919,7 +5919,7 @@ function saveSettings(){
 // Charger la clé Brevo depuis brevo_config.json (persistance même si localStorage effacé)
 (async () => {
   try {
-    const r = await fetch('/api/config?t='+Date.now());
+    const r = { ok: false }; // /api/config supprimé (sécurité);
     if(r.ok){
       const cfg = await r.json();
       if(cfg.brevo_api_key){
