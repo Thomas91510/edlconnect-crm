@@ -4937,7 +4937,8 @@ async function silentSyncBrevo(){
   try{
     let resp;
     try{
-      resp=await fetch('/api/brevo-contacts?t='+Date.now());
+      const _tk4=(await supabaseClient.auth.getSession()).data?.session?.access_token||'';
+      resp=await fetch('/api/brevo-contacts?t='+Date.now(),{headers:{'Authorization':'Bearer '+_tk4}});
     }catch(fetchErr){
       // Serveur Python injoignable → afficher dans le footer
       const el=document.getElementById('sync-text');
@@ -5255,7 +5256,8 @@ async function loadBrevo(){
   // 1. Charger contacts
   let all=[];
   try{
-    const resp=await fetch('/api/brevo-contacts?t='+Date.now());
+    const _tk5=(await supabaseClient.auth.getSession()).data?.session?.access_token||'';
+    const resp=await fetch('/api/brevo-contacts?t='+Date.now(),{headers:{'Authorization':'Bearer '+_tk5}});
     if(!resp.ok)throw new Error('Fichier non trouvé');
     all=await resp.json();
   }catch(e){
@@ -6806,11 +6808,11 @@ function extranetRenderDocuments(userEmail){
   const section = document.getElementById('extranet-docs-section');
   const listEl = document.getElementById('extranet-docs-list');
   if(!section || !listEl) return;
-  fetch('/api/client-documents', {
+  supabaseClient.auth.getSession().then(({ data }) => fetch('/api/client-documents', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (data?.session?.access_token || '') },
     body: JSON.stringify({ email: userEmail })
-  }).then(r => r.json()).then(docs => {
+  })).then(r => r.json()).then(docs => {
     if(!docs || !docs.length){ section.style.display = 'none'; return; }
     section.style.display = 'block';
     listEl.innerHTML = docs.map(d => `
