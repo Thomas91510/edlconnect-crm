@@ -1,15 +1,37 @@
 export const config = { runtime: 'edge' };
 
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pvuctwflxvvxdawsxceu.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
+
 export default async function handler(req) {
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers });
+  }
+
+  // ── Authentification obligatoire : jeton de session Supabase ──
+  const authHeader = req.headers.get('authorization') || '';
+  const token = authHeader.replace('Bearer ', '').trim();
+
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers });
+  }
+
+  const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!userResp.ok) {
+    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers });
   }
 
   try {
@@ -24,45 +46,20 @@ export default async function handler(req) {
     const limit = 500;
 
     while (true) {
-      const response = await fetch(
-        `https://api.brevo.com/v3/contacts?limit=${limit}&offset=${offset}&sort=desc`,
-        { headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' } }
-      );
-
-      if (!response.ok) {
-        const err = await response.json();
-        return new Response(JSON.stringify({ error: err.message || 'Erreur Brevo' }), { status: response.status, headers });
-      }
-
-      const data = await response.json();
+      const resp = await fetch(`https://api.brevo.com/v3/contacts?limit=${limit}&offset=${offset}`, {
+        headers: { 'accept': 'application/json', 'api-key': brevoKey }
+      });
+      if (!resp.ok) break;
+      const data = await resp.json();
       const contacts = data.contacts || [];
+      if (!contacts.length) break;
       allContacts = allContacts.concat(contacts);
-
-      if (contacts.length < limit) break;
       offset += limit;
+      if (allContacts.length >= (data.count || 0)) break;
     }
 
-    // Formater les contacts
-    const formatted = allContacts.map(c => ({
-      id: 'brevo_' + c.id,
-      entreprise: c.attributes?.COMPANY || c.attributes?.NOM || '',
-      contact: [c.attributes?.PRENOM, c.attributes?.NOM].filter(Boolean).join(' ') || '',
-      email: c.email || '',
-      tel: c.attributes?.SMS || c.attributes?.TEL || '',
-      ville: c.attributes?.VILLE || '',
-      cp: c.attributes?.CP || '',
-      emailStatus: c.emailBlacklisted ? 'unsubscribed' : c.smsBlacklisted ? 'blocked' : 'subscribed',
-      opens: c.statistics?.messagesSent?.filter(m => m.statistic === 'opened')?.length || 0,
-      clicks: c.statistics?.messagesSent?.filter(m => m.statistic === 'clicked')?.length || 0,
-      presence: 'brevo',
-      source: 'Brevo',
-      statut: 'Cible potentielle',
-      history: []
-    }));
-
-    return new Response(JSON.stringify(formatted), { status: 200, headers });
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
+    return new Response(JSON.stringify(allContacts), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });
   }
 }
