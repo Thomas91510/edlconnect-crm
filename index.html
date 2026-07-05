@@ -6444,6 +6444,9 @@ async function checkAuth(){
   if(!_supaReady)return;
   // Écouter les changements d'auth EN PREMIER
   supabaseClient.auth.onAuthStateChange((event,session)=>{
+    // Si on est en mode extranet, ignorer complètement cet événement
+    const params = new URLSearchParams(window.location.search);
+    if(window.location.pathname==='/extranet' || params.get('extranet')==='1') return;
     if(event==='SIGNED_IN'&&session){_currentUser=session.user;onAuthSuccess(session.user);}
     if(event==='SIGNED_OUT'){_currentUser=null;document.getElementById('auth-screen').classList.add('show');}
   });
