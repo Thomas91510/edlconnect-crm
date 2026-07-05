@@ -235,18 +235,14 @@ async function sendMagicLink() {
   const btn = document.getElementById('login-btn');
   btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Envoi…';
   try {
-    const { error } = await sb.auth.signInWithOtp({
-      email,
+    const { error: otpError } = await sb.auth.signInWithOtp({
+      email: email,
       options: { emailRedirectTo: 'https://app.edlconnect.fr/extranet-app' }
     });
-    if (error) throw error;
-    msgEl.className='msg-success'; msgEl.textContent='✅ Lien envoyé ! Vérifiez votre boîte mail.';
-    btn.style.display='none';
-    document.getElementById('login-email').disabled=true;
-  } catch(e) {
-    msgEl.className='msg-error'; msgEl.textContent='❌ Erreur : '+(e.message||'réessayez.');
-    btn.disabled=false; btn.innerHTML='<i class="ti ti-mail"></i> Recevoir mon lien de connexion';
-  }
+    const r = { success: !otpError, error: otpError ? otpError.message : null };
+    if (r.success) { msgEl.className='msg-success'; msgEl.textContent='✅ Lien envoyé ! Vérifiez votre boîte mail.'; btn.style.display='none'; document.getElementById('login-email').disabled=true; }
+    else throw new Error(r.error);
+  } catch(e) { msgEl.className='msg-error'; msgEl.textContent='❌ Erreur : '+(e.message||'réessayez.'); btn.disabled=false; btn.innerHTML='<i class="ti ti-mail"></i> Recevoir mon lien de connexion'; }
 }
 
 async function doLogout() {
