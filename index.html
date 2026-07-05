@@ -1588,64 +1588,143 @@ html[data-mode="extranet"] #view-extranet{
 
 
 <!-- VUE EXTRANET CLIENT -->
-<div class="view" id="view-extranet" style="padding:0;background:#f8f8f6;min-height:100vh">
-  <div style="max-width:560px;margin:0 auto;padding:40px 20px">
+<div class="view" id="view-extranet" style="padding:0;background:linear-gradient(160deg,#0d1929 0%,#1a2d4a 100%);min-height:100vh">
 
-    <div style="text-align:center;margin-bottom:28px">
-      <div style="font-size:28px;margin-bottom:6px">🔑</div>
-      <div style="font-size:20px;font-weight:700">Espace client EDLConnect</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">Retrouvez l'historique de vos commandes d'états des lieux</div>
+  <!-- Header fixe -->
+  <div style="background:rgba(13,25,41,0.95);backdrop-filter:blur(10px);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(55,138,221,0.2);position:sticky;top:0;z-index:100">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;background:#185FA5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff">EC</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#fff">EDL IDF Expert en État des Lieux</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4)">Espace client</div>
+      </div>
     </div>
+    <div id="extranet-header-right" style="display:none;align-items:center;gap:8px">
+      <a href="tel:0767630963" style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.5);text-decoration:none;background:rgba(255,255,255,0.06);padding:6px 10px;border-radius:20px;border:0.5px solid rgba(255,255,255,0.1)">
+        <i class="ti ti-phone" style="font-size:12px"></i> 07 67 63 09 63
+      </a>
+      <button onclick="extranetLogout()" style="background:none;border:0.5px solid rgba(255,255,255,0.15);border-radius:20px;padding:6px 10px;cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;display:flex;align-items:center;gap:4px">
+        <i class="ti ti-logout" style="font-size:12px"></i> Déconnexion
+      </button>
+    </div>
+  </div>
+
+  <div style="max-width:600px;margin:0 auto;padding:28px 20px">
 
     <!-- État 1 : connexion -->
-    <div class="card" id="extranet-login-card">
-      <div style="padding:24px">
-        <label>Votre adresse email</label>
-        <input type="email" id="extranet-email" placeholder="contact@votre-agence.fr" style="margin-bottom:14px">
-        <button class="btn btn-primary" style="width:100%;justify-content:center" id="extranet-login-btn" onclick="extranetSendMagicLink()">
+    <div id="extranet-login-card">
+      <div style="text-align:center;padding:40px 0 32px">
+        <div style="width:64px;height:64px;background:linear-gradient(135deg,#185FA5,#378ADD);border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(24,95,165,0.4)">🔑</div>
+        <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:8px">Bienvenue</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5)">Connectez-vous pour accéder à votre espace client</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px;backdrop-filter:blur(10px)">
+        <label style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:500;display:block;margin-bottom:8px">Votre adresse email</label>
+        <input type="email" id="extranet-email" placeholder="contact@votre-agence.fr"
+          style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;padding:12px 14px;width:100%;font-size:13px;margin-bottom:14px;box-sizing:border-box"
+          onfocus="this.style.borderColor='#378ADD'" onblur="this.style.borderColor='rgba(255,255,255,0.15)'">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;border-radius:10px;font-size:13px;font-weight:600" id="extranet-login-btn" onclick="extranetSendMagicLink()">
           <i class="ti ti-mail"></i> Recevoir mon lien de connexion
         </button>
         <div id="extranet-login-msg" style="font-size:12px;margin-top:12px;text-align:center"></div>
+      </div>
+      <div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,0.25)">
+        Vous recevrez un lien de connexion par email · Aucun mot de passe à retenir
       </div>
     </div>
 
     <!-- État 2 : tableau de bord client -->
     <div id="extranet-dashboard" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="font-size:13px;color:var(--text2)">Connecté en tant que <strong id="extranet-user-email"></strong></div>
-        <button class="btn btn-sm" onclick="extranetLogout()"><i class="ti ti-logout"></i> Déconnexion</button>
+
+      <!-- Message de bienvenue personnalisé -->
+      <div style="margin-bottom:20px" id="extranet-welcome-block">
+        <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px">Bonjour 👋</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5)" id="extranet-user-email"></div>
       </div>
-      <div class="card" style="margin-bottom:16px">
-        <div style="padding:16px;display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap">
-          <div style="display:flex;gap:20px">
-            <div>
-              <div style="font-size:11px;color:var(--text2)">Total commandes</div>
-              <div style="font-size:22px;font-weight:700" id="extranet-total">0</div>
-            </div>
-            <div>
-              <div style="font-size:11px;color:var(--text2)">En cours</div>
-              <div style="font-size:22px;font-weight:700;color:var(--amber-text)" id="extranet-pending">0</div>
-            </div>
-            <div>
-              <div style="font-size:11px;color:var(--text2)">Réalisées</div>
-              <div style="font-size:22px;font-weight:700;color:var(--green-text)" id="extranet-done">0</div>
-            </div>
-          </div>
-          <button class="btn btn-primary" onclick="extranetShowOrderForm()" id="extranet-new-order-btn">
-            <i class="ti ti-plus"></i> Nouvelle commande
-          </button>
+
+      <!-- KPI cards -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:#fff" id="extranet-total">0</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">Total</div>
+        </div>
+        <div style="background:rgba(186,117,23,0.15);border:1px solid rgba(186,117,23,0.25);border-radius:12px;padding:14px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:#f6c05e" id="extranet-pending">0</div>
+          <div style="font-size:10px;color:rgba(246,192,94,0.6);margin-top:2px">En cours</div>
+        </div>
+        <div style="background:rgba(56,161,105,0.12);border:1px solid rgba(56,161,105,0.25);border-radius:12px;padding:14px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:#68d391" id="extranet-done">0</div>
+          <div style="font-size:10px;color:rgba(104,211,145,0.6);margin-top:2px">Réalisées</div>
         </div>
       </div>
 
+      <!-- Bouton nouvelle commande -->
+      <button onclick="extranetShowOrderForm()" id="extranet-new-order-btn"
+        style="width:100%;background:linear-gradient(135deg,#185FA5,#378ADD);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px;box-shadow:0 4px 16px rgba(24,95,165,0.35)">
+        <i class="ti ti-plus" style="font-size:16px"></i> Nouvelle commande d'état des lieux
+      </button>
+
       <!-- Modal détail commande -->
-      <div id="extranet-order-detail-modal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;padding:16px">
-        <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
-          <div style="background:#185FA5;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+      <div id="extranet-order-detail-modal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;padding:16px">
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.3)">
+          <div style="background:linear-gradient(135deg,#185FA5,#378ADD);padding:18px 20px;display:flex;align-items:center;justify-content:space-between">
             <div style="color:#fff;font-size:14px;font-weight:600" id="extranet-detail-title">Détail de la commande</div>
-            <button onclick="closeExtranetOrderDetail()" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.7);font-size:20px;line-height:1">×</button>
+            <button onclick="closeExtranetOrderDetail()" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;color:#fff;font-size:16px;line-height:1;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center">×</button>
           </div>
           <div id="extranet-detail-body" style="padding:20px;overflow-y:auto;max-height:70vh"></div>
         </div>
+      </div>
+
+      <!-- Liste des commandes -->
+      <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Mes commandes</div>
+      <div id="extranet-orders-list"></div>
+
+      <!-- Section statistiques -->
+      <div id="extranet-stats" style="display:none;margin-top:8px">
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;margin-bottom:12px;overflow:hidden">
+          <div style="padding:14px 16px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);border-bottom:1px solid rgba(255,255,255,0.08)">📊 Activité — <span id="extranet-stats-year"></span></div>
+          <div style="padding:16px">
+            <div id="extranet-chart-bars" style="display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:8px"></div>
+            <div style="display:flex;gap:16px;font-size:10px;color:rgba(255,255,255,0.35);flex-wrap:wrap">
+              <span><span style="display:inline-block;width:8px;height:8px;background:#185FA5;border-radius:2px;margin-right:4px"></span>Entrant</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:#E67E22;border-radius:2px;margin-right:4px"></span>Sortant</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:#27AE60;border-radius:2px;margin-right:4px"></span>Autre</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden">
+            <div style="padding:12px 14px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);border-bottom:1px solid rgba(255,255,255,0.08)">Par type</div>
+            <div id="extranet-stats-types" style="padding:12px;font-size:12px;color:rgba(255,255,255,0.7)"></div>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden">
+            <div style="padding:12px 14px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);border-bottom:1px solid rgba(255,255,255,0.08)">Par bien</div>
+            <div id="extranet-stats-typo" style="padding:12px;font-size:12px;color:rgba(255,255,255,0.7)"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-sm" id="extranet-stats-toggle" onclick="extranetToggleStats()"
+        style="width:100%;justify-content:center;margin-bottom:16px;display:none;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:10px;padding:10px">
+        📊 Voir mes statistiques
+      </button>
+
+      <!-- Section documents -->
+      <div id="extranet-docs-section" style="display:none;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Mes documents</div>
+        <div id="extranet-docs-list"></div>
+      </div>
+
+      <!-- Contact -->
+      <div style="background:rgba(24,95,165,0.15);border:1px solid rgba(55,138,221,0.2);border-radius:12px;padding:16px;margin-top:8px;display:flex;align-items:center;gap:14px">
+        <div style="width:40px;height:40px;background:#185FA5;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">👨‍💼</div>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:#7bb8ef">Une question ?</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Thomas Langlade · EDL IDF Expert</div>
+        </div>
+        <a href="tel:0767630963" style="display:flex;align-items:center;gap:5px;background:#185FA5;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600">
+          <i class="ti ti-phone" style="font-size:13px"></i> Appeler
+        </a>
       </div>
 
       <!-- Formulaire de nouvelle commande intégré -->
@@ -6521,7 +6600,10 @@ async function extranetSendMagicLink(){
 async function showExtranetDashboard(userEmail, accessToken){
   document.getElementById('extranet-login-card').style.display = 'none';
   document.getElementById('extranet-dashboard').style.display = 'block';
-  document.getElementById('extranet-user-email').textContent = userEmail;
+  const headerRight = document.getElementById('extranet-header-right');
+  if(headerRight) headerRight.style.display = 'flex';
+  const welcomeEl = document.getElementById('extranet-user-email');
+  if(welcomeEl) welcomeEl.textContent = userEmail;
 
   const listEl = document.getElementById('extranet-orders-list');
   listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)"><i class="ti ti-loader"></i> Chargement de vos commandes…</div>';
@@ -6563,23 +6645,36 @@ async function showExtranetDashboard(userEmail, accessToken){
       return '<span style="color:var(--amber-text);background:var(--amber-bg);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600">⏳ En attente</span>';
     };
 
-    listEl.innerHTML = orders.map(o => `
-      <div class="card" style="margin-bottom:10px;cursor:pointer;transition:box-shadow .15s" 
-           onmouseover="this.style.boxShadow='0 4px 12px rgba(24,95,165,0.12)'" 
-           onmouseout="this.style.boxShadow=''"
+    listEl.innerHTML = orders.map(o => {
+      const statutBadge = (s) => {
+        if(s === 'realise') return '<span style="background:rgba(56,161,105,0.2);color:#68d391;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:0.5px solid rgba(56,161,105,0.3)">✅ Réalisé</span>';
+        if(s === 'confirmee' || s === 'importee') return '<span style="background:rgba(24,95,165,0.2);color:#7bb8ef;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:0.5px solid rgba(55,138,221,0.3)">📅 Confirmé</span>';
+        return '<span style="background:rgba(186,117,23,0.2);color:#f6c05e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:0.5px solid rgba(186,117,23,0.3)">⏳ En attente</span>';
+      };
+      const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR', {day:'numeric',month:'long'}) : '';
+      const heureRdv = o.heure || '';
+      return `<div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:all .15s"
+           onmouseover="this.style.background='rgba(24,95,165,0.15)';this.style.borderColor='rgba(55,138,221,0.3)'"
+           onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.1)'"
            onclick="openExtranetOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})">
-        <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px">
-          <div>
-            <div style="font-weight:600;font-size:13px">${o.typeEdl || 'État des lieux'}</div>
-            <div style="font-size:12px;color:var(--text2);margin-top:2px">📍 ${o.adresse || '—'}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">Demandé le ${o.createdAt ? new Date(o.createdAt).toLocaleDateString('fr-FR') : '—'}</div>
+        <div style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+            <div style="font-weight:600;font-size:13px;color:#fff">${o.typeEdl || 'État des lieux'}</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              ${statutBadge(o.statut)}
+              <i class="ti ti-chevron-right" style="color:rgba(255,255,255,0.25);font-size:13px"></i>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            ${statutLabel(o.statut)}
-            <i class="ti ti-chevron-right" style="color:var(--text3);font-size:14px"></i>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:4px;margin-bottom:4px">
+            <i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse || '—'}
           </div>
+          ${(dateRdv || heureRdv) ? `<div style="font-size:11px;color:#7bb8ef;display:flex;align-items:center;gap:4px;margin-bottom:4px">
+            <i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${heureRdv ? ' à ' + heureRdv : ''}
+          </div>` : ''}
+          <div style="font-size:11px;color:rgba(255,255,255,0.25)">Demandé le ${o.createdAt ? new Date(o.createdAt).toLocaleDateString('fr-FR') : '—'}</div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch(e){
     listEl.innerHTML = '<div class="card" style="padding:30px;text-align:center;color:var(--red-text)">Erreur lors du chargement de vos commandes. Réessayez plus tard.</div>';
   }
@@ -6589,6 +6684,8 @@ function extranetLogout(){
   if(supabaseClient) supabaseClient.auth.signOut();
   document.getElementById('extranet-login-card').style.display = 'block';
   document.getElementById('extranet-dashboard').style.display = 'none';
+  const headerRight = document.getElementById('extranet-header-right');
+  if(headerRight) headerRight.style.display = 'none';
   document.getElementById('extranet-email').value = '';
   document.getElementById('extranet-login-msg').textContent = '';
   const btn = document.getElementById('extranet-login-btn');
@@ -6703,10 +6800,12 @@ function extranetRenderDocuments(userEmail){
     if(!docs || !docs.length){ section.style.display = 'none'; return; }
     section.style.display = 'block';
     listEl.innerHTML = docs.map(d => `
-      <a href="${d.url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:var(--radius);text-decoration:none;color:var(--text);border:1px solid var(--border);margin-bottom:6px;background:#fff">
+      <a href="${d.url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;text-decoration:none;color:#fff;border:1px solid rgba(255,255,255,0.1);margin-bottom:8px;background:rgba(255,255,255,0.05);transition:all .15s"
+         onmouseover="this.style.background='rgba(24,95,165,0.15)';this.style.borderColor='rgba(55,138,221,0.3)'"
+         onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.borderColor='rgba(255,255,255,0.1)'">
         <span style="font-size:20px">📄</span>
         <span style="flex:1;font-size:13px;font-weight:500">${d.nom}</span>
-        <span style="font-size:11px;color:var(--blue)">Ouvrir →</span>
+        <span style="font-size:11px;color:#7bb8ef">Ouvrir →</span>
       </a>`).join('');
   }).catch(() => { section.style.display = 'none'; });
 }
