@@ -442,7 +442,10 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
 
     <div class="logo">
       <div class="logo-top">
-        <div class="logo-icon">EC</div>
+        <div style="width:36px;height:36px;background:#E6F1FB;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+        <div style="font-size:13px;font-weight:700;color:#185FA5;line-height:1">E<span style="font-weight:300;color:#378ADD">)</span></div>
+        <div style="font-size:5px;font-weight:700;color:#185FA5;letter-spacing:0.5px;line-height:1">CONNECT</div>
+      </div>
         <div>
           <div class="logo-title" id="sidebar-company-name">EDLConnect</div>
           <div class="logo-sub" id="sidebar-user-email">CRM Pro</div>
@@ -1592,7 +1595,10 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
   <!-- Header fixe -->
   <div style="background:rgba(13,25,41,0.95);backdrop-filter:blur(10px);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(55,138,221,0.2);position:sticky;top:0;z-index:100">
     <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:32px;height:32px;background:#185FA5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff">EC</div>
+      <div style="width:36px;height:36px;background:#E6F1FB;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+        <div style="font-size:13px;font-weight:700;color:#185FA5;line-height:1">E<span style="font-weight:300;color:#378ADD">)</span></div>
+        <div style="font-size:5px;font-weight:700;color:#185FA5;letter-spacing:0.5px;line-height:1">CONNECT</div>
+      </div>
       <div>
         <div style="font-size:13px;font-weight:600;color:#fff">EDL IDF Expert en État des Lieux</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.4)">Espace client</div>
@@ -1719,7 +1725,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <div style="width:40px;height:40px;background:#185FA5;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">👨‍💼</div>
         <div style="flex:1">
           <div style="font-size:12px;font-weight:600;color:#7bb8ef">Une question ?</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Thomas Langlade · EDL IDF Expert</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Thomas Langlade · EDL IDF Expert en État des Lieux</div>
         </div>
         <a href="tel:0189291429" style="display:flex;align-items:center;gap:5px;background:#185FA5;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600">
           <i class="ti ti-phone" style="font-size:13px"></i> Appeler
@@ -2396,6 +2402,7 @@ async function fetchAllRows(table){
 
 async function loadFromSupabase(){
   if(!_supaReady) return false;
+  if(window._EXTRANET_MODE) return false;
   try{
     const results = await Promise.all(
       Object.entries(SUPA_TABLES).map(([dbKey, table]) =>
@@ -2459,6 +2466,7 @@ async function deleteFromSupabase(dbKey, id){
 // ─── PUSH COMPLET (synchronise tout DB vers Supabase) ──────
 async function pushAllToSupabase(){
   if(!_supaReady) return;
+  if(window._EXTRANET_MODE) return; // Ne jamais pusher en mode extranet client
   notify('☁️ Synchronisation vers le cloud…');
   _supaSyncing = true;
   try{
@@ -4924,6 +4932,7 @@ function startAutoSync(){
 }
 
 async function silentSyncBrevo(){
+  if(window._EXTRANET_MODE) return;
   try{
     let resp;
     try{
