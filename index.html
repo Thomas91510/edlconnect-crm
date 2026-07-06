@@ -2028,7 +2028,11 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
   <div class="modal">
     <div class="modal-title">Nouvelle opportunité <button class="modal-close" onclick="closeModal('modal-deal')"><i class="ti ti-x"></i></button></div>
     <label>Agence *</label><input id="d-agence" placeholder="Foncia Longjumeau">
-    <label>Montant estimé (€/mois)</label><input type="number" id="d-montant" placeholder="800">
+    <label>Montant estimé (€)</label>
+    <div style="display:flex;gap:8px">
+      <input type="number" id="d-montant" placeholder="800" style="flex:1">
+      <select id="d-periode" style="width:130px"><option value="mois">€ / mois</option><option value="an">€ / an</option></select>
+    </div>
     <label>Étape</label><select id="d-etape"><option>Prospect</option><option>Qualifié</option><option>Proposé</option><option>Négociation</option><option>Gagné</option></select>
     <label>Probabilité (%)</label><input type="number" id="d-proba" placeholder="50">
     <label>Notes</label><textarea id="d-notes" style="min-height:60px"></textarea>
@@ -4193,7 +4197,8 @@ function renderPipeline(){
   }
   board.innerHTML=STAGES.map(stage=>{
     const cards=DB.deals.filter(d=>d.etape===stage);
-    const total=cards.reduce((s,d)=>s+(d.montant||0),0);
+    const _annuel=d=>(d.periode==='an'?(d.montant||0):(d.montant||0)*12);
+    const total=cards.reduce((s,d)=>s+_annuel(d),0);
     return `<div class="pipe-col" ondragover="event.preventDefault();this.style.background='var(--blue-bg)'" ondragleave="this.style.background=''" ondrop="dropDeal(event,'${stage}');this.style.background=''">
       <div class="pipe-col-title"><span>${stage}</span><span>${cards.length}</span></div>
       ${cards.map(d=>{
@@ -4204,11 +4209,11 @@ function renderPipeline(){
               style="background:none;border:none;cursor:pointer;color:var(--red);font-size:13px;padding:0;line-height:1;flex-shrink:0;opacity:0.5"
               onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">✕</button>
           </div>
-          <div class="pipe-card-amount">${(d.montant||0).toLocaleString('fr-FR')} €/m</div>
+          <div class="pipe-card-amount">${(d.montant||0).toLocaleString('fr-FR')} €/${d.periode==='an'?'an':'mois'}</div>
           <div class="pipe-card-meta">${d.proba}% · ${d.notes||'—'}</div>
         </div>`;
       }).join('')}
-      ${total?`<div style="font-size:10px;color:var(--text2);text-align:right;margin-top:5px">${total.toLocaleString('fr-FR')} €/m</div>`:''}</div>`;
+      ${total?`<div style="font-size:10px;color:var(--text2);text-align:right;margin-top:5px">${total.toLocaleString('fr-FR')} €/an</div>`:''}</div>`;
   }).join('');
 }
 
@@ -5413,7 +5418,7 @@ function saveContact(){
 function saveDeal(){
   const agence=document.getElementById('d-agence').value.trim();
   if(!agence){notify('⚠️ Agence requise','warn');return;}
-  DB.deals.push({id:'d_'+Date.now(),agence,montant:Number(document.getElementById('d-montant').value)||0,etape:document.getElementById('d-etape').value,proba:Number(document.getElementById('d-proba').value)||0,notes:document.getElementById('d-notes').value});
+  DB.deals.push({id:'d_'+Date.now(),agence,montant:Number(document.getElementById('d-montant').value)||0,periode:document.getElementById('d-periode').value||'mois',etape:document.getElementById('d-etape').value,proba:Number(document.getElementById('d-proba').value)||0,notes:document.getElementById('d-notes').value});
   saveToStorage();closeModal('modal-deal');notify('✅ Opportunité ajoutée !');renderPipeline();renderDashboard();
 }
 function autocompleteMission(val){
