@@ -21,7 +21,7 @@ export default async function handler(req) {
 
   try {
     const data = await req.json();
-    const { agencyId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, dateSouhaitee, heure, notes, locataire, locataires } = data;
+    const { agencyId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, proprietaire, dateSouhaitee, heure, notes, locataire, locataires } = data;
 
     if(!agence || !email || !typeEdl || !adresse) {
       return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400 });
@@ -43,6 +43,7 @@ export default async function handler(req) {
         superficie: superficie || '',
         dateEntree: dateEntree || '',
         acces: acces || '',
+        proprietaire: proprietaire || '',
         dateSouhaitee, heure,
         notes: notes || '',
         locataire: locataire || {},
@@ -142,6 +143,7 @@ export default async function handler(req) {
                   <tr><td style="color:#999;padding:5px 0">Date souhaitée</td><td style="font-weight:600;color:#185FA5">${dateFormatted}${heure ? ' · ' + heure : ' · Flexible'}</td></tr>
                   ${dateEntree ? `<tr><td style="color:#999;padding:5px 0">Date d'entrée</td><td>${new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</td></tr>` : ''}
                   ${acces ? `<tr><td style="color:#999;padding:5px 0">Accès</td><td>${acces}</td></tr>` : ''}
+                  ${proprietaire ? `<tr><td style="color:#999;padding:5px 0">Propriétaire</td><td>${proprietaire}</td></tr>` : ''}
                   <tr><td style="color:#999;padding:5px 0">Locataire</td><td><strong>${locataire?.nom || '—'}</strong><br>📞 ${locataire?.tel || '—'}${locataire?.email ? '<br>✉️ ' + locataire.email : ''}</td></tr>
                   ${notes ? `<tr><td style="color:#999;padding:5px 0">Notes</td><td style="color:#6b6b6b">${notes}</td></tr>` : ''}
                 </table>
