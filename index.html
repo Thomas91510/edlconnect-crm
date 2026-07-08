@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>EDL IDF — CRM</title>
+<title>Lokentia — CRM</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="alternate icon" href="/favicon.ico">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -33,7 +33,7 @@
   --bg:#ffffff;--bg2:#f8f8f6;--bg3:#f2f1ee;
   --text:#1a1a1a;--text2:#6b6b6b;--text3:#999;
   --border:#e5e5e2;--border2:#d0d0cc;
-  --blue:#185FA5;--blue-bg:#E6F1FB;--blue-text:#0C447C;
+  --blue:#1A5FA8;--blue-bg:#F4F7FA;--blue-text:#0C447C;
   --green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;
   --amber:#854F0B;--amber-bg:#FAEEDA;--amber-text:#633806;
   --red:#A32D2D;--red-bg:#FCEBEB;--red-text:#791F1F;
@@ -42,11 +42,11 @@
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);height:100vh;overflow:hidden}
 .crm{display:none;height:100vh}
-/* SIDEBAR — Design SaaS EDLConnect */
-.sidebar{width:220px;min-width:220px;background:#0d1929;border-right:none;display:flex;flex-direction:column;overflow-y:auto}
+/* SIDEBAR — Design SaaS Lokentia */
+.sidebar{width:220px;min-width:220px;background:#0F1E2E;border-right:none;display:flex;flex-direction:column;overflow-y:auto}
 .logo{padding:16px 14px 12px;border-bottom:1px solid rgba(24,95,165,0.2)}
 .logo-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.logo-icon{width:32px;height:32px;background:#185FA5;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+.logo-icon{width:32px;height:32px;background:#1A5FA8;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
 .logo-title{font-size:13px;font-weight:500;color:#ffffff}
 .logo-sub{font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px}
 .logo-badges{display:flex;gap:5px;margin-top:0}
@@ -407,7 +407,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 }
 /* AUTH */
 /* ─── MODE EXTRANET CLIENT (isolé en plein écran, indépendant de toute mise en page parente) ─── */
-html[data-mode="extranet"] body { background: linear-gradient(160deg,#0d1929 0%,#1a2d4a 100%) !important; min-height: 100vh; }
+html[data-mode="extranet"] body { background: linear-gradient(160deg,#0F1E2E 0%,#1a2d4a 100%) !important; min-height: 100vh; }
 html[data-mode="extranet"] #auth-screen{display:none!important}
 html[data-mode="extranet"] .sidebar,
 html[data-mode="extranet"] #mobile-nav-bar,
@@ -443,12 +443,9 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
 
     <div class="logo">
       <div class="logo-top">
-        <div style="width:36px;height:36px;background:#E6F1FB;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
-        <div style="font-size:13px;font-weight:700;color:#185FA5;line-height:1">E<span style="font-weight:300;color:#378ADD">)</span></div>
-        <div style="font-size:5px;font-weight:700;color:#185FA5;letter-spacing:0.5px;line-height:1">CONNECT</div>
-      </div>
+        <svg viewBox="0 0 120 120" width="36" height="36" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
         <div>
-          <div class="logo-title" id="sidebar-company-name">EDLConnect</div>
+          <div class="logo-title" id="sidebar-company-name">Lokentia</div>
           <div class="logo-sub" id="sidebar-user-email">CRM Pro</div>
         </div>
       </div>
@@ -537,7 +534,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       </div>
       <div id="last-backup-date" style="font-size:10px;color:rgba(255,255,255,0.22);margin-bottom:8px;padding:0 2px"></div>
       <div style="display:flex;align-items:center;gap:8px;padding:6px 6px 2px">
-        <div style="width:28px;height:28px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600;flex-shrink:0" id="sidebar-avatar">TL</div>
+        <div style="width:28px;height:28px;border-radius:50%;background:#1A5FA8;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600;flex-shrink:0" id="sidebar-avatar">TL</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:11px;color:rgba(255,255,255,0.65);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-name">Thomas Langlade</div>
           <div style="font-size:10px;color:rgba(255,255,255,0.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-email"></div>
@@ -588,7 +585,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
           <div class="kpi-value" id="k-opened">—</div>
           <div class="kpi-sub" id="k-opened-pct"></div>
         </div>
-        <div class="kpi" style="border-left:3px solid #185FA5">
+        <div class="kpi" style="border-left:3px solid #1A5FA8">
           <div class="kpi-label">🖱 Cliqués</div>
           <div class="kpi-value" id="k-clicked">—</div>
           <div class="kpi-sub" id="k-clicked-pct"></div>
@@ -676,7 +673,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
           <!-- CA Trimestriel -->
           <div class="card" style="padding:14px">
             <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">📊 CA trimestriel</div>
-            <div style="font-size:28px;font-weight:700;color:#185FA5" id="ca-trim">—</div>
+            <div style="font-size:28px;font-weight:700;color:#1A5FA8" id="ca-trim">—</div>
             <div style="font-size:11px;color:var(--text2);margin-top:2px">€ / trimestre</div>
           </div>
           <!-- CA Annuel -->
@@ -1027,7 +1024,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
     <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Suivez vos prospects à travers 8 étapes.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
       <div style="background:#F1F0EC;border-left:3px solid #888780;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#888780;font-weight:500">À contacter</div>
-      <div style="background:#E6F1FB;border-left:3px solid #185FA5;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#185FA5;font-weight:500">Email envoyé</div>
+      <div style="background:#F4F7FA;border-left:3px solid #1A5FA8;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#1A5FA8;font-weight:500">Email envoyé</div>
       <div style="background:#EAF3FB;border-left:3px solid #378ADD;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#378ADD;font-weight:500">Email ouvert</div>
       <div style="background:#EAF3DE;border-left:3px solid #639922;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#639922;font-weight:500">Réponse reçue</div>
       <div style="background:#FAEEDA;border-left:3px solid #854F0B;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#854F0B;font-weight:500">RDV planifié</div>
@@ -1157,7 +1154,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       <strong>Q : Comment générer une facture groupée ?</strong><br>
       R : Missions → "Facture mensuelle" → nom exact de l'agence + mois → "Générer".<br><br>
       <strong>Q : Comment voir les emails envoyés à un contact ?</strong><br>
-      R : Fiche contact → onglet "Emails & tracking" → historique de tous les emails envoyés via EDLConnect.<br><br>
+      R : Fiche contact → onglet "Emails & tracking" → historique de tous les emails envoyés via Lokentia.<br><br>
       <strong>Q : Mes données sont-elles sauvegardées ?</strong><br>
       R : Oui, via Supabase (cloud) + localStorage. Faire des sauvegardes JSON régulières via "💾 Sauvegarder".<br><br>
       <strong>Q : Comment fusionner les doublons ?</strong><br>
@@ -1398,11 +1395,9 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
 
         <!-- Header -->
         <div style="background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:10px">
-          <div style="background:var(--blue-bg);width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <span style="font-size:13px;font-weight:700;color:var(--blue);letter-spacing:-1px">ED</span>
-          </div>
+          <svg viewBox="0 0 120 120" width="36" height="36" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
           <div>
-            <div style="font-size:14px;font-weight:600">EDLConnect</div>
+            <div style="font-size:14px;font-weight:600">Lokentia</div>
             <div style="font-size:11px;color:var(--text2)">Demande d'état des lieux</div>
           </div>
           <div style="margin-left:auto;font-size:11px;color:var(--text2);text-align:right">
@@ -1594,12 +1589,9 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
 <div class="view" id="view-extranet" style="padding:0;background:transparent;min-height:100vh">
 
   <!-- Header fixe -->
-  <div style="background:rgba(13,25,41,0.95);backdrop-filter:blur(10px);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(55,138,221,0.2);position:sticky;top:0;z-index:100">
+  <div style="background:rgba(15,30,46,0.95);backdrop-filter:blur(10px);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(55,138,221,0.2);position:sticky;top:0;z-index:100">
     <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:36px;height:36px;background:#E6F1FB;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
-        <div style="font-size:13px;font-weight:700;color:#185FA5;line-height:1">E<span style="font-weight:300;color:#378ADD">)</span></div>
-        <div style="font-size:5px;font-weight:700;color:#185FA5;letter-spacing:0.5px;line-height:1">CONNECT</div>
-      </div>
+      <svg viewBox="0 0 120 120" width="36" height="36" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
       <div>
         <div style="font-size:13px;font-weight:600;color:#fff">EDL IDF Expert en État des Lieux</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.4)">Espace client</div>
@@ -1620,7 +1612,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
     <!-- État 1 : connexion -->
     <div id="extranet-login-card">
       <div style="text-align:center;padding:40px 0 32px">
-        <div style="width:64px;height:64px;background:linear-gradient(135deg,#185FA5,#378ADD);border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(24,95,165,0.4)">🔑</div>
+        <div style="width:64px;height:64px;background:linear-gradient(135deg,#1A5FA8,#378ADD);border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(24,95,165,0.4)">🔑</div>
         <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:8px">Bienvenue</div>
         <div style="font-size:13px;color:rgba(255,255,255,0.5)">Connectez-vous pour accéder à votre espace client</div>
       </div>
@@ -1666,14 +1658,14 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
 
       <!-- Bouton nouvelle commande -->
       <button onclick="extranetShowOrderForm()" id="extranet-new-order-btn"
-        style="width:100%;background:linear-gradient(135deg,#185FA5,#378ADD);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px;box-shadow:0 4px 16px rgba(24,95,165,0.35)">
+        style="width:100%;background:linear-gradient(135deg,#1A5FA8,#378ADD);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px;box-shadow:0 4px 16px rgba(24,95,165,0.35)">
         <i class="ti ti-plus" style="font-size:16px"></i> Nouvelle commande d'état des lieux
       </button>
 
       <!-- Modal détail commande -->
       <div id="extranet-order-detail-modal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;padding:16px">
         <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.3)">
-          <div style="background:linear-gradient(135deg,#185FA5,#378ADD);padding:18px 20px;display:flex;align-items:center;justify-content:space-between">
+          <div style="background:linear-gradient(135deg,#1A5FA8,#378ADD);padding:18px 20px;display:flex;align-items:center;justify-content:space-between">
             <div style="color:#fff;font-size:14px;font-weight:600" id="extranet-detail-title">Détail de la commande</div>
             <button onclick="closeExtranetOrderDetail()" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;color:#fff;font-size:16px;line-height:1;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center">×</button>
           </div>
@@ -1692,7 +1684,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
           <div style="padding:16px">
             <div id="extranet-chart-bars" style="display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:8px"></div>
             <div style="display:flex;gap:16px;font-size:10px;color:rgba(255,255,255,0.35);flex-wrap:wrap">
-              <span><span style="display:inline-block;width:8px;height:8px;background:#185FA5;border-radius:2px;margin-right:4px"></span>Entrant</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:#1A5FA8;border-radius:2px;margin-right:4px"></span>Entrant</span>
               <span><span style="display:inline-block;width:8px;height:8px;background:#E67E22;border-radius:2px;margin-right:4px"></span>Sortant</span>
               <span><span style="display:inline-block;width:8px;height:8px;background:#27AE60;border-radius:2px;margin-right:4px"></span>Autre</span>
             </div>
@@ -1723,12 +1715,12 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
 
       <!-- Contact -->
       <div style="background:rgba(24,95,165,0.15);border:1px solid rgba(55,138,221,0.2);border-radius:12px;padding:16px;margin-top:8px;display:flex;align-items:center;gap:14px">
-        <div style="width:40px;height:40px;background:#185FA5;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">👨‍💼</div>
+        <div style="width:40px;height:40px;background:#1A5FA8;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">👨‍💼</div>
         <div style="flex:1">
           <div style="font-size:12px;font-weight:600;color:#7bb8ef">Une question ?</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Thomas Langlade · EDL IDF Expert en État des Lieux</div>
         </div>
-        <a href="tel:0189291429" style="display:flex;align-items:center;gap:5px;background:#185FA5;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600">
+        <a href="tel:0189291429" style="display:flex;align-items:center;gap:5px;background:#1A5FA8;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600">
           <i class="ti ti-phone" style="font-size:13px"></i> Appeler
         </a>
       </div>
@@ -1830,7 +1822,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
           <div style="padding:16px">
             <div id="extranet-chart-bars" style="display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:8px"></div>
             <div style="display:flex;gap:16px;font-size:11px;color:var(--text2);flex-wrap:wrap">
-              <span><span style="display:inline-block;width:10px;height:10px;background:#185FA5;border-radius:2px;margin-right:4px"></span>EDL entrant</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#1A5FA8;border-radius:2px;margin-right:4px"></span>EDL entrant</span>
               <span><span style="display:inline-block;width:10px;height:10px;background:#E67E22;border-radius:2px;margin-right:4px"></span>EDL sortant</span>
               <span><span style="display:inline-block;width:10px;height:10px;background:#27AE60;border-radius:2px;margin-right:4px"></span>Pré-EDL / Autre</span>
             </div>
@@ -2597,7 +2589,7 @@ function toggleTaxMode(){
 
 const PROSP_STAGES=[
   {key:'a_contacter',label:'À contacter',color:'#888780',bg:'#F1F0EC'},
-  {key:'email_envoye',label:'Email envoyé',color:'#185FA5',bg:'#E6F1FB'},
+  {key:'email_envoye',label:'Email envoyé',color:'#1A5FA8',bg:'#F4F7FA'},
   {key:'email_ouvert',label:'Email ouvert',color:'#378ADD',bg:'#EAF3FB'},
   {key:'reponse_recue',label:'Réponse reçue',color:'#639922',bg:'#EAF3DE'},
   {key:'rdv_planifie',label:'RDV planifié',color:'#854F0B',bg:'#FAEEDA'},
@@ -2626,7 +2618,7 @@ function renderProspection(){
   const caTotal=DB.prospects.filter(p=>p.etape==='gagne'&&p.ca).reduce((s,p)=>s+(p.ca||0),0);
   stats.innerHTML=`
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px">${total}</span> prospects</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#185FA5">${actifs}</span> en cours</div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#1A5FA8">${actifs}</span> en cours</div>
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#3B6D11">${gagnes}</span> gagnés</div>
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#854F0B">${taux}%</span> taux conversion</div>
     ${caTotal>0?`<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:var(--green)">${caTotal.toLocaleString('fr-FR')} €</span>/mois CA gagné</div>`:''}`;
@@ -2750,9 +2742,9 @@ function renderCAPanel(){
   const caTriHT=caMensuelHT*3;
   const caAnnuelHT=caMensuelHT*12;
 
-  document.getElementById('ca-mensuel').innerHTML=`${caMensuelHT.toLocaleString('fr-FR')} € <span style="font-size:12px;color:#888">HT</span><div style="font-size:13px;color:#185FA5;margin-top:2px">${fmtTTC(caMensuelHT)} TTC</div>`;
-  document.getElementById('ca-trim').innerHTML=`${caTriHT.toLocaleString('fr-FR')} € <span style="font-size:12px;color:#888">HT</span><div style="font-size:13px;color:#185FA5;margin-top:2px">${fmtTTC(caTriHT)} TTC</div>`;
-  document.getElementById('ca-annuel').innerHTML=`${caAnnuelHT.toLocaleString('fr-FR')} € <span style="font-size:12px;color:#888">HT</span><div style="font-size:13px;color:#185FA5;margin-top:2px">${fmtTTC(caAnnuelHT)} TTC</div>`;
+  document.getElementById('ca-mensuel').innerHTML=`${caMensuelHT.toLocaleString('fr-FR')} € <span style="font-size:12px;color:#888">HT</span><div style="font-size:13px;color:#1A5FA8;margin-top:2px">${fmtTTC(caMensuelHT)} TTC</div>`;
+  document.getElementById('ca-trim').innerHTML=`${caTriHT.toLocaleString('fr-FR')} € <span style="font-size:12px;color:#888">HT</span><div style="font-size:13px;color:#1A5FA8;margin-top:2px">${fmtTTC(caTriHT)} TTC</div>`;
+  document.getElementById('ca-annuel').innerHTML=`${caAnnuelHT.toLocaleString('fr-FR')} € <span style="font-size:12px;color:#888">HT</span><div style="font-size:13px;color:#1A5FA8;margin-top:2px">${fmtTTC(caAnnuelHT)} TTC</div>`;
   document.getElementById('ca-nb-clients').textContent=gagnes.length+' client(s) avec CA renseigné';
   document.getElementById('ca-total-mensuel').textContent=`${caMensuelHT.toLocaleString('fr-FR')} € HT | ${fmtTTC(caMensuelHT)} TTC`;
   document.getElementById('ca-total-annuel').textContent=`${caAnnuelHT.toLocaleString('fr-FR')} € HT | ${fmtTTC(caAnnuelHT)} TTC`;
@@ -2761,9 +2753,9 @@ function renderCAPanel(){
   document.getElementById('ca-tbody').innerHTML=sorted.length?sorted.map(p=>`<tr>
     <td style="font-weight:600;font-size:12px">${p.agence}</td>
     <td style="font-size:12px;color:#3B6D11;font-weight:600">${(p.ca||0).toLocaleString('fr-FR')} € HT</td>
-    <td style="font-size:11px;color:#185FA5">${fmtTTC(p.ca)}</td>
+    <td style="font-size:11px;color:#1A5FA8">${fmtTTC(p.ca)}</td>
     <td style="font-size:12px">${((p.ca||0)*3).toLocaleString('fr-FR')} € HT</td>
-    <td style="font-size:11px;color:#185FA5">${fmtTTC((p.ca||0)*3)}</td>
+    <td style="font-size:11px;color:#1A5FA8">${fmtTTC((p.ca||0)*3)}</td>
     <td style="font-size:12px">${((p.ca||0)*12).toLocaleString('fr-FR')} € HT</td>
     <td style="font-size:11px;color:var(--text2)">${fmtDate(p.lastAction)||'—'}</td>
     <td><button class="btn btn-sm" onclick="editCA('${p.id}')" title="Modifier le CA"><i class="ti ti-edit" style="font-size:11px"></i></button></td>
@@ -2803,7 +2795,7 @@ function updateObjectifs(){
   const pctBar=(val,obj,label)=>{
     if(!obj)return '';
     const pct=Math.min(Math.round(val/obj*100),100);
-    const color=pct>=100?'#3B6D11':pct>=70?'#185FA5':pct>=40?'#854F0B':'#A32D2D';
+    const color=pct>=100?'#3B6D11':pct>=70?'#1A5FA8':pct>=40?'#854F0B':'#A32D2D';
     return `<div style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
         <span>${label}</span>
@@ -3221,7 +3213,7 @@ let UI={contactFilter:'all',contactSearch:'',missionFilter:'all',calMonth:new Da
 function notify(msg,type=''){
   const n=document.getElementById('notif');
   n.textContent=msg;
-  n.style.background=type==='warn'?'#854F0B':type==='err'?'#A32D2D':'#185FA5';
+  n.style.background=type==='warn'?'#854F0B':type==='err'?'#A32D2D':'#1A5FA8';
   n.classList.add('show');
   setTimeout(()=>n.classList.remove('show'),3000);
 }
@@ -4744,7 +4736,7 @@ function renderCampaigns(){
 
 // ─── COMPOSE ──────────────────────────────────────────────
 function renderTracking(){
-  const statColor={'Envoyé':'#888','Ouvert':'#3B6D11','Cliqué':'#185FA5','Répondu':'#854F0B','Sans suite':'#A32D2D'};
+  const statColor={'Envoyé':'#888','Ouvert':'#3B6D11','Cliqué':'#1A5FA8','Répondu':'#854F0B','Sans suite':'#A32D2D'};
   document.getElementById('tracking-list').innerHTML=DB.trackings.length?DB.trackings.slice(0,20).map(t=>`<div class="tracking-item" style="cursor:pointer" onclick="openFicheByEmail('${(t.email||'').replace(/'/g,"\\'")}')">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:11px;font-weight:600">${t.contact||t.email||'—'}</span>
@@ -4863,7 +4855,7 @@ async function sendEmail(){
       <div style="font-weight:600;margin-bottom:2px">📤 Envoi dans <span id="toast-count">15</span>s</div>
       <div style="font-size:11px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">À : ${to} — ${subj}</div>
       <div style="margin-top:6px;height:3px;background:#333;border-radius:2px;overflow:hidden">
-        <div id="toast-bar" style="height:100%;width:100%;background:#185FA5;border-radius:2px;transition:width 1s linear"></div>
+        <div id="toast-bar" style="height:100%;width:100%;background:#1A5FA8;border-radius:2px;transition:width 1s linear"></div>
       </div>
     </div>
     <button onclick="document.getElementById('cancel-toast-btn').click()" id="cancel-toast-btn" style="background:#E24B4A;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">✕ Annuler</button>`;
@@ -5155,10 +5147,10 @@ function renderCalendar(){
       const gcalUrl = e.evtType==='rdv'
         ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
         : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, '2h', e.adresse, `Agence: ${e.agence}\nMontant: ${e.montant}€ HT`);
-      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#185FA5'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
+      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#1A5FA8'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div style="font-size:11px;font-weight:600">${e.titre||e.agence||'—'}</div>
-          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#185FA5;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
+          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#1A5FA8;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
         </div>
         <div style="font-size:10px;color:var(--text2)">${fmtDT(e.date)} · ${e.duree||'—'}</div>
         ${e.contact?`<div style="font-size:10px;color:var(--text3)">${e.contact}</div>`:''}
@@ -5197,10 +5189,10 @@ function renderCalendar(){
       const gcalUrl = e.evtType==='rdv'
         ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
         : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, '2h', e.adresse, `Agence: ${e.agence}\nMontant: ${e.montant}€ HT`);
-      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#185FA5'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
+      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#1A5FA8'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div style="font-size:11px;font-weight:600">${e.titre||e.agence||'—'}</div>
-          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#185FA5;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
+          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#1A5FA8;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
         </div>
         <div style="font-size:10px;color:var(--text2)">${fmtDT(e.date)} · ${e.duree||'—'}</div>
       </div>`;}).join(''):'<div class="empty">Aucun événement ce mois</div>';
@@ -5659,7 +5651,7 @@ function saveRdv(){
     if(url){
       const n=document.getElementById('notif');
       n.innerHTML=`✅ RDV ajouté ! <a href="${url}" target="_blank" style="color:#fff;text-decoration:underline;margin-left:8px">📅 Ajouter à Google Agenda</a>`;
-      n.style.background='#185FA5';
+      n.style.background='#1A5FA8';
       n.classList.add('show');
       setTimeout(()=>n.classList.remove('show'),6000);
     }
@@ -6385,7 +6377,7 @@ async function obFinish(){
     });
   } catch(e) { console.warn('Email bienvenue non envoyé:', e); }
   hideOnboarding();
-  notify('🎉 Configuration terminée — bienvenue sur EDLConnect !');
+  notify('🎉 Configuration terminée — bienvenue sur Lokentia !');
   renderDashboard();
 }
 
@@ -6441,7 +6433,7 @@ async function showForgotPassword(){
 async function onAuthSuccess(user){
   _currentUser=user;
   // Personnaliser la sidebar avec les infos de l'utilisateur
-  const companyName = user.user_metadata?.company_name || localStorage.getItem('edl_co_name') || 'EDLConnect';
+  const companyName = user.user_metadata?.company_name || localStorage.getItem('edl_co_name') || 'Lokentia';
   const userEmail = user.email || '';
   const sidebarName = document.getElementById('sidebar-company-name');
   const sidebarSub  = document.getElementById('sidebar-user-email');
@@ -6836,7 +6828,7 @@ function openExtranetOrderDetail(o){
 
   const statutBadge = (s) => {
     if(s === 'realise') return '<span style="color:#27AE60;background:#EAF3DE;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">✅ Réalisé</span>';
-    if(s === 'confirmee' || s === 'importee') return '<span style="color:#185FA5;background:#E6F1FB;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">📅 Confirmé</span>';
+    if(s === 'confirmee' || s === 'importee') return '<span style="color:#1A5FA8;background:#F4F7FA;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">📅 Confirmé</span>';
     return '<span style="color:#B45309;background:#FEF3C7;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">⏳ En attente</span>';
   };
 
@@ -6864,7 +6856,7 @@ function openExtranetOrderDetail(o){
     </div>
     <div style="margin-top:16px">
       <button onclick="closeExtranetOrderDetail()" 
-        style="width:100%;padding:12px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+        style="width:100%;padding:12px;background:#1A5FA8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
         Fermer
       </button>
     </div>`;
@@ -6946,7 +6938,7 @@ function extranetRenderStats(orders){
       <div style="width:100%;display:flex;flex-direction:column;justify-content:flex-end;height:90px;gap:1px">
         ${hA?`<div style="height:${hA}%;background:#27AE60;border-radius:2px 2px 0 0;min-height:2px"></div>`:''}
         ${hS?`<div style="height:${hS}%;background:#E67E22;border-radius:${hA?'0':'2px 2px'} 0 0;min-height:2px"></div>`:''}
-        ${hE?`<div style="height:${hE}%;background:#185FA5;border-radius:${(hS||hA)?'0':'2px 2px'} 0 0;min-height:2px"></div>`:''}
+        ${hE?`<div style="height:${hE}%;background:#1A5FA8;border-radius:${(hS||hA)?'0':'2px 2px'} 0 0;min-height:2px"></div>`:''}
         ${!total?`<div style="height:2px;background:var(--border);border-radius:2px"></div>`:''}
       </div>
       <div style="font-size:9px;color:var(--text2);margin-top:3px">${label}</div>
@@ -7355,7 +7347,7 @@ async function requestNotifPermission(){
     if(banner) banner.style.display = 'none';
     notify('✅ Notifications activées ! Vous serez alerté des nouvelles réservations.');
     // Envoyer une notification de test
-    new Notification('EDLConnect', {
+    new Notification('Lokentia', {
       body: '🔔 Notifications activées ! Vous recevrez les alertes de réservation.',
       icon: '/favicon-192.png'
     });
@@ -7414,7 +7406,7 @@ async function silentRefreshReservations(){
       notify(`🔔 ${diff} nouvelle${diff > 1 ? 's' : ''} réservation${diff > 1 ? 's' : ''} reçue${diff > 1 ? 's' : ''} !`);
       // Notification push navigateur
       sendPushNotification(
-        '📥 Nouvelle réservation EDLConnect',
+        '📥 Nouvelle réservation Lokentia',
         `${diff} nouvelle${diff > 1 ? 's' : ''} demande${diff > 1 ? 's' : ''} d'état des lieux reçue${diff > 1 ? 's' : ''} !`
       );
       // Badge nav
@@ -8045,7 +8037,7 @@ function copyBookingLink(){
 
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo">EDLConnect</div>
+    <div class="auth-logo">Lokentia</div>
     <div class="auth-sub">CRM professionnel pour experts en état des lieux</div>
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="authTab('login',this)">Connexion</button>
@@ -8103,7 +8095,7 @@ function copyBookingLink(){
 
     <!-- Étape 1 : Votre entreprise -->
     <div id="ob-page-1">
-      <div style="font-size:22px;font-weight:700;color:var(--blue);margin-bottom:4px">👋 Bienvenue sur EDLConnect !</div>
+      <div style="font-size:22px;font-weight:700;color:var(--blue);margin-bottom:4px">👋 Bienvenue sur Lokentia !</div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Configurons votre espace en 3 minutes. Commençons par votre entreprise.</div>
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-top:0">Nom de votre entreprise *</label>
       <input type="text" id="ob-company" placeholder="Ex : EDL Bretagne, Check&State, Mon EDL Pro…" style="margin-bottom:12px;width:100%">
@@ -8146,7 +8138,7 @@ function copyBookingLink(){
       <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Optionnel — vous pourrez configurer ces clés plus tard dans Paramètres.</div>
       <div style="background:var(--blue-bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px">
         <div style="font-size:12px;font-weight:600;color:var(--blue-text);margin-bottom:4px">📧 Brevo — Envoi d'emails</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Permet d'envoyer des emails à vos contacts directement depuis EDLConnect.</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Permet d'envoyer des emails à vos contacts directement depuis Lokentia.</div>
         <input type="password" id="ob-brevo" placeholder="xkeysib-…" style="width:100%">
         <div style="font-size:10px;color:var(--text2);margin-top:4px">Obtenir une clé gratuite sur <a href="https://app.brevo.com/settings/keys/api" target="_blank" style="color:var(--blue)">app.brevo.com</a></div>
       </div>
