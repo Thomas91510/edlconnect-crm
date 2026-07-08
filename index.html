@@ -1321,6 +1321,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
                 <th>Adresse</th>
                 <th>Date souhaitée</th>
                 <th>Locataire</th>
+                <th>Propriétaire</th>
                 <th>Statut</th>
                 <th></th>
               </tr>
@@ -7522,7 +7523,7 @@ function renderReservations(list){
   document.getElementById('resa-count').textContent = list.length + ' réservation' + (list.length > 1 ? 's' : '');
 
   if(!list.length){
-    document.getElementById('resa-tbody').innerHTML = '<tr><td colspan="8" class="empty">Aucune réservation trouvée</td></tr>';
+    document.getElementById('resa-tbody').innerHTML = '<tr><td colspan="9" class="empty">Aucune réservation trouvée</td></tr>';
     return;
   }
 
@@ -7538,9 +7539,10 @@ function renderReservations(list){
       <td style="font-size:11px">${dateDemande}</td>
       <td style="font-weight:600;font-size:12px">${r.agence || '—'}</td>
       <td style="font-size:11px">${r.typeEdl || r.type || '—'}</td>
-      <td style="font-size:11px;max-width:180px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.adresse || '—'}</div>${r.proprietaire?`<div style="font-size:10px;color:var(--text2)">🏠 Propr. : ${r.proprietaire}</div>`:''}</td>
+      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.adresse || '—'}</td>
       <td style="font-size:11px;font-weight:600;color:var(--blue)">${dateSouhaitee}</td>
       <td style="font-size:11px">${locataire}</td>
+      <td style="font-size:11px">${r.proprietaire ? r.proprietaire : '<span style="color:var(--text3,#c8c8c8)">—</span>'}</td>
       <td>${statut}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="confirmRdvFromReservation('${r.id || r._supaId}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
