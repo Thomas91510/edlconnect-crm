@@ -3245,17 +3245,42 @@ function presenceBadge(p){
   return '';
 }
 function isDup(idx){return DB.dups.some(d=>d.i1===idx||d.i2===idx);}
+function normPhone(t){
+  // Normalise un numéro FR : garde les chiffres, convertit +33 / 0033 en 0
+  let d=String(t||'').replace(/[^0-9+]/g,'');
+  d=d.replace(/^\+33/,'0').replace(/^0033/,'0');
+  d=d.replace(/[^0-9]/g,'');
+  return d.length>=9?d:'';
+}
 function detectDuplicates(){
   const dups=[];
   const emailMap={};
+  const phoneMap={};
+  const pairSeen=new Set();
   DB.contacts.forEach((c,i)=>{
     const email=(c.email||'').toLowerCase().trim();
-    // Doublon UNIQUEMENT si même email (non vide)
+    // Doublon si même email (non vide) — priorité haute
     if(email){
       if(emailMap[email]!==undefined){
-        dups.push({i1:emailMap[email],i2:i,type:'email',val:c.email});
+        const key=emailMap[email]+'-'+i;
+        if(!pairSeen.has(key)){ dups.push({i1:emailMap[email],i2:i,type:'email',val:c.email}); pairSeen.add(key); }
       } else {
         emailMap[email]=i;
+      }
+    }
+    // Doublon si même téléphone normalisé (non vide)
+    const phone=normPhone(c.tel);
+    if(phone){
+      if(phoneMap[phone]!==undefined){
+        const a=phoneMap[phone], b=i;
+        const key=a+'-'+b;
+        // Éviter de doublonner une paire déjà signalée par email
+        const emailA=(DB.contacts[a].email||'').toLowerCase().trim();
+        const emailB=(c.email||'').toLowerCase().trim();
+        const sameEmail=emailA&&emailB&&emailA===emailB;
+        if(!pairSeen.has(key)&&!sameEmail){ dups.push({i1:a,i2:b,type:'téléphone',val:c.tel}); pairSeen.add(key); }
+      } else {
+        phoneMap[phone]=i;
       }
     }
     // Pas de détection par nom — trop de faux positifs
@@ -5384,32 +5409,64 @@ function renderDupsTable(){
   document.getElementById('dups-tbody').innerHTML=DB.dups.map((d,i)=>{
     const c1=DB.contacts[d.i1];const c2=DB.contacts[d.i2];
     if(!c1||!c2)return '';
-    return `<tr class="dup-row"><td><div style="font-size:11px;font-weight:600">${c1.entreprise||'—'}</div><div style="font-size:10px;color:var(--text2)">${c1.email||'—'}</div></td><td><div style="font-size:11px;font-weight:600">${c2.entreprise||'—'}</div><div style="font-size:10px;color:var(--text2)">${c2.email||'—'}</div></td><td><span class="badge b-amber">${d.type}</span></td><td><button class="btn btn-sm btn-danger" onclick="mergeDup(${i})"><i class="ti ti-git-merge"></i>Fusionner</button></td></tr>`;
+    return `<tr class="dup-row"><td><div style="font-size:11px;font-weight:600">${c1.entreprise||'—'}</div><div style="font-size:10px;color:var(--text2)">${c1.email||'—'}</div></td><td><div style="font-size:11px;font-weight:600">${c2.entreprise||'—'}</div><div style="font-size:10px;color:var(--text2)">${c2.email||'—'}</div></td><td><span class="badge ${d.type==='email'?'b-blue':'b-amber'}">${d.type==='email'?'📧 email':'📞 téléphone'}</span></td><td><button class="btn btn-sm btn-danger" onclick="mergeDup(${i})"><i class="ti ti-git-merge"></i>Fusionner</button></td></tr>`;
   }).join('');
 }
 
+function mergeContactData(dst, src){
+  // Complète dst avec les champs non vides de src (sans écraser l'existant)
+  const fields=['entreprise','contact','email','tel','statut','source','moyenContact','lastContact','typeClient'];
+  fields.forEach(f=>{
+    const cur=(dst[f]||'').toString().trim();
+    const alt=(src[f]||'').toString().trim();
+    if((!cur||cur.toLowerCase()==='undefined')&&alt&&alt.toLowerCase()!=='undefined'){ dst[f]=src[f]; }
+  });
+  // Email secondaire : si les deux ont un email différent, conserver l'autre dans les notes
+  const e1=(dst.email||'').toLowerCase().trim(), e2=(src.email||'').toLowerCase().trim();
+  if(e1&&e2&&e1!==e2){
+    const extra='Email secondaire : '+src.email;
+    dst.notes=(dst.notes?dst.notes+' · ':'')+extra;
+  }
+  // Fusionner les notes de src si présentes
+  if(src.notes&&src.notes.trim()){
+    dst.notes=(dst.notes?dst.notes+' · ':'')+src.notes.trim();
+  }
+  return dst;
+}
 function mergeDup(idx){
   const d=DB.dups[idx];if(!d)return;
+  const c1=DB.contacts[d.i1];
   const c2=DB.contacts[d.i2];
   const c2Id=c2?c2.id:null;
+  // Fusion intelligente : compléter c1 avec les infos de c2 avant suppression
+  if(c1&&c2){ mergeContactData(c1, c2); if(c1.id) pushToSupabase('contacts', c1); }
   DB.contacts.splice(d.i2,1);
   detectDuplicates();saveToStorage();
   if(c2Id)deleteFromSupabase('contacts', c2Id);
   notify('✅ Doublon fusionné');
-  renderBrevoTable();renderDupsTable();
+  renderBrevoTable();renderDupsTable();renderContacts&&renderContacts();
   document.getElementById('bk-dups').textContent=DB.dups.length;
   document.getElementById('bk-total').textContent=DB.contacts.length;
 }
 
 function mergeAllDups(){
-  const toRemove=new Set(DB.dups.map(d=>d.i2));
+  // Fusion en masse UNIQUEMENT pour les doublons email (sûrs).
+  // Les doublons téléphone se fusionnent au cas par cas (bouton individuel).
+  const emailDups=DB.dups.filter(d=>d.type==='email');
+  if(emailDups.length===0){ notify('Aucun doublon email à fusionner. Les doublons téléphone se fusionnent individuellement.','warn'); return; }
+  // Compléter chaque i1 avec les infos de son i2 avant suppression
+  emailDups.forEach(d=>{
+    const c1=DB.contacts[d.i1], c2=DB.contacts[d.i2];
+    if(c1&&c2){ mergeContactData(c1, c2); if(c1.id) pushToSupabase('contacts', c1); }
+  });
+  const toRemove=new Set(emailDups.map(d=>d.i2));
   const removedIds=DB.contacts.filter((_,i)=>toRemove.has(i)).map(c=>c.id);
   DB.contacts=DB.contacts.filter((_,i)=>!toRemove.has(i));
   detectDuplicates();saveToStorage();
   removedIds.forEach(id=>deleteFromSupabase('contacts', id));
-  notify('✅ Tous les doublons fusionnés !');
-  renderBrevoTable();renderDupsTable();
-  document.getElementById('bk-dups').textContent=0;
+  notify(`✅ ${emailDups.length} doublon(s) email fusionné(s) !`);
+  renderBrevoTable();renderDupsTable();renderContacts&&renderContacts();
+  document.getElementById('bk-dups').textContent=DB.dups.length;
   document.getElementById('bk-total').textContent=DB.contacts.length;
 }
 
