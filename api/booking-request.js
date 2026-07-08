@@ -102,6 +102,7 @@ export default async function handler(req) {
                     <tr><td style="color:#6b6b6b;padding:4px 0">Date souhaitée</td><td style="font-weight:600;color:#185FA5">${dateFormatted}${heure ? ' · ' + heure : ''}</td></tr>
                     ${dateEntree ? `<tr><td style="color:#6b6b6b;padding:4px 0">Date d'entrée</td><td>${new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</td></tr>` : ''}
                     <tr><td style="color:#6b6b6b;padding:4px 0">Locataire</td><td>${locataire?.nom || '—'} · ${locataire?.tel || '—'}</td></tr>
+                    ${proprietaire ? `<tr><td style="color:#6b6b6b;padding:4px 0">Propriétaire</td><td>${proprietaire}</td></tr>` : ''}
                     ${notes ? `<tr><td style="color:#6b6b6b;padding:4px 0">Notes</td><td style="font-size:12px">${notes}</td></tr>` : ''}
                   </table>
                 </div>
