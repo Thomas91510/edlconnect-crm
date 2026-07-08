@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="32" height="32">
   <!-- Lokentia — monogramme. Le L est un angle de plan (deux murs), l'arc laiton est l'ouverture de porte. -->
-  <rect width="32" height="32" rx="26" fill="#0F1E2E"/>
+  <rect width="120" height="120" rx="26" fill="#0F1E2E"/>
   <path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/>
   <path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/>
   <circle cx="52" cy="32" r="4" fill="#C29A5B"/>
