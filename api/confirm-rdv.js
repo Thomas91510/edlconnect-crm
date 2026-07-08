@@ -75,7 +75,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
+  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
     <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
@@ -84,8 +84,8 @@ export default async function handler(req) {
       <tr><td style="color:#6b6b6b;padding:5px 0;width:35%">Type</td><td style="font-weight:600">${mission.type}</td></tr>
       <tr><td style="color:#6b6b6b;padding:5px 0">Adresse</td><td style="font-weight:600">${mission.adresse}</td></tr>
       <tr><td style="color:#6b6b6b;padding:5px 0">Bien</td><td>${bien}</td></tr>
-      <tr><td style="color:#6b6b6b;padding:5px 0">Date</td><td style="font-weight:600;color:#185FA5">${dateStr}</td></tr>
-      <tr><td style="color:#6b6b6b;padding:5px 0">Heure</td><td style="font-weight:600;color:#185FA5">${heureStr}</td></tr>
+      <tr><td style="color:#6b6b6b;padding:5px 0">Date</td><td style="font-weight:600;color:#1A5FA8">${dateStr}</td></tr>
+      <tr><td style="color:#6b6b6b;padding:5px 0">Heure</td><td style="font-weight:600;color:#1A5FA8">${heureStr}</td></tr>
       ${expertBlockAgent}
       ${locataireNom ? `<tr><td style="color:#6b6b6b;padding:5px 0">Locataire</td><td>${locataireNom}</td></tr>` : ''}
       ${mission.proprietaire ? `<tr><td style="color:#6b6b6b;padding:5px 0">Propriétaire</td><td>${mission.proprietaire}</td></tr>` : ''}
@@ -97,8 +97,8 @@ export default async function handler(req) {
     </div>
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
       <strong>Thomas Langlade — EDL IDF Expert en Etat des Lieux</strong><br>
-      📞 <a href="tel:0767630963" style="color:#185FA5">07 67 63 09 63</a> · 
-      ✉️ <a href="mailto:contact@edl-idf.com" style="color:#185FA5">contact@edl-idf.com</a>
+      📞 <a href="tel:0767630963" style="color:#1A5FA8">07 67 63 09 63</a> · 
+      ✉️ <a href="mailto:contact@edl-idf.com" style="color:#1A5FA8">contact@edl-idf.com</a>
     </div>
   </div>
 </div>
@@ -109,7 +109,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
+  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
     <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
@@ -118,7 +118,7 @@ export default async function handler(req) {
       Je vous confirme notre rendez-vous pour l'état des lieux d'entrée de votre logement situé au :
     </p>
 
-    <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
+    <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
       📍 <strong>${mission.adresse}</strong><br>
       🏠 Type de bien : <strong>${bien}</strong><br>
       📅 Date et heure : <strong>${dateStr} à ${heureStr}</strong><br>
@@ -144,18 +144,18 @@ export default async function handler(req) {
     ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
 
     <div style="border-top:1px dashed #e5e5e2;margin:20px 0;padding-top:20px">
-      <div style="font-size:13px;font-weight:700;color:#185FA5;margin-bottom:8px">💡 Astuce pour votre emménagement :</div>
+      <div style="font-size:13px;font-weight:700;color:#1A5FA8;margin-bottom:8px">💡 Astuce pour votre emménagement :</div>
       <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 8px 0">
         Afin de vous accompagner dans vos démarches (ouverture de compteurs, changement d'adresse, etc.), découvrez les services gratuits de BeMove :
       </p>
-      <a href="https://www.bemove.fr/landing/immobilier/edl-idf/services" style="display:inline-block;background:#185FA5;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">
+      <a href="https://www.bemove.fr/landing/immobilier/edl-idf/services" style="display:inline-block;background:#1A5FA8;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">
         👉 Découvrir BeMove
       </a>
     </div>
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;margin-top:20px;line-height:1.8">
       En cas d'empêchement ou pour toute question, n'hésitez pas à me contacter :<br>
-      📞 <a href="tel:0767630963" style="color:#185FA5;text-decoration:none">07 67 63 09 63</a><br>
+      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
       ✉️ Par retour de mail<br><br>
       Dans l'attente de vous rencontrer,<br>
       Cordialement,<br>
@@ -170,7 +170,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
+  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
     <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
@@ -179,7 +179,7 @@ export default async function handler(req) {
       Suite à notre conversation, nous vous confirmons le rendez-vous pour effectuer l'état des lieux de sortie de votre logement, diligenté par <strong>${mission.agence}</strong>.
     </p>
 
-    <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:24px;font-size:13px;color:#0C447C;line-height:2">
+    <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:24px;font-size:13px;color:#0C447C;line-height:2">
       📅 Date : <strong>${dateStr}</strong><br>
       🕘 Heure : <strong>${heureStr}</strong><br>
       📍 Adresse : <strong>${mission.adresse}</strong><br>
@@ -222,7 +222,7 @@ export default async function handler(req) {
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Pour toute question ou en cas d'empêchement majeur, n'hésitez pas à nous contacter :<br>
-      📞 <a href="tel:0767630963" style="color:#185FA5;text-decoration:none">07 67 63 09 63</a><br>
+      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
       ✉️ Par retour de mail<br><br>
       Cordialement,<br>
       <strong>Thomas LANGLADE</strong>
@@ -236,7 +236,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0">
+  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
     <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
@@ -246,7 +246,7 @@ export default async function handler(req) {
       Cette visite préventive vous permettra d'anticiper les travaux à réaliser avant votre départ officiel.
     </p>
 
-    <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
+    <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
       📅 Date : <strong>${dateStr}</strong><br>
       🕘 Heure : <strong>${heureStr}</strong><br>
       📍 Adresse : <strong>${mission.adresse}</strong><br>
@@ -270,7 +270,7 @@ export default async function handler(req) {
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Pour toute question, n'hésitez pas à nous contacter :<br>
-      📞 <a href="tel:0767630963" style="color:#185FA5;text-decoration:none">07 67 63 09 63</a><br>
+      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
       ✉️ Par retour de mail<br><br>
       Cordialement,<br>
       <strong>Thomas LANGLADE</strong>
