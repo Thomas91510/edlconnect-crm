@@ -102,6 +102,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .tbl tr:hover td{background:var(--bg2)}
 /* BADGES */
 .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500;white-space:nowrap}
+    .badge-status::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;flex-shrink:0}
 .b-green{background:var(--green-bg);color:var(--green-text)}
 .b-blue{background:var(--blue-bg);color:var(--blue-text)}
 .b-amber{background:var(--amber-bg);color:var(--amber-text)}
@@ -3235,7 +3236,7 @@ function fmtDT(d){if(!d)return '—';try{const dt=new Date(d);return dt.toLocale
 function initials(n){const w=(n||'?').trim().split(' ');return((w[0]||'?')[0]+((w[1]||'')[0]||'')).toUpperCase();}
 function statusBadge(s){
   const m={'Client actif':'b-green','Client signé ✅':'b-green','Cible potentielle':'b-blue','Partenaire':'b-teal','Inactif':'b-gray','planifiée':'b-blue','en cours':'b-amber','terminée':'b-teal','facturée':'b-green','Gagné':'b-green','Négociation':'b-amber','Proposé':'b-blue','Qualifié':'b-teal','Prospect':'b-gray','Terminée':'b-gray','Active':'b-green','subscribed':'b-green','unsubscribed':'b-amber','bounced':'b-red','blocked':'b-red'};
-  return `<span class="badge ${m[s]||'b-gray'}">${s||'—'}</span>`;
+  return `<span class="badge badge-status ${m[s]||'b-gray'}">${s||'—'}</span>`;
 }
 function presenceBadge(p){
   if(p==='brevo')return '<span class="badge b-teal">Brevo</span>';
