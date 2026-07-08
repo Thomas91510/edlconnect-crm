@@ -4157,20 +4157,38 @@ function getFilteredContacts(){
   if(UI.contactSearch){const q=UI.contactSearch.toLowerCase();list=list.filter(c=>((c.entreprise||'')+(c.contact||'')+(c.email||'')).toLowerCase().includes(q));}
   return list;
 }
+function cleanName(v){
+  if(!v) return '';
+  const s=String(v).trim();
+  if(!s || s.toLowerCase()==='undefined' || s.toLowerCase()==='null') return '';
+  return s;
+}
+function displayEntreprise(ct){
+  const ent=cleanName(ct.entreprise);
+  if(ent) return {name:ent, muted:false};
+  const contact=cleanName(ct.contact);
+  if(contact) return {name:contact, muted:false};
+  const email=cleanName(ct.email);
+  if(email) return {name:email.split('@')[0], muted:true};
+  return {name:'Sans nom', muted:true};
+}
 function renderContacts(){
   const list=getFilteredContacts();
   document.getElementById('contacts-count').textContent=list.length+' contacts';
   document.getElementById('contacts-tbody').innerHTML=list.length?list.map(c=>{
     const gi=DB.contacts.indexOf(c);const dup=isDup(gi);
+    const disp=displayEntreprise(c);
+    const empty='<span style="color:var(--text3,#c8c8c8);font-size:11px">—</span>';
+    const contactCell=cleanName(c.contact)?`<span style="font-size:11px">${cleanName(c.contact)}</span>`:empty;
     return `<tr class="clickable ${dup?'dup-row':''}" onclick="openFiche('${c.id}')">
-      <td><div class="flex-row"><div class="avatar" style="font-size:9px;${dup?'background:var(--amber-bg);color:var(--amber-text)':''}">${initials(c.entreprise)}</div><span style="font-size:11px;font-weight:500">${c.entreprise}</span>${dup?'<span class="badge b-amber" style="font-size:9px">doublon</span>':''}</div></td>
-      <td style="font-size:11px">${c.contact||'—'}</td>
-      <td><a href="mailto:${c.email}" style="color:var(--blue);text-decoration:none;font-size:11px" onclick="event.stopPropagation()">${c.email||'—'}</a></td>
-      <td style="font-size:11px">${c.tel||'<span style="color:var(--red);font-size:10px">—</span>'}</td>
+      <td><div class="flex-row"><div class="avatar" style="font-size:9px;${dup?'background:var(--amber-bg);color:var(--amber-text)':''}">${initials(disp.name)}</div><span style="font-size:11px;font-weight:500;${disp.muted?'color:var(--text2);font-style:italic':''}">${disp.name}</span>${dup?'<span class="badge b-amber" style="font-size:9px">doublon</span>':''}</div></td>
+      <td>${contactCell}</td>
+      <td>${cleanName(c.email)?`<a href="mailto:${c.email}" style="color:var(--blue);text-decoration:none;font-size:11px" onclick="event.stopPropagation()">${c.email}</a>`:empty}</td>
+      <td>${cleanName(c.tel)?`<span style="font-size:11px">${c.tel}</span>`:empty}</td>
       <td><span class="badge ${c.typeClient==='Particulier'?'b-teal':'b-blue'}" style="font-size:9px">${c.typeClient||'Pro'}</span></td>
       <td>${statusBadge(c.statut)}</td>
-      <td style="font-size:10px;color:var(--text2)">${c.lastContact?`<strong style="color:var(--text)">${fmtDate(c.lastContact)}</strong>`:'—'}</td>
-      <td style="font-size:10px">${c.moyenContact||'—'}</td>
+      <td style="font-size:10px;color:var(--text2)">${c.lastContact?`<strong style="color:var(--text)">${fmtDate(c.lastContact)}</strong>`:empty}</td>
+      <td style="font-size:10px">${cleanName(c.moyenContact)?c.moyenContact:empty}</td>
       <td><button class="btn btn-sm" onclick="event.stopPropagation();emailContactQuick('${c.email}')"><i class="ti ti-mail" style="font-size:12px"></i></button></td>
     </tr>`;
   }).join(''):'<tr><td colspan="8" class="empty">Aucun contact</td></tr>';
