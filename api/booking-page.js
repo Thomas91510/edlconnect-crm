@@ -148,6 +148,9 @@ textarea{min-height:75px;resize:vertical}
         </div>
         <div class="form-row">
           <div><label>Accès (digicode…)</label><input type="text" id="acces" placeholder="Code : A1234"></div>
+          <div><label>Nom du propriétaire</label><input type="text" id="proprietaire" placeholder="Ex: M. Dupont"></div>
+        </div>
+        <div class="form-row">
           <div id="date-entree-wrap" style="display:none">
             <label>Date d&#39;entrée dans le logement</label>
             <input type="date" id="date-entree">
@@ -369,6 +372,7 @@ async function submit(){
     superficie: document.getElementById('superficie').value.trim(),
     dateEntree: document.getElementById('date-entree').value,
     acces: document.getElementById('acces').value.trim(),
+    proprietaire: document.getElementById('proprietaire').value.trim(),
     dateSouhaitee: document.getElementById('date').value,
     heure: document.getElementById('heure').value,
     notes: document.getElementById('notes').value.trim(),
