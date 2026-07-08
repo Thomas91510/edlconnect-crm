@@ -88,6 +88,7 @@ export default async function handler(req) {
       <tr><td style="color:#6b6b6b;padding:5px 0">Heure</td><td style="font-weight:600;color:#185FA5">${heureStr}</td></tr>
       ${expertBlockAgent}
       ${locataireNom ? `<tr><td style="color:#6b6b6b;padding:5px 0">Locataire</td><td>${locataireNom}</td></tr>` : ''}
+      ${mission.proprietaire ? `<tr><td style="color:#6b6b6b;padding:5px 0">Propriétaire</td><td>${mission.proprietaire}</td></tr>` : ''}
       ${mission.acces ? `<tr><td style="color:#6b6b6b;padding:5px 0">Accès</td><td>${mission.acces}</td></tr>` : ''}
     </table>
     ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
