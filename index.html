@@ -7568,6 +7568,7 @@ function confirmRdvFromReservation(id){
     superficie: r.superficie || '',
     dateEntree: r.dateEntree || '',
     acces: r.acces || '',
+    proprietaire: r.proprietaire || '',
     date: r.dateSouhaitee || '',
     locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
     locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
@@ -7634,6 +7635,7 @@ function createMissionFromReservation(id){
     bienTypo: r.bienTypo || '',
     bienMeuble: r.meuble || '',
     acces: r.acces || '',
+    proprietaire: r.proprietaire || '',
     type: r.typeEdl || r.type || 'EDL entrant',
     date: r.dateSouhaitee || '',
     montant: 0,
@@ -7786,7 +7788,8 @@ async function sendConfirmRdv(){
       bienType: m.bienType,
       bienTypo: m.bienTypo,
       bienMeuble: m.bienMeuble,
-      acces: m.acces || ''
+      acces: m.acces || '',
+      proprietaire: m.proprietaire || ''
     },
     agentEmail,
     agentNom: document.getElementById('confirm-rdv-agent-email').value.split('@')[0],
@@ -7824,6 +7827,7 @@ async function sendConfirmRdv(){
             bienTypo: r.bienTypo || '',
             bienMeuble: r.meuble || '',
             acces: r.acces || '',
+    proprietaire: r.proprietaire || '',
             type: r.typeEdl || r.type || 'EDL entrant',
             date: rdvDatetime,
             montant: 0,
