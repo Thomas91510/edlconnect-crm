@@ -99,7 +99,7 @@ export default async function handler(req) {
             </div>`;
         } else {
           blocRappel = `
-            <div style="background:#E6F1FB;border-radius:8px;padding:16px;margin-bottom:16px;font-size:13px;color:#0C447C;line-height:1.9">
+            <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:16px;font-size:13px;color:#0C447C;line-height:1.9">
               <strong>📋 Rappel :</strong><br>
               ✓ Votre pièce d'identité<br>
               ✓ Toutes les questions sur l'état du logement
@@ -110,17 +110,17 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#185FA5;padding:20px 24px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px">
-    <div style="background:#E6F1FB;width:44px;height:44px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
+  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px">
+    <div style="background:#F4F7FA;width:44px;height:44px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
       <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
         <tr>
-          <td style="padding:0;line-height:1"><span style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#185FA5;letter-spacing:-1px">E</span></td>
-          <td style="padding:0;line-height:1"><span style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#185FA5">D</span></td>
-          <td style="padding:0 0 3px 1px;vertical-align:bottom;line-height:1"><span style="display:inline-block;width:6px;height:11px;border:2px solid #185FA5;border-left:none;border-radius:0 4px 4px 0"></span></td>
+          <td style="padding:0;line-height:1"><span style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#1A5FA8;letter-spacing:-1px">E</span></td>
+          <td style="padding:0;line-height:1"><span style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#1A5FA8">D</span></td>
+          <td style="padding:0 0 3px 1px;vertical-align:bottom;line-height:1"><span style="display:inline-block;width:6px;height:11px;border:2px solid #1A5FA8;border-left:none;border-radius:0 4px 4px 0"></span></td>
         </tr>
       </table>
     </div>
-    <span style="color:#fff;font-size:18px;font-weight:700">EDLConnect</span>
+    <span style="color:#fff;font-size:18px;font-weight:700">Lokentia</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <div style="background:#FAEEDA;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;font-weight:700;color:#633806;text-align:center">
@@ -132,10 +132,10 @@ export default async function handler(req) {
       Nous vous rappelons votre état des lieux <strong>${m.type}</strong> prévu <strong>demain</strong>.
     </p>
 
-    <div style="background:#185FA5;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center">
+    <div style="background:#1A5FA8;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center">
       <div style="color:rgba(255,255,255,0.8);font-size:12px;margin-bottom:4px">📅 Votre rendez-vous</div>
       <div style="color:#fff;font-size:18px;font-weight:700">${dateStr}</div>
-      <div style="color:#E6F1FB;font-size:16px;font-weight:600">🕐 ${heureStr}</div>
+      <div style="color:#F4F7FA;font-size:16px;font-weight:600">🕐 ${heureStr}</div>
       <div style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:6px">📍 ${m.adresse}</div>
       ${bien ? `<div style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:4px">🏠 ${bien}</div>` : ''}
     </div>
@@ -148,10 +148,10 @@ export default async function handler(req) {
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Une question de dernière minute ?<br>
-      📞 <a href="tel:0767630963" style="color:#185FA5;text-decoration:none">07 67 63 09 63</a><br>
+      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
       ✉️ Par retour de mail<br><br>
       Cordialement,<br>
-      <strong>Thomas LANGLADE — EDLConnect</strong>
+      <strong>Thomas LANGLADE — Lokentia</strong>
     </div>
   </div>
 </div>
@@ -162,7 +162,7 @@ export default async function handler(req) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
-            sender: { name: 'Thomas — EDLConnect', email: 'contact@edlconnect.fr' },
+            sender: { name: 'Thomas — Lokentia', email: 'contact@edlconnect.fr' },
             to: [{ email: m.locataireEmail, name: salutation || locNom }],
             replyTo: { email: 'contact@edlconnect.fr', name: 'Thomas Langlade' },
             subject: `⏰ Rappel — Votre état des lieux demain à ${heureStr} — ${m.adresse}`,
