@@ -150,6 +150,8 @@
       </div>
       <div class="form-label">Accès / Digicode</div>
       <input id="f-acces" placeholder="Code : A1234" style="margin-bottom:14px">
+      <div class="form-label">Nom du propriétaire</div>
+      <input id="f-proprietaire" placeholder="Ex: M. Dupont" style="margin-bottom:14px">
       <div class="form-grid" style="margin-bottom:14px">
         <div><div class="form-label">Date souhaitée *</div><input id="f-date" type="date"></div>
         <div><div class="form-label">Heure souhaitée</div><select id="f-heure"><option value="">— Flexible —</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option></select></div>
@@ -315,7 +317,7 @@ async function submitOrder() {
   const btn = document.getElementById('form-submit-btn');
   btn.disabled=true; btn.innerHTML='<i class="ti ti-loader"></i> Envoi…';
   const locataire = {nom:locNom,tel:locTel,email:document.getElementById('f-loc-email').value.trim()};
-  const payload = {agencyId:'',agence:_userEmail,contact:_userEmail,email:_userEmail,tel:'',typeEdl:_selectedType,adresse,bienType:document.getElementById('f-bien').value,bienTypo:'',meuble:document.getElementById('f-meuble').value,superficie:document.getElementById('f-superficie').value||'',dateEntree:document.getElementById('f-date-entree').value||'',acces:document.getElementById('f-acces').value.trim(),dateSouhaitee:date,heure:document.getElementById('f-heure').value,notes:document.getElementById('f-notes').value.trim(),locataire,locataires:[locataire],source:'extranet'};
+  const payload = {agencyId:'',agence:_userEmail,contact:_userEmail,email:_userEmail,tel:'',typeEdl:_selectedType,adresse,bienType:document.getElementById('f-bien').value,bienTypo:'',meuble:document.getElementById('f-meuble').value,superficie:document.getElementById('f-superficie').value||'',dateEntree:document.getElementById('f-date-entree').value||'',acces:document.getElementById('f-acces').value.trim(),proprietaire:document.getElementById('f-proprietaire').value.trim(),dateSouhaitee:date,heure:document.getElementById('f-heure').value,notes:document.getElementById('f-notes').value.trim(),locataire,locataires:[locataire],source:'extranet'};
   try {
     const resp = await fetch('/api/booking-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const r = await resp.json();
