@@ -82,7 +82,7 @@ export default async function handler(req) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
-          sender: { name: 'Lokentia', email: 'contact@edlconnect.fr' },
+          sender: { name: 'EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
           to: [{ email, name: contact }],
           subject: `✅ Demande d'EDL reçue — ${typeEdl} · ${adresse}`,
           htmlContent: `
@@ -111,7 +111,7 @@ export default async function handler(req) {
                 </div>
                 <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
                   📞 <a href="tel:0189291429" style="color:#1A5FA8">01 89 29 14 29</a> · 
-                  ✉️ <a href="mailto:contact@edlconnect.fr" style="color:#1A5FA8">contact@edlconnect.fr</a>
+                  ✉️ <a href="mailto:contact@edl-idf.com" style="color:#1A5FA8">contact@edl-idf.com</a>
                 </div>
               </div>
             </div>`
@@ -123,7 +123,7 @@ export default async function handler(req) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
-          sender: { name: 'Lokentia Booking', email: 'contact@edlconnect.fr' },
+          sender: { name: 'EDL IDF Booking', email: 'contact@edl-idf.com' },
           to: [{ email: 'contact@edl-idf.com', name: 'Thomas Langlade' }],
           subject: `🔔 Nouvelle demande EDL — ${agence} · ${typeEdl}`,
           htmlContent: `
@@ -149,7 +149,7 @@ export default async function handler(req) {
                   ${notes ? `<tr><td style="color:#999;padding:5px 0">Notes</td><td style="color:#6b6b6b">${notes}</td></tr>` : ''}
                 </table>
                 <div style="margin-top:20px;text-align:center">
-                  <a href="https://app.edlconnect.fr" style="background:#1A5FA8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;display:inline-block">
+                  <a href="https://app.lokentia.fr" style="background:#1A5FA8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;display:inline-block">
                     Ouvrir le CRM →
                   </a>
                 </div>
