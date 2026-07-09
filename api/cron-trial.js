@@ -52,7 +52,7 @@ export default async function handler(req) {
           'api-key': BREVO_KEY
         },
         body: JSON.stringify({
-          sender: { name: 'Lokentia', email: 'contact@edlconnect.fr' },
+          sender: { name: 'Lokentia', email: 'contact@lokentia.fr' },
           to: [{ email: user.email }],
           subject: '⏰ Votre essai gratuit Lokentia se termine demain',
           htmlContent: `
@@ -89,14 +89,14 @@ export default async function handler(req) {
                   </div>
                 </div>
                 <div style="text-align:center;margin-bottom:24px">
-                  <a href="https://app.edlconnect.fr" 
+                  <a href="https://app.lokentia.fr" 
                      style="background:#1A5FA8;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;display:inline-block">
                     Choisir mon abonnement →
                   </a>
                 </div>
                 <p style="font-size:12px;color:#999;text-align:center">
                   Des questions ? Contactez-nous : 
-                  <a href="mailto:contact@edlconnect.fr" style="color:#1A5FA8">contact@edlconnect.fr</a> · 
+                  <a href="mailto:contact@lokentia.fr" style="color:#1A5FA8">contact@lokentia.fr</a> · 
                   <a href="tel:0185460033" style="color:#1A5FA8">01 85 46 00 33</a>
                 </p>
               </div>
