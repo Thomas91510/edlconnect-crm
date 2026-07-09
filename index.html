@@ -6663,12 +6663,11 @@ async function extranetSendMagicLink(){
   btn.disabled = true;
   btn.innerHTML = '<i class="ti ti-loader"></i> Envoi en cours…';
   try{
-    const resp = await fetch('/api/send-magic-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+    const { error: otpError } = await supabaseClient.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.origin + '/extranet-app' }
     });
-    const result = await resp.json();
+    const result = { success: !otpError, error: otpError ? otpError.message : null };
     if(result.success){
       msgEl.style.color = 'var(--green-text)';
       msgEl.textContent = '✅ Un lien de connexion vient de vous être envoyé par email. Cliquez dessus pour accéder à votre espace (vérifiez vos spams si besoin).';
