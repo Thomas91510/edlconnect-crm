@@ -39,7 +39,7 @@ export default async function handler(req) {
     const agencySlug = (companyName||'').toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g,'')
       .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-    const bookingLink = `https://app.edlconnect.fr/booking?agency=${agencySlug}&name=${encodeURIComponent(companyName||'')}`;
+    const bookingLink = `https://app.lokentia.fr/booking?agency=${agencySlug}&name=${encodeURIComponent(companyName||'')}`;
     if(!email) return new Response(JSON.stringify({ error: 'Email requis' }), { status: 400 });
 
     const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -49,26 +49,14 @@ export default async function handler(req) {
         'api-key': BREVO_KEY
       },
       body: JSON.stringify({
-        sender: { name: 'Thomas — Lokentia', email: 'contact@edlconnect.fr' },
+        sender: { name: 'Thomas — Lokentia', email: 'contact@lokentia.fr' },
         to: [{ email }],
         subject: '👋 Bienvenue sur Lokentia — votre essai de 15 jours commence !',
         htmlContent: `
           <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
             <div style="background:#1A5FA8;padding:24px;text-align:center;border-radius:12px 12px 0 0">
-              <div style="background:#F4F7FA;display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;margin-bottom:10px">
-                <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
-                  <tr>
-                    <td style="padding:0;line-height:1">
-                      <span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:#1A5FA8;letter-spacing:-1px">E</span>
-                    </td>
-                    <td style="padding:0 0 0 1px;line-height:1">
-                      <span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:#1A5FA8">D</span>
-                    </td>
-                    <td style="padding:0 0 4px 2px;vertical-align:bottom;line-height:1">
-                      <span style="display:inline-block;width:8px;height:14px;border:2.5px solid #1A5FA8;border-left:none;border-radius:0 6px 6px 0"></span>
-                    </td>
-                  </tr>
-                </table>
+              <div style="background:#0F1E2E;display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;margin-bottom:10px">
+                <span style="font-family:Arial,sans-serif;font-size:24px;font-weight:700;color:#F4F7FA">L</span><span style="font-family:Arial,sans-serif;font-size:11px;color:#C29A5B;vertical-align:top">&#9679;</span>
               </div>
               <div style="color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.5px">Lokentia</div>
             </div>
@@ -88,7 +76,7 @@ export default async function handler(req) {
                 </div>
               </div>
               <div style="text-align:center;margin-bottom:20px">
-                <a href="https://app.edlconnect.fr" 
+                <a href="https://app.lokentia.fr" 
                    style="background:#1A5FA8;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;display:inline-block">
                   Accéder à mon CRM →
                 </a>
@@ -102,7 +90,7 @@ export default async function handler(req) {
               <div style="background:#f8f8f6;border-radius:8px;padding:14px;font-size:13px;color:#6b6b6b;line-height:1.7">
                 <strong>Une question ?</strong> Je suis disponible pour vous aider à bien démarrer.<br>
                 📞 <a href="tel:0185460033" style="color:#1A5FA8">01 85 46 00 33</a> · 
-                ✉️ <a href="mailto:contact@edlconnect.fr" style="color:#1A5FA8">contact@edlconnect.fr</a>
+                ✉️ <a href="mailto:contact@lokentia.fr" style="color:#1A5FA8">contact@lokentia.fr</a>
               </div>
               <p style="font-size:12px;color:#999;text-align:center;margin-top:20px">
                 Thomas Langlade — Lokentia<br>
