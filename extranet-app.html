@@ -236,7 +236,7 @@ async function sendMagicLink() {
   try {
     const { error: otpError } = await sb.auth.signInWithOtp({
       email: email,
-      options: { emailRedirectTo: 'https://app.edlconnect.fr/extranet-app' }
+      options: { emailRedirectTo: window.location.origin + '/extranet-app' }
     });
     const r = { success: !otpError, error: otpError ? otpError.message : null };
     if (r.success) { msgEl.className='msg-success'; msgEl.textContent='✅ Lien envoyé ! Vérifiez votre boîte mail.'; btn.style.display='none'; document.getElementById('login-email').disabled=true; }
