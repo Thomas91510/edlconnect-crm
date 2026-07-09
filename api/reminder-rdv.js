@@ -47,14 +47,6 @@ export default async function handler(req) {
       return mDate === tomorrowStr;
     });
 
-    if(missionsDemain.length === 0) {
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: 'Aucune mission demain avec locataire',
-        date: tomorrowStr 
-      }), { status: 200 });
-    }
-
     let sent = 0;
     const errors = [];
 
@@ -111,16 +103,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px">
-    <div style="background:#F4F7FA;width:44px;height:44px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
-      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
-        <tr>
-          <td style="padding:0;line-height:1"><span style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#1A5FA8;letter-spacing:-1px">E</span></td>
-          <td style="padding:0;line-height:1"><span style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#1A5FA8">D</span></td>
-          <td style="padding:0 0 3px 1px;vertical-align:bottom;line-height:1"><span style="display:inline-block;width:6px;height:11px;border:2px solid #1A5FA8;border-left:none;border-radius:0 4px 4px 0"></span></td>
-        </tr>
-      </table>
-    </div>
-    <span style="color:#fff;font-size:18px;font-weight:700">Lokentia</span>
+    <span style="color:#fff;font-size:17px;font-weight:700">EDL IDF Expert en État des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <div style="background:#FAEEDA;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;font-weight:700;color:#633806;text-align:center">
@@ -151,7 +134,7 @@ export default async function handler(req) {
       📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
       ✉️ Par retour de mail<br><br>
       Cordialement,<br>
-      <strong>Thomas LANGLADE — Lokentia</strong>
+      <strong>Thomas LANGLADE — EDL IDF Expert en État des Lieux</strong>
     </div>
   </div>
 </div>
@@ -162,9 +145,9 @@ export default async function handler(req) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
-            sender: { name: 'Thomas — Lokentia', email: 'contact@edlconnect.fr' },
+            sender: { name: 'Thomas — EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
             to: [{ email: m.locataireEmail, name: salutation || locNom }],
-            replyTo: { email: 'contact@edlconnect.fr', name: 'Thomas Langlade' },
+            replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
             subject: `⏰ Rappel — Votre état des lieux demain à ${heureStr} — ${m.adresse}`,
             htmlContent
           })
@@ -191,11 +174,98 @@ export default async function handler(req) {
       }
     }
 
+    // ============ J+1 : DEMANDE D'AVIS GOOGLE ============
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const missionsHier = rows.filter(r => {
+      if(!r.data) return false;
+      const m = r.data;
+      if(!m.date || !m.locataireEmail) return false;
+      if(m.avisEnvoye) return false;
+      if((m.statut || '').toLowerCase().includes('annul')) return false;
+      return m.date.split('T')[0] === yesterdayStr;
+    });
+
+    let avisSent = 0;
+
+    for(const row of missionsHier) {
+      const m = row.data;
+      try {
+        const civilite = m.locataireCivilite || '';
+        const locNom = m.locataireNom || '';
+        const salutation = civilite && locNom ? `${civilite} ${locNom}` : locNom || '';
+
+        const avisHtml = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:20px 0">
+  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
+    <span style="color:#fff;font-size:17px;font-weight:700">EDL IDF Expert en État des Lieux</span>
+  </div>
+  <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + salutation + '</strong>' : ''},</p>
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
+      Chez <strong>EDL IDF</strong>, nous accordons une grande importance à la qualité de nos prestations et à la satisfaction des personnes que nous accompagnons. Votre retour est précieux&nbsp;: il nous permet d'améliorer continuellement nos services.
+    </p>
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
+      Si vous avez quelques instants, pourriez-vous partager votre expérience sur notre page Google&nbsp;? Cela ne prend que quelques minutes et nous aide énormément&nbsp;:
+    </p>
+    <div style="text-align:center;margin:0 0 24px 0">
+      <a href="https://g.page/r/CQOIf5lzL3xwEBM/review" style="display:inline-block;background:#1A5FA8;color:#fff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none">⭐ Laisser un avis Google</a>
+    </div>
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
+      N'hésitez pas si vous avez la moindre question, nous restons à votre entière disposition.
+    </p>
+    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
+      Bien cordialement,<br>
+      <strong>L'équipe EDL IDF</strong><br>
+      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a>
+    </div>
+  </div>
+</div>
+</body></html>`;
+
+        const avisResp = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
+          body: JSON.stringify({
+            sender: { name: 'EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
+            to: [{ email: m.locataireEmail, name: salutation || locNom }],
+            replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
+            subject: '⭐ Comment s\'est passé votre état des lieux ?',
+            htmlContent: avisHtml
+          })
+        });
+
+        if(avisResp.ok) {
+          avisSent++;
+          await fetch(`${SUPABASE_URL}/rest/v1/missions?id=eq.${row.id}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              data: { ...m, avisEnvoye: true, avisDate: new Date().toISOString() },
+              updated_at: new Date().toISOString()
+            })
+          });
+        }
+      } catch(e) {
+        errors.push({ mission: row.id, avis: true, error: e.message });
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       date: tomorrowStr,
       missionsFound: missionsDemain.length,
       remindersSent: sent,
+      avisFound: missionsHier.length,
+      avisSent,
       errors
     }), {
       status: 200,
