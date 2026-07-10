@@ -223,6 +223,7 @@ async function showDashboard() {
   document.getElementById('dashboard').style.display = 'block';
   document.getElementById('header-right').style.display = 'flex';
   document.getElementById('user-email-display').textContent = _userEmail;
+  restoreDraft();
   await loadOrders();
   await loadDocs();
 }
@@ -295,9 +296,53 @@ function openDetail(o) {
 }
 function closeDetail() { document.getElementById('detail-modal').classList.remove('open'); }
 
-function showOrderForm() { document.getElementById('dashboard').style.display='none'; document.getElementById('order-form').style.display='block'; _selectedType=''; document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected')}); }
-function hideOrderForm() { document.getElementById('order-form').style.display='none'; document.getElementById('dashboard').style.display='block'; }
-function selectType(t,btn) { _selectedType=t; document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
+// ===== BROUILLON AUTO : la saisie survit aux changements de page =====
+const DRAFT_KEY = 'lokentia_brouillon_reservation';
+const DRAFT_FIELDS = ['f-adresse','f-bien','f-meuble','f-superficie','f-date-entree','f-acces','f-proprietaire','f-date','f-heure','f-loc-nom','f-loc-tel','f-loc-email','f-notes'];
+function saveDraft(open) {
+  try {
+    const isOpen = (open !== undefined) ? open : (document.getElementById('order-form').style.display === 'block');
+    const d = { open: isOpen, type: _selectedType, ts: Date.now(), values: {} };
+    DRAFT_FIELDS.forEach(id => { const el = document.getElementById(id); if (el) d.values[id] = el.value; });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+  } catch(e) {}
+}
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (!d.ts || (Date.now() - d.ts) > 86400000) { localStorage.removeItem(DRAFT_KEY); return null; }
+    return d;
+  } catch(e) { return null; }
+}
+function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch(e) {} }
+function restoreDraft() {
+  const d = loadDraft();
+  if (!d) return;
+  DRAFT_FIELDS.forEach(id => { const el = document.getElementById(id); if (el && d.values && d.values[id] !== undefined) el.value = d.values[id]; });
+  if (d.type) {
+    _selectedType = d.type;
+    document.querySelectorAll('.type-btn').forEach(b => {
+      b.classList.toggle('selected', (b.getAttribute('onclick') || '').indexOf("'" + d.type + "'") !== -1);
+    });
+  }
+  if (d.open) {
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('order-form').style.display = 'block';
+  }
+}
+document.addEventListener('input', e => { if (e.target && e.target.closest && e.target.closest('#order-form')) saveDraft(); });
+document.addEventListener('change', e => { if (e.target && e.target.closest && e.target.closest('#order-form')) saveDraft(); });
+
+function showOrderForm() {
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('order-form').style.display='block';
+  if (!loadDraft()) { _selectedType=''; document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected')}); }
+  saveDraft(true);
+}
+function hideOrderForm() { document.getElementById('order-form').style.display='none'; document.getElementById('dashboard').style.display='block'; saveDraft(false); }
+function selectType(t,btn) { _selectedType=t; document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); saveDraft(); }
 
 async function submitOrder() {
   const errEl = document.getElementById('form-error');
@@ -318,7 +363,7 @@ async function submitOrder() {
   try {
     const resp = await fetch('/api/booking-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const r = await resp.json();
-    if(r.success||resp.ok){document.getElementById('form-success').style.display='block';btn.style.display='none';setTimeout(()=>{hideOrderForm();loadOrders();},2500);}
+    if(r.success||resp.ok){clearDraft();document.getElementById('form-success').style.display='block';btn.style.display='none';setTimeout(()=>{hideOrderForm();loadOrders();},2500);}
     else throw new Error(r.error||'Erreur');
   } catch(e){errEl.textContent='Erreur : '+(e.message||'réessayez.');errEl.style.display='block';btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Envoyer ma demande';}
 }
