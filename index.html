@@ -5150,7 +5150,7 @@ function renderCalendar(){
     document.getElementById('rdv-list').innerHTML=weekEvts.length?weekEvts.map(e=>{
       const gcalUrl = e.evtType==='rdv'
         ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
-        : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, '2h', e.adresse, `Agence: ${e.agence}\nMontant: ${e.montant}€ HT`);
+        : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, e.dureeEstimee || '2h', e.adresse, missionCalDesc(e));
       return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#1A5FA8'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div style="font-size:11px;font-weight:600">${e.titre||e.agence||'—'}</div>
@@ -5192,7 +5192,7 @@ function renderCalendar(){
     document.getElementById('rdv-list').innerHTML=monthEvts.length?monthEvts.map(e=>{
       const gcalUrl = e.evtType==='rdv'
         ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
-        : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, '2h', e.adresse, `Agence: ${e.agence}\nMontant: ${e.montant}€ HT`);
+        : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, e.dureeEstimee || '2h', e.adresse, missionCalDesc(e));
       return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#1A5FA8'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div style="font-size:11px;font-weight:600">${e.titre||e.agence||'—'}</div>
@@ -5633,12 +5633,28 @@ function openInGoogleCalendar(rdvId){
   window.open(url, '_blank');
 }
 
+function missionCalDesc(m){
+  const loc = (m.locataires && m.locataires.length)
+    ? m.locataires.map(l => [l.civilite, l.nom, l.tel && ('· '+l.tel)].filter(Boolean).join(' ')).join(', ')
+    : [m.locataireCivilite, m.locataireNom, m.locataireTel && ('· '+m.locataireTel)].filter(Boolean).join(' ');
+  const bien = [m.bienType, m.bienTypo, m.bienMeuble].filter(Boolean).join(' · ');
+  return [
+    `Type : ${m.type||'EDL'}`,
+    `Agence : ${m.agence||'—'}`,
+    bien && `Bien : ${bien}${m.superficie ? ' · '+m.superficie+' m²' : ''}`,
+    loc && `Locataire(s) : ${loc}`,
+    m.locataireEmail && `Email locataire : ${m.locataireEmail}`,
+    m.proprietaire && `Propriétaire : ${m.proprietaire}`,
+    m.acces && `Accès : ${m.acces}`,
+    m.montant ? `Montant : ${m.montant} € HT` : null,
+    `Statut : ${m.statut||'planifiée'}`
+  ].filter(Boolean).join('\n');
+}
 function openMissionInGoogleCalendar(idx){
   const m = DB.missions[idx];
   if(!m) return;
   const titre = `EDL IDF — ${m.type} · ${m.agence}`;
-  const desc  = `Type : ${m.type}\nAgence : ${m.agence}\nMontant : ${m.montant} € HT\nStatut : ${m.statut}`;
-  const url   = googleCalLink(titre, m.date, '2h', m.adresse, desc);
+  const url   = googleCalLink(titre, m.date, m.dureeEstimee || '2h', m.adresse, missionCalDesc(m));
   if(!url){ notify('Date invalide','warn'); return; }
   window.open(url, '_blank');
 }
