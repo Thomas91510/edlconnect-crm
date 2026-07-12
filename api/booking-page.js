@@ -243,7 +243,7 @@ textarea{min-height:75px;resize:vertical}
 
   <div class="footer">
     <strong>Lokentia</strong> — Expert en État des Lieux<br>
-    <a href="mailto:contact@edlconnect.fr" style="color:var(--blue)">contact@edlconnect.fr</a> · <a href="tel:0189291429" style="color:var(--blue)">01 89 29 14 29</a>
+    <a href="mailto:contact@edl-idf.com" style="color:var(--blue)">contact@edl-idf.com</a> · <a href="tel:0189291429" style="color:var(--blue)">01 89 29 14 29</a>
   </div>
 
 </div>
