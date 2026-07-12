@@ -123,7 +123,7 @@ export default async function handler(req) {
       📍 <strong>${mission.adresse}</strong><br>
       🏠 Type de bien : <strong>${bien}</strong><br>
       📅 Date et heure : <strong>${dateStr} à ${heureStr}</strong><br>
-      ⏱️ Durée estimée de l'intervention : environ ${dureeLabel}<br>
+      ⏱️ Durée estimée de l'intervention : <strong>environ ${dureeLabel}</strong><br>
       ${expertBlockLoc}    </div>
 
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
@@ -184,7 +184,7 @@ export default async function handler(req) {
       📅 Date : <strong>${dateStr}</strong><br>
       🕘 Heure : <strong>${heureStr}</strong><br>
       📍 Adresse : <strong>${mission.adresse}</strong><br>
-      ⏱️ Durée estimée de l'intervention : environ ${dureeLabel}<br>
+      ⏱️ Durée estimée de l'intervention : <strong>environ ${dureeLabel}</strong><br>
       ${expertBlockLoc}    </div>
 
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
@@ -252,7 +252,7 @@ export default async function handler(req) {
       📅 Date : <strong>${dateStr}</strong><br>
       🕘 Heure : <strong>${heureStr}</strong><br>
       📍 Adresse : <strong>${mission.adresse}</strong><br>
-      ⏱️ Durée estimée de l'intervention : environ ${dureeLabel}<br>
+      ⏱️ Durée estimée de l'intervention : <strong>environ ${dureeLabel}</strong><br>
       ${expertBlockLoc}    </div>
 
     <div style="background:#EAF3DE;border-radius:8px;padding:16px;margin-bottom:20px">
