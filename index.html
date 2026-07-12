@@ -1109,7 +1109,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
     <div class="settings-title">📥 Réservations entrantes</div>
     <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Recevez et gérez les demandes d'état des lieux de vos agences clientes.</p>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Lien de réservation</strong> → à communiquer à chaque agence : <code>app.edlconnect.fr/booking?agency=XXX</code><br>
+      <strong>Lien de réservation</strong> → à communiquer à chaque agence : <code>app.lokentia.fr/booking?agency=XXX</code><br>
       <strong>Nouvelle demande</strong> → apparaît automatiquement dans l'onglet Réservations avec une alerte sonore<br>
       <strong>Confirmer un RDV</strong> → bouton "Confirmer" → choisir date, heure, agent → envoie la convocation au(x) locataire(s)<br>
       <strong>Importer en mission</strong> → bouton "Importer" → crée automatiquement une mission dans l'onglet Missions<br>
@@ -1126,7 +1126,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
     <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Offrez à vos agences clientes un espace personnel pour suivre leurs commandes.</p>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
       <strong>Activer pour un client</strong> → passer le contact en statut "Client signé ✅" → il reçoit un email de bienvenue avec son lien<br>
-      <strong>Lien d'accès</strong> → <code>app.edlconnect.fr/extranet</code> → connexion par lien magique (sans mot de passe)<br>
+      <strong>Lien d'accès</strong> → <code>app.lokentia.fr/extranet</code> → connexion par lien magique (sans mot de passe)<br>
       <strong>Ce que voit le client</strong> → ses commandes avec statuts, statistiques annuelles, formulaire nouvelle commande, documents<br>
       <strong>Ajouter des documents</strong> → fiche contact → onglet "Modifier" → section "Documents extranet" → coller l'URL Google Drive<br>
       <strong>Statuts synchronisés</strong> → quand vous confirmez un RDV, le client voit "Confirmé" dans son espace automatiquement
@@ -7997,7 +7997,7 @@ function copyBookingLink(){
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   const agencyName = encodeURIComponent(c.entreprise||'');
-  const link = `https://app.edlconnect.fr/booking?agency=${agencyId}&name=${agencyName}`;
+  const link = `https://app.lokentia.fr/booking?agency=${agencyId}&name=${agencyName}`;
   navigator.clipboard.writeText(link).then(()=>{
     notify('✅ Lien booking copié ! ' + link);
     // Changer temporairement le texte du bouton
