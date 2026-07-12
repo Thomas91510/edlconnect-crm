@@ -41,7 +41,7 @@ export default async function handler(req) {
     const agencySlug = (companyName || '').toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const bookingLink = `https://app.edlconnect.fr/booking?agency=${agencySlug}&name=${encodeURIComponent(companyName || '')}`;
+    const bookingLink = `https://app.lokentia.fr/booking?agency=${agencySlug}&name=${encodeURIComponent(companyName || '')}`;
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -113,11 +113,11 @@ export default async function handler(req) {
       <div style="background:#f8f8f6;border-radius:8px;padding:16px;text-align:center">
         <div style="font-size:12px;font-weight:600;color:#1A5FA8;margin-bottom:4px">🔗 Accéder à mon espace client</div>
         <div style="font-size:12px;color:#444;margin-bottom:12px">Saisissez simplement votre adresse email sur la page — vous recevrez un lien de connexion instantané, aucun mot de passe à retenir.</div>
-        <a href="https://app.edlconnect.fr/extranet"
+        <a href="https://app.lokentia.fr/extranet"
            style="display:inline-block;background:#1A5FA8;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;margin-bottom:8px">
           Accéder à mon espace →
         </a>
-        <div style="font-size:10px;color:#6b6b6b;margin-top:4px">app.edlconnect.fr/extranet</div>
+        <div style="font-size:10px;color:#6b6b6b;margin-top:4px">app.lokentia.fr/extranet</div>
       </div>
     </div>
 
