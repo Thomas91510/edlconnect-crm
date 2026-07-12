@@ -1901,6 +1901,10 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         </select>
       </div>
     </div>
+    <label>⏱️ Durée estimée de l'intervention</label>
+    <select id="confirm-rdv-duree" style="margin-bottom:10px">
+      <option>1h</option><option>1h30</option><option>2h</option><option>2h30</option><option>3h</option><option>3h30</option><option>4h</option><option>4h30</option><option>5h</option><option>5h30</option><option>6h</option><option>6h30</option><option>7h</option><option>7h30</option><option>8h</option>
+    </select>
     <label>Email de l'agent <span style="color:var(--red)">*</span></label>
     <input type="email" id="confirm-rdv-agent-email" placeholder="agent@agence.fr" style="margin-bottom:10px">
     <label>👤 Expert EDL qui se déplace</label>
@@ -5135,7 +5139,7 @@ function renderCalendar(){
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd));
       return `<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)" style="min-height:100px">
         ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" style="font-size:10px;margin-bottom:2px;cursor:pointer" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">
-          ${fmtDT(e.date).split(' ')[1]||''} ${(e.titre||e.agence||'').substring(0,20)}
+          ${fmtDT(e.date).split(' ')[1]||''} ${(e.titre||e.agence||'').substring(0,20)}${e.evtType==='mission'&&e.dureeEstimee?' ('+e.dureeEstimee+')':''}
         </div>`).join('')}
         ${evts.length===0?'<div style="font-size:10px;color:var(--text3);padding:4px">Libre</div>':''}
       </div>`;
@@ -5598,7 +5602,9 @@ function googleCalLink(titre, date, duree, lieu, description){
 
   // Calculer la durée en minutes
   const dureeMins = {
-    '30 min':30, '1h':60, '1h30':90, '2h':120, '3h':180
+    '30 min':30, '1h':60, '1h30':90, '2h':120, '2h30':150, '3h':180,
+    '3h30':210, '4h':240, '4h30':270, '5h':300, '5h30':330, '6h':360,
+    '6h30':390, '7h':420, '7h30':450, '8h':480
   }[duree] || 60;
 
   const end = new Date(start.getTime() + dureeMins * 60000);
@@ -7627,12 +7633,15 @@ function createMissionFromReservation(id){
     bienType: r.bienType || '',
     bienTypo: r.bienTypo || '',
     bienMeuble: r.meuble || '',
+    superficie: r.superficie || '',
+    dateEntree: r.dateEntree || '',
     acces: r.acces || '',
     proprietaire: r.proprietaire || '',
     type: r.typeEdl || r.type || 'EDL entrant',
-    date: r.dateSouhaitee || '',
+    date: (r.dateSouhaitee && r.heure) ? (r.dateSouhaitee + 'T' + r.heure.replace('h',':').padEnd(5,'0') + ':00') : (r.dateSouhaitee || ''),
     montant: 0,
     statut: 'planifiée',
+    locataireCivilite: r.locataireCivilite || (r.locataire && r.locataire.civilite) || '',
     locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
     locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
     locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
@@ -7769,6 +7778,9 @@ async function sendConfirmRdv(){
   const expertId = document.getElementById('confirm-rdv-expert')?.value || '';
   const expertAgent = (DB.agents || []).find(a => a.id === expertId);
   m.expertId = expertId;
+  // Durée estimée de l'intervention (pour email locataire + agenda)
+  const dureeEstimee = document.getElementById('confirm-rdv-duree')?.value || '1h';
+  m.dureeEstimee = dureeEstimee;
   if(!_confirmRdvMissionId.startsWith('__resa__')) saveToStorage();
 
   const payload = {
@@ -7782,7 +7794,8 @@ async function sendConfirmRdv(){
       bienTypo: m.bienTypo,
       bienMeuble: m.bienMeuble,
       acces: m.acces || '',
-      proprietaire: m.proprietaire || ''
+      proprietaire: m.proprietaire || '',
+      dureeEstimee: dureeEstimee
     },
     agentEmail,
     agentNom: document.getElementById('confirm-rdv-agent-email').value.split('@')[0],
@@ -7819,14 +7832,18 @@ async function sendConfirmRdv(){
             bienType: r.bienType || '',
             bienTypo: r.bienTypo || '',
             bienMeuble: r.meuble || '',
+            superficie: r.superficie || '',
+            dateEntree: r.dateEntree || '',
             acces: r.acces || '',
-    proprietaire: r.proprietaire || '',
+            proprietaire: r.proprietaire || '',
             type: r.typeEdl || r.type || 'EDL entrant',
             date: rdvDatetime,
+            dureeEstimee: dureeEstimee,
             montant: 0,
             statut: 'planifiée',
             rdvConfirme: true,
             rdvConfirmeAt: new Date().toISOString(),
+            locataireCivilite: r.locataireCivilite || (r.locataire && r.locataire.civilite) || '',
             locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
             locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
             locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
@@ -7852,6 +7869,7 @@ async function sendConfirmRdv(){
       } else {
         m.rdvConfirme = true;
         m.rdvConfirmeAt = new Date().toISOString();
+        m.dureeEstimee = dureeEstimee;
         saveToStorage();
         renderMissions();
         // Mettre aussi à jour le statut dans Supabase bookings si la mission a un _supaId
