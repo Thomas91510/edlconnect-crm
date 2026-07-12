@@ -1,7 +1,7 @@
 {
-  "name": "edlconnect-crm",
+  "name": "lokentia-crm",
   "version": "2.0.0",
-  "description": "EDLConnect CRM - Logiciel de gestion pour experts EDL",
+  "description": "Lokentia - CRM SaaS pour experts en etat des lieux",
   "private": true,
   "dependencies": {
     "googleapis": "^140.0.0"

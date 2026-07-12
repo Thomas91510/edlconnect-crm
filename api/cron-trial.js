@@ -52,21 +52,21 @@ export default async function handler(req) {
           'api-key': BREVO_KEY
         },
         body: JSON.stringify({
-          sender: { name: 'EDLConnect', email: 'contact@edlconnect.fr' },
+          sender: { name: 'Lokentia', email: 'contact@lokentia.fr' },
           to: [{ email: user.email }],
-          subject: '⏰ Votre essai gratuit EDLConnect se termine demain',
+          subject: '⏰ Votre essai gratuit Lokentia se termine demain',
           htmlContent: `
             <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-              <div style="background:#185FA5;padding:24px;text-align:center;border-radius:12px 12px 0 0">
-                <div style="background:#E6F1FB;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:11px;margin-bottom:8px">
-                  <span style="font-size:22px;font-weight:700;color:#185FA5">ED</span>
+              <div style="background:#1A5FA8;padding:24px;text-align:center;border-radius:12px 12px 0 0">
+                <div style="background:#F4F7FA;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:11px;margin-bottom:8px">
+                  <span style="font-size:22px;font-weight:700;color:#1A5FA8">ED</span>
                 </div>
-                <div style="color:#fff;font-size:20px;font-weight:700">EDLConnect</div>
+                <div style="color:#fff;font-size:20px;font-weight:700">Lokentia</div>
               </div>
               <div style="background:#fff;padding:32px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
                 <h2 style="font-size:20px;margin-bottom:12px">⏰ Votre essai se termine demain !</h2>
                 <p style="color:#6b6b6b;line-height:1.7;margin-bottom:20px">
-                  Votre période d'essai gratuit d'EDLConnect arrive à son terme dans <strong>24 heures</strong>.
+                  Votre période d'essai gratuit d'Lokentia arrive à son terme dans <strong>24 heures</strong>.
                 </p>
                 <p style="color:#6b6b6b;line-height:1.7;margin-bottom:24px">
                   Pour continuer à gérer vos missions, contacts et factures sans interruption, 
@@ -78,26 +78,26 @@ export default async function handler(req) {
                       <div style="font-weight:600">Starter</div>
                       <div style="font-size:12px;color:#6b6b6b">500 contacts · 100 missions</div>
                     </div>
-                    <div style="font-weight:700;color:#185FA5;font-size:18px">15 €/mois</div>
+                    <div style="font-weight:700;color:#1A5FA8;font-size:18px">15 €/mois</div>
                   </div>
                   <div style="display:flex;justify-content:space-between">
                     <div>
                       <div style="font-weight:600">Pro</div>
                       <div style="font-size:12px;color:#6b6b6b">Illimité · IA · Support prioritaire</div>
                     </div>
-                    <div style="font-weight:700;color:#185FA5;font-size:18px">35 €/mois</div>
+                    <div style="font-weight:700;color:#1A5FA8;font-size:18px">35 €/mois</div>
                   </div>
                 </div>
                 <div style="text-align:center;margin-bottom:24px">
-                  <a href="https://app.edlconnect.fr" 
-                     style="background:#185FA5;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;display:inline-block">
+                  <a href="https://app.lokentia.fr" 
+                     style="background:#1A5FA8;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;display:inline-block">
                     Choisir mon abonnement →
                   </a>
                 </div>
                 <p style="font-size:12px;color:#999;text-align:center">
                   Des questions ? Contactez-nous : 
-                  <a href="mailto:contact@edlconnect.fr" style="color:#185FA5">contact@edlconnect.fr</a> · 
-                  <a href="tel:0185460033" style="color:#185FA5">01 85 46 00 33</a>
+                  <a href="mailto:contact@lokentia.fr" style="color:#1A5FA8">contact@lokentia.fr</a> · 
+                  <a href="tel:0185460033" style="color:#1A5FA8">01 85 46 00 33</a>
                 </p>
               </div>
             </div>

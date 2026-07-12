@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       requestBody: {
         summary: titre || 'RDV EDL IDF',
         location: lieu || '',
-        description: (description || '') + '\n\n[Créé par EDLConnect CRM]',
+        description: (description || '') + '\n\n[Créé par Lokentia CRM]',
         start: { dateTime: startDt.toISOString(), timeZone: 'Europe/Paris' },
         end: { dateTime: endDt.toISOString(), timeZone: 'Europe/Paris' },
         reminders: {

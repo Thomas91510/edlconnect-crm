@@ -49,7 +49,7 @@ export default async function handler(req) {
 <div style="max-width:580px;margin:0 auto;padding:20px 0">
 
   <!-- Header -->
-  <div style="background:#185FA5;padding:24px;border-radius:12px 12px 0 0;text-align:center">
+  <div style="background:#1A5FA8;padding:24px;border-radius:12px 12px 0 0;text-align:center">
     <div style="color:#fff;font-size:21px;font-weight:700">EDL IDF Expert en État des Lieux</div>
     <div style="color:rgba(255,255,255,0.75);font-size:12px;margin-top:4px">Votre partenaire état des lieux en Île-de-France</div>
   </div>
@@ -67,8 +67,8 @@ export default async function handler(req) {
     </p>
 
     <!-- Ce que nous proposons -->
-    <div style="background:#E6F1FB;border-radius:8px;padding:18px;margin-bottom:24px">
-      <div style="font-size:13px;font-weight:700;color:#185FA5;margin-bottom:12px">🏠 Ce que nous vous proposons :</div>
+    <div style="background:#F4F7FA;border-radius:8px;padding:18px;margin-bottom:24px">
+      <div style="font-size:13px;font-weight:700;color:#1A5FA8;margin-bottom:12px">🏠 Ce que nous vous proposons :</div>
       <div style="font-size:13px;color:#0C447C;line-height:2">
         ✅ Intervention 7j/7 de 9h à 20h<br>
         ✅ Rapport numérique remis sous 24h<br>
@@ -101,8 +101,8 @@ export default async function handler(req) {
       <p style="font-size:13px;color:#444;line-height:1.8;margin:0 0 14px 0">
         En tant que partenaire, vous bénéficiez d'un <strong>espace client privé</strong> pour suivre toutes vos commandes en temps réel, consulter vos statistiques et retrouver vos documents.
       </p>
-      <div style="background:#E6F1FB;border-radius:8px;padding:14px;margin-bottom:12px">
-        <div style="font-size:12px;font-weight:600;color:#185FA5;margin-bottom:8px">📊 Ce que vous retrouvez dans votre espace :</div>
+      <div style="background:#F4F7FA;border-radius:8px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#1A5FA8;margin-bottom:8px">📊 Ce que vous retrouvez dans votre espace :</div>
         <div style="font-size:13px;color:#0C447C;line-height:2">
           ✅ Historique de toutes vos commandes et leur statut<br>
           ✅ Passer une nouvelle commande directement<br>
@@ -111,10 +111,10 @@ export default async function handler(req) {
         </div>
       </div>
       <div style="background:#f8f8f6;border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:12px;font-weight:600;color:#185FA5;margin-bottom:4px">🔗 Accéder à mon espace client</div>
+        <div style="font-size:12px;font-weight:600;color:#1A5FA8;margin-bottom:4px">🔗 Accéder à mon espace client</div>
         <div style="font-size:12px;color:#444;margin-bottom:12px">Saisissez simplement votre adresse email sur la page — vous recevrez un lien de connexion instantané, aucun mot de passe à retenir.</div>
         <a href="https://app.edlconnect.fr/extranet"
-           style="display:inline-block;background:#185FA5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;margin-bottom:8px">
+           style="display:inline-block;background:#1A5FA8;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;margin-bottom:8px">
           Accéder à mon espace →
         </a>
         <div style="font-size:10px;color:#6b6b6b;margin-top:4px">app.edlconnect.fr/extranet</div>
@@ -127,8 +127,8 @@ export default async function handler(req) {
       <div style="font-size:13px;color:#444;line-height:1.9">
         <strong>Thomas LANGLADE</strong><br>
         Directeur Général — EDL IDF Expert en État des Lieux<br>
-        📞 <a href="tel:0767630963" style="color:#185FA5;text-decoration:none">07 67 63 09 63</a><br>
-        ✉️ <a href="mailto:contact@edl-idf.com" style="color:#185FA5;text-decoration:none">contact@edl-idf.com</a>
+        📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
+        ✉️ <a href="mailto:contact@edl-idf.com" style="color:#1A5FA8;text-decoration:none">contact@edl-idf.com</a>
       </div>
     </div>
 
@@ -138,7 +138,7 @@ export default async function handler(req) {
     </p>
 
     <!-- Signature -->
-    <div style="border-top:2px solid #185FA5;padding-top:16px;font-size:13px;color:#185FA5">
+    <div style="border-top:2px solid #1A5FA8;padding-top:16px;font-size:13px;color:#1A5FA8">
       <strong>Thomas LANGLADE</strong><br>
       <span style="color:#6b6b6b">Directeur Général — EDL IDF Expert en État des Lieux</span><br>
       <span style="color:#6b6b6b">📞 07 67 63 09 63 · ✉️ contact@edl-idf.com</span>

@@ -10,12 +10,12 @@ export default async function handler(req) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demande d'état des lieux — EDLConnect</title>
+<title>Demande d'état des lieux — Lokentia</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#185FA5;--blue-light:#E6F1FB;--blue-dark:#0C447C;
+  --blue:#1A5FA8;--blue-light:#F4F7FA;--blue-dark:#0C447C;
   --green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;
   --text:#1a1a1a;--text2:#6b6b6b;--text3:#999;
   --border:#e5e5e2;--bg:#f8f8f6;--white:#fff;
@@ -75,9 +75,9 @@ textarea{min-height:75px;resize:vertical}
 <body>
 
 <div class="header">
-  <div class="logo-box"><span>ED</span></div>
+  <svg viewBox="0 0 120 120" width="36" height="36" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
   <div>
-    <div style="font-size:14px;font-weight:600">EDLConnect</div>
+    <div style="font-size:14px;font-weight:600">Lokentia</div>
     <div style="font-size:11px;color:var(--text2)">Demande d'état des lieux</div>
   </div>
   <div style="margin-left:auto;font-size:11px;color:var(--text2);text-align:right">
@@ -242,7 +242,7 @@ textarea{min-height:75px;resize:vertical}
   </div>
 
   <div class="footer">
-    <strong>EDLConnect</strong> — Expert en État des Lieux<br>
+    <strong>Lokentia</strong> — Expert en État des Lieux<br>
     <a href="mailto:contact@edlconnect.fr" style="color:var(--blue)">contact@edlconnect.fr</a> · <a href="tel:0189291429" style="color:var(--blue)">01 89 29 14 29</a>
   </div>
 
@@ -310,7 +310,7 @@ function buildRecap(){
     r += '<tr><td style="color:#999;padding:2px 0">Date d&#39;entrée</td><td>'+dEntreeStr+'</td></tr>';
   }
   if(bien) r += '<tr><td style="color:#999;padding:2px 0">Bien</td><td>'+bien+'</td></tr>';
-  r += '<tr><td style="color:#999;padding:2px 0">Date</td><td style="font-weight:600;color:#185FA5">'+dateStr+' · '+heure+'</td></tr>';
+  r += '<tr><td style="color:#999;padding:2px 0">Date</td><td style="font-weight:600;color:#1A5FA8">'+dateStr+' · '+heure+'</td></tr>';
   r += '</table>';
   document.getElementById('recap').innerHTML = r;
 }
@@ -322,7 +322,7 @@ function addLocataire(){
   const div = document.createElement('div');
   div.className = 'locataire-block';
   div.style.cssText = 'border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px';
-  div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:#185FA5">👤 Locataire '+_locCount+'</div><button type="button" onclick="removeLocataire(this)" style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:16px;padding:0">✕</button></div>'
+  div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:#1A5FA8">👤 Locataire '+_locCount+'</div><button type="button" onclick="removeLocataire(this)" style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:16px;padding:0">✕</button></div>'
     +'<div class="form-row"><div><label>Civilité</label><select class="loc-civilite"><option value="">— Choisir —</option><option value="M.">M.</option><option value="Mme">Mme</option></select></div>'
     +'<div><label>Nom complet</label><input type="text" class="loc-nom" placeholder="Marie Martin"></div></div>'
     +'<div class="form-row"><div><label>Téléphone</label><input type="tel" class="loc-tel" placeholder="06 12 34 56 78"></div>'
