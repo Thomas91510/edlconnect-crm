@@ -3929,7 +3929,7 @@ function renderFicheEmails(c){
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
             ${t.direction==='recu'?'<span style="font-size:9px;background:var(--blue-bg);color:var(--blue-text);padding:1px 5px;border-radius:3px">REÇU</span>':'<span style="font-size:9px;background:var(--bg3);color:var(--text2);padding:1px 5px;border-radius:3px">ENVOYÉ</span>'}
-            <div style="font-weight:600;font-size:12px">${t.objet||'—'}</div>
+            <div style="font-weight:600;font-size:12px">${t.objet||t.subject||'—'}</div>
           </div>
           <div style="font-size:10px;color:var(--text2)">${fmtDT(t.date)}${t.from&&t.direction==='recu'?' · De : '+t.from:''}</div>
         </div>
@@ -5313,9 +5313,10 @@ async function loadBrevo(){
     return;
   }
 
-  // 2. Charger l'historique emails transactionnels (brevo_tracking.json)
+  // 2. Charger l'historique emails transactionnels (Brevo statistics/events, 30j)
   try{
-    const resp2=await fetch('/api/brevo-tracking?t='+Date.now());
+    const _tkTrack=(await supabaseClient.auth.getSession()).data?.session?.access_token||'';
+    const resp2=await fetch('/api/brevo-tracking?t='+Date.now(),{headers:{'Authorization':'Bearer '+_tkTrack}});
     if(resp2.ok){
       const tracking=await resp2.json();
       if(tracking&&tracking.length){
