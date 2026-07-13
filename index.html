@@ -5313,9 +5313,10 @@ async function loadBrevo(){
     return;
   }
 
-  // 2. Charger l'historique emails transactionnels (brevo_tracking.json)
+  // 2. Charger l'historique emails transactionnels (Brevo statistics/events, 30j)
   try{
-    const resp2=await fetch('/api/brevo-tracking?t='+Date.now(),{headers:{'Authorization':'Bearer '+_tk5}});
+    const _tkTrack=(await supabaseClient.auth.getSession()).data?.session?.access_token||'';
+    const resp2=await fetch('/api/brevo-tracking?t='+Date.now(),{headers:{'Authorization':'Bearer '+_tkTrack}});
     if(resp2.ok){
       const tracking=await resp2.json();
       if(tracking&&tracking.length){
