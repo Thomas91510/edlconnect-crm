@@ -259,6 +259,91 @@ export default async function handler(req) {
       }
     }
 
+    // ============ J+3 : 2e RELANCE AVIS GOOGLE ============
+    // Cible : missions realisees il y a 3 jours, dont la 1re demande (J+1) a bien ete envoyee,
+    // qui n'ont pas encore recu la 2e relance, et non annulees.
+    const day3 = new Date();
+    day3.setDate(day3.getDate() - 3);
+    const day3Str = day3.toISOString().split('T')[0];
+
+    const missionsJ3 = rows.filter(r => {
+      if(!r.data) return false;
+      const m = r.data;
+      if(!m.date || !m.locataireEmail) return false;
+      if(!m.avisEnvoye) return false;      // la 1re demande doit avoir ete envoyee
+      if(m.avis2Envoye) return false;      // pas deja relance une 2e fois
+      if((m.statut || '').toLowerCase().includes('annul')) return false;
+      return m.date.split('T')[0] === day3Str;
+    });
+
+    let avis2Sent = 0;
+
+    for(const row of missionsJ3) {
+      const m = row.data;
+      try {
+        const civilite = m.locataireCivilite || '';
+        const locNom = m.locataireNom || '';
+        const salutation = civilite && locNom ? `${civilite} ${locNom}` : locNom || '';
+
+        const avis2Html = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:20px 0">
+  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
+    <span style="color:#fff;font-size:17px;font-weight:700">EDL IDF Expert en État des Lieux</span>
+  </div>
+  <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + salutation + '</strong>' : ''},</p>
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
+      Nous nous permettons de revenir vers vous au sujet de l'état des lieux réalisé récemment. Si vous n'avez pas encore eu l'occasion de nous laisser un avis, votre retour nous serait très précieux&nbsp;: il ne prend qu'une minute et nous aide beaucoup à faire connaître notre travail.
+    </p>
+    <div style="text-align:center;margin:0 0 24px 0">
+      <a href="https://g.page/r/CQOIf5lzL3xwEBM/review" style="display:inline-block;background:#1A5FA8;color:#fff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none">⭐ Laisser un avis Google</a>
+    </div>
+    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
+      Si vous l'avez déjà fait, nous vous en remercions sincèrement et vous prions d'ignorer ce message.
+    </p>
+    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
+      Bien cordialement,<br>
+      <strong>L'équipe EDL IDF</strong><br>
+      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a>
+    </div>
+  </div>
+</div>
+</body></html>`;
+
+        const avis2Resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
+          body: JSON.stringify({
+            sender: { name: 'EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
+            to: [{ email: m.locataireEmail, name: salutation || locNom }],
+            replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
+            subject: '⭐ Votre avis compte pour nous',
+            htmlContent: avis2Html
+          })
+        });
+
+        if(avis2Resp.ok) {
+          avis2Sent++;
+          await fetch(`${SUPABASE_URL}/rest/v1/missions?id=eq.${row.id}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              data: { ...m, avis2Envoye: true, avis2Date: new Date().toISOString() },
+              updated_at: new Date().toISOString()
+            })
+          });
+        }
+      } catch(e) {
+        errors.push({ mission: row.id, avis2: true, error: e.message });
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       date: tomorrowStr,
@@ -266,6 +351,8 @@ export default async function handler(req) {
       remindersSent: sent,
       avisFound: missionsHier.length,
       avisSent,
+      avis2Found: missionsJ3.length,
+      avis2Sent,
       errors
     }), {
       status: 200,
