@@ -5315,7 +5315,7 @@ async function loadBrevo(){
 
   // 2. Charger l'historique emails transactionnels (brevo_tracking.json)
   try{
-    const resp2=await fetch('/api/brevo-tracking?t='+Date.now());
+    const resp2=await fetch('/api/brevo-tracking?t='+Date.now(),{headers:{'Authorization':'Bearer '+_tk5}});
     if(resp2.ok){
       const tracking=await resp2.json();
       if(tracking&&tracking.length){
