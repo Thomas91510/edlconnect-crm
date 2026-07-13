@@ -85,7 +85,9 @@ export default async function handler(req) {
         byMsg[key] = {
           id: key,
           email,
+          objet: ev.subject || '(sans objet)',
           subject: ev.subject || '(sans objet)',
+          direction: 'envoye',
           date: ev.date || new Date().toISOString(),
           statut: 'Envoyé',
           opens: 0,
