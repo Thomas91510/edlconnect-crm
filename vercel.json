@@ -5,6 +5,9 @@
     { "path": "/api/cron-trial", "schedule": "0 8 * * *" },
     { "path": "/api/reminder-rdv", "schedule": "0 8 * * *" }
   ],
+  "redirects": [
+    { "source": "/extranet", "destination": "/extranet-app", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/api/brevo-contacts", "destination": "/api/brevo-contacts.js" },
     { "source": "/api/brevo-tracking", "destination": "/api/brevo-tracking.js" },
@@ -24,7 +27,6 @@
     { "source": "/api/send-welcome-agency", "destination": "/api/send-welcome-agency.js" },
     { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/extranet-app", "destination": "/extranet-app.html" },
-    { "source": "/extranet", "destination": "/extranet-app.html" },
     { "source": "/((?!extranet-app$).*)", "destination": "/index.html" }
   ]
 }
