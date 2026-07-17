@@ -7872,6 +7872,7 @@ async function sendConfirmRdv(){
           };
           DB.missions.push(mission);
           saveToStorage();
+          pushMissionToEdouard(mission);
 
           // Marquer la réservation comme importée ET confirmée dans Supabase
           const updatedData = { ...r, rdvConfirme: true, statut: 'importee', rdvConfirmeAt: new Date().toISOString(), missionId: mission.id };
@@ -7889,6 +7890,7 @@ async function sendConfirmRdv(){
         m.dureeEstimee = dureeEstimee;
         saveToStorage();
         renderMissions();
+        pushMissionToEdouard(m);
         // Mettre aussi à jour le statut dans Supabase bookings si la mission a un _supaId
         if(_supaReady && m._supaId){
           supabaseClient.from('bookings').update({
@@ -7911,6 +7913,42 @@ async function sendConfirmRdv(){
     notify('❌ Connexion impossible', 'err');
     btn.disabled = false;
     btn.innerHTML = '<i class="ti ti-send"></i> Envoyer les confirmations';
+  }
+}
+
+
+// ─── SYNC EDOUARD : pousse logement + contacts vers l’API Edouard ───
+async function pushMissionToEdouard(mission){
+  if(!mission || !mission.adresse) return;
+  if(mission.edouardAccommodationId) return; // déjà synchronisée
+  try {
+    const resp = await fetch('/api/edouard-push', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ mission: mission })
+    });
+    const data = await resp.json();
+    if(resp.ok && data.success){
+      const ed = data.edouard || {};
+      const target = DB.missions.find(x => x.id === mission.id) || mission;
+      target.edouardAccommodationId = ed.accommodationId || '';
+      target.edouardTenantIds = ed.tenantIds || [];
+      target.edouardOwnerId = ed.ownerId || '';
+      target.edouardSyncedAt = new Date().toISOString();
+      saveToStorage();
+      if(ed.warnings && ed.warnings.length){
+        notify('🏠 Logement créé dans Edouard (avec avertissements, voir console)', 'warn');
+        console.warn('Edouard warnings:', ed.warnings);
+      } else {
+        notify('🏠 Logement et contacts créés dans Edouard');
+      }
+    } else {
+      console.warn('Edouard push erreur:', data);
+      notify('⚠️ Sync Edouard impossible (voir console)', 'warn');
+    }
+  } catch(e){
+    console.warn('Edouard push exception:', e);
+    notify('⚠️ Sync Edouard impossible (connexion)', 'warn');
   }
 }
 
