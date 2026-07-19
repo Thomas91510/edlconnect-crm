@@ -2,12 +2,29 @@ export const config = { runtime: 'edge' };
 
 const EDOUARD_BASE = 'https://europe-west3-edouard-immo.cloudfunctions.net/api';
 
-// ── Découpe une adresse française "12 rue Exemple, 75001 Paris" ──
+// ── Découpe une adresse française, formats tolérés :
+// "12 rue Exemple, 75001 Paris" / "12 rue Exemple 75001 Paris"
+// "12 rue Exemple, Paris 75001" / "12 rue Exemple, Paris"
 function parseAdresse(adresse) {
-  const a = (adresse || '').trim();
-  const m = a.match(/^(.*?)[,\s]+(\d{5})\s+(.+)$/);
+  const a = (adresse || '').trim().replace(/\s+/g, ' ');
+  // Cas standard : rue puis CP puis ville
+  let m = a.match(/^(.*?)[,\s]+(\d{5})[\s,]+(.+)$/);
   if (m) {
-    return { street: m[1].replace(/,\s*$/, '').trim(), zipCode: m[2], city: m[3].trim() };
+    return { street: m[1].replace(/,\s*$/, '').trim(), zipCode: m[2], city: m[3].replace(/^,\s*/, '').trim() };
+  }
+  // Cas inversé : rue puis ville puis CP en fin
+  m = a.match(/^(.*?)[,\s]+([A-Za-z\u00C0-\u017F' -]+?)\s+(\d{5})$/);
+  if (m) {
+    return { street: m[1].replace(/,\s*$/, '').trim(), zipCode: m[3], city: m[2].trim() };
+  }
+  // Pas de code postal : dernière partie après virgule = ville
+  const parts = a.split(',');
+  if (parts.length >= 2) {
+    const city = parts[parts.length - 1].trim();
+    // Éviter de prendre un numéro ou complément pour une ville
+    if (city && !/\d/.test(city)) {
+      return { street: parts.slice(0, -1).join(',').trim(), zipCode: '', city: city };
+    }
   }
   return { street: a, zipCode: '', city: '' };
 }
