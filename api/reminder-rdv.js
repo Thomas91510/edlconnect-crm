@@ -344,8 +344,25 @@ export default async function handler(req) {
       }
     }
 
+    // ============ SYNCHRO EDOUARD : rapatrier les rapports PDF ============
+    let edouardJournal = null;
+    try {
+      const edouardResp = await fetch('https://app.lokentia.fr/api/edouard-cron', {
+        headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` }
+      });
+      if(edouardResp.ok) {
+        const ej = await edouardResp.json();
+        edouardJournal = ej.journal || null;
+      } else {
+        edouardJournal = { erreur: 'HTTP ' + edouardResp.status };
+      }
+    } catch(e) {
+      edouardJournal = { erreur: String(e && e.message || e) };
+    }
+
     return new Response(JSON.stringify({
       success: true,
+      edouard: edouardJournal,
       date: tomorrowStr,
       missionsFound: missionsDemain.length,
       remindersSent: sent,
