@@ -3,8 +3,7 @@
   "trailingSlash": false,
   "crons": [
     { "path": "/api/cron-trial", "schedule": "0 8 * * *" },
-    { "path": "/api/reminder-rdv", "schedule": "0 8 * * *" },
-    { "path": "/api/edouard-cron", "schedule": "0 * * * *" }
+    { "path": "/api/reminder-rdv", "schedule": "0 8 * * *" }
   ],
   "redirects": [
     { "source": "/extranet", "destination": "/extranet-app", "permanent": false }
