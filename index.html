@@ -7591,6 +7591,7 @@ function confirmRdvFromReservation(id){
     locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
     locataireCivilite: r.locataireCivilite || (r.locataire && r.locataire.civilite) || '',
     locataires: r.locataires || [],
+    locatairesEntrants: r.locatairesEntrants || [],
     expertId: r.expertId || ''
   };
 
@@ -7663,6 +7664,7 @@ function createMissionFromReservation(id){
     locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
     locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
     locataires: r.locataires || [],
+    locatairesEntrants: r.locatairesEntrants || [],
     expertId: r.expertId || '',
     notes: 'Importé depuis réservation booking. ' + (r.notes || ''),
     source: 'booking',
@@ -7865,6 +7867,7 @@ async function sendConfirmRdv(){
             locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
             locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
             locataires: r.locataires || [],
+    locatairesEntrants: r.locatairesEntrants || [],
             expertId: expertId || '',
             notes: 'Importé automatiquement depuis réservation. ' + (r.notes || ''),
             source: 'booking',
