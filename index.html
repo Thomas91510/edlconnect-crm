@@ -5232,6 +5232,7 @@ function openEvtDetail(type, id){
     e.duree         ? ['⏱️ Durée',     e.duree]     : null,
     e.contact       ? ['👤 Contact',   e.contact]   : null,
     e.locataireNom  ? ['🧑 Locataire', `${e.locataireNom}${e.locataireTel?' — '+e.locataireTel:''}`] : null,
+    (e.locatairesEntrants && e.locatairesEntrants.length) ? ['🔑 Entrant(s)', fmtEntrants(e.locatairesEntrants)] : null,
     e.montant       ? ['💶 Montant',   e.montant+' € HT'] : null,
     e.statut        ? ['🔖 Statut',    e.statut]    : null,
   ].filter(Boolean);
@@ -5645,6 +5646,7 @@ function missionCalDesc(m){
     bien && `Bien : ${bien}${m.superficie ? ' · '+m.superficie+' m²' : ''}`,
     loc && `Locataire(s) : ${loc}`,
     m.locataireEmail && `Email locataire : ${m.locataireEmail}`,
+    (m.locatairesEntrants && m.locatairesEntrants.length) && `Entrant(s) : ${m.locatairesEntrants.map(e => [e.prenom,e.nom].filter(Boolean).join(' ') + (e.tel ? ' · '+e.tel : '')).join(' | ')}`,
     m.proprietaire && `Propriétaire : ${m.proprietaire}`,
     m.acces && `Accès : ${m.acces}`,
     m.montant ? `Montant : ${m.montant} € HT` : null,
@@ -6841,6 +6843,11 @@ function feAddDoc(){
 }
 function feGetDocs(){ return _feDocs.filter(d => d.url && d.url.trim()); }
 
+function fmtEntrants(list){
+  if(!Array.isArray(list) || !list.length) return '\u2014';
+  return list.map(e => `${[e.prenom, e.nom].filter(Boolean).join(' ')}${e.tel ? ' \u00b7 \U0001F4F1 '+e.tel : ''}${e.email ? ' \u00b7 \u2709\uFE0F '+e.email : ''}`).join('<br>');
+}
+
 function openExtranetOrderDetail(o){
   const modal = document.getElementById('extranet-order-detail-modal');
   const title = document.getElementById('extranet-detail-title');
@@ -6862,6 +6869,7 @@ function openExtranetOrderDetail(o){
     ['🕐 Heure', o.heure || '—'],
     ['🧑 Locataire', o.locataireNom || '—'],
     ['📱 Tél. locataire', o.locataireTel || '—'],
+    ['🔑 Locataire(s) entrant(s)', fmtEntrants(o.locatairesEntrants)],
   ].filter(([,v]) => v !== '—');
 
   body.innerHTML = `
@@ -7612,6 +7620,7 @@ function confirmRdvFromReservation(id){
       <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${bien}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date souhaitée</td><td style="font-weight:600">${dateStr}</td></tr>
       ${tempMission.locataires && tempMission.locataires.length > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Locataires</td><td>${tempMission.locataires.length} convocations seront envoyées</td></tr>` : ''}
+      ${tempMission.locatairesEntrants && tempMission.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${tempMission.locatairesEntrants.map(e => [e.prenom,e.nom].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
     </table>`;
 
   // Pré-remplir date/heure
@@ -7732,6 +7741,7 @@ function openConfirmRdvModal(missionId){
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date</td><td style="font-weight:600">${dateStr}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">🕐 Heure</td><td style="font-weight:600">${heureStr}</td></tr>
       ${m.locataires && m.locataires.length > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Locataires</td><td>${m.locataires.length} convocations seront envoyées</td></tr>` : ''}
+      ${m.locatairesEntrants && m.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${m.locatairesEntrants.map(e => [e.prenom,e.nom].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
     </table>`;
 
   // Pré-remplir les emails
