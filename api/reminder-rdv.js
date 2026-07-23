@@ -83,11 +83,22 @@ export default async function handler(req) {
         } else if(isSortant) {
           blocRappel = `
             <div style="background:#FAEEDA;border-radius:8px;padding:16px;margin-bottom:16px;font-size:13px;color:#633806;line-height:1.9">
-              <strong>🚪 Rappel — Checklist avant l'état des lieux :</strong><br>
-              ✓ Logement entièrement vide et nettoyé<br>
-              ✓ Toutes les clés, badges et télécommandes prêts<br>
-              ✓ Relevés de compteurs effectués<br>
-              ✓ RIB pour la restitution du dépôt de garantie
+              <strong>🚪 Rappel — Checklist avant l'état des lieux :</strong><br><br>
+              <strong>1. Logement entièrement vidé de vos effets personnels</strong><br>
+              Dans le cadre d’un logement meublé, tout ce qui vous appartient doit être retiré : vêtements, objets personnels, accessoires, petit électroménager, décorations, ustensiles ajoutés par vos soins, etc.<br>
+              Les meubles fournis par le bailleur doivent rester en place, propres et en bon état.<br><br>
+              <strong>2. Logement parfaitement nettoyé</strong><br>
+              Merci de veiller à un nettoyage complet, incluant :<br>
+              &nbsp;&nbsp;• Sols (aspirés et lavés)<br>
+              &nbsp;&nbsp;• Murs (lessivés si nécessaire)<br>
+              &nbsp;&nbsp;• Vitres et encadrements<br>
+              &nbsp;&nbsp;• Cuisine : plaques, hotte, four, évier, électroménager fourni, intérieur des placards<br>
+              &nbsp;&nbsp;• Salle de bain : sanitaires, joints, aération<br>
+              &nbsp;&nbsp;• Balcons et terrasses<br>
+              &nbsp;&nbsp;• Mobilier fourni : table, chaises, lit, matelas, canapé, etc. doivent être propres et en bon état<br><br>
+              <strong>3. Restitution de l’ensemble des clés et accessoires</strong><br>
+              Merci de préparer toutes les clés, ainsi que les badges d’accès, télécommandes, et tout équipement fourni (ex. bip de parking, clés de cave, badge immeuble, etc.).<br><br>
+              ✓ Relevés de compteurs effectués
             </div>`;
         } else {
           blocRappel = `
