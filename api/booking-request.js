@@ -21,7 +21,7 @@ export default async function handler(req) {
 
   try {
     const data = await req.json();
-    const { agencyId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, proprietaire, dateSouhaitee, heure, notes, locataire, locataires } = data;
+    const { agencyId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, proprietaire, dateSouhaitee, heure, notes, locataire, locataires, locatairesEntrants } = data;
 
     if(!agence || !email || !typeEdl || !adresse) {
       return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400 });
@@ -48,6 +48,7 @@ export default async function handler(req) {
         notes: notes || '',
         locataire: locataire || {},
         locataires: locataires || [locataire].filter(Boolean),
+        locatairesEntrants: locatairesEntrants || [],
         locataireCivilite: locataire?.civilite || '',
         locataireNom: locataire?.nom || '',
         locataireTel: locataire?.tel || '',
@@ -102,6 +103,7 @@ export default async function handler(req) {
                     <tr><td style="color:#6b6b6b;padding:4px 0">Date souhaitée</td><td style="font-weight:600;color:#1A5FA8">${dateFormatted}${heure ? ' · ' + heure : ''}</td></tr>
                     ${dateEntree ? `<tr><td style="color:#6b6b6b;padding:4px 0">Date d'entrée</td><td>${new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</td></tr>` : ''}
                     <tr><td style="color:#6b6b6b;padding:4px 0">Locataire</td><td>${locataire?.nom || '—'} · ${locataire?.tel || '—'}</td></tr>
+                    ${(locatairesEntrants && locatairesEntrants.length) ? `<tr><td style="color:#6b6b6b;padding:4px 0">Entrant(s)</td><td>${locatairesEntrants.map(e => (e.prenom||'') + ' ' + (e.nom||'')).join(', ')}</td></tr>` : ''}
                     ${proprietaire ? `<tr><td style="color:#6b6b6b;padding:4px 0">Propriétaire</td><td>${proprietaire}</td></tr>` : ''}
                     ${notes ? `<tr><td style="color:#6b6b6b;padding:4px 0">Notes</td><td style="font-size:12px">${notes}</td></tr>` : ''}
                   </table>
@@ -146,6 +148,7 @@ export default async function handler(req) {
                   ${acces ? `<tr><td style="color:#999;padding:5px 0">Accès</td><td>${acces}</td></tr>` : ''}
                   ${proprietaire ? `<tr><td style="color:#999;padding:5px 0">Propriétaire</td><td>${proprietaire}</td></tr>` : ''}
                   <tr><td style="color:#999;padding:5px 0">Locataire</td><td><strong>${locataire?.nom || '—'}</strong><br>📞 ${locataire?.tel || '—'}${locataire?.email ? '<br>✉️ ' + locataire.email : ''}</td></tr>
+                  ${(locatairesEntrants && locatairesEntrants.length) ? `<tr><td style="color:#999;padding:5px 0">Locataire(s) entrant(s)</td><td>${locatairesEntrants.map(e => `<strong>${(e.prenom||'') + ' ' + (e.nom||'')}</strong> · 📞 ${e.tel||'—'}${e.email ? ' · ✉️ ' + e.email : ''}`).join('<br>')}</td></tr>` : ''}
                   ${notes ? `<tr><td style="color:#999;padding:5px 0">Notes</td><td style="color:#6b6b6b">${notes}</td></tr>` : ''}
                 </table>
                 <div style="margin-top:20px;text-align:center">
