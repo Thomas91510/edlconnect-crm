@@ -7619,7 +7619,7 @@ function confirmRdvFromReservation(id){
       <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${tempMission.adresse||'—'}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${bien}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date souhaitée</td><td style="font-weight:600">${dateStr}</td></tr>
-      ${tempMission.locataires && tempMission.locataires.length > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Locataires</td><td>${tempMission.locataires.length} convocations seront envoyées</td></tr>` : ''}
+      ${(((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
       ${tempMission.locatairesEntrants && tempMission.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${tempMission.locatairesEntrants.map(e => [e.prenom,e.nom].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
     </table>`;
 
@@ -7740,7 +7740,7 @@ function openConfirmRdvModal(missionId){
       <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${bien}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date</td><td style="font-weight:600">${dateStr}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">🕐 Heure</td><td style="font-weight:600">${heureStr}</td></tr>
-      ${m.locataires && m.locataires.length > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Locataires</td><td>${m.locataires.length} convocations seront envoyées</td></tr>` : ''}
+      ${(((m.locataires||[]).length) + ((m.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((m.locataires||[]).length) + ((m.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
       ${m.locatairesEntrants && m.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${m.locatairesEntrants.map(e => [e.prenom,e.nom].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
     </table>`;
 
@@ -7812,6 +7812,32 @@ async function sendConfirmRdv(){
   m.dureeEstimee = dureeEstimee;
   if(!_confirmRdvMissionId.startsWith('__resa__')) saveToStorage();
 
+  // Le locataire saisi dans la modal fait foi (corrections de dernière minute)
+  const _locNomModal = document.getElementById('confirm-rdv-loc-nom').value.trim();
+  const _locEmailModal = document.getElementById('confirm-rdv-loc-email').value.trim();
+  const _locCivModal = document.getElementById('confirm-rdv-civilite')?.value || '';
+  if(_locNomModal) m.locataireNom = _locNomModal;
+  if(_locEmailModal) m.locataireEmail = _locEmailModal;
+  if(_locCivModal) m.locataireCivilite = _locCivModal;
+  if(!m.locataires || m.locataires.length === 0){
+    if(_locNomModal || _locEmailModal){
+      m.locataires = [{ civilite: _locCivModal, nom: _locNomModal, tel: m.locataireTel || '', email: _locEmailModal }];
+    }
+  } else {
+    if(_locNomModal) m.locataires[0].nom = _locNomModal;
+    if(_locEmailModal) m.locataires[0].email = _locEmailModal;
+    if(_locCivModal) m.locataires[0].civilite = _locCivModal;
+  }
+
+  // Convocations : locataire(s) sortant(s) + locataire(s) entrant(s) éventuels
+  const _convocs = (m.locataires || []).map(function(l){ return Object.assign({}, l); });
+  (m.locatairesEntrants || []).forEach(function(e){
+    const nomComplet = [e.prenom, e.nom].filter(Boolean).join(' ');
+    if(nomComplet || e.email){
+      _convocs.push({ civilite: '', nom: nomComplet, tel: e.tel || '', email: e.email || '' });
+    }
+  });
+
   const payload = {
     mission: {
       id: m.id,
@@ -7831,7 +7857,7 @@ async function sendConfirmRdv(){
     locataireEmail: document.getElementById('confirm-rdv-loc-email').value.trim(),
     locataireNom: document.getElementById('confirm-rdv-loc-nom').value.trim(),
     locataireCivilite: document.getElementById('confirm-rdv-civilite')?.value || '',
-    locataires: (m.locataires && m.locataires.length > 0) ? m.locataires : [],
+    locataires: _convocs,
     expertNom: expertAgent ? expertAgent.nom : '',
     expertTel: expertAgent ? expertAgent.tel : '',
     message: document.getElementById('confirm-rdv-message').value.trim()
