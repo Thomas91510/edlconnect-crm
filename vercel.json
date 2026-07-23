@@ -29,6 +29,6 @@
     { "source": "/api/edouard-cron", "destination": "/api/edouard-cron.js" },
     { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/extranet-app", "destination": "/extranet-app.html" },
-    { "source": "/((?!extranet-app$).*)", "destination": "/index.html" }
+    { "source": "/((?!extranet-app$|js/).*)", "destination": "/index.html" }
   ]
 }
