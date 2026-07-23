@@ -153,12 +153,17 @@
         <div><div class="form-label">Date souhaitée *</div><input id="f-date" type="date"></div>
         <div><div class="form-label">Heure souhaitée</div><select id="f-heure"><option value="">— Flexible —</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option></select></div>
       </div>
-      <div class="form-label">Locataire *</div>
+      <div class="form-label" id="label-locataire">Locataire *</div>
       <div class="form-grid" style="margin-bottom:8px">
         <div><input id="f-loc-nom" placeholder="Jean Martin"></div>
         <div><input id="f-loc-tel" placeholder="06 12 34 56 78"></div>
       </div>
       <input id="f-loc-email" type="email" placeholder="jean.martin@email.fr" style="margin-bottom:14px">
+      <div id="entrants-section" style="display:none">
+        <div class="form-label">Locataire(s) entrant(s) *</div>
+        <div id="entrants-list"></div>
+        <button type="button" onclick="addEntrant()" style="background:none;border:1px dashed rgba(255,255,255,0.25);color:inherit;opacity:.8;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;margin-bottom:14px;width:100%">+ Ajouter un locataire entrant</button>
+      </div>
       <div class="form-label">Notes</div>
       <textarea id="f-notes" placeholder="Informations complémentaires…"></textarea>
     </div>
@@ -342,7 +347,36 @@ function showOrderForm() {
   saveDraft(true);
 }
 function hideOrderForm() { document.getElementById('order-form').style.display='none'; document.getElementById('dashboard').style.display='block'; saveDraft(false); }
-function selectType(t,btn) { _selectedType=t; document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); saveDraft(); }
+function selectType(t,btn) { _selectedType=t; document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); toggleEntrants(); saveDraft(); }
+
+// ─── Locataires entrants (type Sortant / Entrant uniquement) ───
+let _entrants = [];
+function esc(v){ return String(v||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function renderEntrants(){
+  document.getElementById('entrants-list').innerHTML = _entrants.map((e,i)=>`
+    <div style="border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;opacity:.65">Locataire entrant ${i+1}</span>
+        ${_entrants.length>1?`<span onclick="removeEntrant(${i})" style="cursor:pointer;color:#fc8181;font-size:11px">✕ Retirer</span>`:''}
+      </div>
+      <div class="form-grid" style="margin-bottom:8px">
+        <div><input placeholder="Prénom" value="${esc(e.prenom)}" oninput="_entrants[${i}].prenom=this.value"></div>
+        <div><input placeholder="Nom" value="${esc(e.nom)}" oninput="_entrants[${i}].nom=this.value"></div>
+      </div>
+      <div class="form-grid">
+        <div><input placeholder="06 12 34 56 78" value="${esc(e.tel)}" oninput="_entrants[${i}].tel=this.value"></div>
+        <div><input type="email" placeholder="email@exemple.fr" value="${esc(e.email)}" oninput="_entrants[${i}].email=this.value"></div>
+      </div>
+    </div>`).join('');
+}
+function addEntrant(){ _entrants.push({prenom:'',nom:'',tel:'',email:''}); renderEntrants(); }
+function removeEntrant(i){ _entrants.splice(i,1); renderEntrants(); }
+function toggleEntrants(){
+  const show = _selectedType === 'EDL Sortant / Entrant';
+  document.getElementById('entrants-section').style.display = show ? 'block' : 'none';
+  document.getElementById('label-locataire').textContent = show ? 'Locataire sortant *' : 'Locataire *';
+  if(show && _entrants.length === 0) addEntrant();
+}
 
 async function submitOrder() {
   const errEl = document.getElementById('form-error');
@@ -355,11 +389,20 @@ async function submitOrder() {
   if (!locNom) { errEl.textContent='Le nom du locataire est requis.'; errEl.style.display='block'; return; }
   if (!locTel) { errEl.textContent='Le téléphone du locataire est requis.'; errEl.style.display='block'; return; }
   if (!date) { errEl.textContent='La date souhaitée est requise.'; errEl.style.display='block'; return; }
+  let locatairesEntrants = [];
+  if(_selectedType === 'EDL Sortant / Entrant'){
+    locatairesEntrants = _entrants.filter(e => (e.prenom||e.nom||e.tel||e.email));
+    if(locatairesEntrants.length === 0){ errEl.textContent='Ajoutez au moins un locataire entrant.'; errEl.style.display='block'; return; }
+    for(const e of locatairesEntrants){
+      if(!e.prenom || !e.nom){ errEl.textContent='Prénom et nom sont requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
+      if(!e.tel){ errEl.textContent='Le mobile est requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
+    }
+  }
   errEl.style.display='none';
   const btn = document.getElementById('form-submit-btn');
   btn.disabled=true; btn.innerHTML='<i class="ti ti-loader"></i> Envoi…';
   const locataire = {nom:locNom,tel:locTel,email:document.getElementById('f-loc-email').value.trim()};
-  const payload = {agencyId:'',agence:_userEmail,contact:_userEmail,email:_userEmail,tel:'',typeEdl:_selectedType,adresse,bienType:document.getElementById('f-bien').value,bienTypo:'',meuble:document.getElementById('f-meuble').value,superficie:document.getElementById('f-superficie').value||'',dateEntree:document.getElementById('f-date-entree').value||'',acces:document.getElementById('f-acces').value.trim(),proprietaire:document.getElementById('f-proprietaire').value.trim(),dateSouhaitee:date,heure:document.getElementById('f-heure').value,notes:document.getElementById('f-notes').value.trim(),locataire,locataires:[locataire],source:'extranet'};
+  const payload = {agencyId:'',agence:_userEmail,contact:_userEmail,email:_userEmail,tel:'',typeEdl:_selectedType,adresse,bienType:document.getElementById('f-bien').value,bienTypo:'',meuble:document.getElementById('f-meuble').value,superficie:document.getElementById('f-superficie').value||'',dateEntree:document.getElementById('f-date-entree').value||'',acces:document.getElementById('f-acces').value.trim(),proprietaire:document.getElementById('f-proprietaire').value.trim(),dateSouhaitee:date,heure:document.getElementById('f-heure').value,notes:document.getElementById('f-notes').value.trim(),locataire,locataires:[locataire],locatairesEntrants,source:'extranet'};
   try {
     const resp = await fetch('/api/booking-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const r = await resp.json();
