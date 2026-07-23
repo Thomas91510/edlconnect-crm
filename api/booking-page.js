@@ -188,7 +188,7 @@ textarea{min-height:75px;resize:vertical}
   <!-- PAGE 3 -->
   <div id="p3" style="display:none">
     <div class="card">
-      <div class="card-head"><i class="ti ti-user"></i>Locataire</div>
+      <div class="card-head" id="loc-card-head"><i class="ti ti-user"></i>Locataire</div>
       <div class="card-body">
         <!-- Locataire 1 (principal) -->
         <div id="locataires-list">
@@ -215,6 +215,16 @@ textarea{min-height:75px;resize:vertical}
           + Ajouter un locataire
         </button>
         <div class="hint">Chaque locataire recevra sa convocation par email une fois le RDV planifié</div>
+      </div>
+    </div>
+    <div class="card" id="entrants-card" style="display:none">
+      <div class="card-head"><i class="ti ti-key"></i>Locataire(s) entrant(s)</div>
+      <div class="card-body">
+        <div id="entrants-list"></div>
+        <button type="button" onclick="addEntrant()" style="width:100%;border:1.5px dashed var(--blue);border-radius:var(--radius);padding:10px;background:var(--blue-light);color:var(--blue);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px">
+          + Ajouter un locataire entrant
+        </button>
+        <div class="hint">Coordonnées du ou des locataires qui entrent dans le logement</div>
       </div>
     </div>
     <div class="card">
@@ -263,6 +273,10 @@ function selType(t, btn){
   // Afficher le champ date d'entrée uniquement pour EDL sortant
   const isSortant = t.toLowerCase().includes('sortant');
   document.getElementById('date-entree-wrap').style.display = isSortant ? 'block' : 'none';
+  const isSE = (t === 'EDL Sortant / Entrant');
+  document.getElementById('entrants-card').style.display = isSE ? 'block' : 'none';
+  document.getElementById('loc-card-head').innerHTML = '<i class="ti ti-user"></i>' + (isSE ? 'Locataire sortant' : 'Locataire');
+  if(isSE && document.querySelectorAll('.entrant-block').length === 0) addEntrant();
 }
 
 function showErr(msg){ const e=document.getElementById('err'); e.textContent='⚠️ '+msg; e.classList.add('show'); e.scrollIntoView({behavior:'smooth',block:'center'}); }
@@ -329,6 +343,25 @@ function addLocataire(){
     +'<div><label>Email</label><input type="email" class="loc-email" placeholder="marie.martin@email.fr"></div></div>';
   list.appendChild(div);
 }
+let _entCount = 0;
+function addEntrant(){
+  _entCount++;
+  const list = document.getElementById('entrants-list');
+  const div = document.createElement('div');
+  div.className = 'entrant-block';
+  div.style.cssText = 'border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px';
+  div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="ent-label" style="font-size:11px;font-weight:600;color:#1A5FA8">🔑 Entrant '+_entCount+'</div><button type="button" onclick="removeEntrant(this)" style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:16px;padding:0">✕</button></div>'
+    +'<div class="form-row"><div><label>Prénom <span class="req">*</span></label><input type="text" class="ent-prenom" placeholder="Marie"></div>'
+    +'<div><label>Nom <span class="req">*</span></label><input type="text" class="ent-nom" placeholder="Martin"></div></div>'
+    +'<div class="form-row"><div><label>Mobile <span class="req">*</span></label><input type="tel" class="ent-tel" placeholder="06 12 34 56 78"></div>'
+    +'<div><label>Email</label><input type="email" class="ent-email" placeholder="marie.martin@email.fr"></div></div>';
+  list.appendChild(div);
+  renumEntrants();
+}
+function removeEntrant(btn){ btn.closest('.entrant-block').remove(); renumEntrants(); }
+function renumEntrants(){
+  document.querySelectorAll('.ent-label').forEach(function(t,i){ t.textContent = '🔑 Entrant '+(i+1); });
+}
 function removeLocataire(btn){
   btn.closest('.locataire-block').remove();
   document.querySelectorAll('.locataire-block').forEach((b,i)=>{
@@ -352,6 +385,23 @@ async function submit(){
       if(!tel) return showErr('Le téléphone du locataire principal est requis.');
     }
     if(nom || tel) locataires.push({ civilite: civ, nom, tel, email });
+  }
+  // Locataires entrants (uniquement type Sortant / Entrant)
+  let locatairesEntrants = [];
+  if(type === 'EDL Sortant / Entrant'){
+    const entBlocks = document.querySelectorAll('.entrant-block');
+    for(let j = 0; j < entBlocks.length; j++){
+      const b = entBlocks[j];
+      const prenom = b.querySelector('.ent-prenom').value.trim();
+      const nomE = b.querySelector('.ent-nom').value.trim();
+      const telE = b.querySelector('.ent-tel').value.trim();
+      const emailE = b.querySelector('.ent-email').value.trim();
+      if(!prenom && !nomE && !telE && !emailE) continue;
+      if(!prenom || !nomE) return showErr('Prénom et nom sont requis pour chaque locataire entrant.');
+      if(!telE) return showErr('Le mobile est requis pour chaque locataire entrant.');
+      locatairesEntrants.push({ prenom: prenom, nom: nomE, tel: telE, email: emailE });
+    }
+    if(locatairesEntrants.length === 0) return showErr('Ajoutez au moins un locataire entrant.');
   }
   const locNom = locataires[0]?.nom || '';
   const locTel = locataires[0]?.tel || '';
@@ -377,7 +427,8 @@ async function submit(){
     heure: document.getElementById('heure').value,
     notes: document.getElementById('notes').value.trim(),
     locataire: locataires[0] || {},
-    locataires: locataires
+    locataires: locataires,
+    locatairesEntrants: locatairesEntrants
   };
   try {
     const resp = await fetch('/api/booking-request', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
