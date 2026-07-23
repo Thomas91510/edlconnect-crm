@@ -36,8 +36,11 @@ export default async function handler(req) {
   try {
     const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, locataires, expertNom, expertTel, message } = await req.json();
     // Liste complète des locataires (principal + supplémentaires)
-    const allLocataires = locataires && locataires.length > 0 ? locataires : 
-      (locataireEmail ? [{ civilite: locataireCivilite||'', nom: locataireNom||'', tel:'', email: locataireEmail }] : []);
+    // On ne retient que les locataires disposant d'un email ; sinon repli sur la saisie de la modal
+    let allLocataires = (locataires || []).filter(l => l && l.email);
+    if(allLocataires.length === 0 && locataireEmail){
+      allLocataires = [{ civilite: locataireCivilite||'', nom: locataireNom||'', tel:'', email: locataireEmail }];
+    }
     const civilite = locataireCivilite || '';
     const isFemme = civilite === 'Mme';
     const isHomme = civilite === 'M.';
