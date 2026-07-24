@@ -138,9 +138,9 @@ export default async function handler(req) {
       ✅ Notre expert sera présent à l'heure indiquée. Le rapport vous sera transmis dans les <strong>24h</strong> avec signature électronique.
     </div>
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
-      <strong>Thomas Langlade — EDL IDF Expert en Etat des Lieux</strong><br>
-      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8">${IDENT.tel}</a>` : ''} · 
-      ✉️ <a href="mailto:contact@edl-idf.com" style="color:#1A5FA8">contact@edl-idf.com</a>
+      <strong>${IDENT.signature || IDENT.nom}</strong><br>
+      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8">${IDENT.tel}</a> · ` : ''}
+      ${IDENT.replyTo || IDENT.email ? `✉️ <a href="mailto:${IDENT.replyTo || IDENT.email}" style="color:#1A5FA8">${IDENT.replyTo || IDENT.email}</a>` : ''}
     </div>
   </div>
 </div>
@@ -344,9 +344,8 @@ export default async function handler(req) {
       headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
       body: JSON.stringify({
         sender: { name: IDENT.nom, email: IDENT.email },
-        ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
         to: [{ email: agentEmail }],
-        replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
+        replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
         subject: `✅ Confirmation EDL — ${mission.type} · ${dateStr} · ${mission.adresse}`,
         htmlContent: agentHtml
       })
@@ -365,9 +364,8 @@ export default async function handler(req) {
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
           sender: { name: IDENT.nom, email: IDENT.email },
-        ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
           to: [{ email: loc.email, name: (loc.civilite+' '+loc.nom).trim() || '' }],
-          replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
+          replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
           subject: sujetLocataire,
           htmlContent: locataireHtml
         })
