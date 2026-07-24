@@ -259,6 +259,15 @@ function loadSettingsForm(){
   document.getElementById('set-notion-token').value=CFG.notionToken||'';
   document.getElementById('set-notion-page').value=CFG.notionPageId||'';
   document.getElementById('set-brevo-key').value=CFG.brevoKey||'';
+  // Profil et identite d'envoi
+  const _set=(id,v)=>{const e=document.getElementById(id); if(e) e.value=v||'';};
+  _set('set-name',CFG.userName);
+  _set('set-email',CFG.userEmail);
+  _set('set-company',CFG.companyName);
+  _set('set-exp-nom',CFG.expediteurNom);
+  _set('set-exp-email',CFG.expediteurEmail);
+  _set('set-exp-tel',CFG.expediteurTel);
+  _set('set-exp-signature',CFG.expediteurSignature);
   const ck=document.getElementById('set-claude-key');
   if(ck) ck.value=localStorage.getItem('edl_claude_key')||'';
   // Champs de facturation
@@ -301,6 +310,15 @@ function saveSettings(){
   CFG.notionToken=document.getElementById('set-notion-token').value.trim();
   CFG.notionPageId=document.getElementById('set-notion-page').value.trim();
   CFG.brevoKey=document.getElementById('set-brevo-key').value.trim();
+  // Profil et identite d'envoi
+  const _get=id=>{const e=document.getElementById(id); return e?e.value.trim():'';};
+  CFG.userName=_get('set-name');
+  CFG.userEmail=_get('set-email');
+  CFG.companyName=_get('set-company')||CFG.companyName;
+  CFG.expediteurNom=_get('set-exp-nom');
+  CFG.expediteurEmail=_get('set-exp-email');
+  CFG.expediteurTel=_get('set-exp-tel');
+  CFG.expediteurSignature=_get('set-exp-signature');
   const claudeKey=document.getElementById('set-claude-key')?.value.trim();
   if(claudeKey) localStorage.setItem('edl_claude_key', claudeKey);
   // Facturation
@@ -324,7 +342,13 @@ function saveSettings(){
     companyIban:CFG.companyIban,
     companyBic:CFG.companyBic,
     companyLogo:CFG.companyLogo||'',
-    companyPaymentTerms:CFG.companyPaymentTerms
+    companyPaymentTerms:CFG.companyPaymentTerms,
+    userName:CFG.userName||'',
+    userEmail:CFG.userEmail||'',
+    expediteurNom:CFG.expediteurNom||'',
+    expediteurEmail:CFG.expediteurEmail||'',
+    expediteurTel:CFG.expediteurTel||'',
+    expediteurSignature:CFG.expediteurSignature||''
   };
   saveSettingsToSupabase(settingsData);
   // Rafraîchir le nom de la sidebar
