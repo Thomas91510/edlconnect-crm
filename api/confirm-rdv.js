@@ -7,7 +7,7 @@ const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
 const SUPA_URL_BASE = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 
 async function identiteAbonne(userId) {
-  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '' };
+  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', partenaire: '' };
   if (!userId) return neutre;
   try {
     const key = process.env.SUPABASE_SERVICE_KEY;
@@ -27,7 +27,8 @@ async function identiteAbonne(userId) {
       email: peutExpedier ? mail : neutre.email,
       replyTo: (!peutExpedier && mail) ? mail : '',
       tel: (d.expediteurTel || '').trim(),
-      signature: (d.expediteurSignature || '').trim()
+      signature: (d.expediteurSignature || '').trim(),
+      partenaire: (d.expediteurPartenaire || '').trim()
     };
   } catch (e) {
     return neutre;
@@ -138,7 +139,7 @@ export default async function handler(req) {
     </div>
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
       <strong>Thomas Langlade — EDL IDF Expert en Etat des Lieux</strong><br>
-      📞 <a href="tel:0767630963" style="color:#1A5FA8">07 67 63 09 63</a> · 
+      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8">${IDENT.tel}</a>` : ''} · 
       ✉️ <a href="mailto:contact@edl-idf.com" style="color:#1A5FA8">contact@edl-idf.com</a>
     </div>
   </div>
@@ -184,23 +185,23 @@ export default async function handler(req) {
 
     ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
 
-    <div style="border-top:1px dashed #e5e5e2;margin:20px 0;padding-top:20px">
+    ${IDENT.partenaire ? `<div style="border-top:1px dashed #e5e5e2;margin:20px 0;padding-top:20px">
       <div style="font-size:13px;font-weight:700;color:#1A5FA8;margin-bottom:8px">💡 Astuce pour votre emménagement :</div>
       <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 8px 0">
-        Afin de vous accompagner dans vos démarches (ouverture de compteurs, changement d'adresse, etc.), découvrez les services gratuits de BeMove :
+        Afin de vous accompagner dans vos démarches (ouverture de compteurs, changement d'adresse, etc.), découvrez ces services gratuits :
       </p>
-      <a href="https://www.bemove.fr/landing/immobilier/edl-idf/services" style="display:inline-block;background:#1A5FA8;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">
-        👉 Découvrir BeMove
+      <a href="${IDENT.partenaire}" style="display:inline-block;background:#1A5FA8;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">
+        👉 Découvrir
       </a>
-    </div>
+    </div>` : ''}
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;margin-top:20px;line-height:1.8">
       En cas d'empêchement ou pour toute question, n'hésitez pas à me contacter :<br>
-      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
+      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
       ✉️ Par retour de mail<br><br>
       Dans l'attente de vous rencontrer,<br>
       Cordialement,<br>
-      <strong>Thomas LANGLADE</strong>
+      <strong>${IDENT.signature || IDENT.nom}</strong>
     </div>
   </div>
 </div>
@@ -264,10 +265,10 @@ export default async function handler(req) {
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Pour toute question ou en cas d'empêchement majeur, n'hésitez pas à nous contacter :<br>
-      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
+      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
       ✉️ Par retour de mail<br><br>
       Cordialement,<br>
-      <strong>Thomas LANGLADE</strong>
+      <strong>${IDENT.signature || IDENT.nom}</strong>
     </div>
   </div>
 </div>
@@ -313,10 +314,10 @@ export default async function handler(req) {
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Pour toute question, n'hésitez pas à nous contacter :<br>
-      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
+      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
       ✉️ Par retour de mail<br><br>
       Cordialement,<br>
-      <strong>Thomas LANGLADE</strong>
+      <strong>${IDENT.signature || IDENT.nom}</strong>
     </div>
   </div>
 </div>
