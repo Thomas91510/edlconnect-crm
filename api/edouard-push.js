@@ -91,6 +91,14 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: CORS });
   }
 
+  // Intégration Edouard : réservée au compte administrateur.
+  // Les autres abonnés n'ont pas de compte Edouard — leurs données ne
+  // doivent jamais être poussées vers celui de la plateforme.
+  const _userEd = await _userResp.json();
+  if (!_userEd || _userEd.email !== 'contact@edl-idf.com') {
+    return new Response(JSON.stringify({ success: false, skipped: true, raison: 'Intégration Edouard non activée pour ce compte' }), { status: 200, headers: CORS });
+  }
+
   const EDOUARD_KEY = process.env.EDOUARD_API_KEY;
   if (!EDOUARD_KEY) {
     return new Response(JSON.stringify({ error: 'Clé Edouard manquante (EDOUARD_API_KEY)' }), { status: 500, headers: CORS });
