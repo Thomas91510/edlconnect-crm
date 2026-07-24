@@ -49,6 +49,10 @@ export default async function handler(req) {
     });
   }
 
+  const _user = await userResp.json();
+  const _userId = _user && _user.id;
+  const _isAdmin = _user && _user.email === 'contact@edl-idf.com';
+
   try {
     const resp = await fetch(
       `${SUPABASE_URL}/rest/v1/bookings?select=id,data,created_at&order=created_at.desc&limit=100`,
@@ -67,7 +71,16 @@ export default async function handler(req) {
     }
 
     const rows = await resp.json();
-    const reservations = (rows || []).map(r => ({ ...r.data, _supaId: r.id }));
+    // Cloisonnement : chaque abonne ne voit que ses reservations.
+    // Les reservations historiques (sans proprietaire) restent visibles
+    // par le compte administrateur uniquement.
+    const reservations = (rows || [])
+      .filter(r => {
+        const owner = (r.data && r.data.ownerId) || '';
+        if (owner) return owner === _userId;
+        return _isAdmin;
+      })
+      .map(r => ({ ...r.data, _supaId: r.id }));
 
     return new Response(JSON.stringify(reservations), {
       status: 200,
