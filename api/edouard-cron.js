@@ -94,10 +94,7 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Lecture missions impossible', status: missResp.status }), { status: 500 });
     }
     const rows = await missResp.json();
-    const aTraiter = (rows || []).filter(r => {
-      const d = r.data || {};
-      return d.edouardAccommodationId && !d.edouardReportDone;
-    }).slice(0, MAX_PAR_RUN);
+    const candidats = (rows || []).filter(r => (r.data || {}).edouardAccommodationId);
 
     // ── Liste des états des lieux : un seul appel, filtrage côté Lokentia ──
     // (le filtre serveur ?accommodationID=... renvoie une erreur 500 chez Edouard)
@@ -145,104 +142,159 @@ export default async function handler(req) {
         logementsVusDansEdouard: Array.from(new Set(
           toutesSituations.map(function (s) { return s && (s.accommodationID || s.accommodationId); })
         )).filter(Boolean).slice(0, 40),
-        logementsRecherches: aTraiter.map(function (r) { return (r.data || {}).edouardAccommodationId; })
+        logementsRecherches: candidats.map(function (r) { return (r.data || {}).edouardAccommodationId; })
       };
     }
 
-    for (const row of aTraiter) {
+    // Pour chaque mission : lister ses EDL Edouard non encore rapatries
+    const travail = [];
+    for (const row of candidats) {
+      const md = row.data || {};
+      const idsAcceptes = [md.edouardAccommodationId];
+      const cible = normAdr(md.adresse);
+      if (cible.length > 8) {
+        tousLogements.forEach(function (lg) {
+          if (!lg || !lg.id) return;
+          const adrLg = normAdr([lg.street, lg.zipCode, lg.city].filter(Boolean).join(' '));
+          if (!adrLg) return;
+          if (adrLg === cible || adrLg.indexOf(cible) !== -1 || cible.indexOf(adrLg) !== -1) {
+            if (idsAcceptes.indexOf(lg.id) === -1) idsAcceptes.push(lg.id);
+          }
+        });
+      }
+      const dejaFaits = Array.isArray(md.edouardSituationsTraitees) ? md.edouardSituationsTraitees : [];
+      const aFaire = toutesSituations.filter(function (s) {
+        const aid = s && (s.accommodationID || s.accommodationId);
+        if (!aid || idsAcceptes.indexOf(aid) === -1) return false;
+        return s.id && dejaFaits.indexOf(s.id) === -1;
+      });
+      aFaire.sort(function (a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
+      if (aFaire.length > 0) travail.push({ row: row, situations: aFaire });
+    }
+    journal.missionsAvecEdlNouveaux = travail.length;
+
+    for (const tache of travail.slice(0, MAX_PAR_RUN)) {
+      const row = tache.row;
       const m = row.data || {};
       journal.verifie++;
       try {
-        // ── 2. Un état des lieux existe-t-il pour ce logement ? ──
-        // Identifiants acceptes : celui cree par Lokentia + tout logement Edouard
-        // situe a la meme adresse
-        const idsAcceptes = [m.edouardAccommodationId];
-        const cible = normAdr(m.adresse);
-        if (cible.length > 8) {
-          tousLogements.forEach(function (lg) {
-            if (!lg || !lg.id) return;
-            const adrLg = normAdr([lg.street, lg.zipCode, lg.city].filter(Boolean).join(' '));
-            if (!adrLg) return;
-            if (adrLg === cible || adrLg.indexOf(cible) !== -1 || cible.indexOf(adrLg) !== -1) {
-              if (idsAcceptes.indexOf(lg.id) === -1) idsAcceptes.push(lg.id);
-            }
+        // Chaque etat des lieux du logement donne lieu a son propre rapport
+        // (un sortant/entrant produit deux PDF distincts)
+        const rapportsMission = Array.isArray(m.rapports) ? m.rapports.slice() : [];
+        const dejaFaits = Array.isArray(m.edouardSituationsTraitees) ? m.edouardSituationsTraitees.slice() : [];
+        let nouveauxPourCetteMission = 0;
+        let dernierUrl = m.rapportUrl || '';
+
+        for (const sit of tache.situations) {
+          const sitId = sit.id;
+          if (!sitId) continue;
+
+          // Recuperer le rapport PDF
+          const repResp = await edouardGet('/v1/situations/' + encodeURIComponent(sitId) + '/report', EDOUARD_KEY);
+          if (!repResp.ok) {
+            journal.details.push('Mission ' + row.id + ' / EDL du ' + (sit.date || '?') + ' : rapport indisponible (HTTP ' + repResp.status + ')');
+            continue;
+          }
+          const fileInfo = unwrap(repResp.data);
+          const fileUrl = fileInfo && (fileInfo.url || (Array.isArray(fileInfo) && fileInfo[0] && fileInfo[0].url));
+          if (!fileUrl) {
+            journal.details.push('Mission ' + row.id + ' / EDL ' + sitId + ' : rapport sans URL');
+            continue;
+          }
+
+          const pdfResp = await fetch(fileUrl);
+          if (!pdfResp.ok) {
+            journal.erreurs.push('Mission ' + row.id + ' : telechargement PDF HTTP ' + pdfResp.status);
+            continue;
+          }
+          const pdfBytes = await pdfResp.arrayBuffer();
+
+          // Stocker dans Supabase Storage (un fichier par etat des lieux)
+          const path = (row.user_id || 'inconnu') + '/' + row.id + '_' + sitId + '.pdf';
+          const upResp = await fetch(SUPA_URL + '/storage/v1/object/' + BUCKET + '/' + path, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPA_KEY,
+              'Authorization': 'Bearer ' + SUPA_KEY,
+              'Content-Type': 'application/pdf',
+              'x-upsert': 'true'
+            },
+            body: pdfBytes
           });
-        }
-        const situations = toutesSituations.filter(function (s) {
-          const aid = s && (s.accommodationID || s.accommodationId);
-          return aid && idsAcceptes.indexOf(aid) !== -1;
-        });
-        if (situations.length === 0) {
-          journal.details.push('Mission ' + row.id + ' : aucun EDL pour l\u2019instant');
-          continue;
-        }
-        // Prendre le plus récent
-        situations.sort(function (a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
-        const sit = situations[0];
-        const sitId = sit.id || (sit.data && sit.data.id);
-        if (!sitId) {
-          journal.erreurs.push('Mission ' + row.id + ' : EDL sans id');
-          continue;
-        }
+          if (!upResp.ok) {
+            const t = await upResp.text();
+            journal.erreurs.push('Mission ' + row.id + ' : upload storage HTTP ' + upResp.status + ' ' + t.slice(0, 120));
+            continue;
+          }
 
-        // ── 3. Récupérer le rapport PDF ──
-        const repResp = await edouardGet('/v1/situations/' + encodeURIComponent(sitId) + '/report', EDOUARD_KEY);
-        if (!repResp.ok) {
-          journal.details.push('Mission ' + row.id + ' : rapport indisponible (HTTP ' + repResp.status + ') ' + repResp.corps);
-          continue;
-        }
-        const fileInfo = unwrap(repResp.data);
-        const fileUrl = fileInfo && (fileInfo.url || (Array.isArray(fileInfo) && fileInfo[0] && fileInfo[0].url));
-        if (!fileUrl) {
-          journal.details.push('Mission ' + row.id + ' : rapport sans URL de t\u00e9l\u00e9chargement');
-          continue;
-        }
+          // Lien signe longue duree (1 an)
+          let rapportUrl = '';
+          const signResp = await fetch(SUPA_URL + '/storage/v1/object/sign/' + BUCKET + '/' + path, {
+            method: 'POST',
+            headers: supaHeaders,
+            body: JSON.stringify({ expiresIn: 31536000 })
+          });
+          if (signResp.ok) {
+            const signData = await signResp.json();
+            if (signData && signData.signedURL) {
+              rapportUrl = SUPA_URL + '/storage/v1' + signData.signedURL;
+            }
+          }
+          if (!rapportUrl) {
+            journal.erreurs.push('Mission ' + row.id + ' : lien signe non genere');
+            continue;
+          }
 
-        const pdfResp = await fetch(fileUrl);
-        if (!pdfResp.ok) {
-          journal.erreurs.push('Mission ' + row.id + ' : t\u00e9l\u00e9chargement PDF HTTP ' + pdfResp.status);
-          continue;
-        }
-        const pdfBytes = await pdfResp.arrayBuffer();
+          let dateLisible = '';
+          try {
+            if (sit.date) dateLisible = new Date(sit.date).toLocaleDateString('fr-FR');
+          } catch (e) { /* date non exploitable */ }
+          const nomDoc = 'Rapport EDL ' + (dateLisible ? 'du ' + dateLisible + ' ' : '') + '\u2014 ' + (m.adresse || row.id);
 
-        // ── 4. Stocker dans Supabase Storage ──
-        const path = (row.user_id || 'inconnu') + '/' + row.id + '.pdf';
-        const upResp = await fetch(SUPA_URL + '/storage/v1/object/' + BUCKET + '/' + path, {
-          method: 'POST',
-          headers: {
-            'apikey': SUPA_KEY,
-            'Authorization': 'Bearer ' + SUPA_KEY,
-            'Content-Type': 'application/pdf',
-            'x-upsert': 'true'
-          },
-          body: pdfBytes
-        });
-        if (!upResp.ok) {
-          const t = await upResp.text();
-          journal.erreurs.push('Mission ' + row.id + ' : upload storage HTTP ' + upResp.status + ' ' + t.slice(0, 120));
-          continue;
-        }
+          rapportsMission.push({ nom: nomDoc, url: rapportUrl, date: sit.date || '', situationId: sitId, type: sit.type });
+          dejaFaits.push(sitId);
+          dernierUrl = rapportUrl;
+          nouveauxPourCetteMission++;
+          journal.rapportsRecuperes++;
+          journal.details.push('Mission ' + row.id + ' (' + (m.adresse || '') + ') : ' + nomDoc + ' \u2713 [type Edouard ' + sit.type + ']');
 
-        // ── 5. URL signée longue durée (1 an) ──
-        let rapportUrl = '';
-        const signResp = await fetch(SUPA_URL + '/storage/v1/object/sign/' + BUCKET + '/' + path, {
-          method: 'POST',
-          headers: supaHeaders,
-          body: JSON.stringify({ expiresIn: 31536000 })
-        });
-        if (signResp.ok) {
-          const signData = await signResp.json();
-          if (signData && signData.signedURL) {
-            rapportUrl = SUPA_URL + '/storage/v1' + signData.signedURL;
+          // Rendre le document visible dans l'extranet de l'agence
+          if (m.emailClient) {
+            try {
+              const ctResp = await fetch(
+                SUPA_URL + '/rest/v1/contacts?select=id,data&user_id=eq.' + encodeURIComponent(row.user_id || '') + '&data->>email=ilike.' + encodeURIComponent(m.emailClient),
+                { headers: supaHeaders }
+              );
+              if (ctResp.ok) {
+                const contacts = await ctResp.json();
+                if (contacts && contacts.length > 0) {
+                  const contact = contacts[0];
+                  const cdata = contact.data || {};
+                  const docs = Array.isArray(cdata.documents) ? cdata.documents : [];
+                  if (!docs.find(d => d && d.url === rapportUrl)) {
+                    docs.push({ nom: nomDoc, url: rapportUrl });
+                    cdata.documents = docs;
+                    await fetch(SUPA_URL + '/rest/v1/contacts?id=eq.' + encodeURIComponent(contact.id), {
+                      method: 'PATCH',
+                      headers: supaHeaders,
+                      body: JSON.stringify({ data: cdata, updated_at: new Date().toISOString() })
+                    });
+                  }
+                }
+              }
+            } catch (e) { journal.erreurs.push('Mission ' + row.id + ' : doc extranet - ' + String(e && e.message || e)); }
           }
         }
 
-        // ── 6. Mettre à jour la mission ──
+        if (nouveauxPourCetteMission === 0) continue;
+
+        // Mettre a jour la mission
         const newData = Object.assign({}, m, {
           statut: 'r\u00e9alis\u00e9e',
-          edouardSituationId: sitId,
+          edouardSituationsTraitees: dejaFaits,
           edouardReportDone: true,
-          rapportUrl: rapportUrl,
+          rapports: rapportsMission,
+          rapportUrl: dernierUrl,
           rapportRecupereAt: new Date().toISOString()
         });
         const patchResp = await fetch(SUPA_URL + '/rest/v1/missions?id=eq.' + encodeURIComponent(row.id), {
@@ -251,40 +303,12 @@ export default async function handler(req) {
           body: JSON.stringify({ data: newData, updated_at: new Date().toISOString() })
         });
         if (!patchResp.ok) {
-          journal.erreurs.push('Mission ' + row.id + ' : mise \u00e0 jour mission HTTP ' + patchResp.status);
-          continue;
+          journal.erreurs.push('Mission ' + row.id + ' : mise a jour mission HTTP ' + patchResp.status);
         }
 
-        // ── 7. Rendre le document visible dans l'extranet de l'agence ──
-        const nomDoc = 'Rapport EDL \u2014 ' + (m.adresse || row.id);
-        if (rapportUrl && m.emailClient) {
-          try {
-            const ctResp = await fetch(
-              SUPA_URL + '/rest/v1/contacts?select=id,data&user_id=eq.' + encodeURIComponent(row.user_id || '') + '&data->>email=ilike.' + encodeURIComponent(m.emailClient),
-              { headers: supaHeaders }
-            );
-            if (ctResp.ok) {
-              const contacts = await ctResp.json();
-              if (contacts && contacts.length > 0) {
-                const contact = contacts[0];
-                const cdata = contact.data || {};
-                const docs = Array.isArray(cdata.documents) ? cdata.documents : [];
-                if (!docs.find(d => d && d.url === rapportUrl)) {
-                  docs.push({ nom: nomDoc, url: rapportUrl });
-                  cdata.documents = docs;
-                  await fetch(SUPA_URL + '/rest/v1/contacts?id=eq.' + encodeURIComponent(contact.id), {
-                    method: 'PATCH',
-                    headers: supaHeaders,
-                    body: JSON.stringify({ data: cdata, updated_at: new Date().toISOString() })
-                  });
-                }
-              }
-            }
-          } catch (e) { journal.erreurs.push('Mission ' + row.id + ' : doc extranet — ' + String(e && e.message || e)); }
-        }
-
-        // ── 8. Notifier l'agence par email (best effort) ──
+        // Notifier l'agence (un seul email par mission, best effort)
         if (BREVO_KEY && m.emailClient) {
+          const pluriel = nouveauxPourCetteMission > 1;
           try {
             await fetch('https://api.brevo.com/v3/smtp/email', {
               method: 'POST',
@@ -292,11 +316,12 @@ export default async function handler(req) {
               body: JSON.stringify({
                 sender: { name: 'EDL IDF Expert en \u00c9tat des Lieux', email: 'contact@edl-idf.com' },
                 to: [{ email: m.emailClient }],
-                subject: '\u2705 Rapport d\u2019\u00e9tat des lieux disponible \u2014 ' + (m.adresse || ''),
+                subject: '\u2705 Rapport' + (pluriel ? 's' : '') + ' d\u2019\u00e9tat des lieux disponible' + (pluriel ? 's' : '') + ' \u2014 ' + (m.adresse || ''),
                 htmlContent: '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0F1E2E">' +
-                  '<h2 style="color:#1A5FA8">Votre rapport est disponible</h2>' +
+                  '<h2 style="color:#1A5FA8">Votre rapport' + (pluriel ? 's est' : ' est') + ' disponible' + (pluriel ? 's' : '') + '</h2>' +
                   '<p>Bonjour,</p>' +
-                  '<p>L\u2019\u00e9tat des lieux <strong>' + (m.type || '') + '</strong> au <strong>' + (m.adresse || '') + '</strong> a \u00e9t\u00e9 r\u00e9alis\u00e9. Le rapport est d\u00e8s \u00e0 pr\u00e9sent disponible dans votre espace client\u00a0:</p>' +
+                  '<p>L\u2019\u00e9tat des lieux <strong>' + (m.type || '') + '</strong> au <strong>' + (m.adresse || '') + '</strong> a \u00e9t\u00e9 r\u00e9alis\u00e9. ' +
+                  (pluriel ? nouveauxPourCetteMission + ' rapports sont' : 'Le rapport est') + ' d\u00e8s \u00e0 pr\u00e9sent disponible' + (pluriel ? 's' : '') + ' dans votre espace client\u00a0:</p>' +
                   '<p style="text-align:center;margin:24px 0"><a href="https://app.lokentia.fr/extranet-app" style="background:#1A5FA8;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Acc\u00e9der \u00e0 mon espace</a></p>' +
                   '<p style="font-size:13px;color:#666">Thomas LANGLADE \u2014 Directeur G\u00e9n\u00e9ral<br>EDL IDF Expert en \u00c9tat des Lieux</p>' +
                   '</div>'
@@ -304,9 +329,6 @@ export default async function handler(req) {
             });
           } catch (e) { /* la notification email ne doit jamais bloquer */ }
         }
-
-        journal.rapportsRecuperes++;
-        journal.details.push('Mission ' + row.id + ' : rapport r\u00e9cup\u00e9r\u00e9 \u2713');
 
       } catch (e) {
         journal.erreurs.push('Mission ' + row.id + ' : ' + String(e && e.message || e));
