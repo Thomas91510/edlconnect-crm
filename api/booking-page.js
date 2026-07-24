@@ -4,6 +4,7 @@ export default async function handler(req) {
   const url = new URL(req.url);
   const agencyId = url.searchParams.get('agency') || '';
   const agencyName = url.searchParams.get('name') || '';
+  const contactId = (url.searchParams.get('c') || '').replace(/[^a-zA-Z0-9_-]/g, '');
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -260,6 +261,7 @@ textarea{min-height:75px;resize:vertical}
 
 <script>
 const AGENCY_ID = '${agencyId}';
+const CONTACT_ID = '${contactId}';
 let type = '';
 
 // Date min = demain
@@ -410,6 +412,7 @@ async function submit(){
   btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Envoi…';
   const payload = {
     agencyId: AGENCY_ID,
+    contactId: CONTACT_ID,
     agence: document.getElementById('agence').value.trim(),
     contact: document.getElementById('contact').value.trim(),
     email: document.getElementById('email').value.trim(),
