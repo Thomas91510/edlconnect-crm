@@ -110,6 +110,18 @@ export default async function handler(req) {
     }
     journal.edlDansEdouard = toutesSituations.length;
 
+    // ── Diagnostic : comprendre pourquoi un rapprochement échoue ──
+    if (toutesSituations.length > 0) {
+      journal.diagnostic = {
+        champsDunEDL: Object.keys(toutesSituations[0]),
+        exempleEDL: toutesSituations[0],
+        logementsVusDansEdouard: Array.from(new Set(
+          toutesSituations.map(function (s) { return s && (s.accommodationID || s.accommodationId); })
+        )).filter(Boolean).slice(0, 40),
+        logementsRecherches: aTraiter.map(function (r) { return (r.data || {}).edouardAccommodationId; })
+      };
+    }
+
     for (const row of aTraiter) {
       const m = row.data || {};
       journal.verifie++;
