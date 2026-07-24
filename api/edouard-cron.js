@@ -126,7 +126,14 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Lecture missions impossible', status: missResp.status }), { status: 500 });
     }
     const rows = await missResp.json();
-    const candidats = (rows || []).filter(r => (r.data || {}).edouardAccommodationId);
+    // Intégration Edouard : réservée au compte administrateur de la plateforme
+    let _adminId = '';
+    try {
+      const aResp = await fetch(SUPA_URL + '/rest/v1/settings?select=user_id&data->>userEmail=eq.contact@edl-idf.com&limit=1', { headers: supaHeaders });
+      if (aResp.ok) { const aRows = await aResp.json(); _adminId = (aRows[0] && aRows[0].user_id) || ''; }
+    } catch (e) { /* silencieux */ }
+
+    const candidats = (rows || []).filter(r => (r.data || {}).edouardAccommodationId && (!_adminId || r.user_id === _adminId));
 
     // ── Liste des états des lieux : un seul appel, filtrage côté Lokentia ──
     // (le filtre serveur ?accommodationID=... renvoie une erreur 500 chez Edouard)
