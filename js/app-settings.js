@@ -602,28 +602,25 @@ async function saveAdminPlan(){
   const notes   = document.getElementById('adm-notes').value.trim();
   if(!email){ notify('Email requis','warn'); return; }
   try{
-    const row = {
-      email, plan, status, notes,
-      expires_at: expires ? new Date(expires).toISOString() : null,
-      updated_at: new Date().toISOString()
-    };
-    if(_editingUserId){
-      row.user_id = _editingUserId;
-    } else {
-      // Chercher le user_id depuis l'email
-      const { data: users } = await supabaseClient
-        .from('user_plans')
-        .select('user_id')
-        .eq('email', email)
-        .maybeSingle();
-      if(users) row.user_id = users.user_id;
-      else {
-        notify('⚠️ Utilisateur non trouvé — il doit se connecter au moins une fois','warn');
-        return;
-      }
-    }
     const prevStatus = document.getElementById('adm-status').dataset.prevStatus || '';
-    await supabaseClient.from('user_plans').upsert(row, { onConflict: 'user_id' });
+
+    // Écriture faite côté serveur (api/admin-set-plan), jamais directement
+    // depuis le navigateur — la vérification admin y est refaite, et c'est
+    // la clé service qui écrit, plutôt que de dépendre du seul RLS.
+    const resp = await fetch('/api/admin-set-plan', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        userId: _editingUserId || null,
+        email, plan, status, notes,
+        expiresAt: expires ? new Date(expires).toISOString() : null
+      })
+    });
+    const result = await resp.json();
+    if(!resp.ok){
+      notify('⚠️ ' + (result.error || 'Erreur lors de la mise à jour'), 'warn');
+      return;
+    }
 
     // Envoyer email de bienvenue si passage en "Client signé"
     if(status === 'signed' && prevStatus !== 'signed') {
