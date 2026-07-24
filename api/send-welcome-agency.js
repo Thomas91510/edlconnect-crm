@@ -1,5 +1,37 @@
 export const config = { runtime: 'edge' };
 
+// Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
+const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
+const SUPA_URL_IDENT = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+
+async function identiteAbonne(userId) {
+  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', notifEmail: 'contact@edl-idf.com' };
+  if (!userId) return neutre;
+  try {
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (!key) return neutre;
+    const r = await fetch(SUPA_URL_IDENT + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    if (!r.ok) return neutre;
+    const rows = await r.json();
+    const d = (rows && rows[0] && rows[0].data) || {};
+    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
+    const mail = (d.expediteurEmail || d.userEmail || '').trim();
+    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
+    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
+    return {
+      nom: nom,
+      email: peutExpedier ? mail : neutre.email,
+      replyTo: (!peutExpedier && mail) ? mail : '',
+      tel: (d.expediteurTel || '').trim(),
+      signature: (d.expediteurSignature || '').trim(),
+      notifEmail: mail || neutre.notifEmail
+    };
+  } catch (e) { return neutre; }
+}
+
+
 export default async function handler(req) {
   if(req.method === 'OPTIONS') {
     return new Response(null, {
@@ -25,7 +57,10 @@ export default async function handler(req) {
     headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic', 'Authorization': `Bearer ${_token}` }
   });
   if(!_userResp.ok) {
-    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }
+
+  const _user = await _userResp.json();
+  const IDENT = await identiteAbonne(_user && _user.id);), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
   }
 
   const BREVO_KEY = process.env.BREVO_API_KEY;
@@ -125,10 +160,10 @@ export default async function handler(req) {
     <div style="background:#f8f8f6;border-radius:8px;padding:16px;margin-bottom:20px">
       <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:8px">📞 Votre contact dédié :</div>
       <div style="font-size:13px;color:#444;line-height:1.9">
-        <strong>Thomas LANGLADE</strong><br>
+        <strong>${IDENT.signature || IDENT.nom}</strong><br>
         Directeur Général — EDL IDF Expert en État des Lieux<br>
-        📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
-        ✉️ <a href="mailto:contact@edl-idf.com" style="color:#1A5FA8;text-decoration:none">contact@edl-idf.com</a>
+        ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
+        ✉️ <a href="mailto:${IDENT.replyTo || IDENT.email}" style="color:#1A5FA8;text-decoration:none">${IDENT.replyTo || IDENT.email}</a>
       </div>
     </div>
 
@@ -139,9 +174,9 @@ export default async function handler(req) {
 
     <!-- Signature -->
     <div style="border-top:2px solid #1A5FA8;padding-top:16px;font-size:13px;color:#1A5FA8">
-      <strong>Thomas LANGLADE</strong><br>
+      <strong>${IDENT.signature || IDENT.nom}</strong><br>
       <span style="color:#6b6b6b">Directeur Général — EDL IDF Expert en État des Lieux</span><br>
-      <span style="color:#6b6b6b">📞 07 67 63 09 63 · ✉️ contact@edl-idf.com</span>
+      <span style="color:#6b6b6b">${IDENT.tel ? `📞 ${IDENT.tel} · ` : ``}✉️ ${IDENT.replyTo || IDENT.email}</span>
     </div>
 
   </div>
@@ -158,7 +193,8 @@ export default async function handler(req) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
       body: JSON.stringify({
-        sender: { name: 'Thomas — EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
+        sender: { name: IDENT.nom, email: IDENT.email },
+        ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
         to: [{ email, name: companyName || email }],
         subject: `🤝 Bienvenue chez EDL IDF Expert en État des Lieux — Votre espace de réservation est prêt !`,
         htmlContent
