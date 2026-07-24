@@ -3,6 +3,36 @@ export const config = { runtime: 'edge' };
 const EDOUARD_BASE = 'https://europe-west3-edouard-immo.cloudfunctions.net/api';
 const BUCKET = 'rapports';
 const MAX_PAR_RUN = 10;
+// Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
+const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
+const _cacheIdentites = {};
+
+async function identiteAbonne(supaUrl, supaKey, userId) {
+  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '' };
+  if (!userId) return neutre;
+  if (_cacheIdentites[userId]) return _cacheIdentites[userId];
+  try {
+    const r = await fetch(supaUrl + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
+      headers: { 'apikey': supaKey, 'Authorization': 'Bearer ' + supaKey }
+    });
+    if (!r.ok) return neutre;
+    const rows = await r.json();
+    const d = (rows && rows[0] && rows[0].data) || {};
+    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
+    const mail = (d.expediteurEmail || d.userEmail || '').trim();
+    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
+    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
+    const ident = {
+      nom: nom,
+      email: peutExpedier ? mail : neutre.email,
+      replyTo: (!peutExpedier && mail) ? mail : '',
+      tel: (d.expediteurTel || '').trim(),
+      signature: (d.expediteurSignature || '').trim()
+    };
+    _cacheIdentites[userId] = ident;
+    return ident;
+  } catch (e) { return neutre; }
+}
 // Correspondance des types d'etat des lieux chez Edouard
 const LIBELLE_TYPE = { 1: "d'entree", 2: 'de sortie' }; // limite de missions traitées par exécution
 
@@ -321,6 +351,7 @@ export default async function handler(req) {
         }
 
         // Notifier l'agence (un seul email par mission, best effort)
+        const IDENT = await identiteAbonne(SUPA_URL, SUPA_KEY, row.user_id);
         if (BREVO_KEY && m.emailClient) {
           const pluriel = nouveauxPourCetteMission > 1;
           try {
@@ -328,7 +359,8 @@ export default async function handler(req) {
               method: 'POST',
               headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                sender: { name: 'EDL IDF Expert en \u00c9tat des Lieux', email: 'contact@edl-idf.com' },
+                sender: { name: IDENT.nom, email: IDENT.email },
+                ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
                 to: [{ email: m.emailClient }],
                 subject: '\u2705 Rapport' + (pluriel ? 's' : '') + ' d\u2019\u00e9tat des lieux disponible' + (pluriel ? 's' : '') + ' \u2014 ' + (m.adresse || ''),
                 htmlContent: '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0F1E2E">' +
@@ -337,7 +369,7 @@ export default async function handler(req) {
                   '<p>L\u2019\u00e9tat des lieux <strong>' + (m.type || '') + '</strong> au <strong>' + (m.adresse || '') + '</strong> a \u00e9t\u00e9 r\u00e9alis\u00e9. ' +
                   (pluriel ? nouveauxPourCetteMission + ' rapports sont' : 'Le rapport est') + ' d\u00e8s \u00e0 pr\u00e9sent disponible' + (pluriel ? 's' : '') + ' dans votre espace client\u00a0:</p>' +
                   '<p style="text-align:center;margin:24px 0"><a href="https://app.lokentia.fr/extranet-app" style="background:#1A5FA8;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Acc\u00e9der \u00e0 mon espace</a></p>' +
-                  '<p style="font-size:13px;color:#666">Thomas LANGLADE \u2014 Directeur G\u00e9n\u00e9ral<br>EDL IDF Expert en \u00c9tat des Lieux</p>' +
+                  '<p style="font-size:13px;color:#666">' + (IDENT.signature || IDENT.nom) + '</p>' +
                   '</div>'
               })
             });
