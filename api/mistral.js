@@ -1,3 +1,25 @@
+const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+const ADMIN_EMAILS = ['contact@edl-idf.com'];
+
+// ── Vérifie que l'utilisateur est admin ou sur un plan payant actif. ──
+// En cas d'erreur d'infrastructure (clé service manquante, Supabase injoignable),
+// on laisse passer plutôt que de bloquer un abonné payant par accident.
+async function planAutorise(userId, email) {
+  if (email && ADMIN_EMAILS.includes(email)) return true;
+  try {
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (!key || !userId) return true;
+    const r = await fetch(SUPABASE_URL + '/rest/v1/user_plans?select=plan,status&user_id=eq.' + encodeURIComponent(userId), {
+      headers: { apikey: key, Authorization: 'Bearer ' + key }
+    });
+    if (!r.ok) return true;
+    const rows = await r.json();
+    const p = rows && rows[0];
+    if (!p) return false; // pas encore de ligne = plan gratuit par défaut
+    return (p.plan === 'starter' || p.plan === 'pro') && p.status === 'active';
+  } catch (e) { return true; }
+}
+
 export default async function handler(req) {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
@@ -14,6 +36,13 @@ export default async function handler(req) {
   });
   if(!_userResp.ok) {
     return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+  }
+
+  // ── Fonctionnalité réservée aux plans Starter/Pro (coût API à chaque appel) ──
+  const _user = await _userResp.json();
+  const _autorise = await planAutorise(_user && _user.id, _user && _user.email);
+  if (!_autorise) {
+    return new Response(JSON.stringify({ error: 'La rédaction assistée par IA est réservée aux plans Starter et Pro.', planRequis: true }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
   }
 
   try {
