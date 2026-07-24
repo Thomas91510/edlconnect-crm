@@ -268,6 +268,7 @@ function loadSettingsForm(){
   _set('set-exp-email',CFG.expediteurEmail);
   _set('set-exp-tel',CFG.expediteurTel);
   _set('set-exp-signature',CFG.expediteurSignature);
+  _set('set-exp-partenaire',CFG.expediteurPartenaire);
   const ck=document.getElementById('set-claude-key');
   if(ck) ck.value=localStorage.getItem('edl_claude_key')||'';
   // Champs de facturation
@@ -319,6 +320,7 @@ function saveSettings(){
   CFG.expediteurEmail=_get('set-exp-email');
   CFG.expediteurTel=_get('set-exp-tel');
   CFG.expediteurSignature=_get('set-exp-signature');
+  CFG.expediteurPartenaire=_get('set-exp-partenaire');
   const claudeKey=document.getElementById('set-claude-key')?.value.trim();
   if(claudeKey) localStorage.setItem('edl_claude_key', claudeKey);
   // Facturation
@@ -348,7 +350,8 @@ function saveSettings(){
     expediteurNom:CFG.expediteurNom||'',
     expediteurEmail:CFG.expediteurEmail||'',
     expediteurTel:CFG.expediteurTel||'',
-    expediteurSignature:CFG.expediteurSignature||''
+    expediteurSignature:CFG.expediteurSignature||'',
+    expediteurPartenaire:CFG.expediteurPartenaire||''
   };
   saveSettingsToSupabase(settingsData);
   // Rafraîchir le nom de la sidebar
