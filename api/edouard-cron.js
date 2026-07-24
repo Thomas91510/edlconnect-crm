@@ -4,6 +4,14 @@ const EDOUARD_BASE = 'https://europe-west3-edouard-immo.cloudfunctions.net/api';
 const BUCKET = 'rapports';
 const MAX_PAR_RUN = 10; // limite de missions traitées par exécution
 
+// Normalise une adresse pour une comparaison tolerante
+function normAdr(s) {
+  return String(s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
 function unwrap(x) {
   // L'API Edouard peut renvoyer [...] ou { data: [...] }
   if (Array.isArray(x)) return x;
@@ -110,6 +118,25 @@ export default async function handler(req) {
     }
     journal.edlDansEdouard = toutesSituations.length;
 
+    // Logements Edouard : permet le rapprochement par adresse quand l'EDL a ete
+    // cree sur un bien saisi dans l'app plutot que sur celui importe par Lokentia
+    let tousLogements = [];
+    let curseurLog = null;
+    for (let page = 0; page < 6; page++) {
+      const q = '/v1/accommodations?limit=100' + (curseurLog ? '&after=' + encodeURIComponent(curseurLog) : '');
+      const aResp = await edouardGet(q, EDOUARD_KEY);
+      if (!aResp.ok) {
+        journal.erreurs.push('Liste des logements : HTTP ' + aResp.status + ' ' + aResp.corps);
+        break;
+      }
+      const lot = unwrap(aResp.data) || [];
+      if (!Array.isArray(lot) || lot.length === 0) break;
+      tousLogements = tousLogements.concat(lot);
+      curseurLog = aResp.data && aResp.data.nextCursor;
+      if (!curseurLog) break;
+    }
+    journal.logementsDansEdouard = tousLogements.length;
+
     // ── Diagnostic : comprendre pourquoi un rapprochement échoue ──
     if (toutesSituations.length > 0) {
       journal.diagnostic = {
@@ -127,9 +154,23 @@ export default async function handler(req) {
       journal.verifie++;
       try {
         // ── 2. Un état des lieux existe-t-il pour ce logement ? ──
+        // Identifiants acceptes : celui cree par Lokentia + tout logement Edouard
+        // situe a la meme adresse
+        const idsAcceptes = [m.edouardAccommodationId];
+        const cible = normAdr(m.adresse);
+        if (cible.length > 8) {
+          tousLogements.forEach(function (lg) {
+            if (!lg || !lg.id) return;
+            const adrLg = normAdr([lg.street, lg.zipCode, lg.city].filter(Boolean).join(' '));
+            if (!adrLg) return;
+            if (adrLg === cible || adrLg.indexOf(cible) !== -1 || cible.indexOf(adrLg) !== -1) {
+              if (idsAcceptes.indexOf(lg.id) === -1) idsAcceptes.push(lg.id);
+            }
+          });
+        }
         const situations = toutesSituations.filter(function (s) {
           const aid = s && (s.accommodationID || s.accommodationId);
-          return aid === m.edouardAccommodationId;
+          return aid && idsAcceptes.indexOf(aid) !== -1;
         });
         if (situations.length === 0) {
           journal.details.push('Mission ' + row.id + ' : aucun EDL pour l\u2019instant');
