@@ -710,7 +710,7 @@ function copyBookingLink(){
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   const agencyName = encodeURIComponent(c.entreprise||'');
-  const link = `https://app.lokentia.fr/booking?agency=${agencyId}&name=${agencyName}`;
+  const link = `https://app.lokentia.fr/booking?agency=${agencyId}&name=${agencyName}&c=${encodeURIComponent(c.id)}`;
   navigator.clipboard.writeText(link).then(()=>{
     notify('✅ Lien booking copié ! ' + link);
     // Changer temporairement le texte du bouton
