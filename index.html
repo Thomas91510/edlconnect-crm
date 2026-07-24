@@ -1358,9 +1358,25 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       </div>
       <div class="settings-section">
         <div class="settings-title"><i class="ti ti-user" style="font-size:18px"></i>Profil</div>
-        <label>Nom</label><input id="set-name" value="Thomas Langlade">
-        <label>Email</label><input id="set-email" value="contact@edl-idf.com">
-        <label>Société</label><input id="set-company" value="EDL IDF">
+        <label>Nom</label><input id="set-name" placeholder="Votre nom">
+        <label>Email</label><input id="set-email" placeholder="contact@votre-cabinet.fr">
+        <label>Société</label><input id="set-company" placeholder="Nom de votre société">
+      </div>
+      <div class="settings-section">
+        <div class="settings-title"><i class="ti ti-mail-forward" style="font-size:18px"></i>Identité de vos emails</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">
+          Ces informations apparaissent dans les emails envoyés à vos agences et locataires
+          (confirmations de RDV, convocations, rappels, rapports).
+          <br>Les réponses de vos clients arrivent directement dans votre boîte.
+        </div>
+        <label>Nom affiché comme expéditeur</label>
+        <input id="set-exp-nom" placeholder="Ex : Cabinet Dupont — Expert en état des lieux">
+        <label>Email de réponse</label>
+        <input id="set-exp-email" type="email" placeholder="contact@votre-cabinet.fr">
+        <label>Téléphone affiché à vos clients</label>
+        <input id="set-exp-tel" placeholder="01 23 45 67 89">
+        <label>Signature des emails</label>
+        <input id="set-exp-signature" placeholder="Ex : Marie Dupont — Gérante — Cabinet Dupont">
       </div>
       <div class="settings-section">
         <div class="settings-title"><i class="ti ti-file-invoice" style="font-size:18px"></i>Facturation</div>
