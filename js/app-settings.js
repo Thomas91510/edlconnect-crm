@@ -848,18 +848,15 @@ async function onAuthSuccess(user){
       // Première connexion → pousser les données locales
       pushAllToSupabase();
     }
-    // Enregistrer le client dans user_plans s'il n'existe pas encore
+    // Enregistrer le client dans user_plans s'il n'existe pas encore.
+    // Passe par le serveur (api/register-plan) car la policy RLS "Admin only"
+    // sur user_plans réserve toute écriture directe à contact@edl-idf.com.
     if(!isAdmin()){
       try{
-        const { data: existingPlan } = await supabaseClient
-          .from('user_plans').select('user_id').eq('user_id', user.id).maybeSingle();
-        if(!existingPlan){
-          await supabaseClient.from('user_plans').insert({
-            user_id: user.id, email: user.email,
-            plan: 'free', status: 'active',
-            created_at: new Date().toISOString()
-          });
-        }
+        await fetch('/api/register-plan', {
+          method: 'POST',
+          headers: await _authHeaders({ 'Content-Type': 'application/json' })
+        });
       } catch(e){ console.warn('Erreur enregistrement plan:', e); }
     }
     // Vérifier si l'onboarding a déjà été fait — on vérifie Supabase (pas localStorage)
