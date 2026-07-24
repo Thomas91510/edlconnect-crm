@@ -108,7 +108,19 @@ export default async function handler(req) {
       if(emailResp.ok) sent++;
     }
 
-    return new Response(JSON.stringify({ sent, total: users.length }), { status: 200 });
+    // ── Sauvegarde quotidienne automatique (ne doit jamais bloquer le cron) ──
+    let sauvegarde = null;
+    try {
+      const bResp = await fetch('https://app.lokentia.fr/api/backup-auto', {
+        headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` }
+      });
+      const bj = await bResp.json();
+      sauvegarde = bj.journal || { erreur: 'HTTP ' + bResp.status };
+    } catch(e) {
+      sauvegarde = { erreur: String(e && e.message || e) };
+    }
+
+    return new Response(JSON.stringify({ sent, total: users.length, sauvegarde }), { status: 200 });
 
   } catch(e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
