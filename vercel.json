@@ -29,6 +29,8 @@
     { "source": "/api/edouard-cron", "destination": "/api/edouard-cron.js" },
     { "source": "/api/backup-auto", "destination": "/api/backup-auto.js" },
     { "source": "/api/register-plan", "destination": "/api/register-plan.js" },
+    { "source": "/api/contact-form", "destination": "/api/contact-form.js" },
+    { "source": "/api/admin-set-plan", "destination": "/api/admin-set-plan.js" },
     { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/extranet-app", "destination": "/extranet-app.html" },
     { "source": "/((?!extranet-app$|js/).*)", "destination": "/index.html" }
