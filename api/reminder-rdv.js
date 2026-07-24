@@ -1,5 +1,42 @@
 export const config = { runtime: 'edge' };
 
+// Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
+const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
+const SUPA_URL_BASE = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+const _cacheIdentites = {};
+
+async function identiteAbonne(userId) {
+  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', partenaire: '' };
+  if (!userId) return neutre;
+  if (_cacheIdentites[userId]) return _cacheIdentites[userId];
+  try {
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (!key) return neutre;
+    const r = await fetch(SUPA_URL_BASE + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    if (!r.ok) return neutre;
+    const rows = await r.json();
+    const d = (rows && rows[0] && rows[0].data) || {};
+    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
+    const mail = (d.expediteurEmail || d.userEmail || '').trim();
+    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
+    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
+    const ident = {
+      nom: nom,
+      email: peutExpedier ? mail : neutre.email,
+      replyTo: (!peutExpedier && mail) ? mail : '',
+      tel: (d.expediteurTel || '').trim(),
+      signature: (d.expediteurSignature || '').trim(),
+      partenaire: (d.expediteurPartenaire || '').trim()
+    };
+    _cacheIdentites[userId] = ident;
+    return ident;
+  } catch (e) {
+    return neutre;
+  }
+}
+
 export default async function handler(req) {
   // Vérification du secret cron
   const cronSecret = process.env.CRON_SECRET;
@@ -52,6 +89,7 @@ export default async function handler(req) {
 
     for(const row of missionsDemain) {
       const m = row.data;
+      const IDENT = await identiteAbonne(row.user_id);
       try {
         const dateObj = new Date(m.date);
         const dateStr = dateObj.toLocaleDateString('fr-FR', {
@@ -142,10 +180,10 @@ export default async function handler(req) {
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Une question de dernière minute ?<br>
-      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a><br>
+      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
       ✉️ Par retour de mail<br><br>
       Cordialement,<br>
-      <strong>Thomas LANGLADE — EDL IDF Expert en État des Lieux</strong>
+      <strong>${IDENT.signature || IDENT.nom}</strong>
     </div>
   </div>
 </div>
@@ -156,9 +194,9 @@ export default async function handler(req) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
-            sender: { name: 'Thomas — EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
+            sender: { name: IDENT.nom, email: IDENT.email },
             to: [{ email: m.locataireEmail, name: salutation || locNom }],
-            replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
+            replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
             subject: `⏰ Rappel — Votre état des lieux demain à ${heureStr} — ${m.adresse}`,
             htmlContent
           })
@@ -203,6 +241,7 @@ export default async function handler(req) {
 
     for(const row of missionsHier) {
       const m = row.data;
+      const IDENT = await identiteAbonne(row.user_id);
       try {
         const civilite = m.locataireCivilite || '';
         const locNom = m.locataireNom || '';
@@ -232,7 +271,7 @@ export default async function handler(req) {
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Bien cordialement,<br>
       <strong>L'équipe EDL IDF</strong><br>
-      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a>
+      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}
     </div>
   </div>
 </div>
@@ -242,9 +281,9 @@ export default async function handler(req) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
-            sender: { name: 'EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
+            sender: { name: IDENT.nom, email: IDENT.email },
             to: [{ email: m.locataireEmail, name: salutation || locNom }],
-            replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
+            replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
             subject: '⭐ Comment s\'est passé votre état des lieux ?',
             htmlContent: avisHtml
           })
@@ -291,6 +330,7 @@ export default async function handler(req) {
 
     for(const row of missionsJ3) {
       const m = row.data;
+      const IDENT = await identiteAbonne(row.user_id);
       try {
         const civilite = m.locataireCivilite || '';
         const locNom = m.locataireNom || '';
@@ -317,7 +357,7 @@ export default async function handler(req) {
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Bien cordialement,<br>
       <strong>L'équipe EDL IDF</strong><br>
-      📞 <a href="tel:0767630963" style="color:#1A5FA8;text-decoration:none">07 67 63 09 63</a>
+      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}
     </div>
   </div>
 </div>
@@ -327,9 +367,9 @@ export default async function handler(req) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
-            sender: { name: 'EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
+            sender: { name: IDENT.nom, email: IDENT.email },
             to: [{ email: m.locataireEmail, name: salutation || locNom }],
-            replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
+            replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
             subject: '⭐ Votre avis compte pour nous',
             htmlContent: avis2Html
           })
