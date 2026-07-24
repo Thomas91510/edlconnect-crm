@@ -2,7 +2,9 @@ export const config = { runtime: 'edge' };
 
 const EDOUARD_BASE = 'https://europe-west3-edouard-immo.cloudfunctions.net/api';
 const BUCKET = 'rapports';
-const MAX_PAR_RUN = 10; // limite de missions traitées par exécution
+const MAX_PAR_RUN = 10;
+// Correspondance des types d'etat des lieux chez Edouard
+const LIBELLE_TYPE = { 1: "d'entree", 2: 'de sortie' }; // limite de missions traitées par exécution
 
 // Normalise une adresse pour une comparaison tolerante
 function normAdr(s) {
@@ -162,7 +164,9 @@ export default async function handler(req) {
           }
         });
       }
-      const dejaFaits = Array.isArray(md.edouardSituationsTraitees) ? md.edouardSituationsTraitees : [];
+      const dejaFaits = Array.isArray(md.edouardSituationsTraitees) ? md.edouardSituationsTraitees.slice() : [];
+      // Compatibilite : rapports recuperes avant la gestion multi-EDL
+      if (md.edouardSituationId && dejaFaits.indexOf(md.edouardSituationId) === -1) dejaFaits.push(md.edouardSituationId);
       const aFaire = toutesSituations.filter(function (s) {
         const aid = s && (s.accommodationID || s.accommodationId);
         if (!aid || idsAcceptes.indexOf(aid) === -1) return false;
@@ -182,6 +186,11 @@ export default async function handler(req) {
         // (un sortant/entrant produit deux PDF distincts)
         const rapportsMission = Array.isArray(m.rapports) ? m.rapports.slice() : [];
         const dejaFaits = Array.isArray(m.edouardSituationsTraitees) ? m.edouardSituationsTraitees.slice() : [];
+        // Compatibilite avec l'ancien format (un seul rapport par mission)
+        if (m.edouardSituationId && dejaFaits.indexOf(m.edouardSituationId) === -1) dejaFaits.push(m.edouardSituationId);
+        if (m.rapportUrl && rapportsMission.length === 0) {
+          rapportsMission.push({ nom: 'Rapport EDL \u2014 ' + (m.adresse || row.id), url: m.rapportUrl, date: '', situationId: m.edouardSituationId || '' });
+        }
         let nouveauxPourCetteMission = 0;
         let dernierUrl = m.rapportUrl || '';
 
@@ -249,7 +258,12 @@ export default async function handler(req) {
           try {
             if (sit.date) dateLisible = new Date(sit.date).toLocaleDateString('fr-FR');
           } catch (e) { /* date non exploitable */ }
-          const nomDoc = 'Rapport EDL ' + (dateLisible ? 'du ' + dateLisible + ' ' : '') + '\u2014 ' + (m.adresse || row.id);
+          const libelle = LIBELLE_TYPE[sit.type];
+          const nomDoc = (libelle
+              ? 'Rapport d\u2019\u00e9tat des lieux ' + libelle.replace("d'entree", 'd\u2019entr\u00e9e')
+              : 'Rapport EDL')
+            + (dateLisible ? ' du ' + dateLisible : '')
+            + ' \u2014 ' + (m.adresse || row.id);
 
           rapportsMission.push({ nom: nomDoc, url: rapportUrl, date: sit.date || '', situationId: sitId, type: sit.type });
           dejaFaits.push(sitId);
@@ -271,8 +285,8 @@ export default async function handler(req) {
                   const contact = contacts[0];
                   const cdata = contact.data || {};
                   const docs = Array.isArray(cdata.documents) ? cdata.documents : [];
-                  if (!docs.find(d => d && d.url === rapportUrl)) {
-                    docs.push({ nom: nomDoc, url: rapportUrl });
+                  if (!docs.find(d => d && (d.url === rapportUrl || (d.situationId && d.situationId === sitId)))) {
+                    docs.push({ nom: nomDoc, url: rapportUrl, situationId: sitId });
                     cdata.documents = docs;
                     await fetch(SUPA_URL + '/rest/v1/contacts?id=eq.' + encodeURIComponent(contact.id), {
                       method: 'PATCH',
