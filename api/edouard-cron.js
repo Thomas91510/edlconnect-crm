@@ -22,11 +22,37 @@ async function edouardGet(path, apiKey) {
   return { ok: true, status: resp.status, data: data };
 }
 
+const ADMIN_EMAILS = ['contact@edl-idf.com'];
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
+
 export default async function handler(req) {
-  // Sécurité : vérifier le token Vercel Cron
-  const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response('Unauthorized', { status: 401 });
+  // Accès autorisé : (1) le cron Vercel, (2) un administrateur connecté
+  const authHeader = req.headers.get('authorization') || '';
+  let autorise = (authHeader === `Bearer ${process.env.CRON_SECRET}`);
+  let declencheur = 'cron';
+
+  if (!autorise) {
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (token) {
+      try {
+        const uResp = await fetch('https://pvuctwflxvvxdawsxceu.supabase.co/auth/v1/user', {
+          headers: { 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + token }
+        });
+        if (uResp.ok) {
+          const u = await uResp.json();
+          if (u && u.email && ADMIN_EMAILS.includes(u.email)) {
+            autorise = true;
+            declencheur = 'manuel';
+          }
+        }
+      } catch (e) { /* jeton invalide */ }
+    }
+  }
+
+  if (!autorise) {
+    return new Response(JSON.stringify({ error: 'Non autorisé' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   const EDOUARD_KEY = process.env.EDOUARD_API_KEY;
@@ -44,7 +70,7 @@ export default async function handler(req) {
     'Content-Type': 'application/json'
   };
 
-  const journal = { verifie: 0, rapportsRecuperes: 0, erreurs: [], details: [] };
+  const journal = { declencheur: declencheur, verifie: 0, rapportsRecuperes: 0, erreurs: [], details: [] };
 
   try {
     // ── 1. Missions liées à un logement Edouard, rapport pas encore récupéré ──
@@ -214,7 +240,7 @@ export default async function handler(req) {
 
     return new Response(JSON.stringify({ success: true, journal: journal }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
 
   } catch (e) {
