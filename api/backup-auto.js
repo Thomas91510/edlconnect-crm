@@ -64,12 +64,15 @@ export default async function handler(req) {
       let lignes = [];
       let depuis = 0;
       for (let page = 0; page < 50; page++) {
-        const resp = await fetch(
-          SUPA_URL + '/rest/v1/' + table + '?select=*&order=id',
-          { headers: Object.assign({}, headers, { 'Range': depuis + '-' + (depuis + PAGE - 1) }) }
-        );
+        const entetes = Object.assign({}, headers, { 'Range': depuis + '-' + (depuis + PAGE - 1) });
+        let resp = await fetch(SUPA_URL + '/rest/v1/' + table + '?select=*&order=id', { headers: entetes });
         if (!resp.ok) {
-          journal.erreurs.push('Table ' + table + ' : HTTP ' + resp.status);
+          // Certaines tables (settings) n'ont pas de colonne id : on retente sans tri
+          resp = await fetch(SUPA_URL + '/rest/v1/' + table + '?select=*', { headers: entetes });
+        }
+        if (!resp.ok) {
+          const det = await resp.text();
+          journal.erreurs.push('Table ' + table + ' : HTTP ' + resp.status + ' ' + det.slice(0, 120));
           break;
         }
         const lot = await resp.json();
