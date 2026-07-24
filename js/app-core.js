@@ -138,15 +138,33 @@ async function cleanReloadContactsFromSupabase(){
   }
 }
 
+// Donnees volumineuses rechargeables a la demande : jamais ecrites dans le cache
+// du navigateur (limite ~5 Mo). Elles restent en memoire le temps de la session.
+const CLES_NON_PERSISTEES = ['brevoContacts'];
+
 function saveToStorage(){
   try{
-    const data=JSON.stringify(DB);
+    const aStocker = {};
+    for(const k of Object.keys(DB)){
+      aStocker[k] = CLES_NON_PERSISTEES.includes(k) ? [] : DB[k];
+    }
+    const data=JSON.stringify(aStocker);
     if(data.length>4*1024*1024){notify('⚠️ Base de données volumineuse — pense à faire une sauvegarde !','warn');}
     localStorage.setItem('edl_crm_db',data);
   }catch(e){
-    notify('❌ ERREUR : Stockage local plein ! Fais une sauvegarde immédiatement.','err');
-    const el=document.getElementById('sync-text');if(el){el.textContent='⚠️ Stockage plein !';el.style.color='var(--red)';}
-    console.error('localStorage plein :',e);
+    // Dernier recours : ne conserver que l'essentiel plutot que de tout perdre
+    try{
+      const minimal={};
+      for(const k of Object.keys(DB)){
+        minimal[k] = (CLES_NON_PERSISTEES.includes(k) || k==='trackings') ? [] : DB[k];
+      }
+      localStorage.setItem('edl_crm_db',JSON.stringify(minimal));
+      notify('⚠️ Cache local allege (les donnees restent dans le cloud)','warn');
+    }catch(e2){
+      notify('❌ Stockage local plein — tes donnees restent sauvegardees dans le cloud.','err');
+      const el=document.getElementById('sync-text');if(el){el.textContent='⚠️ Cache plein';el.style.color='var(--red)';}
+      console.error('localStorage plein :',e2);
+    }
   }
   // Sync cloud en arrière-plan (non bloquant)
   if(_supaReady && !_supaSyncing){
