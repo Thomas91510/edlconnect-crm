@@ -2001,13 +2001,20 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <div><label>Heure souhaitée</label><select id="mr-heure"><option value="">— Flexible —</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option></select></div>
       </div>
 
-      <label style="font-weight:600;display:block;margin-bottom:6px">Locataire <span style="color:var(--red)">*</span></label>
+      <label id="mr-label-locataire" style="font-weight:600;display:block;margin-bottom:6px">Locataire <span style="color:var(--red)">*</span></label>
       <div class="form-grid" style="margin-bottom:8px">
         <div><label>Nom complet</label><input type="text" id="mr-loc-nom" placeholder="Jean Martin"></div>
         <div><label>Téléphone</label><input type="tel" id="mr-loc-tel" placeholder="06 12 34 56 78"></div>
       </div>
       <label>Email du locataire</label>
       <input type="email" id="mr-loc-email" placeholder="jean.martin@email.fr" style="margin-bottom:10px">
+
+      <!-- Locataires entrants (affiché uniquement pour le type Sortant / Entrant) -->
+      <div id="mr-entrants-section" style="display:none;margin-bottom:10px">
+        <label style="font-weight:600;display:block;margin-bottom:6px">Locataire(s) entrant(s) <span style="color:var(--red)">*</span></label>
+        <div id="mr-entrants-list"></div>
+        <button type="button" onclick="mrAddEntrant()" class="btn" style="font-size:12px;padding:6px 12px;margin-top:4px">+ Ajouter un locataire entrant</button>
+      </div>
 
       <label>Notes</label>
       <textarea id="mr-notes" placeholder="Informations complémentaires..." style="min-height:60px;margin-bottom:16px"></textarea>

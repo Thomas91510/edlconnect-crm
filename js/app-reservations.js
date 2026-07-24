@@ -431,11 +431,11 @@ async function sendConfirmRdv(){
   }
 
   // Convocations : locataire(s) sortant(s) + locataire(s) entrant(s) éventuels
-  const _convocs = (m.locataires || []).map(function(l){ return Object.assign({}, l); });
+  const _convocs = (m.locataires || []).map(function(l){ return Object.assign({}, l, { role: 'sortant' }); });
   (m.locatairesEntrants || []).forEach(function(e){
     const nomComplet = [e.prenom, e.nom].filter(Boolean).join(' ');
     if(nomComplet || e.email){
-      _convocs.push({ civilite: '', nom: nomComplet, tel: e.tel || '', email: e.email || '' });
+      _convocs.push({ civilite: '', nom: nomComplet, tel: e.tel || '', email: e.email || '', role: 'entrant' });
     }
   });
 
@@ -605,10 +605,51 @@ function mrSelectType(type, btn){
   btn.style.borderColor = 'var(--blue)';
   btn.style.background = 'var(--blue-bg)';
   btn.style.color = 'var(--blue-text)';
+  mrToggleEntrants();
+}
+
+// ─── Locataires entrants en saisie manuelle (type Sortant / Entrant) ───
+// Même comportement que le formulaire extranet, adapté au style clair du CRM.
+let _mrEntrants = [];
+function mrEsc(v){ return String(v||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function mrRenderEntrants(){
+  const list = document.getElementById('mr-entrants-list');
+  if(!list) return;
+  list.innerHTML = _mrEntrants.map((e,i)=>`
+    <div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--text3)">Locataire entrant ${i+1}</span>
+        ${_mrEntrants.length>1?`<span onclick="mrRemoveEntrant(${i})" style="cursor:pointer;color:var(--red);font-size:11px">✕ Retirer</span>`:''}
+      </div>
+      <div class="form-grid" style="margin-bottom:8px">
+        <div><input placeholder="Prénom" value="${mrEsc(e.prenom)}" oninput="_mrEntrants[${i}].prenom=this.value"></div>
+        <div><input placeholder="Nom" value="${mrEsc(e.nom)}" oninput="_mrEntrants[${i}].nom=this.value"></div>
+      </div>
+      <div class="form-grid">
+        <div><input placeholder="06 12 34 56 78" value="${mrEsc(e.tel)}" oninput="_mrEntrants[${i}].tel=this.value"></div>
+        <div><input type="email" placeholder="email@exemple.fr" value="${mrEsc(e.email)}" oninput="_mrEntrants[${i}].email=this.value"></div>
+      </div>
+    </div>`).join('');
+}
+function mrAddEntrant(){ _mrEntrants.push({prenom:'',nom:'',tel:'',email:''}); mrRenderEntrants(); }
+function mrRemoveEntrant(i){ _mrEntrants.splice(i,1); mrRenderEntrants(); }
+function mrToggleEntrants(){
+  const show = _mrSelectedType === 'EDL Sortant / Entrant';
+  const section = document.getElementById('mr-entrants-section');
+  const label = document.getElementById('mr-label-locataire');
+  if(section) section.style.display = show ? 'block' : 'none';
+  if(label) label.innerHTML = show ? 'Locataire sortant <span style="color:var(--red)">*</span>' : 'Locataire <span style="color:var(--red)">*</span>';
+  if(show && _mrEntrants.length === 0) mrAddEntrant();
 }
 
 function openManualReservationModal(){
   _mrSelectedType = '';
+  _mrEntrants = [];
+  mrRenderEntrants();
+  const _sec = document.getElementById('mr-entrants-section');
+  if(_sec) _sec.style.display = 'none';
+  const _lbl = document.getElementById('mr-label-locataire');
+  if(_lbl) _lbl.innerHTML = 'Locataire <span style="color:var(--red)">*</span>';
   document.querySelectorAll('.mr-type-btn').forEach(b => {
     b.style.borderColor = 'var(--border)';
     b.style.background = 'var(--bg)';
@@ -643,6 +684,17 @@ async function submitManualReservation(){
   if(!locNom){ errEl.textContent = 'Le nom du locataire est requis.'; errEl.style.display='block'; return; }
   if(!locTel){ errEl.textContent = 'Le téléphone du locataire est requis.'; errEl.style.display='block'; return; }
   if(!date){ errEl.textContent = 'La date souhaitée est requise.'; errEl.style.display='block'; return; }
+
+  // Locataires entrants (obligatoires pour le type Sortant / Entrant)
+  let locatairesEntrants = [];
+  if(_mrSelectedType === 'EDL Sortant / Entrant'){
+    locatairesEntrants = _mrEntrants.filter(e => (e.prenom||e.nom||e.tel||e.email));
+    if(locatairesEntrants.length === 0){ errEl.textContent='Ajoutez au moins un locataire entrant.'; errEl.style.display='block'; return; }
+    for(const e of locatairesEntrants){
+      if(!e.prenom || !e.nom){ errEl.textContent='Prénom et nom sont requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
+      if(!e.tel){ errEl.textContent='Le mobile est requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
+    }
+  }
   errEl.style.display = 'none';
 
   const btn = document.getElementById('mr-submit-btn');
@@ -674,6 +726,7 @@ async function submitManualReservation(){
     notes: document.getElementById('mr-notes').value.trim(),
     locataire,
     locataires: [locataire],
+    locatairesEntrants,
     source: 'manuel'
   };
 

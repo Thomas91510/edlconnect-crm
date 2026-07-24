@@ -155,7 +155,7 @@ export default async function handler(req) {
     <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + salutation + '</strong>' : ''},</p>
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_BONJOUR__</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
       Je vous confirme notre rendez-vous pour l'état des lieux d'entrée de votre logement situé au :
     </p>
@@ -216,7 +216,7 @@ export default async function handler(req) {
     <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">${civilite && locataireNom ? '<strong>' + civilite + ' ' + locataireNom + '</strong>,' : locataireNom ? 'Bonjour <strong>' + locataireNom + '</strong>,' : 'Madame, Monsieur,'}</p>
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
       Suite à notre conversation, nous vous confirmons le rendez-vous pour effectuer l'état des lieux de sortie de votre logement, diligenté par <strong>${mission.agence}</strong>.
     </p>
@@ -283,7 +283,7 @@ export default async function handler(req) {
     <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">${civilite && locataireNom ? '<strong>' + civilite + ' ' + locataireNom + '</strong>,' : locataireNom ? 'Bonjour <strong>' + locataireNom + '</strong>,' : 'Madame, Monsieur,'}</p>
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
       Nous vous confirmons le rendez-vous pour votre <strong>pré-état des lieux</strong>, diligenté par <strong>${mission.agence}</strong>.<br>
       Cette visite préventive vous permettra d'anticiper les travaux à réaliser avant votre départ officiel.
@@ -324,16 +324,30 @@ export default async function handler(req) {
 </body></html>`;
 
     // ── Choisir le bon template locataire ──────────────────
-    let locataireHtml, sujetLocataire;
-    if(isEntrant) {
-      locataireHtml = locataireEntrantHtml;
-      sujetLocataire = `🔑 Confirmation état des lieux d'entrée — ${dateStr} à ${heureStr}`;
-    } else if(isSortant || isDouble) {
-      locataireHtml = locataireSortantHtml;
-      sujetLocataire = `🚪 Confirmation état des lieux de sortie — ${dateStr} à ${heureStr}`;
-    } else {
-      locataireHtml = locatairePreHtml;
-      sujetLocataire = `🔍 Confirmation pré-état des lieux — ${dateStr} à ${heureStr}`;
+    // Fonction qui retourne le template + sujet adaptés à UN locataire donné.
+    // Pour un EDL Sortant/Entrant, le rôle du locataire (marqué à la source)
+    // détermine s'il reçoit la convocation d'entrée ou de sortie ; les autres
+    // types (entrant seul, sortant seul, pré-EDL) utilisent le même pour tous.
+    function templatePourLocataire(loc){
+      let tpl, sujet, kind;
+      if(isDouble){
+        if(loc && loc.role === 'entrant'){ kind = 'entree'; }
+        else { kind = 'sortie'; }
+      } else if(isEntrant){ kind = 'entree'; }
+      else if(isSortant){ kind = 'sortie'; }
+      else { kind = 'pre'; }
+
+      if(kind === 'entree'){
+        tpl = locataireEntrantHtml;
+        sujet = `🔑 Confirmation état des lieux d'entrée — ${dateStr} à ${heureStr}`;
+      } else if(kind === 'sortie'){
+        tpl = locataireSortantHtml;
+        sujet = `🚪 Confirmation état des lieux de sortie — ${dateStr} à ${heureStr}`;
+      } else {
+        tpl = locatairePreHtml;
+        sujet = `🔍 Confirmation pré-état des lieux — ${dateStr} à ${heureStr}`;
+      }
+      return { tpl, sujet };
     }
 
     // ── Envoi des emails ───────────────────────────────────
@@ -351,23 +365,31 @@ export default async function handler(req) {
       })
     }));
 
-    // Envoyer à tous les locataires qui ont un email
+    // Envoyer à chaque locataire son email, avec le bon template et son propre nom
     allLocataires.forEach(loc => {
       if(!loc.email) return;
-      const salutationLoc = loc.civilite && loc.nom ? loc.civilite + ' ' + loc.nom : loc.nom || '';
-      // Personnaliser le HTML pour ce locataire
-      const htmlPerso = locataireHtml
-        .replace(salutation ? salutation : '___NOREPLACE___', salutationLoc)
-        .replace(locataireNom || '___NOREPLACE___', loc.nom || '');
+      const { tpl, sujet } = templatePourLocataire(loc);
+      const nomLoc = (loc.nom || '').trim();
+      const civLoc = (loc.civilite || '').trim();
+      // Salutations personnalisées, remplaçant les placeholders des templates
+      const salutBonjour = nomLoc
+        ? 'Bonjour <strong>' + (civLoc ? civLoc + ' ' + nomLoc : nomLoc) + '</strong>,'
+        : 'Bonjour,';
+      const salutFormel = nomLoc
+        ? '<strong>' + (civLoc ? civLoc + ' ' + nomLoc : nomLoc) + '</strong>,'
+        : 'Madame, Monsieur,';
+      const htmlPerso = tpl
+        .split('__SALUT_BONJOUR__').join(salutBonjour)
+        .split('__SALUT_FORMEL__').join(salutFormel);
       emailsToSend.push(fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
           sender: { name: IDENT.nom, email: IDENT.email },
-          to: [{ email: loc.email, name: (loc.civilite+' '+loc.nom).trim() || '' }],
+          to: [{ email: loc.email, name: (civLoc + ' ' + nomLoc).trim() || '' }],
           replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
-          subject: sujetLocataire,
-          htmlContent: locataireHtml
+          subject: sujet,
+          htmlContent: htmlPerso
         })
       }));
     });
