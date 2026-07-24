@@ -1,5 +1,37 @@
 export const config = { runtime: 'edge' };
 
+// Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
+const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
+const SUPA_URL_IDENT = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+
+async function identiteAbonne(userId) {
+  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', notifEmail: 'contact@edl-idf.com' };
+  if (!userId) return neutre;
+  try {
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (!key) return neutre;
+    const r = await fetch(SUPA_URL_IDENT + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    if (!r.ok) return neutre;
+    const rows = await r.json();
+    const d = (rows && rows[0] && rows[0].data) || {};
+    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
+    const mail = (d.expediteurEmail || d.userEmail || '').trim();
+    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
+    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
+    return {
+      nom: nom,
+      email: peutExpedier ? mail : neutre.email,
+      replyTo: (!peutExpedier && mail) ? mail : '',
+      tel: (d.expediteurTel || '').trim(),
+      signature: (d.expediteurSignature || '').trim(),
+      notifEmail: mail || neutre.notifEmail
+    };
+  } catch (e) { return neutre; }
+}
+
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BREVO_KEY = process.env.BREVO_API_KEY;
@@ -51,6 +83,8 @@ export default async function handler(req) {
       if (!ownerId && email) ownerId = await chercher('data-%3E%3Eemail=ilike.' + encodeURIComponent(email));
       if (!ownerId && agence) ownerId = await chercher('data-%3E%3Eentreprise=ilike.' + encodeURIComponent(agence));
     }
+
+    const IDENT = await identiteAbonne(ownerId);
 
     // ── 1. Sauvegarder dans la table bookings ──────────────
     if(SUPABASE_SERVICE_KEY && SUPABASE_URL) {
@@ -106,7 +140,8 @@ export default async function handler(req) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
-          sender: { name: 'EDL IDF Expert en État des Lieux', email: 'contact@edl-idf.com' },
+          sender: { name: IDENT.nom, email: IDENT.email },
+          ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
           to: [{ email, name: contact }],
           subject: `✅ Demande d'EDL reçue — ${typeEdl} · ${adresse}`,
           htmlContent: `
@@ -135,8 +170,8 @@ export default async function handler(req) {
                   📅 Thomas vous contactera pour confirmer la date. Le locataire recevra sa convocation une fois le RDV planifié.
                 </div>
                 <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
-                  📞 <a href="tel:0189291429" style="color:#1A5FA8">01 89 29 14 29</a> · 
-                  ✉️ <a href="mailto:contact@edl-idf.com" style="color:#1A5FA8">contact@edl-idf.com</a>
+                  ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8">${IDENT.tel}</a>` : ''} · 
+                  ✉️ <a href="mailto:${IDENT.replyTo || IDENT.email}" style="color:#1A5FA8">${IDENT.replyTo || IDENT.email}</a>
                 </div>
               </div>
             </div>`
@@ -148,8 +183,8 @@ export default async function handler(req) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
-          sender: { name: 'EDL IDF Booking', email: 'contact@edl-idf.com' },
-          to: [{ email: 'contact@edl-idf.com', name: 'Thomas Langlade' }],
+          sender: { name: 'Lokentia — Réservations', email: 'contact@lokentia.fr' },
+          to: [{ email: IDENT.notifEmail, name: IDENT.nom }],
           subject: `🔔 Nouvelle demande EDL — ${agence} · ${typeEdl}`,
           htmlContent: `
             <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
