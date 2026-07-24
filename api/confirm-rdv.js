@@ -1,5 +1,39 @@
 export const config = { runtime: 'edge' };
 
+// Domaines authentifies chez Brevo : seuls ceux-ci peuvent servir d'expediteur.
+// Pour les autres abonnes, on expedie depuis Lokentia avec leur nom, et
+// leurs clients repondent directement sur leur adresse (replyTo).
+const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
+const SUPA_URL_BASE = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+
+async function identiteAbonne(userId) {
+  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '' };
+  if (!userId) return neutre;
+  try {
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (!key) return neutre;
+    const r = await fetch(SUPA_URL_BASE + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    if (!r.ok) return neutre;
+    const rows = await r.json();
+    const d = (rows && rows[0] && rows[0].data) || {};
+    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
+    const mail = (d.expediteurEmail || d.userEmail || '').trim();
+    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
+    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
+    return {
+      nom: nom,
+      email: peutExpedier ? mail : neutre.email,
+      replyTo: (!peutExpedier && mail) ? mail : '',
+      tel: (d.expediteurTel || '').trim(),
+      signature: (d.expediteurSignature || '').trim()
+    };
+  } catch (e) {
+    return neutre;
+  }
+}
+
 export default async function handler(req) {
   if(req.method === 'OPTIONS') {
     return new Response(null, {
@@ -27,6 +61,9 @@ export default async function handler(req) {
   if(!_userResp.ok) {
     return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
   }
+
+  const _user = await _userResp.json();
+  const IDENT = await identiteAbonne(_user && _user.id);
 
   const BREVO_KEY = process.env.BREVO_API_KEY;
   if(!BREVO_KEY) {
@@ -305,7 +342,8 @@ export default async function handler(req) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
       body: JSON.stringify({
-        sender: { name: 'Thomas — EDL IDF', email: 'contact@edl-idf.com' },
+        sender: { name: IDENT.nom, email: IDENT.email },
+        ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
         to: [{ email: agentEmail }],
         replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
         subject: `✅ Confirmation EDL — ${mission.type} · ${dateStr} · ${mission.adresse}`,
@@ -325,7 +363,8 @@ export default async function handler(req) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
-          sender: { name: 'Thomas — EDL IDF', email: 'contact@edl-idf.com' },
+          sender: { name: IDENT.nom, email: IDENT.email },
+        ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
           to: [{ email: loc.email, name: (loc.civilite+' '+loc.nom).trim() || '' }],
           replyTo: { email: 'contact@edl-idf.com', name: 'Thomas Langlade' },
           subject: sujetLocataire,
