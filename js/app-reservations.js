@@ -431,11 +431,11 @@ async function sendConfirmRdv(){
   }
 
   // Convocations : locataire(s) sortant(s) + locataire(s) entrant(s) éventuels
-  const _convocs = (m.locataires || []).map(function(l){ return Object.assign({}, l); });
+  const _convocs = (m.locataires || []).map(function(l){ return Object.assign({}, l, { role: 'sortant' }); });
   (m.locatairesEntrants || []).forEach(function(e){
     const nomComplet = [e.prenom, e.nom].filter(Boolean).join(' ');
     if(nomComplet || e.email){
-      _convocs.push({ civilite: '', nom: nomComplet, tel: e.tel || '', email: e.email || '' });
+      _convocs.push({ civilite: '', nom: nomComplet, tel: e.tel || '', email: e.email || '', role: 'entrant' });
     }
   });
 
