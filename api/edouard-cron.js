@@ -16,10 +16,14 @@ async function edouardGet(path, apiKey) {
   const resp = await fetch(EDOUARD_BASE + path, {
     headers: { 'Authorization': 'Bearer ' + apiKey }
   });
-  if (!resp.ok) return { ok: false, status: resp.status, data: null };
+  if (!resp.ok) {
+    let corps = '';
+    try { corps = (await resp.text()).slice(0, 200); } catch (e) { /* ignore */ }
+    return { ok: false, status: resp.status, data: null, corps: corps };
+  }
   let data = null;
   try { data = await resp.json(); } catch (e) { /* non-JSON */ }
-  return { ok: true, status: resp.status, data: data };
+  return { ok: true, status: resp.status, data: data, corps: '' };
 }
 
 const ADMIN_EMAILS = ['contact@edl-idf.com'];
@@ -87,23 +91,41 @@ export default async function handler(req) {
       return d.edouardAccommodationId && !d.edouardReportDone;
     }).slice(0, MAX_PAR_RUN);
 
+    // ── Liste des états des lieux : un seul appel, filtrage côté Lokentia ──
+    // (le filtre serveur ?accommodationID=... renvoie une erreur 500 chez Edouard)
+    let toutesSituations = [];
+    let curseur = null;
+    for (let page = 0; page < 6; page++) {
+      const q = '/v1/situations?limit=100' + (curseur ? '&after=' + encodeURIComponent(curseur) : '');
+      const sResp = await edouardGet(q, EDOUARD_KEY);
+      if (!sResp.ok) {
+        journal.erreurs.push('Liste des EDL : HTTP ' + sResp.status + ' ' + sResp.corps);
+        break;
+      }
+      const lot = unwrap(sResp.data) || [];
+      if (!Array.isArray(lot) || lot.length === 0) break;
+      toutesSituations = toutesSituations.concat(lot);
+      curseur = sResp.data && sResp.data.nextCursor;
+      if (!curseur) break;
+    }
+    journal.edlDansEdouard = toutesSituations.length;
+
     for (const row of aTraiter) {
       const m = row.data || {};
       journal.verifie++;
       try {
         // ── 2. Un état des lieux existe-t-il pour ce logement ? ──
-        const sitResp = await edouardGet('/v1/situations?accommodationID=' + encodeURIComponent(m.edouardAccommodationId), EDOUARD_KEY);
-        if (!sitResp.ok) {
-          journal.erreurs.push('Mission ' + row.id + ' : situations HTTP ' + sitResp.status);
-          continue;
-        }
-        const situations = unwrap(sitResp.data) || [];
-        if (!Array.isArray(situations) || situations.length === 0) {
+        const situations = toutesSituations.filter(function (s) {
+          const aid = s && (s.accommodationID || s.accommodationId);
+          return aid === m.edouardAccommodationId;
+        });
+        if (situations.length === 0) {
           journal.details.push('Mission ' + row.id + ' : aucun EDL pour l\u2019instant');
           continue;
         }
         // Prendre le plus récent
-        const sit = situations[situations.length - 1];
+        situations.sort(function (a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
+        const sit = situations[0];
         const sitId = sit.id || (sit.data && sit.data.id);
         if (!sitId) {
           journal.erreurs.push('Mission ' + row.id + ' : EDL sans id');
@@ -113,7 +135,7 @@ export default async function handler(req) {
         // ── 3. Récupérer le rapport PDF ──
         const repResp = await edouardGet('/v1/situations/' + encodeURIComponent(sitId) + '/report', EDOUARD_KEY);
         if (!repResp.ok) {
-          journal.details.push('Mission ' + row.id + ' : rapport pas encore disponible (HTTP ' + repResp.status + ')');
+          journal.details.push('Mission ' + row.id + ' : rapport indisponible (HTTP ' + repResp.status + ') ' + repResp.corps);
           continue;
         }
         const fileInfo = unwrap(repResp.data);
