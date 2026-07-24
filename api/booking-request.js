@@ -21,7 +21,7 @@ export default async function handler(req) {
 
   try {
     const data = await req.json();
-    const { agencyId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, proprietaire, dateSouhaitee, heure, notes, locataire, locataires, locatairesEntrants } = data;
+    const { agencyId, contactId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, proprietaire, dateSouhaitee, heure, notes, locataire, locataires, locatairesEntrants } = data;
 
     if(!agence || !email || !typeEdl || !adresse) {
       return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400 });
@@ -29,6 +29,28 @@ export default async function handler(req) {
 
     const bookingId = 'booking_' + Date.now();
     const createdAt = new Date().toISOString();
+
+    // ── Retrouver l'abonne proprietaire de cette agence ──────
+    // 1) par l'identifiant du contact (liens recents), 2) par l'email de
+    // l'agence, 3) par le nom de l'agence. Vide = compte historique.
+    let ownerId = '';
+    if (SUPABASE_SERVICE_KEY && SUPABASE_URL) {
+      const supaHeaders = {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+      };
+      const chercher = async (filtre) => {
+        try {
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/contacts?select=user_id&${filtre}&limit=1`, { headers: supaHeaders });
+          if (!r.ok) return '';
+          const rows = await r.json();
+          return (rows && rows[0] && rows[0].user_id) || '';
+        } catch (e) { return ''; }
+      };
+      if (contactId) ownerId = await chercher('id=eq.' + encodeURIComponent(contactId));
+      if (!ownerId && email) ownerId = await chercher('data-%3E%3Eemail=ilike.' + encodeURIComponent(email));
+      if (!ownerId && agence) ownerId = await chercher('data-%3E%3Eentreprise=ilike.' + encodeURIComponent(agence));
+    }
 
     // ── 1. Sauvegarder dans la table bookings ──────────────
     if(SUPABASE_SERVICE_KEY && SUPABASE_URL) {
@@ -53,6 +75,7 @@ export default async function handler(req) {
         locataireNom: locataire?.nom || '',
         locataireTel: locataire?.tel || '',
         locataireEmail: locataire?.email || '',
+        ownerId: ownerId,
         source: 'booking',
         statut: 'en_attente',
         rdvConfirme: false,
