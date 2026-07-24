@@ -6,6 +6,38 @@ export default async function handler(req) {
   const agencyName = url.searchParams.get('name') || '';
   const contactId = (url.searchParams.get('c') || '').replace(/[^a-zA-Z0-9_-]/g, '');
 
+  // Identite du proprietaire de cette page (via le contact du lien, sinon le nom d'agence)
+  let IDENT = { nom: 'Lokentia', tel: '', email: 'contact@lokentia.fr' };
+  try {
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (key) {
+      const SUPA = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+      const h = { 'apikey': key, 'Authorization': 'Bearer ' + key };
+      let ownerId = '';
+      if (contactId) {
+        const r1 = await fetch(SUPA + '/rest/v1/contacts?select=user_id&id=eq.' + encodeURIComponent(contactId) + '&limit=1', { headers: h });
+        if (r1.ok) { const rows = await r1.json(); ownerId = (rows[0] && rows[0].user_id) || ''; }
+      }
+      if (!ownerId && agencyName) {
+        const r2 = await fetch(SUPA + '/rest/v1/contacts?select=user_id&data-%3E%3Eentreprise=ilike.' + encodeURIComponent(agencyName) + '&limit=1', { headers: h });
+        if (r2.ok) { const rows = await r2.json(); ownerId = (rows[0] && rows[0].user_id) || ''; }
+      }
+      if (ownerId) {
+        const r3 = await fetch(SUPA + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(ownerId), { headers: h });
+        if (r3.ok) {
+          const rows = await r3.json();
+          const d = (rows[0] && rows[0].data) || {};
+          IDENT = {
+            nom: (d.expediteurNom || d.companyName || '').trim() || 'Lokentia',
+            tel: (d.expediteurTel || '').trim(),
+            email: (d.expediteurEmail || d.userEmail || '').trim() || 'contact@lokentia.fr'
+          };
+        }
+      }
+    }
+  } catch (e) { /* identite neutre */ }
+  const identTelHref = IDENT.tel.replace(/[^0-9+]/g, '');
+
   const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -82,7 +114,7 @@ textarea{min-height:75px;resize:vertical}
     <div style="font-size:11px;color:var(--text2)">Demande d'état des lieux</div>
   </div>
   <div style="margin-left:auto;font-size:11px;color:var(--text2);text-align:right">
-    📞 <a href="tel:0189291429" style="color:var(--blue);text-decoration:none">01 89 29 14 29</a><br>
+    ${IDENT.tel ? `📞 <a href="tel:${identTelHref}" style="color:var(--blue);text-decoration:none">${IDENT.tel}</a>` : ``}<br>
     <span style="font-size:10px">Lun–Sam · 9h–19h30</span>
   </div>
 </div>
@@ -248,13 +280,13 @@ textarea{min-height:75px;resize:vertical}
     <div style="font-size:13px;color:var(--text2);line-height:1.7">Thomas vous contactera sous <strong>2h</strong> pour confirmer la date définitive.</div>
     <div class="recap-box" id="success-recap"></div>
     <div style="margin-top:20px;font-size:12px;color:var(--text2)">
-      Une question ? 📞 <a href="tel:0189291429" style="color:var(--blue)">01 89 29 14 29</a>
+      ${IDENT.tel ? `Une question ? 📞 <a href="tel:${identTelHref}" style="color:var(--blue)">${IDENT.tel}</a>` : ``}
     </div>
   </div>
 
   <div class="footer">
     <strong>Lokentia</strong> — Expert en État des Lieux<br>
-    <a href="mailto:contact@edl-idf.com" style="color:var(--blue)">contact@edl-idf.com</a> · <a href="tel:0189291429" style="color:var(--blue)">01 89 29 14 29</a>
+    <a href="mailto:${IDENT.email}" style="color:var(--blue)">${IDENT.email}</a>${IDENT.tel ? ` · <a href="tel:${identTelHref}" style="color:var(--blue)">${IDENT.tel}</a>` : ``}
   </div>
 
 </div>
@@ -443,11 +475,11 @@ async function submit(){
       document.getElementById('success-recap').innerHTML = '<strong>📋 '+payload.typeEdl+'</strong><br>📍 '+payload.adresse+'<br>📅 '+dateStr+' · '+(payload.heure||'Flexible')+'<br>👤 '+locsList;
       window.scrollTo({top:0,behavior:'smooth'});
     } else {
-      showErr("Erreur lors de l'envoi. Veuillez nous appeler au 01 89 29 14 29.");
+      showErr("Erreur lors de l'envoi. Veuillez réessayer ou nous contacter directement.");
       btn.disabled=false; btn.innerHTML='<i class="ti ti-send"></i> Envoyer ma demande';
     }
   } catch(e){
-    showErr("Connexion impossible. Veuillez nous appeler au 01 89 29 14 29.");
+    showErr("Connexion impossible. Veuillez réessayer ou nous contacter directement.");
     btn.disabled=false; btn.innerHTML='<i class="ti ti-send"></i> Envoyer ma demande';
   }
 }
