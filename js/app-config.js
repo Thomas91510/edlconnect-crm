@@ -32,6 +32,22 @@ const CFG={
   set companyLogo(v){localStorage.setItem('edl_co_logo',v);},
   get invoiceNextNumber(){return parseInt(localStorage.getItem('edl_invoice_next')||'1',10);},
   set invoiceNextNumber(v){localStorage.setItem('edl_invoice_next',String(v));},
+  // ── Profil de l'abonné ──
+  get userName(){return localStorage.getItem('edl_user_name')||'';},
+  set userName(v){localStorage.setItem('edl_user_name',v);},
+  get userEmail(){return localStorage.getItem('edl_user_email')||'';},
+  set userEmail(v){localStorage.setItem('edl_user_email',v);},
+  // ── Identité des emails (marque blanche par abonné) ──
+  get expediteurNom(){return localStorage.getItem('edl_exp_nom')||'';},
+  set expediteurNom(v){localStorage.setItem('edl_exp_nom',v);},
+  get expediteurEmail(){return localStorage.getItem('edl_exp_email')||'';},
+  set expediteurEmail(v){localStorage.setItem('edl_exp_email',v);},
+  get expediteurTel(){return localStorage.getItem('edl_exp_tel')||'';},
+  set expediteurTel(v){localStorage.setItem('edl_exp_tel',v);},
+  get expediteurSignature(){return localStorage.getItem('edl_exp_signature')||'';},
+  set expediteurSignature(v){localStorage.setItem('edl_exp_signature',v);},
+  get expediteurPartenaire(){return localStorage.getItem('edl_exp_partenaire')||'';},
+  set expediteurPartenaire(v){localStorage.setItem('edl_exp_partenaire',v);},
   proxy:'https://api.allorigins.win/raw?url='
 };
 
