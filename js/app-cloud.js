@@ -69,6 +69,20 @@ async function loadSettingsFromSupabase(){
     if(s.companyBic){localStorage.setItem('edl_co_bic',s.companyBic);}
     if(s.companyLogo){localStorage.setItem('edl_co_logo',s.companyLogo);}
     if(s.companyPaymentTerms){localStorage.setItem('edl_co_payterms',s.companyPaymentTerms);}
+    // Profil de l'abonné
+    if(s.userName){localStorage.setItem('edl_user_name',s.userName);}
+    if(s.userEmail){localStorage.setItem('edl_user_email',s.userEmail);}
+    // Identité des emails (marque blanche)
+    if(s.expediteurNom){localStorage.setItem('edl_exp_nom',s.expediteurNom);}
+    if(s.expediteurEmail){localStorage.setItem('edl_exp_email',s.expediteurEmail);}
+    if(s.expediteurTel){localStorage.setItem('edl_exp_tel',s.expediteurTel);}
+    if(s.expediteurSignature){localStorage.setItem('edl_exp_signature',s.expediteurSignature);}
+    if(s.expediteurPartenaire){localStorage.setItem('edl_exp_partenaire',s.expediteurPartenaire);}
+    // Agents / collaborateurs (stockés dans settings, pas dans une table dédiée)
+    if(Array.isArray(s.agents)){
+      DB.agents = s.agents;
+      try{ if(typeof renderAgentsSettings === 'function') renderAgentsSettings(); }catch(e){}
+    }
     console.log('✅ Paramètres chargés depuis Supabase');
   }catch(e){console.warn('Erreur loadSettingsFromSupabase:',e);}
 }
