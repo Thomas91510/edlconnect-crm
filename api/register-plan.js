@@ -60,6 +60,8 @@ export default async function handler(req) {
     if (checkResp.ok) {
       const existing = await checkResp.json();
       if (Array.isArray(existing) && existing.length > 0) {
+        // Ligne déjà présente (y compris les agences marquées 'agence') :
+        // on n'y touche pas → le rôle existant est préservé.
         return new Response(JSON.stringify({ success: true, created: false }), { status: 200, headers });
       }
     }
@@ -72,6 +74,7 @@ export default async function handler(req) {
         email: user.email,
         plan: 'free',
         status: 'active',
+        role: 'expert',
         created_at: new Date().toISOString()
       })
     });
