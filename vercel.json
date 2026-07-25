@@ -31,6 +31,8 @@
     { "source": "/api/register-plan", "destination": "/api/register-plan.js" },
     { "source": "/api/contact-form", "destination": "/api/contact-form.js" },
     { "source": "/api/admin-set-plan", "destination": "/api/admin-set-plan.js" },
+    { "source": "/api/create-checkout", "destination": "/api/create-checkout.js" },
+    { "source": "/api/stripe-webhook", "destination": "/api/stripe-webhook.js" },
     { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/extranet-app", "destination": "/extranet-app.html" },
     { "source": "/((?!extranet-app$|js/).*)", "destination": "/index.html" }
