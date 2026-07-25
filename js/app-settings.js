@@ -240,16 +240,32 @@ function addAgent(){
   if(!DB.agents) DB.agents = [];
   DB.agents.push({ id: 'agent_' + Date.now(), nom, tel });
   saveToStorage();
+  persistAgents();
   nomEl.value = '';
   telEl.value = '';
   renderAgentsSettings();
   notify('✅ Agent ajouté');
 }
 
+// Sauvegarde ciblée des agents dans Supabase (settings), sans lire le
+// formulaire de réglages — évite d'écraser des champs si le formulaire
+// n'est pas affiché. Fusionne avec les settings existants côté serveur.
+async function persistAgents(){
+  if(typeof saveSettingsToSupabase !== 'function') return;
+  try{
+    if(!_supaReady || !_currentUser) return;
+    const { data } = await supabaseClient.from('settings').select('data').eq('user_id', _currentUser.id).maybeSingle();
+    const s = (data && data.data) ? data.data : {};
+    s.agents = DB.agents || [];
+    await saveSettingsToSupabase(s);
+  }catch(e){ console.warn('persistAgents:', e); }
+}
+
 function removeAgent(id){
   if(!confirm('Retirer cet agent de la liste ?')) return;
   DB.agents = DB.agents.filter(a => a.id !== id);
   saveToStorage();
+  persistAgents();
   renderAgentsSettings();
 }
 
@@ -351,7 +367,8 @@ function saveSettings(){
     expediteurEmail:CFG.expediteurEmail||'',
     expediteurTel:CFG.expediteurTel||'',
     expediteurSignature:CFG.expediteurSignature||'',
-    expediteurPartenaire:CFG.expediteurPartenaire||''
+    expediteurPartenaire:CFG.expediteurPartenaire||'',
+    agents:DB.agents||[]
   };
   saveSettingsToSupabase(settingsData);
   // Rafraîchir le nom de la sidebar
