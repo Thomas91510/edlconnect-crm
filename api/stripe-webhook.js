@@ -47,21 +47,31 @@ async function verifierSignatureStripe(rawBody, sigHeader, secret) {
   }
 }
 
-// ── Mise à jour du plan d'un abonné dans user_plans (clé service) ──
-async function majPlan(userId, champs) {
+// ── Mise à jour (ou création) du plan d'un abonné dans user_plans. ──
+// upsert sur user_id : met à jour si la ligne existe, la crée sinon.
+// Retourne un objet { ok, detail } pour que l'appelant puisse remonter
+// une vraie erreur au lieu d'échouer silencieusement.
+async function majPlan(userId, champs, email) {
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-  if (!SERVICE_KEY || !userId) return;
-  const body = Object.assign({ updated_at: new Date().toISOString() }, champs);
-  await fetch(`${SUPABASE_URL}/rest/v1/user_plans?user_id=eq.${encodeURIComponent(userId)}`, {
-    method: 'PATCH',
+  if (!SERVICE_KEY) return { ok: false, detail: 'SUPABASE_SERVICE_KEY manquante' };
+  if (!userId) return { ok: false, detail: 'user_id absent' };
+  const body = Object.assign({ user_id: userId }, champs);
+  if (email) body.email = email;
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/user_plans?on_conflict=user_id`, {
+    method: 'POST',
     headers: {
       apikey: SERVICE_KEY,
       Authorization: 'Bearer ' + SERVICE_KEY,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
     },
     body: JSON.stringify(body)
   });
+  if (!resp.ok) {
+    const detail = await resp.text();
+    return { ok: false, detail: detail.slice(0, 300) };
+  }
+  return { ok: true };
 }
 
 // Retrouver le user_id à partir d'un abonnement Stripe (via ses métadonnées),
@@ -117,6 +127,7 @@ export default async function handler(req) {
       // Paiement initial réussi — activer le plan et mémoriser le customer Stripe
       const userId = (obj.metadata && obj.metadata.user_id) || obj.client_reference_id;
       const customerId = obj.customer || '';
+      const email = (obj.customer_details && obj.customer_details.email) || obj.customer_email || null;
       // Récupérer l'abonnement pour connaître le plan
       let plan = null, expiresAt = null;
       if (obj.subscription && process.env.STRIPE_SECRET_KEY) {
@@ -129,12 +140,16 @@ export default async function handler(req) {
           if (sub.current_period_end) expiresAt = new Date(sub.current_period_end * 1000).toISOString();
         }
       }
-      await majPlan(userId, {
+      const r = await majPlan(userId, {
         plan: plan || 'starter',
         status: 'active',
         stripe_customer_id: customerId,
         expires_at: expiresAt
-      });
+      }, email);
+      if (!r.ok) {
+        // Renvoyer une vraie erreur pour qu'elle soit visible dans Stripe et déclenche un retry
+        return new Response(JSON.stringify({ error: 'majPlan a échoué', detail: r.detail }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
 
     } else if (type === 'invoice.payment_succeeded') {
       // Renouvellement réussi — prolonger la période
