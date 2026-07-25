@@ -57,19 +57,23 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Formule inconnue' }), { status: 400, headers });
     }
 
-    // Récupérer un éventuel stripe_customer_id déjà associé, pour ne pas
-    // recréer un client Stripe à chaque abonnement (via user_plans).
+    // Récupérer stripe_customer_id ET le rôle (via user_plans, une seule requête).
+    // Une agence ne doit jamais pouvoir souscrire, même en appelant l'API directement.
     let customerId = '';
     try {
       const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
       if (SERVICE_KEY) {
         const r = await fetch(
-          `${SUPABASE_URL}/rest/v1/user_plans?select=stripe_customer_id&user_id=eq.${encodeURIComponent(user.id)}`,
+          `${SUPABASE_URL}/rest/v1/user_plans?select=stripe_customer_id,role&user_id=eq.${encodeURIComponent(user.id)}`,
           { headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY } }
         );
         if (r.ok) {
           const rows = await r.json();
           customerId = (rows && rows[0] && rows[0].stripe_customer_id) || '';
+          const role = (rows && rows[0] && rows[0].role) || 'expert';
+          if (role === 'agence') {
+            return new Response(JSON.stringify({ error: 'Les comptes agence ne sont pas concernés par l\'abonnement.' }), { status: 403, headers });
+          }
         }
       }
     } catch (e) { /* pas bloquant : Stripe créera un client si besoin */ }
