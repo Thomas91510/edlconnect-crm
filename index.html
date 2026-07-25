@@ -1347,6 +1347,31 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <div style="font-size:11px;color:var(--text2);margin-top:4px">Obtenir une clé gratuite : <a href="https://console.mistral.ai/api-keys" target="_blank" style="color:var(--blue)">console.mistral.ai</a> → "API Keys" → "Create new key"</div>
       </div>
       <div class="settings-section">
+        <div class="settings-title"><i class="ti ti-credit-card" style="font-size:18px"></i>Abonnement</div>
+        <div id="abo-plan-actuel" style="font-size:13px;color:var(--text2);margin-bottom:12px">Chargement du plan…</div>
+        <div id="abo-offres" style="display:none">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Choisissez votre formule :</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+            <div style="flex:1;min-width:200px;border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+              <div style="font-weight:600;margin-bottom:4px">Starter</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:10px">500 contacts, 100 missions, emails & IA</div>
+              <button class="btn btn-sm" style="width:100%;margin-bottom:6px" onclick="souscrire('starter_mensuel')">15 €/mois</button>
+              <button class="btn btn-sm btn-outline" style="width:100%" onclick="souscrire('starter_annuel')">144 €/an</button>
+            </div>
+            <div style="flex:1;min-width:200px;border:1px solid var(--laiton, #C29A5B);border-radius:var(--radius);padding:14px">
+              <div style="font-weight:600;margin-bottom:4px">Pro</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Illimité, IA, analytics avancés</div>
+              <button class="btn btn-sm" style="width:100%;margin-bottom:6px" onclick="souscrire('pro_mensuel')">35 €/mois</button>
+              <button class="btn btn-sm btn-outline" style="width:100%" onclick="souscrire('pro_annuel')">336 €/an</button>
+            </div>
+          </div>
+          <div id="abo-erreur" style="display:none;font-size:12px;color:var(--red);margin-top:6px"></div>
+        </div>
+        <div id="abo-gerer" style="display:none;margin-top:10px">
+          <div style="font-size:12px;color:var(--text2)">Votre abonnement est actif. Pour le modifier ou l'annuler, contactez le support.</div>
+        </div>
+      </div>
+      <div class="settings-section">
         <div class="settings-title"><i class="ti ti-users" style="font-size:18px"></i>Agents EDL</div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Les agents ajoutés ici apparaissent dans le menu déroulant "Agent qui se déplace" lors de la confirmation d'un RDV, et leurs coordonnées sont insérées automatiquement dans la convocation envoyée au locataire.</div>
         <div id="agents-list" style="margin-bottom:12px"></div>
@@ -2001,20 +2026,13 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <div><label>Heure souhaitée</label><select id="mr-heure"><option value="">— Flexible —</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option></select></div>
       </div>
 
-      <label id="mr-label-locataire" style="font-weight:600;display:block;margin-bottom:6px">Locataire <span style="color:var(--red)">*</span></label>
+      <label style="font-weight:600;display:block;margin-bottom:6px">Locataire <span style="color:var(--red)">*</span></label>
       <div class="form-grid" style="margin-bottom:8px">
         <div><label>Nom complet</label><input type="text" id="mr-loc-nom" placeholder="Jean Martin"></div>
         <div><label>Téléphone</label><input type="tel" id="mr-loc-tel" placeholder="06 12 34 56 78"></div>
       </div>
       <label>Email du locataire</label>
       <input type="email" id="mr-loc-email" placeholder="jean.martin@email.fr" style="margin-bottom:10px">
-
-      <!-- Locataires entrants (affiché uniquement pour le type Sortant / Entrant) -->
-      <div id="mr-entrants-section" style="display:none;margin-bottom:10px">
-        <label style="font-weight:600;display:block;margin-bottom:6px">Locataire(s) entrant(s) <span style="color:var(--red)">*</span></label>
-        <div id="mr-entrants-list"></div>
-        <button type="button" onclick="mrAddEntrant()" class="btn" style="font-size:12px;padding:6px 12px;margin-top:4px">+ Ajouter un locataire entrant</button>
-      </div>
 
       <label>Notes</label>
       <textarea id="mr-notes" placeholder="Informations complémentaires..." style="min-height:60px;margin-bottom:16px"></textarea>
