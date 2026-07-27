@@ -128,6 +128,17 @@ async function sendEmail(){
   const body=document.getElementById('body-f').value.trim();
   if(!to||!subj){notify('⚠️ Destinataire et objet requis','warn');return;}
 
+  // Multi-destinataires : séparer par virgule, point-virgule, espace ou retour ligne.
+  // Chaque destinataire recevra un email individuel (pas de liste visible).
+  const destinataires = to.split(/[,;\s\n]+/).map(e=>e.trim()).filter(e=>e);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const invalides = destinataires.filter(e=>!emailRegex.test(e));
+  if(invalides.length){
+    notify('⚠️ Adresse(s) invalide(s) : '+invalides.join(', '),'warn');
+    return;
+  }
+  if(destinataires.length===0){ notify('⚠️ Aucun destinataire valide','warn'); return; }
+
   // ── Toast annulation 15 secondes ──
   let cancelled=false;
   let countdown=15;
@@ -139,7 +150,7 @@ async function sendEmail(){
   toast.innerHTML=`
     <div style="flex:1">
       <div style="font-weight:600;margin-bottom:2px">📤 Envoi dans <span id="toast-count">15</span>s</div>
-      <div style="font-size:11px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">À : ${to} — ${subj}</div>
+      <div style="font-size:11px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${destinataires.length>1?destinataires.length+' destinataires':'À : '+destinataires[0]} — ${subj}</div>
       <div style="margin-top:6px;height:3px;background:#333;border-radius:2px;overflow:hidden">
         <div id="toast-bar" style="height:100%;width:100%;background:#1A5FA8;border-radius:2px;transition:width 1s linear"></div>
       </div>
@@ -172,72 +183,81 @@ async function sendEmail(){
   try{if(toast.parentNode)toast.parentNode.removeChild(toast);}catch(e){}
   if(cancelled)return;
 
-  // ── Envoi réel ──
-  const emailLower=to.toLowerCase();
+  // ── Envoi réel (boucle sur tous les destinataires) ──
   const now=new Date();
-  const entry={
-    id:'email_'+Date.now(),
-    contact:to.includes('@')?to.split('@')[0]:to,
-    email:emailLower,
-    objet:subj,
-    corps:body,
-    date:now.toISOString(),
-    statut:'Envoyé'
-  };
+  const _tk3=(await supabaseClient.auth.getSession()).data?.session?.access_token||'';
+  let nbOk=0, nbErr=0;
 
-  notify('📤 Envoi en cours…');
-  try{
-    const brevoUrl='/api/send-email';
-    const payload={
-      sender:{name:'EDL IDF',email:'contact@edl-idf.com'},
-      to:[{email:to}],
-      subject:subj,
-      htmlContent:`<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${body.replace(/\n/g,'<br>')}${EMAIL_SIGNATURE}</div>`,
-      textContent:body,
-      headers:{'X-CRM-ID':entry.id}
+  notify(`📤 Envoi en cours… (${destinataires.length} destinataire${destinataires.length>1?'s':''})`);
+
+  for(let i=0;i<destinataires.length;i++){
+    const dest=destinataires[i];
+    const destLower=dest.toLowerCase();
+    const entry={
+      id:'email_'+Date.now()+'_'+i,
+      contact:dest.includes('@')?dest.split('@')[0]:dest,
+      email:destLower,
+      objet:subj,
+      corps:body,
+      date:new Date().toISOString(),
+      statut:'Envoyé'
     };
-    // Ajouter la pièce jointe si présente
-    if(_attachData && _attachName){
-      payload.attachment=[{content:_attachData, name:_attachName}];
-      entry.objet += ' 📎';
+
+    try{
+      const payload={
+        sender:{name:'EDL IDF',email:'contact@edl-idf.com'},
+        to:[{email:dest}],
+        subject:subj,
+        htmlContent:`<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${body.replace(/\n/g,'<br>')}${EMAIL_SIGNATURE}</div>`,
+        textContent:body,
+        headers:{'X-CRM-ID':entry.id}
+      };
+      if(_attachData && _attachName){
+        payload.attachment=[{content:_attachData, name:_attachName}];
+        entry.objet += ' 📎';
+      }
+      const resp=await fetch('/api/send-email',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+_tk3},
+        body:JSON.stringify(payload)
+      });
+      if(resp.status===200||resp.status===201){
+        entry.statut='Envoyé (Brevo)';
+        nbOk++;
+      } else {
+        const errText=await resp.text();
+        console.log('Brevo error pour '+dest+':', errText);
+        entry.statut='Erreur';
+        nbErr++;
+      }
+    } catch(e){
+      console.log('Send error pour '+dest+':', e);
+      entry.statut='Erreur';
+      nbErr++;
     }
-    const _tk3=(await supabaseClient.auth.getSession()).data?.session?.access_token||'';
-    const resp=await fetch(brevoUrl,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+_tk3},
-      body:JSON.stringify(payload)
-    });
-    const respStatus=resp.status;
-    console.log('Brevo response status:', respStatus);
-    if(respStatus===200||respStatus===201){
-      entry.statut='Envoyé (Brevo)';
-      notify(`✅ Email envoyé via Brevo — tracking actif !`);
-    } else {
-      const errText=await resp.text();
-      console.log('Brevo error:', errText);
-      entry.statut='Envoyé (local)';
-      notify('⚠️ Erreur Brevo ('+respStatus+') — email non envoyé','warn');
+
+    // Logger dans le tracking global
+    DB.trackings.unshift(entry);
+    // Classer dans la fiche contact si trouvé
+    const contact=DB.contacts.find(c=>(c.email||'').toLowerCase()===destLower);
+    if(contact){
+      if(!contact.history)contact.history=[];
+      contact.history.unshift(entry);
+      contact.lastContact=now.toISOString().split('T')[0];
+      contact.moyenContact='📧 Email';
     }
-  } catch(e){
-    console.log('Send error:', e);
-    entry.statut='Envoyé (local)';
-    notify('⚠️ Serveur local non joignable — relance brevo_sync.py','warn');
+
+    // Petit délai entre chaque envoi (anti-spam / ménager Brevo), sauf le dernier
+    if(i < destinataires.length-1){
+      await new Promise(r=>setTimeout(r, 400));
+    }
   }
 
-  // Logger dans le tracking global
-  DB.trackings.unshift(entry);
-
-  // Classer dans la fiche contact + mettre à jour dernier contact
-  const contact=DB.contacts.find(c=>(c.email||'').toLowerCase()===emailLower);
-  if(contact){
-    if(!contact.history)contact.history=[];
-    contact.history.unshift(entry);
-    // Mise à jour automatique dernier contact
-    contact.lastContact=now.toISOString().split('T')[0];
-    contact.moyenContact='📧 Email';
-    notify(`✅ Email classé dans la fiche de ${contact.entreprise||contact.contact} !`);
+  // Bilan
+  if(nbErr===0){
+    notify(`✅ ${nbOk} email${nbOk>1?'s':''} envoyé${nbOk>1?'s':''} via Brevo — tracking actif !`);
   } else {
-    notify('✅ Email envoyé ! (contact non trouvé dans la base)');
+    notify(`⚠️ ${nbOk} envoyé(s), ${nbErr} en erreur — vérifie la console`,'warn');
   }
 
   saveToStorage();
