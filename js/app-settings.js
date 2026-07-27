@@ -468,6 +468,68 @@ async function loadUserPlan(){
   } catch(e){
     _userPlan = { plan: 'free', status: 'active' };
   }
+  majAffichageAbonnement();
+}
+
+// ─── ABONNEMENT (Stripe Checkout) ─────────────────────────
+function majAffichageAbonnement(){
+  const info = document.getElementById('abo-plan-actuel');
+  const offres = document.getElementById('abo-offres');
+  const gerer = document.getElementById('abo-gerer');
+  if(!info) return;
+
+  // Les agences (extranet) ne sont jamais concernées par l'abonnement :
+  // on masque toute la section pour elles.
+  const role = (_userPlan && _userPlan.role) || 'expert';
+  const section = info.closest('.settings-section');
+  if(role === 'agence'){
+    if(section) section.style.display = 'none';
+    return;
+  } else if(section){
+    section.style.display = '';
+  }
+
+  const plan = (_userPlan && _userPlan.plan) || 'free';
+  const status = (_userPlan && _userPlan.status) || 'active';
+  const libelle = { free:'Gratuit', starter:'Starter', pro:'Pro' }[plan] || plan;
+
+  if(isAdmin()){
+    info.innerHTML = 'Compte administrateur — accès complet sans abonnement.';
+    if(offres) offres.style.display = 'none';
+    if(gerer) gerer.style.display = 'none';
+    return;
+  }
+
+  let statutTxt = '';
+  if(status === 'suspended') statutTxt = ' <span style="color:var(--red)">(suspendu — paiement en échec)</span>';
+  else if(status === 'active' && plan !== 'free') statutTxt = ' <span style="color:var(--green,#2F8F5B)">(actif)</span>';
+  info.innerHTML = 'Votre formule actuelle : <strong>' + libelle + '</strong>' + statutTxt;
+
+  // Offres visibles si gratuit ou suspendu ; sinon message "gérer"
+  const montrerOffres = (plan === 'free' || status === 'suspended');
+  if(offres) offres.style.display = montrerOffres ? 'block' : 'none';
+  if(gerer) gerer.style.display = montrerOffres ? 'none' : 'block';
+}
+
+async function souscrire(formule){
+  const err = document.getElementById('abo-erreur');
+  if(err){ err.style.display = 'none'; err.textContent = ''; }
+  try{
+    const resp = await fetch('/api/create-checkout', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ formule })
+    });
+    const data = await resp.json();
+    if(!resp.ok || !data.url){
+      if(err){ err.textContent = '⚠️ ' + (data.error || 'Erreur lors de la création du paiement'); err.style.display = 'block'; }
+      return;
+    }
+    // Redirection vers la page de paiement Stripe
+    window.location.href = data.url;
+  }catch(e){
+    if(err){ err.textContent = '⚠️ ' + e.message; err.style.display = 'block'; }
+  }
 }
 
 function checkPlanLimit(type){
@@ -848,6 +910,21 @@ async function onAuthSuccess(user){
   if(navAdmin && ADMIN_EMAILS.includes(user.email)) navAdmin.style.display='flex';
   // Charger le plan de l'utilisateur
   await loadUserPlan();
+  // Gérer le retour de paiement Stripe (?abonnement=succes|annule)
+  try{
+    const _p = new URLSearchParams(window.location.search);
+    const _abo = _p.get('abonnement');
+    if(_abo === 'succes'){
+      notify('✅ Merci ! Votre paiement a été pris en compte. Activation en cours…');
+      // Le webhook Stripe met à jour user_plans ; on recharge après un court délai
+      setTimeout(async ()=>{ await loadUserPlan(); }, 4000);
+      // Nettoyer l'URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if(_abo === 'annule'){
+      notify('Paiement annulé — vous pouvez réessayer quand vous voulez.', 'warn');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }catch(e){}
   // Charger les paramètres depuis Supabase d'abord
   await loadSettingsFromSupabase();
   // Puis charger les données
@@ -904,6 +981,26 @@ function addLogoutButton(){
 }
 async function doLogout(){
   await supabaseClient.auth.signOut();_currentUser=null;
+
+  // Vider le cache local applicatif pour qu'aucune donnée du compte précédent
+  // ne reste visible si un autre compte se connecte sur le même navigateur.
+  // On ne supprime que les clés de l'app (préfixe "edl"), pas la session
+  // Supabase (clés "sb-...") qui est déjà gérée par signOut().
+  try{
+    const aSupprimer=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k && (k.indexOf('edl')===0)) aSupprimer.push(k);
+    }
+    aSupprimer.forEach(k=>localStorage.removeItem(k));
+    // Réinitialiser les données en mémoire
+    if(typeof DB==='object' && DB){
+      DB.contacts=[]; DB.deals=[]; DB.missions=[]; DB.campaigns=[];
+      DB.rdvs=[]; DB.invoices=[]; DB.trackings=[]; DB.prospects=[];
+      DB.dups=[]; DB.brevoContacts=[]; DB.agents=[];
+    }
+  }catch(e){ console.warn('Nettoyage localStorage:', e); }
+
   document.getElementById('auth-screen').classList.add('show');
   const b=document.getElementById('logout-btn');if(b)b.remove();
   notify('Déconnecté');
