@@ -59,6 +59,28 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400 });
     }
 
+    // ── Validation des entrées (endpoint public : se protéger des abus) ──
+    // Format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(String(email).trim())){
+      return new Response(JSON.stringify({ error: 'Email invalide' }), { status: 400 });
+    }
+    // Limites de taille par champ (évite les charges utiles géantes)
+    const limites = { agence:150, contact:100, email:150, tel:30, typeEdl:60, adresse:300, bienType:60, bienTypo:20, meuble:20, superficie:20, dateEntree:40, acces:500, proprietaire:150, dateSouhaitee:40, heure:20, notes:2000 };
+    for(const [champ, max] of Object.entries(limites)){
+      const val = data[champ];
+      if(val != null && String(val).length > max){
+        return new Response(JSON.stringify({ error: 'Champ trop long : ' + champ }), { status: 400 });
+      }
+    }
+    // Limiter le nombre de locataires (sortants + entrants)
+    if(Array.isArray(locataires) && locataires.length > 10){
+      return new Response(JSON.stringify({ error: 'Trop de locataires' }), { status: 400 });
+    }
+    if(Array.isArray(locatairesEntrants) && locatairesEntrants.length > 10){
+      return new Response(JSON.stringify({ error: 'Trop de locataires entrants' }), { status: 400 });
+    }
+
     const bookingId = 'booking_' + Date.now();
     const createdAt = new Date().toISOString();
 
@@ -219,6 +241,31 @@ export default async function handler(req) {
         })
       });
     }
+
+    // ── Notification Slack (uniquement pour les réservations de l'admin) ──
+    // Se déclenche seulement si SLACK_WEBHOOK_URL est défini et si la
+    // réservation appartient au compte admin (SLACK_OWNER_ID).
+    try {
+      const slackUrl = process.env.SLACK_WEBHOOK_URL;
+      const slackOwner = process.env.SLACK_OWNER_ID;
+      if (slackUrl && slackOwner && ownerId && ownerId === slackOwner) {
+        const entrantsTxt = (locatairesEntrants && locatairesEntrants.length)
+          ? '\n👥 Entrant(s): ' + locatairesEntrants.map(e => ((e.prenom||'') + ' ' + (e.nom||'')).trim()).join(', ')
+          : '';
+        const texte =
+          '📅 *Nouvelle réservation reçue*\n' +
+          '🏢 Agence: ' + (agence || '—') + '\n' +
+          '📋 Type: ' + typeEdl + '\n' +
+          '📍 Adresse: ' + adresse + '\n' +
+          '🗓️ Date souhaitée: ' + dateFormatted + (heure ? ' · ' + heure : ' · Flexible') + '\n' +
+          '👤 Locataire: ' + ((locataire && locataire.nom) || '—') + entrantsTxt;
+        await fetch(slackUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: texte })
+        });
+      }
+    } catch (e) { /* Slack non bloquant : une erreur ici ne doit jamais faire échouer la réservation */ }
 
     return new Response(JSON.stringify({ success: true, bookingId }), {
       status: 200,
