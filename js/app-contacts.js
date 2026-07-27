@@ -657,7 +657,7 @@ function renderDashboard(){
 
   // Missions dans le tableau — filtrées
   document.getElementById('dash-missions').innerHTML=missions.slice(-5).reverse().map(m=>`<tr><td>${m.agence}</td><td style="font-size:10px">${m.type}</td><td>${m.montant} €</td><td>${statusBadge(m.statut)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Aucune</td></tr>';
-  document.getElementById('dash-contacts').innerHTML=DB.contacts.slice(0,6).map(c=>`<tr><td style="font-size:11px">${c.entreprise}</td><td style="font-size:11px;color:var(--text2)">${c.email||'—'}</td><td>${statusBadge(c.statut)}</td></tr>`).join('')||'<tr><td colspan="3" class="empty">Aucun</td></tr>';
+  document.getElementById('dash-contacts').innerHTML=DB.contacts.slice(0,6).map(c=>`<tr><td style="font-size:11px">${esc(c.entreprise)}</td><td style="font-size:11px;color:var(--text2)">${esc(c.email||'—')}</td><td>${statusBadge(c.statut)}</td></tr>`).join('')||'<tr><td colspan="3" class="empty">Aucun</td></tr>';
   const today=new Date();
   const upcoming=DB.rdvs.filter(r=>new Date(r.date)>=today).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4);
   document.getElementById('dash-rdv').innerHTML=upcoming.length?upcoming.map(r=>{
@@ -783,20 +783,20 @@ function renderContacts(){
     const gi=DB.contacts.indexOf(c);const dup=isDup(gi);
     const disp=displayEntreprise(c);
     const empty='<span style="color:var(--text3,#c8c8c8);font-size:11px">—</span>';
-    const contactCell=cleanName(c.contact)?`<span style="font-size:11px">${cleanName(c.contact)}</span>`:empty;
+    const contactCell=cleanName(c.contact)?`<span style="font-size:11px">${esc(cleanName(c.contact))}</span>`:empty;
     const emailOk=cleanName(c.email);
     const checked=emailOk && _selectedEmails.has(c.email.toLowerCase())?'checked':'';
     const checkbox=emailOk?`<input type="checkbox" class="contact-check" ${checked} onclick="event.stopPropagation();toggleContactSelect('${c.email}',this.checked)" style="cursor:pointer;width:15px;height:15px">`:'';
     return `<tr class="clickable ${dup?'dup-row':''}" onclick="openFiche('${c.id}')">
       <td style="text-align:center" onclick="event.stopPropagation()">${checkbox}</td>
-      <td><div class="flex-row"><div class="avatar" style="font-size:9px;${dup?'background:var(--amber-bg);color:var(--amber-text)':''}">${initials(disp.name)}</div><span style="font-size:11px;font-weight:500;${disp.muted?'color:var(--text2);font-style:italic':''}">${disp.name}</span>${dup?'<span class="badge b-amber" style="font-size:9px">doublon</span>':''}</div></td>
+      <td><div class="flex-row"><div class="avatar" style="font-size:9px;${dup?'background:var(--amber-bg);color:var(--amber-text)':''}">${initials(disp.name)}</div><span style="font-size:11px;font-weight:500;${disp.muted?'color:var(--text2);font-style:italic':''}">${esc(disp.name)}</span>${dup?'<span class="badge b-amber" style="font-size:9px">doublon</span>':''}</div></td>
       <td>${contactCell}</td>
-      <td>${emailOk?`<a href="mailto:${c.email}" style="color:var(--blue);text-decoration:none;font-size:11px" onclick="event.stopPropagation()">${c.email}</a>`:empty}</td>
-      <td>${cleanName(c.tel)?`<span style="font-size:11px">${c.tel}</span>`:empty}</td>
-      <td><span class="badge ${c.typeClient==='Particulier'?'b-teal':'b-blue'}" style="font-size:9px">${c.typeClient||'Pro'}</span></td>
+      <td>${emailOk?`<a href="mailto:${encodeURIComponent(c.email)}" style="color:var(--blue);text-decoration:none;font-size:11px" onclick="event.stopPropagation()">${esc(c.email)}</a>`:empty}</td>
+      <td>${cleanName(c.tel)?`<span style="font-size:11px">${esc(c.tel)}</span>`:empty}</td>
+      <td><span class="badge ${c.typeClient==='Particulier'?'b-teal':'b-blue'}" style="font-size:9px">${esc(c.typeClient||'Pro')}</span></td>
       <td>${statusBadge(c.statut)}</td>
       <td style="font-size:10px;color:var(--text2)">${c.lastContact?`<strong style="color:var(--text)">${fmtDate(c.lastContact)}</strong>`:empty}</td>
-      <td style="font-size:10px">${cleanName(c.moyenContact)?c.moyenContact:empty}</td>
+      <td style="font-size:10px">${cleanName(c.moyenContact)?esc(c.moyenContact):empty}</td>
       <td><button class="btn btn-sm" onclick="event.stopPropagation();emailContactQuick('${c.email}')"><i class="ti ti-mail" style="font-size:12px"></i></button></td>
     </tr>`;
   }).join(''):'<tr><td colspan="10" class="empty">Aucun contact</td></tr>';
