@@ -712,6 +712,70 @@ function displayEntreprise(ct){
   if(email) return {name:email.split('@')[0], muted:true};
   return {name:'Sans nom', muted:true};
 }
+// ─── SÉLECTION MULTIPLE + ENVOI EN MASSE ──────────────────
+const _selectedEmails = new Set();
+
+function toggleContactSelect(email, checked){
+  if(!email) return;
+  const key = email.toLowerCase();
+  if(checked) _selectedEmails.add(key);
+  else _selectedEmails.delete(key);
+  updateSelectionBar();
+  syncSelectAllCheckbox();
+}
+
+// Cocher / décocher tous les contacts visibles (filtrés)
+function toggleSelectAllContacts(checked){
+  const list = getFilteredContacts();
+  list.forEach(c=>{
+    if(cleanName(c.email)){
+      const key = c.email.toLowerCase();
+      if(checked) _selectedEmails.add(key);
+      else _selectedEmails.delete(key);
+    }
+  });
+  renderContacts();
+}
+
+function syncSelectAllCheckbox(){
+  const master = document.getElementById('contacts-select-all');
+  if(!master) return;
+  const list = getFilteredContacts().filter(c=>cleanName(c.email));
+  const allSelected = list.length>0 && list.every(c=>_selectedEmails.has(c.email.toLowerCase()));
+  master.checked = allSelected;
+}
+
+function updateSelectionBar(){
+  const bar = document.getElementById('selection-bar');
+  const countEl = document.getElementById('selection-count');
+  if(!bar) return;
+  const n = _selectedEmails.size;
+  if(n>0){
+    bar.style.display = 'flex';
+    if(countEl) countEl.textContent = n + ' contact' + (n>1?'s':'') + ' sélectionné' + (n>1?'s':'');
+  } else {
+    bar.style.display = 'none';
+  }
+  syncSelectAllCheckbox();
+}
+
+function clearContactSelection(){
+  _selectedEmails.clear();
+  renderContacts();
+}
+
+// Envoyer un email au groupe sélectionné : ouvre Composer pré-rempli
+function emailSelectedContacts(){
+  if(_selectedEmails.size===0){ notify('Aucun contact sélectionné','warn'); return; }
+  const emails = Array.from(_selectedEmails).join(', ');
+  nav('compose');
+  setTimeout(()=>{
+    const toField = document.getElementById('to-f');
+    if(toField) toField.value = emails;
+    notify('✉️ '+_selectedEmails.size+' destinataire(s) pré-remplis — relisez avant d\'envoyer');
+  },100);
+}
+
 function renderContacts(){
   const list=getFilteredContacts();
   document.getElementById('contacts-count').textContent=list.length+' contacts';
@@ -720,10 +784,14 @@ function renderContacts(){
     const disp=displayEntreprise(c);
     const empty='<span style="color:var(--text3,#c8c8c8);font-size:11px">—</span>';
     const contactCell=cleanName(c.contact)?`<span style="font-size:11px">${cleanName(c.contact)}</span>`:empty;
+    const emailOk=cleanName(c.email);
+    const checked=emailOk && _selectedEmails.has(c.email.toLowerCase())?'checked':'';
+    const checkbox=emailOk?`<input type="checkbox" class="contact-check" ${checked} onclick="event.stopPropagation();toggleContactSelect('${c.email}',this.checked)" style="cursor:pointer;width:15px;height:15px">`:'';
     return `<tr class="clickable ${dup?'dup-row':''}" onclick="openFiche('${c.id}')">
+      <td style="text-align:center" onclick="event.stopPropagation()">${checkbox}</td>
       <td><div class="flex-row"><div class="avatar" style="font-size:9px;${dup?'background:var(--amber-bg);color:var(--amber-text)':''}">${initials(disp.name)}</div><span style="font-size:11px;font-weight:500;${disp.muted?'color:var(--text2);font-style:italic':''}">${disp.name}</span>${dup?'<span class="badge b-amber" style="font-size:9px">doublon</span>':''}</div></td>
       <td>${contactCell}</td>
-      <td>${cleanName(c.email)?`<a href="mailto:${c.email}" style="color:var(--blue);text-decoration:none;font-size:11px" onclick="event.stopPropagation()">${c.email}</a>`:empty}</td>
+      <td>${emailOk?`<a href="mailto:${c.email}" style="color:var(--blue);text-decoration:none;font-size:11px" onclick="event.stopPropagation()">${c.email}</a>`:empty}</td>
       <td>${cleanName(c.tel)?`<span style="font-size:11px">${c.tel}</span>`:empty}</td>
       <td><span class="badge ${c.typeClient==='Particulier'?'b-teal':'b-blue'}" style="font-size:9px">${c.typeClient||'Pro'}</span></td>
       <td>${statusBadge(c.statut)}</td>
@@ -731,7 +799,8 @@ function renderContacts(){
       <td style="font-size:10px">${cleanName(c.moyenContact)?c.moyenContact:empty}</td>
       <td><button class="btn btn-sm" onclick="event.stopPropagation();emailContactQuick('${c.email}')"><i class="ti ti-mail" style="font-size:12px"></i></button></td>
     </tr>`;
-  }).join(''):'<tr><td colspan="8" class="empty">Aucun contact</td></tr>';
+  }).join(''):'<tr><td colspan="10" class="empty">Aucun contact</td></tr>';
+  updateSelectionBar();
 }
 function filterContactsTab(f,btn){
   UI.contactFilter=f;
