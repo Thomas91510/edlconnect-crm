@@ -493,6 +493,14 @@ function majAffichageAbonnement(){
   const status = (_userPlan && _userPlan.status) || 'active';
   const libelle = { free:'Gratuit', starter:'Starter', pro:'Pro' }[plan] || plan;
 
+  // Mettre à jour le badge de la sidebar avec le plan réel (au lieu de "CRM Pro" figé)
+  const sidebarSub = document.getElementById('sidebar-user-email');
+  if(sidebarSub){
+    if(isAdmin()) sidebarSub.textContent = 'Administrateur';
+    else if(role === 'agence') sidebarSub.textContent = 'Espace agence';
+    else sidebarSub.textContent = 'CRM ' + libelle;
+  }
+
   if(isAdmin()){
     info.innerHTML = 'Compte administrateur — accès complet sans abonnement.';
     if(offres) offres.style.display = 'none';
@@ -885,7 +893,7 @@ async function onAuthSuccess(user){
   const sidebarSub  = document.getElementById('sidebar-user-email');
   const sidebarFooterEmail = document.getElementById('sidebar-footer-email');
   if(sidebarName) sidebarName.textContent = companyName;
-  if(sidebarSub)  sidebarSub.textContent  = 'CRM Pro';
+  if(sidebarSub)  sidebarSub.textContent  = 'CRM';
   if(sidebarFooterEmail) sidebarFooterEmail.textContent = userEmail;
   // Mettre à jour le nom et avatar dans le footer
   const footerName = document.getElementById('sidebar-footer-name');
@@ -1005,6 +1013,22 @@ async function doLogout(){
   const b=document.getElementById('logout-btn');if(b)b.remove();
   notify('Déconnecté');
 }
+// Session expirée : informer clairement l'utilisateur et le ramener à la connexion,
+// plutôt que de le laisser face à un écran vide avec des erreurs 401/403 en cascade.
+let _sessionExpiredShown = false;
+function handleSessionExpired(){
+  if(_sessionExpiredShown) return;
+  _sessionExpiredShown = true;
+  _currentUser = null;
+  try{ notify('⚠️ Votre session a expiré — veuillez vous reconnecter','warn'); }catch(e){}
+  const authScreen = document.getElementById('auth-screen');
+  const crmEl = document.querySelector('.crm');
+  if(authScreen) authScreen.classList.add('show');
+  if(crmEl) crmEl.style.display = 'none';
+  const errEl = document.getElementById('auth-error');
+  if(errEl){ errEl.textContent = 'Votre session a expiré. Reconnectez-vous pour continuer.'; errEl.classList.add('show'); }
+}
+
 async function checkAuth(){
   if(!_supaReady)return;
   // Écouter les changements d'auth EN PREMIER
@@ -1012,7 +1036,15 @@ async function checkAuth(){
     // Si on est en mode extranet, ignorer complètement cet événement
     if(window._EXTRANET_MODE) return;
     if(event==='SIGNED_IN'&&session){_currentUser=session.user;onAuthSuccess(session.user);}
-    if(event==='SIGNED_OUT'){_currentUser=null;document.getElementById('auth-screen').classList.add('show');}
+    if(event==='SIGNED_OUT'){
+      _currentUser=null;
+      document.getElementById('auth-screen').classList.add('show');
+      const crmEl=document.querySelector('.crm'); if(crmEl) crmEl.style.display='none';
+    }
+    // Échec de rafraîchissement du jeton = session expirée : message clair
+    if(event==='TOKEN_REFRESHED' && !session){
+      handleSessionExpired();
+    }
   });
   // Puis vérifier la session existante
   const{data:{session}}=await supabaseClient.auth.getSession();
