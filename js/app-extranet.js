@@ -197,14 +197,14 @@ async function showExtranetDashboard(userEmail, accessToken){
            onclick="openExtranetOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})">
         <div style="padding:14px 16px">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
-            <div style="font-weight:600;font-size:13px;color:#fff">${o.typeEdl || 'État des lieux'}</div>
+            <div style="font-weight:600;font-size:13px;color:#fff">${esc(o.typeEdl || 'État des lieux')}</div>
             <div style="display:flex;align-items:center;gap:6px">
               ${statutBadge(o.statut)}
               <i class="ti ti-chevron-right" style="color:rgba(255,255,255,0.25);font-size:13px"></i>
             </div>
           </div>
           <div style="font-size:12px;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:4px;margin-bottom:4px">
-            <i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse || '—'}
+            <i class="ti ti-map-pin" style="font-size:11px"></i> ${esc(o.adresse || '—')}
           </div>
           ${(dateRdv || heureRdv) ? `<div style="font-size:11px;color:#7bb8ef;display:flex;align-items:center;gap:4px;margin-bottom:4px">
             <i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${heureRdv ? ' à ' + heureRdv : ''}
