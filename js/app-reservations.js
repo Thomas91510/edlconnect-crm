@@ -153,19 +153,19 @@ function renderReservations(list){
   document.getElementById('resa-tbody').innerHTML = list.map(r => {
     const dateDemande = r.createdAt ? fmtDate(r.createdAt) : '—';
     const dateSouhaitee = r.dateSouhaitee ? new Date(r.dateSouhaitee).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'}) + (r.heure ? ' ' + r.heure : '') : '—';
-    const locataire = r.locataire ? (r.locataireNom || r.locataire.nom || '—') + '<br><span style="font-size:10px;color:var(--text2)">' + (r.locataire.tel || '') + '</span>' : '—';
+    const locataire = r.locataire ? esc(r.locataireNom || r.locataire.nom || '—') + '<br><span style="font-size:10px;color:var(--text2)">' + esc(r.locataire.tel || '') + '</span>' : '—';
     const statut = r.rdvConfirme
       ? '<span class="badge b-green">✅ Confirmé</span>'
       : '<span class="badge b-amber">⏳ En attente</span>';
 
     return `<tr>
       <td style="font-size:11px">${dateDemande}</td>
-      <td style="font-weight:600;font-size:12px">${r.agence || '—'}</td>
-      <td style="font-size:11px">${r.typeEdl || r.type || '—'}</td>
-      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.adresse || '—'}</td>
+      <td style="font-weight:600;font-size:12px">${esc(r.agence || '—')}</td>
+      <td style="font-size:11px">${esc(r.typeEdl || r.type || '—')}</td>
+      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.adresse || '—')}</td>
       <td style="font-size:11px;font-weight:600;color:var(--blue)">${dateSouhaitee}</td>
       <td style="font-size:11px">${locataire}</td>
-      <td style="font-size:11px">${r.proprietaire ? r.proprietaire : '<span style="color:var(--text3,#c8c8c8)">—</span>'}</td>
+      <td style="font-size:11px">${r.proprietaire ? esc(r.proprietaire) : '<span style="color:var(--text3,#c8c8c8)">—</span>'}</td>
       <td>${statut}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="confirmRdvFromReservation('${r.id || r._supaId}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
@@ -221,7 +221,7 @@ function confirmRdvFromReservation(id){
       <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${bien}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date souhaitée</td><td style="font-weight:600">${dateStr}</td></tr>
       ${(((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
-      ${tempMission.locatairesEntrants && tempMission.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${tempMission.locatairesEntrants.map(e => [e.prenom,e.nom].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
+      ${tempMission.locatairesEntrants && tempMission.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${tempMission.locatairesEntrants.map(e => [esc(e.prenom),esc(e.nom)].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
     </table>`;
 
   // Pré-remplir date/heure
@@ -342,7 +342,7 @@ function openConfirmRdvModal(missionId){
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date</td><td style="font-weight:600">${dateStr}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">🕐 Heure</td><td style="font-weight:600">${heureStr}</td></tr>
       ${(((m.locataires||[]).length) + ((m.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((m.locataires||[]).length) + ((m.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
-      ${m.locatairesEntrants && m.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${m.locatairesEntrants.map(e => [e.prenom,e.nom].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
+      ${m.locatairesEntrants && m.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${m.locatairesEntrants.map(e => [esc(e.prenom),esc(e.nom)].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
     </table>`;
 
   // Pré-remplir les emails
