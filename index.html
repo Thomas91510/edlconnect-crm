@@ -641,9 +641,16 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       <div class="search-wrap"><i class="ti ti-search"></i><input type="text" placeholder="Rechercher…" oninput="searchContacts(this.value)"></div>
       <div class="card">
         <div class="card-head"><span id="contacts-count">— contacts</span><span style="font-size:10px;font-weight:400;color:var(--text2)">ligne orange = doublon potentiel</span></div>
+        <div id="selection-bar" style="display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--blue-bg,#E6F1FB);border:1px solid var(--blue,#185FA5);border-radius:var(--radius,8px);padding:10px 14px;margin-bottom:10px">
+          <span id="selection-count" style="font-size:13px;font-weight:600;color:var(--blue,#185FA5)">0 contact sélectionné</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="clearContactSelection()" style="font-size:12px">Tout désélectionner</button>
+            <button class="btn btn-sm btn-primary" onclick="emailSelectedContacts()" style="font-size:12px"><i class="ti ti-mail" style="font-size:12px"></i> Envoyer un email</button>
+          </div>
+        </div>
         <div style="overflow-x:auto">
           <table class="tbl" style="min-width:680px">
-            <thead><tr><th style="width:18%">Entreprise</th><th style="width:12%">Contact</th><th style="width:16%">Email</th><th style="width:10%">Tél</th><th style="width:9%">Type</th><th style="width:9%">Statut</th><th style="width:10%">Dernier contact</th><th style="width:10%">Moyen</th><th style="width:6%"></th></tr></thead>
+            <thead><tr><th style="width:4%;text-align:center"><input type="checkbox" id="contacts-select-all" onclick="toggleSelectAllContacts(this.checked)" style="cursor:pointer;width:15px;height:15px"></th><th style="width:16%">Entreprise</th><th style="width:12%">Contact</th><th style="width:16%">Email</th><th style="width:9%">Tél</th><th style="width:8%">Type</th><th style="width:8%">Statut</th><th style="width:9%">Dernier contact</th><th style="width:8%">Moyen</th><th style="width:6%"></th></tr></thead>
             <tbody id="contacts-tbody"></tbody>
           </table>
         </div>
@@ -2001,20 +2008,13 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <div><label>Heure souhaitée</label><select id="mr-heure"><option value="">— Flexible —</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option></select></div>
       </div>
 
-      <label id="mr-label-locataire" style="font-weight:600;display:block;margin-bottom:6px">Locataire <span style="color:var(--red)">*</span></label>
+      <label style="font-weight:600;display:block;margin-bottom:6px">Locataire <span style="color:var(--red)">*</span></label>
       <div class="form-grid" style="margin-bottom:8px">
         <div><label>Nom complet</label><input type="text" id="mr-loc-nom" placeholder="Jean Martin"></div>
         <div><label>Téléphone</label><input type="tel" id="mr-loc-tel" placeholder="06 12 34 56 78"></div>
       </div>
       <label>Email du locataire</label>
       <input type="email" id="mr-loc-email" placeholder="jean.martin@email.fr" style="margin-bottom:10px">
-
-      <!-- Locataires entrants (affiché uniquement pour le type Sortant / Entrant) -->
-      <div id="mr-entrants-section" style="display:none;margin-bottom:10px">
-        <label style="font-weight:600;display:block;margin-bottom:6px">Locataire(s) entrant(s) <span style="color:var(--red)">*</span></label>
-        <div id="mr-entrants-list"></div>
-        <button type="button" onclick="mrAddEntrant()" class="btn" style="font-size:12px;padding:6px 12px;margin-top:4px">+ Ajouter un locataire entrant</button>
-      </div>
 
       <label>Notes</label>
       <textarea id="mr-notes" placeholder="Informations complémentaires..." style="min-height:60px;margin-bottom:16px"></textarea>
