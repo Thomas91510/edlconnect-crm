@@ -288,14 +288,14 @@ async function loadDocs() {
     const docs = await resp.json();
     if (!docs||!docs.length) return;
     document.getElementById('docs-section').style.display = 'block';
-    document.getElementById('docs-list').innerHTML = docs.map(d=>`<a href="${d.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;text-decoration:none;color:#fff;border:1px solid rgba(255,255,255,0.1);margin-bottom:8px;background:rgba(255,255,255,0.05)"><span style="font-size:18px">📄</span><span style="flex:1;font-size:13px;font-weight:500">${d.nom}</span><span style="font-size:11px;color:#7bb8ef">Ouvrir →</span></a>`).join('');
+    document.getElementById('docs-list').innerHTML = docs.map(d=>`<a href="${d.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;text-decoration:none;color:#fff;border:1px solid rgba(255,255,255,0.1);margin-bottom:8px;background:rgba(255,255,255,0.05)"><span style="font-size:18px">📄</span><span style="flex:1;font-size:13px;font-weight:500">${esc(d.nom)}</span><span style="font-size:11px;color:#7bb8ef">Ouvrir →</span></a>`).join('');
   } catch(e) {}
 }
 
 function openDetail(o) {
   document.getElementById('detail-title').textContent = o.typeEdl||'État des lieux';
   const badge = o.statut==='realise'?'<span class="badge badge-done" style="font-size:12px;padding:5px 14px">✅ Réalisé</span>':o.statut==='confirmee'||o.statut==='importee'?'<span class="badge badge-confirmed" style="font-size:12px;padding:5px 14px">📅 Confirmé</span>':'<span class="badge badge-pending" style="font-size:12px;padding:5px 14px">⏳ En attente</span>';
-  const rows = [['📋 Type',o.typeEdl||'—'],['📍 Adresse',o.adresse||'—'],['🏠 Bien',[o.bienType,o.bienTypo,o.meuble].filter(Boolean).join(' · ')||'—'],['📅 Date souhaitée',o.dateSouhaitee?new Date(o.dateSouhaitee).toLocaleDateString('fr-FR'):'—'],['🕐 Heure',o.heure||'—'],['🧑 Locataire',o.locataireNom||'—'],['📱 Téléphone',o.locataireTel||'—'],['🔑 Entrant(s)',(o.locatairesEntrants||[]).map(e=>[e.prenom,e.nom].filter(Boolean).join(' ')+(e.tel?' · '+e.tel:'')).join('<br>')||'—'],['🏠 Propriétaire',o.proprietaire||'—']].filter(([,v])=>v&&v!=='—');
+  const rows = [['📋 Type',esc(o.typeEdl)||'—'],['📍 Adresse',esc(o.adresse)||'—'],['🏠 Bien',[o.bienType,o.bienTypo,o.meuble].filter(Boolean).map(esc).join(' · ')||'—'],['📅 Date souhaitée',o.dateSouhaitee?new Date(o.dateSouhaitee).toLocaleDateString('fr-FR'):'—'],['🕐 Heure',esc(o.heure)||'—'],['🧑 Locataire',esc(o.locataireNom)||'—'],['📱 Téléphone',esc(o.locataireTel)||'—'],['🔑 Entrant(s)',(o.locatairesEntrants||[]).map(e=>[e.prenom,e.nom].filter(Boolean).map(esc).join(' ')+(e.tel?' · '+esc(e.tel):'')).join('<br>')||'—'],['🏠 Propriétaire',esc(o.proprietaire)||'—']].filter(([,v])=>v&&v!=='—');
   document.getElementById('detail-body').innerHTML = `<div style="text-align:center;margin-bottom:20px">${badge}</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #f0f0f0"><td style="color:#6b6b6b;padding:10px 0;width:40%;vertical-align:top">${k}</td><td style="font-weight:500;padding:10px 0">${v}</td></tr>`).join('')}</table><div style="font-size:11px;color:#999;text-align:center">Commande reçue le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'—'}</div><div style="margin-top:16px"><button onclick="closeDetail()" style="width:100%;padding:12px;background:#1A5FA8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button></div>`;
   document.getElementById('detail-modal').classList.add('open');
 }
@@ -351,7 +351,7 @@ function selectType(t,btn) { _selectedType=t; document.querySelectorAll('.type-b
 
 // ─── Locataires entrants (type Sortant / Entrant uniquement) ───
 let _entrants = [];
-function esc(v){ return String(v||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function renderEntrants(){
   document.getElementById('entrants-list').innerHTML = _entrants.map((e,i)=>`
     <div style="border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;margin-bottom:8px">
