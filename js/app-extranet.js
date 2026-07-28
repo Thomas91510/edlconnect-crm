@@ -194,7 +194,7 @@ async function showExtranetDashboard(userEmail, accessToken){
       return `<div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:all .15s"
            onmouseover="this.style.background='rgba(24,95,165,0.15)';this.style.borderColor='rgba(55,138,221,0.3)'"
            onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.1)'"
-           onclick="openExtranetOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})">
+           onclick="openExtranetOrderDetail(${esc(JSON.stringify(o))})">
         <div style="padding:14px 16px">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
             <div style="font-weight:600;font-size:13px;color:#fff">${esc(o.typeEdl || 'État des lieux')}</div>
@@ -207,7 +207,7 @@ async function showExtranetDashboard(userEmail, accessToken){
             <i class="ti ti-map-pin" style="font-size:11px"></i> ${esc(o.adresse || '—')}
           </div>
           ${(dateRdv || heureRdv) ? `<div style="font-size:11px;color:#7bb8ef;display:flex;align-items:center;gap:4px;margin-bottom:4px">
-            <i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${heureRdv ? ' à ' + heureRdv : ''}
+            <i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${heureRdv ? ' à ' + esc(heureRdv) : ''}
           </div>` : ''}
           <div style="font-size:11px;color:rgba(255,255,255,0.25)">Demandé le ${o.createdAt ? new Date(o.createdAt).toLocaleDateString('fr-FR') : '—'}</div>
         </div>
@@ -252,8 +252,8 @@ function feRenderDocs(docs){
   }
   wrap.innerHTML = _feDocs.map((d,i) => `
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-      <input type="text" value="${d.nom||''}" placeholder="Nom du document" onchange="feUpdateDoc(${i},'nom',this.value)" style="flex:1">
-      <input type="url" value="${d.url||''}" placeholder="https://drive.google.com/..." onchange="feUpdateDoc(${i},'url',this.value)" style="flex:2">
+      <input type="text" value="${esc(d.nom||'')}" placeholder="Nom du document" onchange="feUpdateDoc(${i},'nom',this.value)" style="flex:1">
+      <input type="url" value="${esc(d.url||'')}" placeholder="https://drive.google.com/..." onchange="feUpdateDoc(${i},'url',this.value)" style="flex:2">
       <button onclick="feRemoveDoc(${i})" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px">✕</button>
     </div>`).join('');
 }
@@ -271,7 +271,7 @@ function feGetDocs(){ return _feDocs.filter(d => d.url && d.url.trim()); }
 
 function fmtEntrants(list){
   if(!Array.isArray(list) || !list.length) return '\u2014';
-  return list.map(e => `${[e.prenom, e.nom].filter(Boolean).join(' ')}${e.tel ? ' \u00b7 \U0001F4F1 '+e.tel : ''}${e.email ? ' \u00b7 \u2709\uFE0F '+e.email : ''}`).join('<br>');
+  return list.map(e => `${[esc(e.prenom), esc(e.nom)].filter(Boolean).join(' ')}${e.tel ? ' \u00b7 \U0001F4F1 '+esc(e.tel) : ''}${e.email ? ' \u00b7 \u2709\uFE0F '+esc(e.email) : ''}`).join('<br>');
 }
 
 function openExtranetOrderDetail(o){
@@ -288,13 +288,13 @@ function openExtranetOrderDetail(o){
   };
 
   const rows = [
-    ['📋 Type', o.typeEdl || '—'],
-    ['📍 Adresse', o.adresse || '—'],
-    ['🏠 Bien', [o.bienType, o.bienTypo, o.meuble].filter(Boolean).join(' · ') || '—'],
+    ['📋 Type', esc(o.typeEdl) || '—'],
+    ['📍 Adresse', esc(o.adresse) || '—'],
+    ['🏠 Bien', esc([o.bienType, o.bienTypo, o.meuble].filter(Boolean).join(' · ')) || '—'],
     ['📅 Date souhaitée', o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR') : '—'],
-    ['🕐 Heure', o.heure || '—'],
-    ['🧑 Locataire', o.locataireNom || '—'],
-    ['📱 Tél. locataire', o.locataireTel || '—'],
+    ['🕐 Heure', esc(o.heure) || '—'],
+    ['🧑 Locataire', esc(o.locataireNom) || '—'],
+    ['📱 Tél. locataire', esc(o.locataireTel) || '—'],
     ['🔑 Locataire(s) entrant(s)', fmtEntrants(o.locatairesEntrants)],
   ].filter(([,v]) => v !== '—');
 
@@ -336,6 +336,13 @@ function extranetRenderDocuments(userEmail){
   const section = document.getElementById('extranet-docs-section');
   const listEl = document.getElementById('extranet-docs-list');
   if(!section || !listEl) return;
+  // N'accepter que les URL http(s) — bloque les schémas dangereux (javascript:, data:)
+  const urlSure = (u) => {
+    try{
+      const parsed = new URL(String(u||''), window.location.origin);
+      return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : '';
+    }catch(e){ return ''; }
+  };
   supabaseClient.auth.getSession().then(({ data }) => fetch('/api/client-documents', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (data?.session?.access_token || '') },
@@ -343,14 +350,18 @@ function extranetRenderDocuments(userEmail){
   })).then(r => r.json()).then(docs => {
     if(!docs || !docs.length){ section.style.display = 'none'; return; }
     section.style.display = 'block';
-    listEl.innerHTML = docs.map(d => `
-      <a href="${d.url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;text-decoration:none;color:#fff;border:1px solid rgba(255,255,255,0.1);margin-bottom:8px;background:rgba(255,255,255,0.05);transition:all .15s"
+    listEl.innerHTML = docs.map(d => {
+      const href = urlSure(d.url);
+      if(!href) return '';
+      return `
+      <a href="${esc(href)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;text-decoration:none;color:#fff;border:1px solid rgba(255,255,255,0.1);margin-bottom:8px;background:rgba(255,255,255,0.05);transition:all .15s"
          onmouseover="this.style.background='rgba(24,95,165,0.15)';this.style.borderColor='rgba(55,138,221,0.3)'"
          onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.borderColor='rgba(255,255,255,0.1)'">
         <span style="font-size:20px">📄</span>
-        <span style="flex:1;font-size:13px;font-weight:500">${d.nom}</span>
+        <span style="flex:1;font-size:13px;font-weight:500">${esc(d.nom)}</span>
         <span style="font-size:11px;color:#7bb8ef">Ouvrir →</span>
-      </a>`).join('');
+      </a>`;
+    }).join('');
   }).catch(() => { section.style.display = 'none'; });
 }
 
@@ -406,7 +417,7 @@ function extranetRenderStats(orders){
   typesEl.innerHTML = Object.entries(byType).length
     ? Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
         <div style="margin-bottom:8px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>${k}</span><span style="font-weight:600">${v}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>${esc(k)}</span><span style="font-weight:600">${v}</span></div>
           <div style="background:var(--border);border-radius:4px;height:4px"><div style="background:var(--blue);height:4px;border-radius:4px;width:${Math.round(v/totalYear*100)}%"></div></div>
         </div>`).join('')
     : '<div style="color:var(--text3)">Aucune donnée</div>';
@@ -415,7 +426,7 @@ function extranetRenderStats(orders){
   typoEl.innerHTML = Object.entries(byTypo).length
     ? Object.entries(byTypo).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
         <div style="margin-bottom:8px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>${k}</span><span style="font-weight:600">${v}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>${esc(k)}</span><span style="font-weight:600">${v}</span></div>
           <div style="background:var(--border);border-radius:4px;height:4px"><div style="background:#27AE60;height:4px;border-radius:4px;width:${Math.round(v/totalYear*100)}%"></div></div>
         </div>`).join('')
     : '<div style="color:var(--text3)">Aucune donnée</div>';
@@ -604,11 +615,11 @@ function bkBuildRecap(){
   const dateStr = new Date(date).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   document.getElementById('bk-recap').innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <tr><td style="color:var(--text3);padding:3px 0;width:35%">Agence</td><td style="font-weight:600">${agence}</td></tr>
-      <tr><td style="color:var(--text3);padding:3px 0">Type</td><td style="font-weight:600">${_bkSelectedType}</td></tr>
-      <tr><td style="color:var(--text3);padding:3px 0">Adresse</td><td>${adresse}</td></tr>
-      ${bien?`<tr><td style="color:var(--text3);padding:3px 0">Bien</td><td>${bien}</td></tr>`:''}
-      <tr><td style="color:var(--text3);padding:3px 0">Date</td><td style="font-weight:600;color:var(--blue)">${dateStr} · ${heure}</td></tr>
+      <tr><td style="color:var(--text3);padding:3px 0;width:35%">Agence</td><td style="font-weight:600">${esc(agence)}</td></tr>
+      <tr><td style="color:var(--text3);padding:3px 0">Type</td><td style="font-weight:600">${esc(_bkSelectedType)}</td></tr>
+      <tr><td style="color:var(--text3);padding:3px 0">Adresse</td><td>${esc(adresse)}</td></tr>
+      ${bien?`<tr><td style="color:var(--text3);padding:3px 0">Bien</td><td>${esc(bien)}</td></tr>`:''}
+      <tr><td style="color:var(--text3);padding:3px 0">Date</td><td style="font-weight:600;color:var(--blue)">${dateStr} · ${esc(heure)}</td></tr>
     </table>`;
 }
 
@@ -667,10 +678,10 @@ async function bkSubmit(){
       document.getElementById('booking-app').style.display = 'none';
       const dateStr = new Date(payload.dateSouhaitee).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
       document.getElementById('bk-success-recap').innerHTML = `
-        <strong>📋 ${payload.typeEdl}</strong><br>
-        📍 ${payload.adresse}<br>
-        📅 ${dateStr} · ${payload.heure||'Horaire flexible'}<br>
-        👤 ${locNom} · ${locTel}`;
+        <strong>📋 ${esc(payload.typeEdl)}</strong><br>
+        📍 ${esc(payload.adresse)}<br>
+        📅 ${dateStr} · ${esc(payload.heure||'Horaire flexible')}<br>
+        👤 ${esc(locNom)} · ${esc(locTel)}`;
       document.getElementById('bk-success').style.display = 'block';
       window.scrollTo({top:0, behavior:'smooth'});
     } else {
@@ -725,7 +736,7 @@ function renderResaStats(){
       const pct = Math.round(count / list.length * 100);
       const emoji = type.toLowerCase().includes('entrant') ? '🔑' : type.toLowerCase().includes('sortant') ? '🚪' : '🔍';
       return `<div style="margin-bottom:4px">
-        ${emoji} ${type} <strong>${count}</strong>
+        ${emoji} ${esc(type)} <strong>${count}</strong>
         <div style="background:var(--border);border-radius:4px;height:4px;margin-top:2px">
           <div style="background:var(--blue);height:4px;border-radius:4px;width:${pct}%"></div>
         </div>
@@ -743,7 +754,7 @@ function renderResaStats(){
     .map(([agency, count]) => {
       const pct = Math.round(count / list.length * 100);
       return `<div style="margin-bottom:4px">
-        🏢 ${agency.length > 20 ? agency.substring(0,20)+'…' : agency} <strong>${count}</strong>
+        🏢 ${esc(agency.length > 20 ? agency.substring(0,20)+'…' : agency)} <strong>${count}</strong>
         <div style="background:var(--border);border-radius:4px;height:4px;margin-top:2px">
           <div style="background:var(--green);height:4px;border-radius:4px;width:${pct}%"></div>
         </div>
@@ -766,7 +777,7 @@ function renderResaStats(){
       <div style="text-align:center;min-width:40px">
         <div style="font-size:11px;font-weight:700;color:var(--blue)">${count}</div>
         <div style="background:var(--blue);border-radius:4px;width:32px;height:${Math.max(4, Math.round(count/maxMonth*40))}px;margin:2px auto"></div>
-        <div style="font-size:10px;color:var(--text2)">${month}</div>
+        <div style="font-size:10px;color:var(--text2)">${esc(month)}</div>
       </div>`).join('') || '<span style="color:var(--text2)">Pas encore de données</span>';
 
   document.getElementById('resa-stats').style.display = 'block';
