@@ -111,7 +111,7 @@ async function loadReservations(){
     startResaAutoRefresh();
 
   } catch(e) {
-    document.getElementById('resa-loading').innerHTML = '<div style="color:var(--red)">❌ Erreur : ' + e.message + '</div>';
+    document.getElementById('resa-loading').innerHTML = '<div style="color:var(--red)">❌ Erreur : ' + esc(e.message) + '</div>';
   }
 }
 
@@ -152,7 +152,7 @@ function renderReservations(list){
 
   document.getElementById('resa-tbody').innerHTML = list.map(r => {
     const dateDemande = r.createdAt ? fmtDate(r.createdAt) : '—';
-    const dateSouhaitee = r.dateSouhaitee ? new Date(r.dateSouhaitee).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'}) + (r.heure ? ' ' + r.heure : '') : '—';
+    const dateSouhaitee = r.dateSouhaitee ? new Date(r.dateSouhaitee).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'}) + (r.heure ? ' ' + esc(r.heure) : '') : '—';
     const locataire = r.locataire ? esc(r.locataireNom || r.locataire.nom || '—') + '<br><span style="font-size:10px;color:var(--text2)">' + esc(r.locataire.tel || '') + '</span>' : '—';
     const statut = r.rdvConfirme
       ? '<span class="badge b-green">✅ Confirmé</span>'
@@ -168,7 +168,7 @@ function renderReservations(list){
       <td style="font-size:11px">${r.proprietaire ? esc(r.proprietaire) : '<span style="color:var(--text3,#c8c8c8)">—</span>'}</td>
       <td>${statut}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
-        <button class="btn btn-sm" onclick="confirmRdvFromReservation('${r.id || r._supaId}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
+        <button class="btn btn-sm" onclick="confirmRdvFromReservation('${esc(r.id || r._supaId)}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
           <i class="ti ti-calendar-check" style="font-size:11px"></i> Confirmer & Créer
         </button>
       </td>
@@ -215,10 +215,10 @@ function confirmRdvFromReservation(id){
   const bien = [r.bienType, r.bienTypo, r.meuble].filter(Boolean).join(' · ') || '—';
 
   document.getElementById('confirm-rdv-recap').innerHTML = `
-    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue)">📋 ${tempMission.type} — ${tempMission.agence}</div>
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue)">📋 ${esc(tempMission.type)} — ${esc(tempMission.agence)}</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${tempMission.adresse||'—'}</td></tr>
-      <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${bien}</td></tr>
+      <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${esc(tempMission.adresse)||'—'}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${esc(bien)}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date souhaitée</td><td style="font-weight:600">${dateStr}</td></tr>
       ${(((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
       ${tempMission.locatairesEntrants && tempMission.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${tempMission.locatairesEntrants.map(e => [esc(e.prenom),esc(e.nom)].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
@@ -335,10 +335,10 @@ function openConfirmRdvModal(missionId){
   const bien = [m.bienType, m.bienTypo, m.bienMeuble].filter(Boolean).join(' · ') || '—';
 
   document.getElementById('confirm-rdv-recap').innerHTML = `
-    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue)">📋 ${m.type} — ${m.agence}</div>
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue)">📋 ${esc(m.type)} — ${esc(m.agence)}</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${m.adresse||'—'}</td></tr>
-      <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${bien}</td></tr>
+      <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${esc(m.adresse)||'—'}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${esc(bien)}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date</td><td style="font-weight:600">${dateStr}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">🕐 Heure</td><td style="font-weight:600">${heureStr}</td></tr>
       ${(((m.locataires||[]).length) + ((m.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((m.locataires||[]).length) + ((m.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
@@ -611,7 +611,8 @@ function mrSelectType(type, btn){
 // ─── Locataires entrants en saisie manuelle (type Sortant / Entrant) ───
 // Même comportement que le formulaire extranet, adapté au style clair du CRM.
 let _mrEntrants = [];
-function mrEsc(v){ return String(v||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+// Échappement complet (aligné sur esc()) pour les valeurs réinjectées dans les attributs
+function mrEsc(v){ return esc(v); }
 function mrRenderEntrants(){
   const list = document.getElementById('mr-entrants-list');
   if(!list) return;
@@ -776,4 +777,3 @@ function copyBookingLink(){
 }
 
 // checkBookingMode est appelé depuis le DOMContentLoaded principal
-
