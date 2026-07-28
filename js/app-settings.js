@@ -501,6 +501,26 @@ function majAffichageAbonnement(){
     else sidebarSub.textContent = 'CRM ' + libelle;
   }
 
+  // Mettre à jour le badge "Pro · Actif" (ciblé par sa classe, pas d'id nécessaire).
+  // Ce badge est codé en dur dans index.html ; on le rend dynamique ici.
+  const badge = document.querySelector('.logo-badges .lbadge-green');
+  if(badge){
+    let texte, afficher = true;
+    if(isAdmin()){ texte = 'Admin'; }
+    else if(role === 'agence'){ afficher = false; } // pas de badge de plan pour une agence
+    else if(plan === 'free'){ texte = 'Gratuit'; }
+    else if(status === 'active'){ texte = libelle + ' · Actif'; }
+    else if(status === 'suspended'){ texte = libelle + ' · Suspendu'; }
+    else { texte = libelle; }
+    if(afficher){
+      badge.style.display = '';
+      // Conserver la pastille (dot) + mettre le texte à jour
+      badge.innerHTML = '<span class="lbadge-active-dot"></span>' + texte;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
   if(isAdmin()){
     info.innerHTML = 'Compte administrateur — accès complet sans abonnement.';
     if(offres) offres.style.display = 'none';
