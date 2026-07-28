@@ -473,27 +473,15 @@ async function loadUserPlan(){
 
 // ─── ABONNEMENT (Stripe Checkout) ─────────────────────────
 function majAffichageAbonnement(){
-  const info = document.getElementById('abo-plan-actuel');
-  const offres = document.getElementById('abo-offres');
-  const gerer = document.getElementById('abo-gerer');
-  if(!info) return;
-
-  // Les agences (extranet) ne sont jamais concernées par l'abonnement :
-  // on masque toute la section pour elles.
+  // Valeurs de plan/rôle — calculées en premier car elles pilotent aussi
+  // le badge de la sidebar, qui doit se mettre à jour sur TOUTES les pages
+  // (pas seulement quand la section Abonnement des Réglages est affichée).
   const role = (_userPlan && _userPlan.role) || 'expert';
-  const section = info.closest('.settings-section');
-  if(role === 'agence'){
-    if(section) section.style.display = 'none';
-    return;
-  } else if(section){
-    section.style.display = '';
-  }
-
   const plan = (_userPlan && _userPlan.plan) || 'free';
   const status = (_userPlan && _userPlan.status) || 'active';
   const libelle = { free:'Gratuit', starter:'Starter', pro:'Pro' }[plan] || plan;
 
-  // Mettre à jour le badge de la sidebar avec le plan réel (au lieu de "CRM Pro" figé)
+  // Sous-titre de la sidebar (au lieu de "CRM Pro" figé)
   const sidebarSub = document.getElementById('sidebar-user-email');
   if(sidebarSub){
     if(isAdmin()) sidebarSub.textContent = 'Administrateur';
@@ -501,24 +489,37 @@ function majAffichageAbonnement(){
     else sidebarSub.textContent = 'CRM ' + libelle;
   }
 
-  // Mettre à jour le badge "Pro · Actif" (ciblé par sa classe, pas d'id nécessaire).
-  // Ce badge est codé en dur dans index.html ; on le rend dynamique ici.
+  // Badge "Pro · Actif" (ciblé par sa classe, pas d'id nécessaire)
   const badge = document.querySelector('.logo-badges .lbadge-green');
   if(badge){
     let texte, afficher = true;
     if(isAdmin()){ texte = 'Admin'; }
-    else if(role === 'agence'){ afficher = false; } // pas de badge de plan pour une agence
+    else if(role === 'agence'){ afficher = false; }
     else if(plan === 'free'){ texte = 'Gratuit'; }
     else if(status === 'active'){ texte = libelle + ' · Actif'; }
     else if(status === 'suspended'){ texte = libelle + ' · Suspendu'; }
     else { texte = libelle; }
     if(afficher){
       badge.style.display = '';
-      // Conserver la pastille (dot) + mettre le texte à jour
       badge.innerHTML = '<span class="lbadge-active-dot"></span>' + texte;
     } else {
       badge.style.display = 'none';
     }
+  }
+
+  // À partir d'ici : gestion de la section Abonnement (Réglages uniquement).
+  const info = document.getElementById('abo-plan-actuel');
+  const offres = document.getElementById('abo-offres');
+  const gerer = document.getElementById('abo-gerer');
+  if(!info) return;
+
+  // Les agences ne voient jamais la section Abonnement.
+  const section = info.closest('.settings-section');
+  if(role === 'agence'){
+    if(section) section.style.display = 'none';
+    return;
+  } else if(section){
+    section.style.display = '';
   }
 
   if(isAdmin()){
