@@ -143,8 +143,11 @@ async function cleanReloadContactsFromSupabase(){
 }
 
 // Donnees volumineuses rechargeables a la demande : jamais ecrites dans le cache
-// du navigateur (limite ~5 Mo). Elles restent en memoire le temps de la session.
-const CLES_NON_PERSISTEES = ['brevoContacts'];
+// du navigateur (limite ~5 Mo). Elles restent en memoire le temps de la session
+// et sont rechargees depuis Supabase a chaque connexion (loadFromSupabase).
+// Les exclure evite de figer l'interface a chaque enregistrement : la
+// serialisation JSON + l'ecriture localStorage sont synchrones et bloquantes.
+const CLES_NON_PERSISTEES = ['brevoContacts', 'contacts', 'prospects', 'trackings'];
 
 function saveToStorage(){
   try{
