@@ -249,15 +249,22 @@ function subscribeRealtime(){
           else DB[dbKey].push(newItem);
         }
 
-        // Sauvegarder en local aussi + re-render
-        try{ localStorage.setItem('edl_crm_db', JSON.stringify(DB)); }catch(e){}
+        // Sauvegarder en local via saveToStorage() : respecte CLES_NON_PERSISTEES
+        // (ne jamais ecrire DB en entier ici, cela contournerait le filtre et
+        // regonflerait le cache a plusieurs Mo, figeant l'interface).
+        try{ if(typeof saveToStorage === 'function') saveToStorage(); }catch(e){}
+
+        // Re-rendu de toutes les vues concernees
         if(typeof renderAll === 'function') renderAll();
         else {
           if(typeof renderDashboard==='function') renderDashboard();
+          if(typeof renderContacts==='function') renderContacts();
           if(typeof renderProspection==='function') renderProspection();
           if(typeof renderMissions==='function') renderMissions();
           if(typeof renderPipeline==='function') renderPipeline();
           if(typeof renderCalendar==='function') renderCalendar();
+          if(typeof renderCampaigns==='function') renderCampaigns();
+          if(typeof renderTracking==='function') renderTracking();
         }
       })
       .subscribe();
