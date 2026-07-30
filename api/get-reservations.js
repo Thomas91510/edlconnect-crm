@@ -51,11 +51,22 @@ export default async function handler(req) {
 
   const _user = await userResp.json();
   const _userId = _user && _user.id;
-  const _isAdmin = _user && _user.email === 'contact@edl-idf.com';
+
+  if(!_userId) {
+    return new Response(JSON.stringify({ error: 'Utilisateur introuvable' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  }
 
   try {
+    // Cloisonnement applique directement dans la requete : chaque abonne ne
+    // recoit que ses propres reservations. Filtrer cote base plutot qu'en
+    // JavaScript garantit que la limite de 100 porte bien sur SES lignes,
+    // et non sur les 100 dernieres tous abonnes confondus.
+    const filtre = `data->>ownerId=eq.${encodeURIComponent(_userId)}`;
     const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/bookings?select=id,data,created_at&order=created_at.desc&limit=100`,
+      `${SUPABASE_URL}/rest/v1/bookings?select=id,data,created_at&${filtre}&order=created_at.desc&limit=100`,
       {
         headers: {
           'apikey': SUPABASE_SERVICE_KEY,
@@ -71,15 +82,11 @@ export default async function handler(req) {
     }
 
     const rows = await resp.json();
-    // Cloisonnement : chaque abonne ne voit que ses reservations.
-    // Les reservations historiques (sans proprietaire) restent visibles
-    // par le compte administrateur uniquement.
+
+    // Filet de securite : on revalide cote serveur que chaque ligne renvoyee
+    // appartient bien a l'appelant, meme si la requete a deja filtre.
     const reservations = (rows || [])
-      .filter(r => {
-        const owner = (r.data && r.data.ownerId) || '';
-        if (owner) return owner === _userId;
-        return _isAdmin;
-      })
+      .filter(r => r && r.data && r.data.ownerId === _userId)
       .map(r => ({ ...r.data, _supaId: r.id }));
 
     return new Response(JSON.stringify(reservations), {
