@@ -4,6 +4,15 @@ export const config = { runtime: 'edge' };
 const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
 const SUPA_URL_IDENT = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 
+// Echappement HTML : cet endpoint est public et non authentifie.
+// Toute valeur venant du formulaire est reinjectee dans du HTML d'email,
+// donc doit etre echappee pour eviter l'injection de balises ou de liens.
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 async function identiteAbonne(userId) {
   const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', notifEmail: 'contact@edl-idf.com' };
   if (!userId) return neutre;
@@ -35,6 +44,10 @@ async function identiteAbonne(userId) {
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BREVO_KEY = process.env.BREVO_API_KEY;
+
+// Compte de repli quand aucun proprietaire ne peut etre identifie.
+// Sans lui, la reservation serait orpheline donc invisible dans tous les CRM.
+const OWNER_PAR_DEFAUT = process.env.DEFAULT_OWNER_ID || '';
 
 export default async function handler(req) {
   if(req.method === 'OPTIONS') {
@@ -84,10 +97,17 @@ export default async function handler(req) {
     const bookingId = 'booking_' + Date.now();
     const createdAt = new Date().toISOString();
 
-    // ── Retrouver l'abonne proprietaire de cette agence ──────
-    // 1) par l'identifiant du contact (liens recents), 2) par l'email de
-    // l'agence, 3) par le nom de l'agence. Vide = compte historique.
+    // ── Retrouver l'abonne proprietaire de cette reservation ────────────
+    // Ordre du plus fiable au moins fiable :
+    //   1) agencyId  : identifiant porte par le lien de reservation
+    //   2) contactId : identifiant du contact (liens recents)
+    //   3) email     : correspondance exacte sur l'email de l'agence
+    //   4) agence    : correspondance sur le nom — PEU FIABLE en multi-abonnes
+    //                  (deux abonnes peuvent avoir un contact du meme nom),
+    //                  d'ou la tracabilite ci-dessous.
+    //   5) repli     : compte par defaut, pour ne jamais creer d'orpheline.
     let ownerId = '';
+    let ownerSource = '';
     if (SUPABASE_SERVICE_KEY && SUPABASE_URL) {
       const supaHeaders = {
         'apikey': SUPABASE_SERVICE_KEY,
@@ -101,12 +121,35 @@ export default async function handler(req) {
           return (rows && rows[0] && rows[0].user_id) || '';
         } catch (e) { return ''; }
       };
-      if (contactId) ownerId = await chercher('id=eq.' + encodeURIComponent(contactId));
-      if (!ownerId && email) ownerId = await chercher('data-%3E%3Eemail=ilike.' + encodeURIComponent(email));
-      if (!ownerId && agence) ownerId = await chercher('data-%3E%3Eentreprise=ilike.' + encodeURIComponent(agence));
+      if (agencyId) {
+        ownerId = await chercher('id=eq.' + encodeURIComponent(agencyId));
+        if (ownerId) ownerSource = 'agencyId';
+      }
+      if (!ownerId && contactId) {
+        ownerId = await chercher('id=eq.' + encodeURIComponent(contactId));
+        if (ownerId) ownerSource = 'contactId';
+      }
+      if (!ownerId && email) {
+        ownerId = await chercher('data-%3E%3Eemail=ilike.' + encodeURIComponent(email));
+        if (ownerId) ownerSource = 'email';
+      }
+      if (!ownerId && agence) {
+        ownerId = await chercher('data-%3E%3Eentreprise=ilike.' + encodeURIComponent(agence));
+        if (ownerId) ownerSource = 'nomAgence';
+      }
     }
 
+    // Repli : mieux vaut une reservation attribuee au compte par defaut
+    // qu'une reservation orpheline que personne ne verra jamais.
+    if (!ownerId && OWNER_PAR_DEFAUT) {
+      ownerId = OWNER_PAR_DEFAUT;
+      ownerSource = 'defaut';
+    }
+    if (!ownerId) ownerSource = 'introuvable';
+
     const IDENT = await identiteAbonne(ownerId);
+    // Nom affiche aux clients : celui de l'abonne, jamais un nom code en dur.
+    const EXPERT = IDENT.signature || IDENT.nom;
 
     // ── 1. Sauvegarder dans la table bookings ──────────────
     if(SUPABASE_SERVICE_KEY && SUPABASE_URL) {
@@ -132,6 +175,7 @@ export default async function handler(req) {
         locataireTel: locataire?.tel || '',
         locataireEmail: locataire?.email || '',
         ownerId: ownerId,
+        ownerSource: ownerSource,
         source: 'booking',
         statut: 'en_attente',
         rdvConfirme: false,
@@ -169,38 +213,38 @@ export default async function handler(req) {
           htmlContent: `
             <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
               <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-                <div style="color:#fff;font-size:18px;font-weight:700">Lokentia</div>
+                <div style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</div>
               </div>
               <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
                 <h2 style="font-size:20px;margin-bottom:6px">✅ Votre demande est bien reçue !</h2>
-                <p style="color:#6b6b6b;margin-bottom:20px">Bonjour <strong>${contact}</strong>, Thomas vous contactera sous <strong>2h</strong> pour confirmer la date définitive.</p>
+                <p style="color:#6b6b6b;margin-bottom:20px">Bonjour <strong>${esc(contact)}</strong>, ${esc(EXPERT)} vous contactera sous <strong>2h</strong> pour confirmer la date définitive.</p>
                 <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:20px">
                   <div style="font-size:12px;font-weight:700;color:#1A5FA8;margin-bottom:12px">📋 Récapitulatif</div>
                   <table style="width:100%;font-size:13px;border-collapse:collapse">
-                    <tr><td style="color:#6b6b6b;padding:4px 0;width:35%">Type d'EDL</td><td style="font-weight:600">${typeEdl}</td></tr>
-                    <tr><td style="color:#6b6b6b;padding:4px 0">Adresse</td><td style="font-weight:600">${adresse}</td></tr>
-                    <tr><td style="color:#6b6b6b;padding:4px 0">Bien</td><td>${bienDesc}</td></tr>
-                    <tr><td style="color:#6b6b6b;padding:4px 0">Date souhaitée</td><td style="font-weight:600;color:#1A5FA8">${dateFormatted}${heure ? ' · ' + heure : ''}</td></tr>
-                    ${dateEntree ? `<tr><td style="color:#6b6b6b;padding:4px 0">Date d'entrée</td><td>${new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</td></tr>` : ''}
-                    <tr><td style="color:#6b6b6b;padding:4px 0">Locataire</td><td>${locataire?.nom || '—'} · ${locataire?.tel || '—'}</td></tr>
-                    ${(locatairesEntrants && locatairesEntrants.length) ? `<tr><td style="color:#6b6b6b;padding:4px 0">Entrant(s)</td><td>${locatairesEntrants.map(e => (e.prenom||'') + ' ' + (e.nom||'')).join(', ')}</td></tr>` : ''}
-                    ${proprietaire ? `<tr><td style="color:#6b6b6b;padding:4px 0">Propriétaire</td><td>${proprietaire}</td></tr>` : ''}
-                    ${notes ? `<tr><td style="color:#6b6b6b;padding:4px 0">Notes</td><td style="font-size:12px">${notes}</td></tr>` : ''}
+                    <tr><td style="color:#6b6b6b;padding:4px 0;width:35%">Type d'EDL</td><td style="font-weight:600">${esc(typeEdl)}</td></tr>
+                    <tr><td style="color:#6b6b6b;padding:4px 0">Adresse</td><td style="font-weight:600">${esc(adresse)}</td></tr>
+                    <tr><td style="color:#6b6b6b;padding:4px 0">Bien</td><td>${esc(bienDesc)}</td></tr>
+                    <tr><td style="color:#6b6b6b;padding:4px 0">Date souhaitée</td><td style="font-weight:600;color:#1A5FA8">${esc(dateFormatted)}${heure ? ' · ' + esc(heure) : ''}</td></tr>
+                    ${dateEntree ? `<tr><td style="color:#6b6b6b;padding:4px 0">Date d'entrée</td><td>${esc(new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}))}</td></tr>` : ''}
+                    <tr><td style="color:#6b6b6b;padding:4px 0">Locataire</td><td>${esc(locataire?.nom || '—')} · ${esc(locataire?.tel || '—')}</td></tr>
+                    ${(locatairesEntrants && locatairesEntrants.length) ? `<tr><td style="color:#6b6b6b;padding:4px 0">Entrant(s)</td><td>${esc(locatairesEntrants.map(e => (e.prenom||'') + ' ' + (e.nom||'')).join(', '))}</td></tr>` : ''}
+                    ${proprietaire ? `<tr><td style="color:#6b6b6b;padding:4px 0">Propriétaire</td><td>${esc(proprietaire)}</td></tr>` : ''}
+                    ${notes ? `<tr><td style="color:#6b6b6b;padding:4px 0">Notes</td><td style="font-size:12px">${esc(notes)}</td></tr>` : ''}
                   </table>
                 </div>
                 <div style="background:#EAF3DE;border-radius:8px;padding:14px;font-size:13px;color:#27500A;margin-bottom:20px">
-                  📅 Thomas vous contactera pour confirmer la date. Le locataire recevra sa convocation une fois le RDV planifié.
+                  📅 ${esc(EXPERT)} vous contactera pour confirmer la date. Le locataire recevra sa convocation une fois le RDV planifié.
                 </div>
                 <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
-                  ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8">${IDENT.tel}</a>` : ''} · 
-                  ✉️ <a href="mailto:${IDENT.replyTo || IDENT.email}" style="color:#1A5FA8">${IDENT.replyTo || IDENT.email}</a>
+                  ${IDENT.tel ? `📞 <a href="tel:${esc(IDENT.tel.replace(/[^0-9+]/g,''))}" style="color:#1A5FA8">${esc(IDENT.tel)}</a> · ` : ''}
+                  ✉️ <a href="mailto:${esc(IDENT.replyTo || IDENT.email)}" style="color:#1A5FA8">${esc(IDENT.replyTo || IDENT.email)}</a>
                 </div>
               </div>
             </div>`
         })
       });
 
-      // ── 3. Email notification Thomas ─────────────────────
+      // ── 3. Email notification a l'abonne proprietaire ─────
       await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
@@ -217,19 +261,23 @@ export default async function handler(req) {
                 <div style="background:#FAEEDA;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:#633806">
                   <strong>⚡ Action requise :</strong> Confirmer la date avec l'agence sous 2h.
                 </div>
+                ${(ownerSource === 'defaut' || ownerSource === 'nomAgence' || ownerSource === 'introuvable') ? `
+                <div style="background:#FCEBEB;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:#791F1F">
+                  <strong>⚠️ Rattachement incertain</strong> — cette demande n'a pas pu être reliée à une fiche contact de façon fiable (${esc(ownerSource)}). Vérifiez qu'elle vous revient bien.
+                </div>` : ''}
                 <table style="width:100%;font-size:13px;border-collapse:collapse">
-                  <tr><td style="color:#999;padding:5px 0;width:35%">Agence</td><td style="font-weight:600">${agence}</td></tr>
-                  <tr><td style="color:#999;padding:5px 0">Contact</td><td>${contact} · <a href="mailto:${email}" style="color:#1A5FA8">${email}</a>${tel ? ' · ' + tel : ''}</td></tr>
-                  <tr><td style="color:#999;padding:5px 0">Type d'EDL</td><td style="font-weight:600">${typeEdl}</td></tr>
-                  <tr><td style="color:#999;padding:5px 0">Adresse</td><td style="font-weight:600">${adresse}</td></tr>
-                  <tr><td style="color:#999;padding:5px 0">Bien</td><td>${bienDesc}</td></tr>
-                  <tr><td style="color:#999;padding:5px 0">Date souhaitée</td><td style="font-weight:600;color:#1A5FA8">${dateFormatted}${heure ? ' · ' + heure : ' · Flexible'}</td></tr>
-                  ${dateEntree ? `<tr><td style="color:#999;padding:5px 0">Date d'entrée</td><td>${new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</td></tr>` : ''}
-                  ${acces ? `<tr><td style="color:#999;padding:5px 0">Accès</td><td>${acces}</td></tr>` : ''}
-                  ${proprietaire ? `<tr><td style="color:#999;padding:5px 0">Propriétaire</td><td>${proprietaire}</td></tr>` : ''}
-                  <tr><td style="color:#999;padding:5px 0">Locataire</td><td><strong>${locataire?.nom || '—'}</strong><br>📞 ${locataire?.tel || '—'}${locataire?.email ? '<br>✉️ ' + locataire.email : ''}</td></tr>
-                  ${(locatairesEntrants && locatairesEntrants.length) ? `<tr><td style="color:#999;padding:5px 0">Locataire(s) entrant(s)</td><td>${locatairesEntrants.map(e => `<strong>${(e.prenom||'') + ' ' + (e.nom||'')}</strong> · 📞 ${e.tel||'—'}${e.email ? ' · ✉️ ' + e.email : ''}`).join('<br>')}</td></tr>` : ''}
-                  ${notes ? `<tr><td style="color:#999;padding:5px 0">Notes</td><td style="color:#6b6b6b">${notes}</td></tr>` : ''}
+                  <tr><td style="color:#999;padding:5px 0;width:35%">Agence</td><td style="font-weight:600">${esc(agence)}</td></tr>
+                  <tr><td style="color:#999;padding:5px 0">Contact</td><td>${esc(contact)} · <a href="mailto:${esc(email)}" style="color:#1A5FA8">${esc(email)}</a>${tel ? ' · ' + esc(tel) : ''}</td></tr>
+                  <tr><td style="color:#999;padding:5px 0">Type d'EDL</td><td style="font-weight:600">${esc(typeEdl)}</td></tr>
+                  <tr><td style="color:#999;padding:5px 0">Adresse</td><td style="font-weight:600">${esc(adresse)}</td></tr>
+                  <tr><td style="color:#999;padding:5px 0">Bien</td><td>${esc(bienDesc)}</td></tr>
+                  <tr><td style="color:#999;padding:5px 0">Date souhaitée</td><td style="font-weight:600;color:#1A5FA8">${esc(dateFormatted)}${heure ? ' · ' + esc(heure) : ' · Flexible'}</td></tr>
+                  ${dateEntree ? `<tr><td style="color:#999;padding:5px 0">Date d'entrée</td><td>${esc(new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}))}</td></tr>` : ''}
+                  ${acces ? `<tr><td style="color:#999;padding:5px 0">Accès</td><td>${esc(acces)}</td></tr>` : ''}
+                  ${proprietaire ? `<tr><td style="color:#999;padding:5px 0">Propriétaire</td><td>${esc(proprietaire)}</td></tr>` : ''}
+                  <tr><td style="color:#999;padding:5px 0">Locataire</td><td><strong>${esc(locataire?.nom || '—')}</strong><br>📞 ${esc(locataire?.tel || '—')}${locataire?.email ? '<br>✉️ ' + esc(locataire.email) : ''}</td></tr>
+                  ${(locatairesEntrants && locatairesEntrants.length) ? `<tr><td style="color:#999;padding:5px 0">Locataire(s) entrant(s)</td><td>${locatairesEntrants.map(e => `<strong>${esc((e.prenom||'') + ' ' + (e.nom||''))}</strong> · 📞 ${esc(e.tel||'—')}${e.email ? ' · ✉️ ' + esc(e.email) : ''}`).join('<br>')}</td></tr>` : ''}
+                  ${notes ? `<tr><td style="color:#999;padding:5px 0">Notes</td><td style="color:#6b6b6b">${esc(notes)}</td></tr>` : ''}
                 </table>
                 <div style="margin-top:20px;text-align:center">
                   <a href="https://app.lokentia.fr" style="background:#1A5FA8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;display:inline-block">
@@ -252,13 +300,16 @@ export default async function handler(req) {
         const entrantsTxt = (locatairesEntrants && locatairesEntrants.length)
           ? '\n👥 Entrant(s): ' + locatairesEntrants.map(e => ((e.prenom||'') + ' ' + (e.nom||'')).trim()).join(', ')
           : '';
+        const alerteTxt = (ownerSource === 'defaut' || ownerSource === 'nomAgence')
+          ? '\n⚠️ Rattachement incertain (' + ownerSource + ')'
+          : '';
         const texte =
           '📅 *Nouvelle réservation reçue*\n' +
           '🏢 Agence: ' + (agence || '—') + '\n' +
           '📋 Type: ' + typeEdl + '\n' +
           '📍 Adresse: ' + adresse + '\n' +
           '🗓️ Date souhaitée: ' + dateFormatted + (heure ? ' · ' + heure : ' · Flexible') + '\n' +
-          '👤 Locataire: ' + ((locataire && locataire.nom) || '—') + entrantsTxt;
+          '👤 Locataire: ' + ((locataire && locataire.nom) || '—') + entrantsTxt + alerteTxt;
         await fetch(slackUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
