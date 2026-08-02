@@ -1,411 +1,885 @@
-export const config = { runtime: 'edge' };
+// === Lokentia CRM — app-reservations.js ===
+// Reservations, confirmation RDV, sync Edouard, saisie manuelle
+// Genere depuis index.html — NE PAS reordonner les fichiers dans index.html
 
-// Domaines authentifies chez Brevo : seuls ceux-ci peuvent servir d'expediteur.
-// Pour les autres abonnes, on expedie depuis Lokentia avec leur nom, et
-// leurs clients repondent directement sur leur adresse (replyTo).
-const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
-const SUPA_URL_BASE = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+// ═══════════════════════════════════════════════════════════
+let _allReservations = [];
 
-async function identiteAbonne(userId) {
-  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', partenaire: '' };
-  if (!userId) return neutre;
-  try {
-    const key = process.env.SUPABASE_SERVICE_KEY;
-    if (!key) return neutre;
-    const r = await fetch(SUPA_URL_BASE + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
-      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
-    });
-    if (!r.ok) return neutre;
-    const rows = await r.json();
-    const d = (rows && rows[0] && rows[0].data) || {};
-    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
-    const mail = (d.expediteurEmail || d.userEmail || '').trim();
-    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
-    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
-    return {
-      nom: nom,
-      email: peutExpedier ? mail : neutre.email,
-      replyTo: (!peutExpedier && mail) ? mail : '',
-      tel: (d.expediteurTel || '').trim(),
-      signature: (d.expediteurSignature || '').trim(),
-      partenaire: (d.expediteurPartenaire || '').trim()
-    };
-  } catch (e) {
-    return neutre;
-  }
+// Auto-refresh réservations toutes les 2 minutes
+let _resaAutoRefreshInterval = null;
+let _resaLastCount = 0;
+
+function startResaAutoRefresh(){
+  if(_resaAutoRefreshInterval) clearInterval(_resaAutoRefreshInterval);
+  _resaAutoRefreshInterval = setInterval(async () => {
+    await silentRefreshReservations();
+  }, 2 * 60 * 1000); // toutes les 2 minutes
 }
 
-export default async function handler(req) {
-  if(req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+async function silentRefreshReservations(){
+  if(!_supaReady || !_currentUser) return;
+  try {
+    const _tk1 = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const resp = await fetch('/api/get-reservations', { headers: { 'Authorization': 'Bearer ' + _tk1 } });
+    if(!resp.ok) return;
+    const rows = await resp.json();
+    const newList = (rows || [])
+      .filter(r => r.statut !== 'importee')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // Détecter les nouvelles réservations
+    const newCount = newList.length;
+    if(_resaLastCount > 0 && newCount > _resaLastCount) {
+      const diff = newCount - _resaLastCount;
+      // Alerte sonore
+      playNotificationSound();
+      // Notification visuelle dans le CRM
+      notify(`🔔 ${diff} nouvelle${diff > 1 ? 's' : ''} réservation${diff > 1 ? 's' : ''} reçue${diff > 1 ? 's' : ''} !`);
+      // Notification push navigateur
+      sendPushNotification(
+        '📥 Nouvelle réservation Lokentia',
+        `${diff} nouvelle${diff > 1 ? 's' : ''} demande${diff > 1 ? 's' : ''} d'état des lieux reçue${diff > 1 ? 's' : ''} !`
+      );
+      // Badge nav
+      const pending = newList.filter(r => !r.rdvConfirme).length;
+      const badge = document.getElementById('resa-nav-badge');
+      if(pending > 0){ badge.style.display='inline'; badge.textContent=pending; }
+      // Mettre à jour si on est sur l'onglet réservations
+      if(document.getElementById('view-reservations').classList.contains('active')){
+        _allReservations = newList;
+        updateReservationsKPIs();
+        renderReservations(_allReservations);
       }
+    }
+    _resaLastCount = newCount;
+    _allReservations = newList;
+  } catch(e) { /* silencieux */ }
+}
+
+function playNotificationSound(){
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Jouer 3 bips courts
+    [0, 0.2, 0.4].forEach(delay => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.15);
     });
-  }
+  } catch(e) { /* pas de son si non supporté */ }
+}
 
-  if(req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
+async function loadReservations(){
+  if(!_supaReady || !_currentUser) { notify('⚠️ Connexion Supabase requise', 'warn'); return; }
 
-  // ── Authentification obligatoire : jeton de session Supabase ──
-  const _authHeader = req.headers.get('authorization') || '';
-  const _token = _authHeader.replace('Bearer ', '').trim();
-  if(!_token) {
-    return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-  }
-  const _userResp = await fetch(`${'https://pvuctwflxvvxdawsxceu.supabase.co'}/auth/v1/user`, {
-    headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic', 'Authorization': `Bearer ${_token}` }
-  });
-  if(!_userResp.ok) {
-    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-  }
-
-  const _user = await _userResp.json();
-  const IDENT = await identiteAbonne(_user && _user.id);
-
-  const BREVO_KEY = process.env.BREVO_API_KEY;
-  if(!BREVO_KEY) {
-    return new Response(JSON.stringify({ error: 'Clé Brevo manquante' }), { status: 500 });
-  }
+  document.getElementById('resa-loading').innerHTML = '<div style="font-size:32px;margin-bottom:12px">⏳</div>Chargement des réservations…';
+  document.getElementById('resa-table-wrap').style.display = 'none';
 
   try {
-    const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, locataires, expertNom, expertTel, message } = await req.json();
-    // Liste complète des locataires (principal + supplémentaires)
-    // On ne retient que les locataires disposant d'un email ; sinon repli sur la saisie de la modal
-    let allLocataires = (locataires || []).filter(l => l && l.email);
-    if(allLocataires.length === 0 && locataireEmail){
-      allLocataires = [{ civilite: locataireCivilite||'', nom: locataireNom||'', tel:'', email: locataireEmail }];
-    }
-    const civilite = locataireCivilite || '';
-    const isFemme = civilite === 'Mme';
-    const isHomme = civilite === 'M.';
-    const salutation = civilite && locataireNom ? civilite + ' ' + locataireNom : (locataireNom || '');
-
-    if(!agentEmail || !mission) {
-      return new Response(JSON.stringify({ error: 'Données manquantes' }), { status: 400 });
-    }
-
-    const dateObj = mission.date ? new Date(mission.date) : null;
-    const dateStr = dateObj ? dateObj.toLocaleDateString('fr-FR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    }) : '—';
-    const heureStr = dateObj ? dateObj.toLocaleTimeString('fr-FR', {
-      hour: '2-digit', minute: '2-digit'
-    }) : '—';
-    const bien = [mission.bienType, mission.bienTypo, mission.bienMeuble].filter(Boolean).join(' · ') || 'Non précisé';
-    const dureeLabel = mission.dureeEstimee || '1h';
-    const typeEdl = (mission.type || '').toLowerCase();
-
-    const isEntrant = typeEdl.includes('entrant');
-    const isSortant = typeEdl.includes('sortant') && !typeEdl.includes('entrant');
-    const isDouble = typeEdl.includes('sortant') && typeEdl.includes('entrant');
-    const isPre = typeEdl.includes('pré') || typeEdl.includes('pre');
-
-    // Bloc "Expert qui se déplace" (affiché si renseigné)
-    const expertBlockAgent = expertNom
-      ? `<tr><td style="color:#6b6b6b;padding:5px 0">Expert</td><td style="font-weight:600">${expertNom}${expertTel ? ' — 📱 ' + expertTel : ''}</td></tr>`
-      : '';
-    const expertBlockLoc = expertNom
-      ? `👤 Expert qui se déplacera : <strong>${expertNom}</strong>${expertTel ? '<br>📱 ' + expertTel : ''}<br>`
-      : '';
-
-    // ── EMAIL AGENT (identique pour tous les types) ────────
-    const agentHtml = `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
-<div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
-  </div>
-  <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <h2 style="font-size:20px;margin:0 0 16px 0">✅ Confirmation de votre état des lieux</h2>
-    <table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:20px">
-      <tr><td style="color:#6b6b6b;padding:5px 0;width:35%">Type</td><td style="font-weight:600">${mission.type}</td></tr>
-      <tr><td style="color:#6b6b6b;padding:5px 0">Adresse</td><td style="font-weight:600">${mission.adresse}</td></tr>
-      <tr><td style="color:#6b6b6b;padding:5px 0">Bien</td><td>${bien}</td></tr>
-      <tr><td style="color:#6b6b6b;padding:5px 0">Date</td><td style="font-weight:600;color:#1A5FA8">${dateStr}</td></tr>
-      <tr><td style="color:#6b6b6b;padding:5px 0">Heure</td><td style="font-weight:600;color:#1A5FA8">${heureStr}</td></tr>
-      ${expertBlockAgent}
-      ${locataireNom ? `<tr><td style="color:#6b6b6b;padding:5px 0">Locataire</td><td>${locataireNom}</td></tr>` : ''}
-      ${mission.proprietaire ? `<tr><td style="color:#6b6b6b;padding:5px 0">Propriétaire</td><td>${mission.proprietaire}</td></tr>` : ''}
-      ${mission.acces ? `<tr><td style="color:#6b6b6b;padding:5px 0">Accès</td><td>${mission.acces}</td></tr>` : ''}
-    </table>
-    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
-    <div style="background:#EAF3DE;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#27500A;line-height:1.7">
-      ✅ Notre expert sera présent à l'heure indiquée. Le rapport vous sera transmis dans les <strong>24h</strong> avec signature électronique.
-    </div>
-    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px">
-      <strong>${IDENT.signature || IDENT.nom}</strong><br>
-      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8">${IDENT.tel}</a> · ` : ''}
-      ${IDENT.replyTo || IDENT.email ? `✉️ <a href="mailto:${IDENT.replyTo || IDENT.email}" style="color:#1A5FA8">${IDENT.replyTo || IDENT.email}</a>` : ''}
-    </div>
-  </div>
-</div>
-</body></html>`;
-
-    // ── EMAIL LOCATAIRE — EDL ENTRANT ──────────────────────
-    const locataireEntrantHtml = `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
-<div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
-  </div>
-  <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_BONJOUR__</p>
-    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
-      Je vous confirme notre rendez-vous pour l'état des lieux d'entrée de votre logement situé au :
-    </p>
-
-    <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
-      📍 <strong>${mission.adresse}</strong><br>
-      🏠 Type de bien : <strong>${bien}</strong><br>
-      📅 Date et heure : <strong>${dateStr} à ${heureStr}</strong><br>
-      ⏱️ Durée estimée de l'intervention : <strong>environ ${dureeLabel}</strong><br>
-      ${expertBlockLoc}    </div>
-
-    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
-      Nous intervenons en tant que mandataires de la société <strong>${mission.agence}</strong>.
-    </p>
-
-    <div style="background:#f8f8f6;border-radius:8px;padding:16px;margin-bottom:20px">
-      <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:10px">📋 Merci de bien vouloir vous munir des documents suivants le jour du rendez-vous :</div>
-      <div style="font-size:13px;color:#444;line-height:2">
-        • 🪪 Votre pièce d'identité<br>
-        • 🛡️ Votre attestation d'assurance habitation <strong>(obligatoire avant la remise des clés)</strong>
-      </div>
-    </div>
-
-    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
-      Nous comptons sur votre ponctualité afin d'assurer le bon déroulement de l'état des lieux. 🙏
-    </p>
-
-    ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
-
-    ${IDENT.partenaire ? `<div style="border-top:1px dashed #e5e5e2;margin:20px 0;padding-top:20px">
-      <div style="font-size:13px;font-weight:700;color:#1A5FA8;margin-bottom:8px">💡 Astuce pour votre emménagement :</div>
-      <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 8px 0">
-        Afin de vous accompagner dans vos démarches (ouverture de compteurs, changement d'adresse, etc.), découvrez ces services gratuits :
-      </p>
-      <a href="${IDENT.partenaire}" style="display:inline-block;background:#1A5FA8;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">
-        👉 Découvrir
-      </a>
-    </div>` : ''}
-
-    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;margin-top:20px;line-height:1.8">
-      En cas d'empêchement ou pour toute question, n'hésitez pas à me contacter :<br>
-      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
-      ✉️ Par retour de mail<br><br>
-      Dans l'attente de vous rencontrer,<br>
-      Cordialement,<br>
-      <strong>${IDENT.signature || IDENT.nom}</strong>
-    </div>
-  </div>
-</div>
-</body></html>`;
-
-    // ── EMAIL LOCATAIRE — EDL SORTANT ──────────────────────
-    const locataireSortantHtml = `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
-<div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
-  </div>
-  <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>
-    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
-      Suite à notre conversation, nous vous confirmons le rendez-vous pour effectuer l'état des lieux de sortie de votre logement, diligenté par <strong>${mission.agence}</strong>.
-    </p>
-
-    <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:24px;font-size:13px;color:#0C447C;line-height:2">
-      📅 Date : <strong>${dateStr}</strong><br>
-      🕘 Heure : <strong>${heureStr}</strong><br>
-      📍 Adresse : <strong>${mission.adresse}</strong><br>
-      ⏱️ Durée estimée de l'intervention : <strong>environ ${dureeLabel}</strong><br>
-      ${expertBlockLoc}    </div>
-
-    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
-      Afin que l'état des lieux se déroule dans les meilleures conditions et conformément à la législation, nous vous remercions de bien vouloir respecter les points suivants :
-    </p>
-
-    <div style="margin-bottom:16px">
-      <div style="background:#FFF3CD;border-left:4px solid #FFA500;border-radius:0 8px 8px 0;padding:14px;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:6px">📦 1. Le logement doit être entièrement vide</div>
-        <div style="font-size:13px;color:#444;line-height:1.7">
-          Tous vos meubles et effets personnels doivent avoir été déménagés. Aucun objet ne doit rester dans l'appartement, la cave, le garage ou le grenier.
-        </div>
-      </div>
-
-      <div style="background:#FFF3CD;border-left:4px solid #FFA500;border-radius:0 8px 8px 0;padding:14px;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:6px">🧹 2. Le logement doit être parfaitement nettoyé</div>
-        <div style="font-size:13px;color:#444;line-height:1.7">
-          Cela inclut :<br>
-          • Les sols (aspirés et lavés)<br>
-          • Les murs (lessivés si nécessaire)<br>
-          • Les vitres et encadrements de fenêtres<br>
-          • La cuisine (plaques de cuisson, hotte, four, évier, placards)<br>
-          • La salle de bain (sanitaires, joints, aération)<br>
-          • Les balcons et terrasses
-        </div>
-      </div>
-
-      <div style="background:#FFF3CD;border-left:4px solid #FFA500;border-radius:0 8px 8px 0;padding:14px;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:6px">🔑 3. L'ensemble des clés doit être restitué</div>
-        <div style="font-size:13px;color:#444;line-height:1.7">
-          Merci de préparer toutes les clés du logement, de la boîte aux lettres, de la cave, du garage, ainsi que les badges d'accès et les télécommandes.
-        </div>
-      </div>
-    </div>
-
-    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
-
-    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
-      Pour toute question ou en cas d'empêchement majeur, n'hésitez pas à nous contacter :<br>
-      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
-      ✉️ Par retour de mail<br><br>
-      Cordialement,<br>
-      <strong>${IDENT.signature || IDENT.nom}</strong>
-    </div>
-  </div>
-</div>
-</body></html>`;
-
-    // ── EMAIL LOCATAIRE — PRÉ-ÉTAT DES LIEUX ──────────────
-    const locatairePreHtml = `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
-<div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
-  </div>
-  <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>
-    <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
-      Nous vous confirmons le rendez-vous pour votre <strong>pré-état des lieux</strong>, diligenté par <strong>${mission.agence}</strong>.<br>
-      Cette visite préventive vous permettra d'anticiper les travaux à réaliser avant votre départ officiel.
-    </p>
-
-    <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
-      📅 Date : <strong>${dateStr}</strong><br>
-      🕘 Heure : <strong>${heureStr}</strong><br>
-      📍 Adresse : <strong>${mission.adresse}</strong><br>
-      ⏱️ Durée estimée de l'intervention : <strong>environ ${dureeLabel}</strong><br>
-      ${expertBlockLoc}    </div>
-
-    <div style="background:#EAF3DE;border-radius:8px;padding:16px;margin-bottom:20px">
-      <div style="font-size:13px;font-weight:700;color:#27500A;margin-bottom:8px">💡 Comment profiter au mieux de cette visite :</div>
-      <div style="font-size:13px;color:#27500A;line-height:1.9">
-        ✓ Notez toutes vos questions sur l'état du logement<br>
-        ✓ Identifiez les éventuels dommages à réparer avant la sortie<br>
-        ✓ Comparez avec votre état des lieux d'entrée si possible<br>
-        ✓ Demandez conseil à l'expert sur les réparations prioritaires
-      </div>
-    </div>
-
-    <div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#555;line-height:1.7">
-      ℹ️ <strong>Bon à savoir :</strong> Le pré-état des lieux n'a pas de valeur contractuelle. Il vous donne simplement le temps d'effectuer les réparations nécessaires avant l'état des lieux officiel de sortie.
-    </div>
-
-    ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
-
-    <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
-      Pour toute question, n'hésitez pas à nous contacter :<br>
-      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
-      ✉️ Par retour de mail<br><br>
-      Cordialement,<br>
-      <strong>${IDENT.signature || IDENT.nom}</strong>
-    </div>
-  </div>
-</div>
-</body></html>`;
-
-    // ── Choisir le bon template locataire ──────────────────
-    // Fonction qui retourne le template + sujet adaptés à UN locataire donné.
-    // Pour un EDL Sortant/Entrant, le rôle du locataire (marqué à la source)
-    // détermine s'il reçoit la convocation d'entrée ou de sortie ; les autres
-    // types (entrant seul, sortant seul, pré-EDL) utilisent le même pour tous.
-    function templatePourLocataire(loc){
-      let tpl, sujet, kind;
-      if(isDouble){
-        if(loc && loc.role === 'entrant'){ kind = 'entree'; }
-        else { kind = 'sortie'; }
-      } else if(isEntrant){ kind = 'entree'; }
-      else if(isSortant){ kind = 'sortie'; }
-      else { kind = 'pre'; }
-
-      if(kind === 'entree'){
-        tpl = locataireEntrantHtml;
-        sujet = `🔑 Confirmation état des lieux d'entrée — ${dateStr} à ${heureStr}`;
-      } else if(kind === 'sortie'){
-        tpl = locataireSortantHtml;
-        sujet = `🚪 Confirmation état des lieux de sortie — ${dateStr} à ${heureStr}`;
-      } else {
-        tpl = locatairePreHtml;
-        sujet = `🔍 Confirmation pré-état des lieux — ${dateStr} à ${heureStr}`;
-      }
-      return { tpl, sujet };
-    }
-
-    // ── Envoi des emails ───────────────────────────────────
-    const emailsToSend = [];
-
-    emailsToSend.push(fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
-      body: JSON.stringify({
-        sender: { name: IDENT.nom, email: IDENT.email },
-        to: [{ email: agentEmail }],
-        replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
-        subject: `✅ Confirmation EDL — ${mission.type} · ${dateStr} · ${mission.adresse}`,
-        htmlContent: agentHtml
-      })
-    }));
-
-    // Envoyer à chaque locataire son email, avec le bon template et son propre nom
-    allLocataires.forEach(loc => {
-      if(!loc.email) return;
-      const { tpl, sujet } = templatePourLocataire(loc);
-      const nomLoc = (loc.nom || '').trim();
-      const civLoc = (loc.civilite || '').trim();
-      // Salutations personnalisées, remplaçant les placeholders des templates
-      const salutBonjour = nomLoc
-        ? 'Bonjour <strong>' + (civLoc ? civLoc + ' ' + nomLoc : nomLoc) + '</strong>,'
-        : 'Bonjour,';
-      const salutFormel = nomLoc
-        ? '<strong>' + (civLoc ? civLoc + ' ' + nomLoc : nomLoc) + '</strong>,'
-        : 'Madame, Monsieur,';
-      const htmlPerso = tpl
-        .split('__SALUT_BONJOUR__').join(salutBonjour)
-        .split('__SALUT_FORMEL__').join(salutFormel);
-      emailsToSend.push(fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
-        body: JSON.stringify({
-          sender: { name: IDENT.nom, email: IDENT.email },
-          to: [{ email: loc.email, name: (civLoc + ' ' + nomLoc).trim() || '' }],
-          replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
-          subject: sujet,
-          htmlContent: htmlPerso
-        })
-      }));
+    // Lire les réservations booking via l'API dédiée
+    const _tk2 = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const resp = await fetch('/api/get-reservations', {
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _tk2 }
     });
 
-    await Promise.all(emailsToSend);
+    if(!resp.ok) throw new Error('Erreur chargement réservations');
+    const rows = await resp.json();
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
+    _allReservations = (rows || [])
+      .filter(r => r.statut !== 'importee')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    updateReservationsKPIs();
+    renderReservations(_allReservations);
+    renderResaStats();
+    checkNotifPermission();
+
+    // Badge nav
+    const pending = _allReservations.filter(r => !r.rdvConfirme).length;
+    const badge = document.getElementById('resa-nav-badge');
+    if(pending > 0){ badge.style.display='inline'; badge.textContent=pending; }
+    else badge.style.display='none';
+
+    // Démarrer l'auto-refresh
+    _resaLastCount = _allReservations.length;
+    startResaAutoRefresh();
 
   } catch(e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    document.getElementById('resa-loading').innerHTML = '<div style="color:var(--red)">❌ Erreur : ' + esc(e.message) + '</div>';
+  }
+}
+
+function updateReservationsKPIs(){
+  const total = _allReservations.length;
+  const pending = _allReservations.filter(r => !r.rdvConfirme).length;
+  const confirmed = _allReservations.filter(r => r.rdvConfirme).length;
+  const today = _allReservations.filter(r => {
+    if(!r.createdAt) return false;
+    const d = new Date(r.createdAt);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  }).length;
+
+  document.getElementById('resa-total').textContent = total || '0';
+  document.getElementById('resa-pending').textContent = pending || '0';
+  document.getElementById('resa-confirmed').textContent = confirmed || '0';
+  document.getElementById('resa-today').textContent = today || '0';
+}
+
+function filterReservations(){
+  const filter = document.getElementById('resa-filter').value;
+  let list = _allReservations;
+  if(filter === 'pending') list = list.filter(r => !r.rdvConfirme);
+  if(filter === 'confirmed') list = list.filter(r => r.rdvConfirme);
+  renderReservations(list);
+}
+
+function renderReservations(list){
+  document.getElementById('resa-loading').style.display = 'none';
+  document.getElementById('resa-table-wrap').style.display = 'block';
+  document.getElementById('resa-count').textContent = list.length + ' réservation' + (list.length > 1 ? 's' : '');
+
+  if(!list.length){
+    document.getElementById('resa-tbody').innerHTML = '<tr><td colspan="9" class="empty">Aucune réservation trouvée</td></tr>';
+    return;
+  }
+
+  document.getElementById('resa-tbody').innerHTML = list.map(r => {
+    const dateDemande = r.createdAt ? fmtDate(r.createdAt) : '—';
+    const dateSouhaitee = r.dateSouhaitee ? new Date(r.dateSouhaitee).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'}) + (r.heure ? ' ' + esc(r.heure) : '') : '—';
+    const locataire = r.locataire ? esc(r.locataireNom || r.locataire.nom || '—') + '<br><span style="font-size:10px;color:var(--text2)">' + esc(r.locataire.tel || '') + '</span>' : '—';
+    const statut = r.rdvConfirme
+      ? '<span class="badge b-green">✅ Confirmé</span>'
+      : '<span class="badge b-amber">⏳ En attente</span>';
+
+    return `<tr>
+      <td style="font-size:11px">${dateDemande}</td>
+      <td style="font-weight:600;font-size:12px">${esc(r.agence || '—')}</td>
+      <td style="font-size:11px">${esc(r.typeEdl || r.type || '—')}</td>
+      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.adresse || '—')}</td>
+      <td style="font-size:11px;font-weight:600;color:var(--blue)">${dateSouhaitee}</td>
+      <td style="font-size:11px">${locataire}</td>
+      <td style="font-size:11px">${r.proprietaire ? esc(r.proprietaire) : '<span style="color:var(--text3,#c8c8c8)">—</span>'}</td>
+      <td>${statut}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="confirmRdvFromReservation('${esc(r.id || r._supaId)}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
+          <i class="ti ti-calendar-check" style="font-size:11px"></i> Confirmer & Créer
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── CHOIX DES DESTINATAIRES DE LA CONFIRMATION ────────────
+// Les cases sont injectees dans la modal a la volee : cela evite de toucher
+// index.html, tres volumineux, pour un ajout purement fonctionnel.
+function ensureConfirmRdvOptions(){
+  if(document.getElementById('confirm-rdv-envoi-options')) return;
+  const msgEl = document.getElementById('confirm-rdv-message');
+  if(!msgEl) return;
+
+  const bloc = document.createElement('div');
+  bloc.id = 'confirm-rdv-envoi-options';
+  bloc.style.cssText = 'margin-top:14px;border:1px solid var(--border2);border-radius:var(--radius);padding:12px 14px;background:var(--bg2)';
+  bloc.innerHTML =
+    '<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Destinataires</div>' +
+    '<label style="display:flex;align-items:center;gap:9px;margin:0 0 8px 0;cursor:pointer;font-size:13px;color:var(--text)">' +
+      '<input type="checkbox" id="confirm-rdv-envoi-agence" checked style="width:17px;height:17px;cursor:pointer;flex-shrink:0">' +
+      '<span>📧 Confirmation à l\'agence</span>' +
+    '</label>' +
+    '<label style="display:flex;align-items:center;gap:9px;margin:0;cursor:pointer;font-size:13px;color:var(--text)">' +
+      '<input type="checkbox" id="confirm-rdv-envoi-locataires" checked style="width:17px;height:17px;cursor:pointer;flex-shrink:0">' +
+      '<span>👤 Convocation au(x) locataire(s)</span>' +
+    '</label>' +
+    '<div id="confirm-rdv-envoi-note" style="font-size:11.5px;color:var(--text2);margin-top:9px;line-height:1.5"></div>';
+
+  msgEl.parentNode.insertBefore(bloc, msgEl.nextSibling);
+
+  document.getElementById('confirm-rdv-envoi-agence').addEventListener('change', updateConfirmRdvEnvoiNote);
+  document.getElementById('confirm-rdv-envoi-locataires').addEventListener('change', updateConfirmRdvEnvoiNote);
+}
+
+// Met a jour le bandeau pour qu'il reflete la selection reelle.
+function updateConfirmRdvEnvoiNote(){
+  const ag = document.getElementById('confirm-rdv-envoi-agence');
+  const lo = document.getElementById('confirm-rdv-envoi-locataires');
+  const note = document.getElementById('confirm-rdv-envoi-note');
+  const btn = document.getElementById('confirm-rdv-btn');
+  if(!ag || !lo || !note) return;
+
+  let txt = '';
+  if(ag.checked && lo.checked)       txt = '⚡ L\'agence et le(s) locataire(s) recevront un email immédiatement.';
+  else if(ag.checked && !lo.checked) txt = '⚡ Seule l\'agence sera prévenue. Un encart lui rappellera d\'informer elle-même le locataire.';
+  else if(!ag.checked && lo.checked) txt = '⚡ Seul(s) le(s) locataire(s) recevront leur convocation.';
+  else                               txt = '⚠️ Aucun email ne sera envoyé — le RDV sera simplement enregistré.';
+  note.textContent = txt;
+  note.style.color = (!ag.checked && !lo.checked) ? 'var(--amber-text)' : 'var(--text2)';
+
+  if(btn && !btn.disabled){
+    btn.innerHTML = (!ag.checked && !lo.checked)
+      ? '<i class="ti ti-check"></i> Enregistrer sans envoyer'
+      : '<i class="ti ti-send"></i> Envoyer les confirmations';
+  }
+
+  // Neutraliser l'ancien bandeau fixe de la modal, qui annoncerait sinon
+  // un envoi a tout le monde en contradiction avec la selection.
+  const modal = document.getElementById('modal-confirm-rdv');
+  if(modal){
+    modal.querySelectorAll('div').forEach(d => {
+      if(d.children.length === 0 && d.textContent.indexOf('seront envoyés immédiatement') !== -1){
+        d.style.display = 'none';
+      }
     });
   }
 }
 
+function resetConfirmRdvOptions(){
+  ensureConfirmRdvOptions();
+  const ag = document.getElementById('confirm-rdv-envoi-agence');
+  const lo = document.getElementById('confirm-rdv-envoi-locataires');
+  if(ag) ag.checked = true;
+  if(lo) lo.checked = true;
+  updateConfirmRdvEnvoiNote();
+}
+
+function confirmRdvFromReservation(id){
+  const r = _allReservations.find(x => (x.id || x._supaId) === id);
+  if(!r){ notify('Réservation introuvable', 'warn'); return; }
+
+  // Créer un objet mission temporaire depuis la réservation
+  const tempMission = {
+    id: r.id || r._supaId,
+    agence: r.agence || '',
+    emailClient: r.email || '',
+    type: r.typeEdl || r.type || 'EDL entrant',
+    adresse: r.adresse || '',
+    bienType: r.bienType || '',
+    bienTypo: r.bienTypo || '',
+    bienMeuble: r.meuble || '',
+    superficie: r.superficie || '',
+    dateEntree: r.dateEntree || '',
+    acces: r.acces || '',
+    proprietaire: r.proprietaire || '',
+    date: r.dateSouhaitee || '',
+    locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
+    locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
+    locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
+    locataireCivilite: r.locataireCivilite || (r.locataire && r.locataire.civilite) || '',
+    locataires: r.locataires || [],
+    locatairesEntrants: r.locatairesEntrants || [],
+    expertId: r.expertId || ''
+  };
+
+  // Stocker temporairement et ouvrir la modal
+  _confirmRdvMissionId = '__resa__' + id;
+  window._tempResaMission = tempMission;
+  window._tempResaId = id;
+
+  // Remplir la modal
+  const dateObj = r.dateSouhaitee ? new Date(r.dateSouhaitee) : null;
+  const dateStr = dateObj ? dateObj.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '—';
+  const bien = [r.bienType, r.bienTypo, r.meuble].filter(Boolean).join(' · ') || '—';
+
+  document.getElementById('confirm-rdv-recap').innerHTML = `
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue)">📋 ${esc(tempMission.type)} — ${esc(tempMission.agence)}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${esc(tempMission.adresse)||'—'}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${esc(bien)}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date souhaitée</td><td style="font-weight:600">${dateStr}</td></tr>
+      ${(((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
+      ${tempMission.locatairesEntrants && tempMission.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${tempMission.locatairesEntrants.map(e => [esc(e.prenom),esc(e.nom)].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
+    </table>`;
+
+  // Pré-remplir date/heure
+  if(r.dateSouhaitee){
+    const d = new Date(r.dateSouhaitee);
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('confirm-rdv-date').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  }
+  document.getElementById('confirm-rdv-heure').value = r.heure || '';
+  document.getElementById('confirm-rdv-agent-email').value = r.email || '';
+  document.getElementById('confirm-rdv-loc-email').value = tempMission.locataireEmail;
+  document.getElementById('confirm-rdv-loc-nom').value = tempMission.locataireNom;
+  const civEl = document.getElementById('confirm-rdv-civilite');
+  if(civEl) civEl.value = tempMission.locataireCivilite || '';
+  document.getElementById('confirm-rdv-message').value = '';
+  populateExpertDropdown(tempMission.expertId || '');
+
+  const btn = document.getElementById('confirm-rdv-btn');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-send"></i> Envoyer les confirmations';
+
+  resetConfirmRdvOptions();
+  openModal('modal-confirm-rdv');
+}
+
+function createMissionFromReservation(id){
+  const r = _allReservations.find(x => (x.id || x._supaId) === id);
+  if(!r){ notify('Réservation introuvable', 'warn'); return; }
+
+  // Créer la mission dans le CRM local
+  const mission = {
+    id: 'm_booking_' + Date.now(),
+    agence: r.agence || '',
+    emailClient: r.email || '',
+    contact: r.contact || '',
+    typeClient: 'Professionnel',
+    adresse: r.adresse || '',
+    bienType: r.bienType || '',
+    bienTypo: r.bienTypo || '',
+    bienMeuble: r.meuble || '',
+    superficie: r.superficie || '',
+    dateEntree: r.dateEntree || '',
+    acces: r.acces || '',
+    proprietaire: r.proprietaire || '',
+    type: r.typeEdl || r.type || 'EDL entrant',
+    date: (r.dateSouhaitee && r.heure) ? (r.dateSouhaitee + 'T' + r.heure.replace('h',':').padEnd(5,'0') + ':00') : (r.dateSouhaitee || ''),
+    montant: 0,
+    statut: 'planifiée',
+    locataireCivilite: r.locataireCivilite || (r.locataire && r.locataire.civilite) || '',
+    locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
+    locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
+    locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
+    locataires: r.locataires || [],
+    locatairesEntrants: r.locatairesEntrants || [],
+    expertId: r.expertId || '',
+    notes: 'Importé depuis réservation booking. ' + (r.notes || ''),
+    source: 'booking',
+    createdAt: new Date().toISOString()
+  };
+
+  DB.missions.push(mission);
+  saveToStorage();
+  // Enregistrement immediat dans Supabase, pour la meme raison que ci-dessus :
+  // ne pas dependre du delai de 1,5 s avant que la reservation soit marquee.
+  if(typeof pushToSupabase === 'function') pushToSupabase('missions', mission);
+
+  // Retirer immédiatement de la liste locale (mise à jour optimiste,
+  // pour ne pas dépendre du round-trip réseau / d'une éventuelle
+  // course avec le rafraîchissement silencieux des réservations)
+  const supaId = r._supaId || r.id;
+  _allReservations = _allReservations.filter(x => (x._supaId || x.id) !== supaId);
+  updateReservationsKPIs();
+  filterReservations();
+
+  // Marquer la réservation comme importée dans Supabase (en arrière-plan)
+  if(supaId && _supaReady) {
+    const updatedData = { ...r, statut: 'importee', importedAt: new Date().toISOString(), missionId: mission.id };
+    supabaseClient.from('bookings').update({
+      data: updatedData,
+      updated_at: new Date().toISOString()
+    }).eq('id', supaId).then(({ error }) => {
+      if(error) console.error('Erreur marquage réservation importée :', error);
+    });
+  }
+
+  notify('✅ Mission créée ! Tu peux la retrouver dans Missions EDL.');
+
+  // Proposer d'ouvrir la confirmation RDV
+  setTimeout(() => {
+    if(confirm('Mission créée ! Veux-tu envoyer la confirmation de RDV maintenant ?')){
+      nav('missions');
+      setTimeout(() => openConfirmRdvModal(mission.id), 500);
+    }
+  }, 500);
+}
+
+// ─── CONFIRMATION RDV ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+let _confirmRdvMissionId = null;
+
+function openConfirmRdvModal(missionId){
+  const m = DB.missions.find(x => x.id === missionId);
+  if(!m){ notify("Mission introuvable", "warn"); return; }
+  _confirmRdvMissionId = missionId;
+
+  // Trouver le contact lié
+  const contact = DB.contacts.find(c =>
+    (c.email && m.emailClient && (c.email||'').toLowerCase() === (m.emailClient||'').toLowerCase()) ||
+    (c.entreprise && (c.entreprise||'').toLowerCase() === (m.agence||'').toLowerCase())
+  );
+
+  // Remplir le récap
+  const dateStr = m.date ? new Date(m.date).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '—';
+  const heureStr = m.date ? new Date(m.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '—';
+  const bien = [m.bienType, m.bienTypo, m.bienMeuble].filter(Boolean).join(' · ') || '—';
+
+  document.getElementById('confirm-rdv-recap').innerHTML = `
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue)">📋 ${esc(m.type)} — ${esc(m.agence)}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${esc(m.adresse)||'—'}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${esc(bien)}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date</td><td style="font-weight:600">${dateStr}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">🕐 Heure</td><td style="font-weight:600">${heureStr}</td></tr>
+      ${(((m.locataires||[]).length) + ((m.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((m.locataires||[]).length) + ((m.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
+      ${m.locatairesEntrants && m.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${m.locatairesEntrants.map(e => [esc(e.prenom),esc(e.nom)].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
+    </table>`;
+
+  // Pré-remplir les emails
+  // Pré-remplir date et heure depuis la mission
+  if(m.date){
+    try{
+      const d = new Date(m.date);
+      const pad = n => String(n).padStart(2,'0');
+      document.getElementById('confirm-rdv-date').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+      const h = pad(d.getHours())+'h'+pad(d.getMinutes());
+      const heureEl = document.getElementById('confirm-rdv-heure');
+      // Chercher l'option la plus proche
+      const opts = [...heureEl.options].map(o => o.value);
+      if(opts.includes(h)) heureEl.value = h;
+      else heureEl.value = '';
+    }catch(e){}
+  }
+  document.getElementById('confirm-rdv-agent-email').value = m.emailClient || contact?.email || '';
+  document.getElementById('confirm-rdv-loc-email').value = m.locataireEmail || '';
+  document.getElementById('confirm-rdv-loc-nom').value = m.locataireNom || '';
+  const civEl = document.getElementById('confirm-rdv-civilite');
+  if(civEl) civEl.value = m.locataireCivilite || '';
+  document.getElementById('confirm-rdv-message').value = '';
+  populateExpertDropdown(m.expertId || '');
+
+  const btn = document.getElementById('confirm-rdv-btn');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-send"></i> Envoyer les confirmations';
+
+  resetConfirmRdvOptions();
+  openModal('modal-confirm-rdv');
+}
+
+async function sendConfirmRdv(){
+  // Gérer le cas réservation directe (sans mission importée)
+  let m;
+  if(_confirmRdvMissionId && _confirmRdvMissionId.startsWith('__resa__')) {
+    m = window._tempResaMission;
+  } else {
+    m = DB.missions.find(x => x.id === _confirmRdvMissionId);
+  }
+  if(!m) return;
+
+  // Destinataires retenus (cases de la modal)
+  const _envAgence = document.getElementById('confirm-rdv-envoi-agence')?.checked !== false;
+  const _envLocataires = document.getElementById('confirm-rdv-envoi-locataires')?.checked !== false;
+
+  const agentEmail = document.getElementById('confirm-rdv-agent-email').value.trim();
+  // L'email de l'agence n'est exige que si on lui envoie effectivement quelque chose
+  if(_envAgence && !agentEmail){ notify('⚠️ Email de l\'agence requis', 'warn'); return; }
+
+  const btn = document.getElementById('confirm-rdv-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader"></i> Envoi en cours…';
+
+  // Construire la date/heure définitive depuis les champs de la modal
+  const rdvDate = document.getElementById('confirm-rdv-date').value;
+  const rdvHeure = document.getElementById('confirm-rdv-heure').value;
+  let rdvDatetime = m.date;
+  if(rdvDate){
+    const heureNum = rdvHeure ? rdvHeure.replace('h',':') : '09:00';
+    rdvDatetime = rdvDate + 'T' + heureNum + ':00';
+    // Mettre à jour la mission avec la date définitive
+    m.date = rdvDatetime;
+    saveToStorage();
+  }
+
+  // Expert EDL sélectionné pour se déplacer
+  const expertId = document.getElementById('confirm-rdv-expert')?.value || '';
+  const expertAgent = (DB.agents || []).find(a => a.id === expertId);
+  m.expertId = expertId;
+  // Durée estimée de l'intervention (pour email locataire + agenda)
+  const dureeEstimee = document.getElementById('confirm-rdv-duree')?.value || '1h';
+  m.dureeEstimee = dureeEstimee;
+  if(!_confirmRdvMissionId.startsWith('__resa__')) saveToStorage();
+
+  // Le locataire saisi dans la modal fait foi (corrections de dernière minute)
+  const _locNomModal = document.getElementById('confirm-rdv-loc-nom').value.trim();
+  const _locEmailModal = document.getElementById('confirm-rdv-loc-email').value.trim();
+  const _locCivModal = document.getElementById('confirm-rdv-civilite')?.value || '';
+  if(_locNomModal) m.locataireNom = _locNomModal;
+  if(_locEmailModal) m.locataireEmail = _locEmailModal;
+  if(_locCivModal) m.locataireCivilite = _locCivModal;
+  if(!m.locataires || m.locataires.length === 0){
+    if(_locNomModal || _locEmailModal){
+      m.locataires = [{ civilite: _locCivModal, nom: _locNomModal, tel: m.locataireTel || '', email: _locEmailModal }];
+    }
+  } else {
+    if(_locNomModal) m.locataires[0].nom = _locNomModal;
+    if(_locEmailModal) m.locataires[0].email = _locEmailModal;
+    if(_locCivModal) m.locataires[0].civilite = _locCivModal;
+  }
+
+  // Convocations : locataire(s) sortant(s) + locataire(s) entrant(s) éventuels
+  const _convocs = (m.locataires || []).map(function(l){ return Object.assign({}, l, { role: 'sortant' }); });
+  (m.locatairesEntrants || []).forEach(function(e){
+    const nomComplet = [e.prenom, e.nom].filter(Boolean).join(' ');
+    if(nomComplet || e.email){
+      _convocs.push({ civilite: '', nom: nomComplet, tel: e.tel || '', email: e.email || '', role: 'entrant' });
+    }
+  });
+
+  const payload = {
+    mission: {
+      id: m.id,
+      agence: m.agence,
+      type: m.type,
+      adresse: m.adresse,
+      date: rdvDatetime,
+      bienType: m.bienType,
+      bienTypo: m.bienTypo,
+      bienMeuble: m.bienMeuble,
+      acces: m.acces || '',
+      proprietaire: m.proprietaire || '',
+      dureeEstimee: dureeEstimee
+    },
+    agentEmail,
+    agentNom: document.getElementById('confirm-rdv-agent-email').value.split('@')[0],
+    locataireEmail: document.getElementById('confirm-rdv-loc-email').value.trim(),
+    locataireNom: document.getElementById('confirm-rdv-loc-nom').value.trim(),
+    locataireCivilite: document.getElementById('confirm-rdv-civilite')?.value || '',
+    locataires: _convocs,
+    expertNom: expertAgent ? expertAgent.nom : '',
+    expertTel: expertAgent ? expertAgent.tel : '',
+    message: document.getElementById('confirm-rdv-message').value.trim(),
+    envoyerAgence: _envAgence,
+    envoyerLocataires: _envLocataires
+  };
+
+  try {
+    // Si aucun destinataire n'est retenu, on enregistre le RDV sans appeler
+    // l'API d'envoi : le rendez-vous est planifie, personne n'est notifie.
+    let resp;
+    if(!_envAgence && !_envLocataires){
+      resp = { ok: true };
+    } else {
+      resp = await fetch('/api/confirm-rdv', {
+        method: 'POST',
+        headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if(resp.ok){
+      if(_confirmRdvMissionId && _confirmRdvMissionId.startsWith('__resa__')) {
+        // Marquer la réservation comme confirmée dans Supabase
+        const resaId = window._tempResaId;
+        const r = _allReservations.find(x => (x.id || x._supaId) === resaId);
+        if(r && _supaReady) {
+          // Créer automatiquement la mission dans le CRM
+          const mission = {
+            id: 'm_booking_' + Date.now(),
+            agence: r.agence || '',
+            emailClient: r.email || '',
+            contact: r.contact || '',
+            typeClient: 'Professionnel',
+            adresse: r.adresse || '',
+            bienType: r.bienType || '',
+            bienTypo: r.bienTypo || '',
+            bienMeuble: r.meuble || '',
+            superficie: r.superficie || '',
+            dateEntree: r.dateEntree || '',
+            acces: r.acces || '',
+            proprietaire: r.proprietaire || '',
+            type: r.typeEdl || r.type || 'EDL entrant',
+            date: rdvDatetime,
+            dureeEstimee: dureeEstimee,
+            montant: 0,
+            statut: 'planifiée',
+            rdvConfirme: true,
+            rdvConfirmeAt: new Date().toISOString(),
+            locataireCivilite: r.locataireCivilite || (r.locataire && r.locataire.civilite) || '',
+            locataireNom: r.locataireNom || (r.locataire && r.locataire.nom) || '',
+            locataireTel: r.locataireTel || (r.locataire && r.locataire.tel) || '',
+            locataireEmail: r.locataireEmail || (r.locataire && r.locataire.email) || '',
+            locataires: r.locataires || [],
+    locatairesEntrants: r.locatairesEntrants || [],
+            expertId: expertId || '',
+            locataireNotifie: _envLocataires,
+            notes: (!_envLocataires ? '⚠️ Locataire non convoqué par nos soins. ' : '') + 'Importé automatiquement depuis réservation. ' + (r.notes || ''),
+            source: 'booking',
+            createdAt: new Date().toISOString()
+          };
+          DB.missions.push(mission);
+          saveToStorage();
+          // Enregistrement immediat dans Supabase : saveToStorage() ne pousse
+          // qu'apres 1,5 s (syncDirtyToSupabase), alors que la reservation est
+          // marquee "importee" juste apres. Sans ce push direct, une fermeture
+          // d'onglet dans l'intervalle laisse une reservation traitee sans
+          // mission correspondante — cas constate le 31/07.
+          if(typeof pushToSupabase === 'function') await pushToSupabase('missions', mission);
+          pushMissionToEdouard(mission);
+
+          // Marquer la réservation comme importée ET confirmée dans Supabase
+          const updatedData = { ...r, rdvConfirme: true, statut: 'importee', rdvConfirmeAt: new Date().toISOString(), locataireNotifie: _envLocataires, missionId: mission.id };
+          supabaseClient.from('bookings').update({
+            data: updatedData, updated_at: new Date().toISOString()
+          }).eq('id', r._supaId || r.id).then(() => {
+            _allReservations = _allReservations.filter(x => (x.id||x._supaId) !== resaId);
+            updateReservationsKPIs();
+            filterReservations();
+          });
+        }
+      } else {
+        m.rdvConfirme = true;
+        m.rdvConfirmeAt = new Date().toISOString();
+        m.dureeEstimee = dureeEstimee;
+        m.locataireNotifie = _envLocataires;
+        saveToStorage();
+        if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
+        renderMissions();
+        pushMissionToEdouard(m);
+        // Mettre aussi à jour le statut dans Supabase bookings si la mission a un _supaId
+        if(_supaReady && m._supaId){
+          supabaseClient.from('bookings').update({
+            data: { ...m, rdvConfirme: true, statut: 'confirmee', rdvConfirmeAt: new Date().toISOString() },
+            updated_at: new Date().toISOString()
+          }).eq('id', m._supaId).then(({ error }) => {
+            if(error) console.warn('Erreur mise à jour statut confirmee:', error);
+          });
+        }
+      }
+      closeModal('modal-confirm-rdv');
+      // Message adapte aux destinataires reellement notifies
+      let msgFin;
+      if(_envAgence && _envLocataires)       msgFin = '✅ RDV confirmé — agence et locataire(s) prévenus, mission créée.';
+      else if(_envAgence && !_envLocataires) msgFin = '✅ RDV confirmé — seule l\'agence a été prévenue, mission créée.';
+      else if(!_envAgence && _envLocataires) msgFin = '✅ RDV confirmé — seul(s) le(s) locataire(s) prévenus, mission créée.';
+      else                                   msgFin = '✅ RDV enregistré sans envoi d\'email, mission créée.';
+      notify(msgFin);
+    } else {
+      const err = await resp.json();
+      notify('❌ Erreur : ' + (err.error || 'Envoi impossible'), 'err');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-send"></i> Envoyer les confirmations';
+    }
+  } catch(e) {
+    notify('❌ Connexion impossible', 'err');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-send"></i> Envoyer les confirmations';
+  }
+}
+
+
+// ─── SYNC EDOUARD : pousse logement + contacts vers l’API Edouard ───
+async function pushMissionToEdouard(mission){
+  if(!mission || !mission.adresse) return;
+  if(mission.edouardAccommodationId) return; // déjà synchronisée
+  try {
+    const resp = await fetch('/api/edouard-push', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ mission: mission })
+    });
+    const data = await resp.json();
+    if(resp.ok && data.success){
+      const ed = data.edouard || {};
+      const target = DB.missions.find(x => x.id === mission.id) || mission;
+      target.edouardAccommodationId = ed.accommodationId || '';
+      target.edouardTenantIds = ed.tenantIds || [];
+      target.edouardOwnerId = ed.ownerId || '';
+      target.edouardSyncedAt = new Date().toISOString();
+      saveToStorage();
+      if(ed.warnings && ed.warnings.length){
+        notify('🏠 Logement créé dans Edouard (avec avertissements, voir console)', 'warn');
+        console.warn('Edouard warnings:', ed.warnings);
+      } else {
+        notify('🏠 Logement et contacts créés dans Edouard');
+      }
+    } else {
+      console.warn('Edouard push erreur:', data);
+      notify('⚠️ Sync Edouard impossible (voir console)', 'warn');
+    }
+  } catch(e){
+    console.warn('Edouard push exception:', e);
+    notify('⚠️ Sync Edouard impossible (connexion)', 'warn');
+  }
+}
+
+// ─── SAISIE MANUELLE RESERVATION ──────────────────────────
+let _mrSelectedType = '';
+
+function mrSelectType(type, btn){
+  _mrSelectedType = type;
+  document.querySelectorAll('.mr-type-btn').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--bg)';
+    b.style.color = 'var(--text)';
+  });
+  btn.style.borderColor = 'var(--blue)';
+  btn.style.background = 'var(--blue-bg)';
+  btn.style.color = 'var(--blue-text)';
+  mrToggleEntrants();
+}
+
+// ─── Locataires entrants en saisie manuelle (type Sortant / Entrant) ───
+// Même comportement que le formulaire extranet, adapté au style clair du CRM.
+let _mrEntrants = [];
+// Échappement complet (aligné sur esc()) pour les valeurs réinjectées dans les attributs
+function mrEsc(v){ return esc(v); }
+function mrRenderEntrants(){
+  const list = document.getElementById('mr-entrants-list');
+  if(!list) return;
+  list.innerHTML = _mrEntrants.map((e,i)=>`
+    <div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--text3)">Locataire entrant ${i+1}</span>
+        ${_mrEntrants.length>1?`<span onclick="mrRemoveEntrant(${i})" style="cursor:pointer;color:var(--red);font-size:11px">✕ Retirer</span>`:''}
+      </div>
+      <div class="form-grid" style="margin-bottom:8px">
+        <div><input placeholder="Prénom" value="${mrEsc(e.prenom)}" oninput="_mrEntrants[${i}].prenom=this.value"></div>
+        <div><input placeholder="Nom" value="${mrEsc(e.nom)}" oninput="_mrEntrants[${i}].nom=this.value"></div>
+      </div>
+      <div class="form-grid">
+        <div><input placeholder="06 12 34 56 78" value="${mrEsc(e.tel)}" oninput="_mrEntrants[${i}].tel=this.value"></div>
+        <div><input type="email" placeholder="email@exemple.fr" value="${mrEsc(e.email)}" oninput="_mrEntrants[${i}].email=this.value"></div>
+      </div>
+    </div>`).join('');
+}
+function mrAddEntrant(){ _mrEntrants.push({prenom:'',nom:'',tel:'',email:''}); mrRenderEntrants(); }
+function mrRemoveEntrant(i){ _mrEntrants.splice(i,1); mrRenderEntrants(); }
+function mrToggleEntrants(){
+  const show = _mrSelectedType === 'EDL Sortant / Entrant';
+  const section = document.getElementById('mr-entrants-section');
+  const label = document.getElementById('mr-label-locataire');
+  if(section) section.style.display = show ? 'block' : 'none';
+  if(label) label.innerHTML = show ? 'Locataire sortant <span style="color:var(--red)">*</span>' : 'Locataire <span style="color:var(--red)">*</span>';
+  if(show && _mrEntrants.length === 0) mrAddEntrant();
+}
+
+function openManualReservationModal(){
+  _mrSelectedType = '';
+  _mrEntrants = [];
+  mrRenderEntrants();
+  const _sec = document.getElementById('mr-entrants-section');
+  if(_sec) _sec.style.display = 'none';
+  const _lbl = document.getElementById('mr-label-locataire');
+  if(_lbl) _lbl.innerHTML = 'Locataire <span style="color:var(--red)">*</span>';
+  document.querySelectorAll('.mr-type-btn').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--bg)';
+    b.style.color = 'var(--text)';
+  });
+  ['mr-agence','mr-email','mr-contact','mr-tel','mr-adresse','mr-acces','mr-loc-nom','mr-loc-tel','mr-loc-email','mr-notes'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('mr-date').value = '';
+  document.getElementById('mr-superficie').value = '';
+  document.getElementById('mr-date-entree').value = '';
+  document.getElementById('mr-heure').value = '';
+  document.getElementById('mr-submit-btn').disabled = false;
+  document.getElementById('mr-submit-btn').innerHTML = '<i class="ti ti-send"></i> Créer et envoyer les emails';
+  document.getElementById('manual-resa-error').style.display = 'none';
+  openModal('modal-manual-resa');
+}
+
+async function submitManualReservation(){
+  const errEl = document.getElementById('manual-resa-error');
+  const agence = document.getElementById('mr-agence').value.trim();
+  const email = document.getElementById('mr-email').value.trim();
+  const adresse = document.getElementById('mr-adresse').value.trim();
+  const locNom = document.getElementById('mr-loc-nom').value.trim();
+  const locTel = document.getElementById('mr-loc-tel').value.trim();
+  const date = document.getElementById('mr-date').value;
+
+  if(!agence){ errEl.textContent = 'Le nom de l\'agence est requis.'; errEl.style.display='block'; return; }
+  if(!email){ errEl.textContent = 'L\'email de l\'agence est requis.'; errEl.style.display='block'; return; }
+  if(!_mrSelectedType){ errEl.textContent = 'Sélectionnez un type d\'état des lieux.'; errEl.style.display='block'; return; }
+  if(!adresse){ errEl.textContent = 'L\'adresse du bien est requise.'; errEl.style.display='block'; return; }
+  if(!locNom){ errEl.textContent = 'Le nom du locataire est requis.'; errEl.style.display='block'; return; }
+  if(!locTel){ errEl.textContent = 'Le téléphone du locataire est requis.'; errEl.style.display='block'; return; }
+  if(!date){ errEl.textContent = 'La date souhaitée est requise.'; errEl.style.display='block'; return; }
+
+  // Locataires entrants (obligatoires pour le type Sortant / Entrant)
+  let locatairesEntrants = [];
+  if(_mrSelectedType === 'EDL Sortant / Entrant'){
+    locatairesEntrants = _mrEntrants.filter(e => (e.prenom||e.nom||e.tel||e.email));
+    if(locatairesEntrants.length === 0){ errEl.textContent='Ajoutez au moins un locataire entrant.'; errEl.style.display='block'; return; }
+    for(const e of locatairesEntrants){
+      if(!e.prenom || !e.nom){ errEl.textContent='Prénom et nom sont requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
+      if(!e.tel){ errEl.textContent='Le mobile est requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
+    }
+  }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('mr-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader"></i> Envoi en cours…';
+
+  const locataire = {
+    nom: locNom,
+    tel: locTel,
+    email: document.getElementById('mr-loc-email').value.trim()
+  };
+
+  const payload = {
+    agencyId: '',
+    agence,
+    contact: document.getElementById('mr-contact').value.trim() || agence,
+    email,
+    tel: document.getElementById('mr-tel').value.trim(),
+    typeEdl: _mrSelectedType,
+    adresse,
+    bienType: document.getElementById('mr-bien-type').value,
+    bienTypo: '',
+    meuble: document.getElementById('mr-meuble').value,
+    superficie: document.getElementById('mr-superficie').value || '',
+    dateEntree: document.getElementById('mr-date-entree').value || '',
+    acces: document.getElementById('mr-acces').value.trim(),
+    dateSouhaitee: date,
+    heure: document.getElementById('mr-heure').value,
+    notes: document.getElementById('mr-notes').value.trim(),
+    locataire,
+    locataires: [locataire],
+    locatairesEntrants,
+    source: 'manuel'
+  };
+
+  try {
+    const resp = await fetch('/api/booking-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await resp.json();
+    if(result.success || resp.ok){
+      closeModal('modal-manual-resa');
+      notify('✅ Réservation créée et emails envoyés à toutes les parties !');
+      setTimeout(() => loadReservations(), 800);
+    } else {
+      errEl.textContent = result.error || 'Erreur lors de l\'envoi. Réessayez.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-send"></i> Créer et envoyer les emails';
+    }
+  } catch(e) {
+    errEl.textContent = 'Erreur réseau. Vérifiez votre connexion.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-send"></i> Créer et envoyer les emails';
+  }
+}
+
+
+function copyBookingLink(){
+  const c = DB.contacts.find(x => x.id === currentFicheId);
+  if(!c) return;
+  const agencyId = (c.entreprise||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const agencyName = encodeURIComponent(c.entreprise||'');
+  const link = `https://app.lokentia.fr/booking?agency=${agencyId}&name=${agencyName}&c=${encodeURIComponent(c.id)}`;
+  navigator.clipboard.writeText(link).then(()=>{
+    notify('✅ Lien booking copié ! ' + link);
+    // Changer temporairement le texte du bouton
+    const btn = document.getElementById('fiche-booking-btn');
+    if(btn){ btn.innerHTML='<i class="ti ti-check"></i>Copié !'; setTimeout(()=>{ btn.innerHTML='<i class="ti ti-link"></i>Lien booking'; },2000); }
+  }).catch(()=>{
+    // Fallback si clipboard non disponible
+    prompt('Copiez ce lien :', link);
+  });
+}
+
+// checkBookingMode est appelé depuis le DOMContentLoaded principal
