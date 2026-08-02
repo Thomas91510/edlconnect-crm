@@ -176,6 +176,78 @@ function renderReservations(list){
   }).join('');
 }
 
+// ─── CHOIX DES DESTINATAIRES DE LA CONFIRMATION ────────────
+// Les cases sont injectees dans la modal a la volee : cela evite de toucher
+// index.html, tres volumineux, pour un ajout purement fonctionnel.
+function ensureConfirmRdvOptions(){
+  if(document.getElementById('confirm-rdv-envoi-options')) return;
+  const msgEl = document.getElementById('confirm-rdv-message');
+  if(!msgEl) return;
+
+  const bloc = document.createElement('div');
+  bloc.id = 'confirm-rdv-envoi-options';
+  bloc.style.cssText = 'margin-top:14px;border:1px solid var(--border2);border-radius:var(--radius);padding:12px 14px;background:var(--bg2)';
+  bloc.innerHTML =
+    '<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Destinataires</div>' +
+    '<label style="display:flex;align-items:center;gap:9px;margin:0 0 8px 0;cursor:pointer;font-size:13px;color:var(--text)">' +
+      '<input type="checkbox" id="confirm-rdv-envoi-agence" checked style="width:17px;height:17px;cursor:pointer;flex-shrink:0">' +
+      '<span>📧 Confirmation à l\'agence</span>' +
+    '</label>' +
+    '<label style="display:flex;align-items:center;gap:9px;margin:0;cursor:pointer;font-size:13px;color:var(--text)">' +
+      '<input type="checkbox" id="confirm-rdv-envoi-locataires" checked style="width:17px;height:17px;cursor:pointer;flex-shrink:0">' +
+      '<span>👤 Convocation au(x) locataire(s)</span>' +
+    '</label>' +
+    '<div id="confirm-rdv-envoi-note" style="font-size:11.5px;color:var(--text2);margin-top:9px;line-height:1.5"></div>';
+
+  msgEl.parentNode.insertBefore(bloc, msgEl.nextSibling);
+
+  document.getElementById('confirm-rdv-envoi-agence').addEventListener('change', updateConfirmRdvEnvoiNote);
+  document.getElementById('confirm-rdv-envoi-locataires').addEventListener('change', updateConfirmRdvEnvoiNote);
+}
+
+// Met a jour le bandeau pour qu'il reflete la selection reelle.
+function updateConfirmRdvEnvoiNote(){
+  const ag = document.getElementById('confirm-rdv-envoi-agence');
+  const lo = document.getElementById('confirm-rdv-envoi-locataires');
+  const note = document.getElementById('confirm-rdv-envoi-note');
+  const btn = document.getElementById('confirm-rdv-btn');
+  if(!ag || !lo || !note) return;
+
+  let txt = '';
+  if(ag.checked && lo.checked)       txt = '⚡ L\'agence et le(s) locataire(s) recevront un email immédiatement.';
+  else if(ag.checked && !lo.checked) txt = '⚡ Seule l\'agence sera prévenue. Un encart lui rappellera d\'informer elle-même le locataire.';
+  else if(!ag.checked && lo.checked) txt = '⚡ Seul(s) le(s) locataire(s) recevront leur convocation.';
+  else                               txt = '⚠️ Aucun email ne sera envoyé — le RDV sera simplement enregistré.';
+  note.textContent = txt;
+  note.style.color = (!ag.checked && !lo.checked) ? 'var(--amber-text)' : 'var(--text2)';
+
+  if(btn && !btn.disabled){
+    btn.innerHTML = (!ag.checked && !lo.checked)
+      ? '<i class="ti ti-check"></i> Enregistrer sans envoyer'
+      : '<i class="ti ti-send"></i> Envoyer les confirmations';
+  }
+
+  // Neutraliser l'ancien bandeau fixe de la modal, qui annoncerait sinon
+  // un envoi a tout le monde en contradiction avec la selection.
+  const modal = document.getElementById('modal-confirm-rdv');
+  if(modal){
+    modal.querySelectorAll('div').forEach(d => {
+      if(d.children.length === 0 && d.textContent.indexOf('seront envoyés immédiatement') !== -1){
+        d.style.display = 'none';
+      }
+    });
+  }
+}
+
+function resetConfirmRdvOptions(){
+  ensureConfirmRdvOptions();
+  const ag = document.getElementById('confirm-rdv-envoi-agence');
+  const lo = document.getElementById('confirm-rdv-envoi-locataires');
+  if(ag) ag.checked = true;
+  if(lo) lo.checked = true;
+  updateConfirmRdvEnvoiNote();
+}
+
 function confirmRdvFromReservation(id){
   const r = _allReservations.find(x => (x.id || x._supaId) === id);
   if(!r){ notify('Réservation introuvable', 'warn'); return; }
@@ -243,6 +315,7 @@ function confirmRdvFromReservation(id){
   btn.disabled = false;
   btn.innerHTML = '<i class="ti ti-send"></i> Envoyer les confirmations';
 
+  resetConfirmRdvOptions();
   openModal('modal-confirm-rdv');
 }
 
@@ -283,6 +356,9 @@ function createMissionFromReservation(id){
 
   DB.missions.push(mission);
   saveToStorage();
+  // Enregistrement immediat dans Supabase, pour la meme raison que ci-dessus :
+  // ne pas dependre du delai de 1,5 s avant que la reservation soit marquee.
+  if(typeof pushToSupabase === 'function') pushToSupabase('missions', mission);
 
   // Retirer immédiatement de la liste locale (mise à jour optimiste,
   // pour ne pas dépendre du round-trip réseau / d'une éventuelle
@@ -372,6 +448,7 @@ function openConfirmRdvModal(missionId){
   btn.disabled = false;
   btn.innerHTML = '<i class="ti ti-send"></i> Envoyer les confirmations';
 
+  resetConfirmRdvOptions();
   openModal('modal-confirm-rdv');
 }
 
@@ -385,8 +462,13 @@ async function sendConfirmRdv(){
   }
   if(!m) return;
 
+  // Destinataires retenus (cases de la modal)
+  const _envAgence = document.getElementById('confirm-rdv-envoi-agence')?.checked !== false;
+  const _envLocataires = document.getElementById('confirm-rdv-envoi-locataires')?.checked !== false;
+
   const agentEmail = document.getElementById('confirm-rdv-agent-email').value.trim();
-  if(!agentEmail){ notify('⚠️ Email de l\'agent requis', 'warn'); return; }
+  // L'email de l'agence n'est exige que si on lui envoie effectivement quelque chose
+  if(_envAgence && !agentEmail){ notify('⚠️ Email de l\'agence requis', 'warn'); return; }
 
   const btn = document.getElementById('confirm-rdv-btn');
   btn.disabled = true;
@@ -461,15 +543,24 @@ async function sendConfirmRdv(){
     locataires: _convocs,
     expertNom: expertAgent ? expertAgent.nom : '',
     expertTel: expertAgent ? expertAgent.tel : '',
-    message: document.getElementById('confirm-rdv-message').value.trim()
+    message: document.getElementById('confirm-rdv-message').value.trim(),
+    envoyerAgence: _envAgence,
+    envoyerLocataires: _envLocataires
   };
 
   try {
-    const resp = await fetch('/api/confirm-rdv', {
-      method: 'POST',
-      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(payload)
-    });
+    // Si aucun destinataire n'est retenu, on enregistre le RDV sans appeler
+    // l'API d'envoi : le rendez-vous est planifie, personne n'est notifie.
+    let resp;
+    if(!_envAgence && !_envLocataires){
+      resp = { ok: true };
+    } else {
+      resp = await fetch('/api/confirm-rdv', {
+        method: 'POST',
+        headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload)
+      });
+    }
 
     if(resp.ok){
       if(_confirmRdvMissionId && _confirmRdvMissionId.startsWith('__resa__')) {
@@ -506,16 +597,23 @@ async function sendConfirmRdv(){
             locataires: r.locataires || [],
     locatairesEntrants: r.locatairesEntrants || [],
             expertId: expertId || '',
-            notes: 'Importé automatiquement depuis réservation. ' + (r.notes || ''),
+            locataireNotifie: _envLocataires,
+            notes: (!_envLocataires ? '⚠️ Locataire non convoqué par nos soins. ' : '') + 'Importé automatiquement depuis réservation. ' + (r.notes || ''),
             source: 'booking',
             createdAt: new Date().toISOString()
           };
           DB.missions.push(mission);
           saveToStorage();
+          // Enregistrement immediat dans Supabase : saveToStorage() ne pousse
+          // qu'apres 1,5 s (syncDirtyToSupabase), alors que la reservation est
+          // marquee "importee" juste apres. Sans ce push direct, une fermeture
+          // d'onglet dans l'intervalle laisse une reservation traitee sans
+          // mission correspondante — cas constate le 31/07.
+          if(typeof pushToSupabase === 'function') await pushToSupabase('missions', mission);
           pushMissionToEdouard(mission);
 
           // Marquer la réservation comme importée ET confirmée dans Supabase
-          const updatedData = { ...r, rdvConfirme: true, statut: 'importee', rdvConfirmeAt: new Date().toISOString(), missionId: mission.id };
+          const updatedData = { ...r, rdvConfirme: true, statut: 'importee', rdvConfirmeAt: new Date().toISOString(), locataireNotifie: _envLocataires, missionId: mission.id };
           supabaseClient.from('bookings').update({
             data: updatedData, updated_at: new Date().toISOString()
           }).eq('id', r._supaId || r.id).then(() => {
@@ -528,7 +626,9 @@ async function sendConfirmRdv(){
         m.rdvConfirme = true;
         m.rdvConfirmeAt = new Date().toISOString();
         m.dureeEstimee = dureeEstimee;
+        m.locataireNotifie = _envLocataires;
         saveToStorage();
+        if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
         renderMissions();
         pushMissionToEdouard(m);
         // Mettre aussi à jour le statut dans Supabase bookings si la mission a un _supaId
@@ -542,7 +642,13 @@ async function sendConfirmRdv(){
         }
       }
       closeModal('modal-confirm-rdv');
-      notify('✅ RDV confirmé et mission créée automatiquement dans Missions EDL !');
+      // Message adapte aux destinataires reellement notifies
+      let msgFin;
+      if(_envAgence && _envLocataires)       msgFin = '✅ RDV confirmé — agence et locataire(s) prévenus, mission créée.';
+      else if(_envAgence && !_envLocataires) msgFin = '✅ RDV confirmé — seule l\'agence a été prévenue, mission créée.';
+      else if(!_envAgence && _envLocataires) msgFin = '✅ RDV confirmé — seul(s) le(s) locataire(s) prévenus, mission créée.';
+      else                                   msgFin = '✅ RDV enregistré sans envoi d\'email, mission créée.';
+      notify(msgFin);
     } else {
       const err = await resp.json();
       notify('❌ Erreur : ' + (err.error || 'Envoi impossible'), 'err');
