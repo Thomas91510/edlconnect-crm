@@ -5,6 +5,14 @@ const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
 const SUPA_URL_BASE = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 const _cacheIdentites = {};
 
+// Echappement HTML : les champs proviennent de formulaires publics
+// (reservations, extranet) et sont reinjectes dans des emails.
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 async function identiteAbonne(userId) {
   const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', partenaire: '' };
   if (!userId) return neutre;
@@ -38,10 +46,19 @@ async function identiteAbonne(userId) {
 }
 
 export default async function handler(req) {
-  // Vérification du secret cron
+  // ── Verification du secret cron ──────────────────────────────
+  // Le secret est OBLIGATOIRE : sans lui, l'endpoint refuse. Une garde
+  // conditionnelle du type "if(cronSecret && ...)" ouvrirait l'acces a tous
+  // si la variable venait a disparaitre des reglages Vercel, permettant a
+  // n'importe qui de declencher en boucle des emails vers les locataires.
   const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return new Response(JSON.stringify({ error: 'CRON_SECRET non configuré' }), {
+      status: 500, headers: { 'Content-Type': 'application/json' }
+    });
+  }
   const authHeader = req.headers.get('authorization');
-  if(cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -54,14 +71,31 @@ export default async function handler(req) {
   }
 
   try {
-    // Calculer la date de demain
+    // Dates ciblees : J+1 (rappel), J-1 (1re demande d'avis), J-3 (relance avis)
+    const fmtJour = d => d.toISOString().split('T')[0];
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD
+    const tomorrowStr = fmtJour(tomorrow);
 
-    // Récupérer toutes les missions de demain depuis Supabase
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = fmtJour(yesterday);
+
+    const day3 = new Date();
+    day3.setDate(day3.getDate() - 3);
+    const day3Str = fmtJour(day3);
+
+    // Filtrer cote base sur les trois jours concernes plutot que de charger
+    // 1000 missions et trier en JavaScript : au-dela de ce seuil, les rappels
+    // du jour cessaient silencieusement de partir.
+    const joursCibles = [tomorrowStr, yesterdayStr, day3Str];
+    const orFiltre = 'or=(' + joursCibles
+      .map(j => 'data->>date.like.' + j + '*')
+      .join(',') + ')';
+
     const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/missions?select=id,data,user_id&limit=1000`,
+      `${SUPABASE_URL}/rest/v1/missions?select=id,data,user_id&${orFiltre}&limit=1000`,
       {
         headers: {
           'apikey': SUPABASE_SERVICE_KEY,
@@ -152,24 +186,24 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px">
-    <span style="color:#fff;font-size:17px;font-weight:700">EDL IDF Expert en État des Lieux</span>
+    <span style="color:#fff;font-size:17px;font-weight:700">${esc(IDENT.nom)}</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <div style="background:#FAEEDA;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;font-weight:700;color:#633806;text-align:center">
       ⏰ Rappel — Votre état des lieux est <strong>demain</strong>
     </div>
 
-    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + salutation + '</strong>' : ''},</p>
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + esc(salutation) + '</strong>' : ''},</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
-      Nous vous rappelons votre état des lieux <strong>${m.type}</strong> prévu <strong>demain</strong>.
+      Nous vous rappelons votre état des lieux <strong>${esc(m.type)}</strong> prévu <strong>demain</strong>.
     </p>
 
     <div style="background:#1A5FA8;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center">
       <div style="color:rgba(255,255,255,0.8);font-size:12px;margin-bottom:4px">📅 Votre rendez-vous</div>
       <div style="color:#fff;font-size:18px;font-weight:700">${dateStr}</div>
       <div style="color:#F4F7FA;font-size:16px;font-weight:600">🕐 ${heureStr}</div>
-      <div style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:6px">📍 ${m.adresse}</div>
-      ${bien ? `<div style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:4px">🏠 ${bien}</div>` : ''}
+      <div style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:6px">📍 ${esc(m.adresse)}</div>
+      ${bien ? `<div style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:4px">🏠 ${esc(bien)}</div>` : ''}
     </div>
 
     ${blocRappel}
@@ -180,10 +214,10 @@ export default async function handler(req) {
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Une question de dernière minute ?<br>
-      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
+      ${IDENT.tel ? `📞 <a href="tel:${esc(IDENT.tel.replace(/[^0-9+]/g,''))}" style="color:#1A5FA8;text-decoration:none">${esc(IDENT.tel)}</a>` : ''}<br>
       ✉️ Par retour de mail<br><br>
       Cordialement,<br>
-      <strong>${IDENT.signature || IDENT.nom}</strong>
+      <strong>${esc(IDENT.signature || IDENT.nom)}</strong>
     </div>
   </div>
 </div>
@@ -224,10 +258,6 @@ export default async function handler(req) {
     }
 
     // ============ J+1 : DEMANDE D'AVIS GOOGLE ============
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
     const missionsHier = rows.filter(r => {
       if(!r.data) return false;
       const m = r.data;
@@ -255,7 +285,7 @@ export default async function handler(req) {
     <span style="color:#fff;font-size:17px;font-weight:700">EDL IDF Expert en État des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + salutation + '</strong>' : ''},</p>
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + esc(salutation) + '</strong>' : ''},</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
       Chez <strong>EDL IDF</strong>, nous accordons une grande importance à la qualité de nos prestations et à la satisfaction des personnes que nous accompagnons. Votre retour est précieux&nbsp;: il nous permet d'améliorer continuellement nos services.
     </p>
@@ -271,7 +301,7 @@ export default async function handler(req) {
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Bien cordialement,<br>
       <strong>L'équipe EDL IDF</strong><br>
-      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}
+      ${IDENT.tel ? `📞 <a href="tel:${esc(IDENT.tel.replace(/[^0-9+]/g,''))}" style="color:#1A5FA8;text-decoration:none">${esc(IDENT.tel)}</a>` : ''}
     </div>
   </div>
 </div>
@@ -312,10 +342,6 @@ export default async function handler(req) {
     // ============ J+3 : 2e RELANCE AVIS GOOGLE ============
     // Cible : missions realisees il y a 3 jours, dont la 1re demande (J+1) a bien ete envoyee,
     // qui n'ont pas encore recu la 2e relance, et non annulees.
-    const day3 = new Date();
-    day3.setDate(day3.getDate() - 3);
-    const day3Str = day3.toISOString().split('T')[0];
-
     const missionsJ3 = rows.filter(r => {
       if(!r.data) return false;
       const m = r.data;
@@ -344,7 +370,7 @@ export default async function handler(req) {
     <span style="color:#fff;font-size:17px;font-weight:700">EDL IDF Expert en État des Lieux</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + salutation + '</strong>' : ''},</p>
+    <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + esc(salutation) + '</strong>' : ''},</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
       Nous nous permettons de revenir vers vous au sujet de l'état des lieux réalisé récemment. Si vous n'avez pas encore eu l'occasion de nous laisser un avis, votre retour nous serait très précieux&nbsp;: il ne prend qu'une minute et nous aide beaucoup à faire connaître notre travail.
     </p>
@@ -357,7 +383,7 @@ export default async function handler(req) {
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Bien cordialement,<br>
       <strong>L'équipe EDL IDF</strong><br>
-      ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}
+      ${IDENT.tel ? `📞 <a href="tel:${esc(IDENT.tel.replace(/[^0-9+]/g,''))}" style="color:#1A5FA8;text-decoration:none">${esc(IDENT.tel)}</a>` : ''}
     </div>
   </div>
 </div>
@@ -399,7 +425,7 @@ export default async function handler(req) {
     let edouardJournal = null;
     try {
       const edouardResp = await fetch('https://app.lokentia.fr/api/edouard-cron', {
-        headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` }
+        headers: { 'Authorization': `Bearer ${cronSecret}` }
       });
       if(edouardResp.ok) {
         const ej = await edouardResp.json();
@@ -415,6 +441,7 @@ export default async function handler(req) {
       success: true,
       edouard: edouardJournal,
       date: tomorrowStr,
+      missionsChargees: rows.length,
       missionsFound: missionsDemain.length,
       remindersSent: sent,
       avisFound: missionsHier.length,
