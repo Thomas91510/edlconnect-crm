@@ -5,6 +5,13 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIs
 const ADMIN_EMAILS = ['contact@edl-idf.com'];
 const PLANS_VALIDES = ['free', 'starter', 'pro'];
 const STATUTS_VALIDES = ['active', 'suspended', 'expired', 'signed'];
+const ROLES_VALIDES = ['expert', 'agence'];
+
+// Colonnes reellement presentes dans user_plans :
+//   user_id, email, plan, status, expires_at, created_at, notes,
+//   stripe_customer_id, role
+// Il n'y a PAS de colonne updated_at : l'inclure dans l'upsert fait
+// echouer toute la requete cote PostgREST (erreur 400 renvoyee en 502).
 
 // ── Seul point d'écriture légitime sur user_plans côté serveur. ──
 // Remplace l'ancien upsert direct depuis le navigateur : même si le RLS
@@ -40,7 +47,9 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers });
   }
   const caller = await userResp.json();
-  if (!caller || !ADMIN_EMAILS.includes(caller.email)) {
+  // Comparaison normalisee : ne pas dependre de la casse renvoyee par Supabase
+  const callerEmail = (caller && caller.email || '').toLowerCase().trim();
+  if (!callerEmail || !ADMIN_EMAILS.includes(callerEmail)) {
     return new Response(JSON.stringify({ error: 'Accès réservé aux administrateurs' }), { status: 403, headers });
   }
 
@@ -51,9 +60,12 @@ export default async function handler(req) {
   const svcHeaders = { 'apikey': SERVICE_KEY, 'Authorization': `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' };
 
   try {
-    const { userId, email, plan, status, expiresAt, notes } = await req.json();
+    const { userId, email, plan, status, expiresAt, notes, role } = await req.json();
 
-    const emailPropre = (email || '').trim();
+    // Emails toujours normalises en minuscules : les recherches se font avec
+    // eq., qui est sensible a la casse. Une saisie "Contact@Agence.fr" ne
+    // retrouverait sinon jamais la ligne "contact@agence.fr" existante.
+    const emailPropre = (email || '').toLowerCase().trim();
     if (!emailPropre) {
       return new Response(JSON.stringify({ error: 'Email requis' }), { status: 400, headers });
     }
@@ -65,19 +77,33 @@ export default async function handler(req) {
     if (!STATUTS_VALIDES.includes(statutFinal)) {
       return new Response(JSON.stringify({ error: 'Statut invalide' }), { status: 400, headers });
     }
+    // Le role est facultatif : s'il est fourni il doit etre valide, sinon on
+    // conserve celui deja en base plutot que de l'ecraser avec une valeur vide.
+    if (role && !ROLES_VALIDES.includes(role)) {
+      return new Response(JSON.stringify({ error: 'Rôle invalide' }), { status: 400, headers });
+    }
 
-    // Retrouver le user_id si non fourni (nouvel abonné géré depuis son email)
+    // Retrouver la ligne existante : par user_id si fourni, sinon par email.
+    // On recupere aussi le role actuel pour ne pas le perdre lors de l'upsert.
     let targetUserId = userId || null;
+    let roleExistant = null;
+
+    const filtre = targetUserId
+      ? 'user_id=eq.' + encodeURIComponent(targetUserId)
+      : 'email=eq.' + encodeURIComponent(emailPropre);
+
+    const lookupResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_plans?select=user_id,role&${filtre}`,
+      { headers: svcHeaders }
+    );
+    const rows = lookupResp.ok ? await lookupResp.json() : [];
+    if (rows && rows[0]) {
+      targetUserId = targetUserId || rows[0].user_id;
+      roleExistant = rows[0].role || null;
+    }
+
     if (!targetUserId) {
-      const lookupResp = await fetch(
-        `${SUPABASE_URL}/rest/v1/user_plans?select=user_id&email=eq.${encodeURIComponent(emailPropre)}`,
-        { headers: svcHeaders }
-      );
-      const rows = lookupResp.ok ? await lookupResp.json() : [];
-      targetUserId = (rows && rows[0] && rows[0].user_id) || null;
-      if (!targetUserId) {
-        return new Response(JSON.stringify({ error: 'Utilisateur non trouvé — il doit se connecter au moins une fois' }), { status: 404, headers });
-      }
+      return new Response(JSON.stringify({ error: 'Utilisateur non trouvé — il doit se connecter au moins une fois' }), { status: 404, headers });
     }
 
     const row = {
@@ -87,7 +113,7 @@ export default async function handler(req) {
       status: statutFinal,
       notes: notes || null,
       expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
-      updated_at: new Date().toISOString()
+      role: role || roleExistant || 'expert'
     };
 
     const upsertResp = await fetch(`${SUPABASE_URL}/rest/v1/user_plans?on_conflict=user_id`, {
