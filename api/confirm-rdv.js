@@ -125,13 +125,9 @@ export default async function handler(req) {
       ? `👤 Expert qui se déplacera : <strong>${expertNom}</strong>${expertTel ? '<br>📱 ' + expertTel : ''}<br>`
       : '';
 
-    // Encart signalant a l'agence qu'elle doit prevenir le locataire elle-meme.
-    // N'apparait que si la convocation locataire n'a volontairement pas ete envoyee.
-    const blocAgencePrevient = (!_envLocataires)
-      ? `<div style="background:#FAEEDA;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:#633806;line-height:1.7">
-      ⚠️ <strong>Le locataire n'a pas été convoqué par nos soins.</strong> Merci de bien vouloir l'informer directement de la date et de l'heure du rendez-vous.
-    </div>`
-      : '';
+// Aucun encart particulier : l'email a l'agence est identique, que la
+    // convocation locataire ait ete envoyee ou non.
+    const blocAgencePrevient = '';
 
     // ── EMAIL AGENT (identique pour tous les types) ────────
     const agentHtml = `<!DOCTYPE html>
