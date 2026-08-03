@@ -215,7 +215,7 @@ function updateConfirmRdvEnvoiNote(){
 
   let txt = '';
   if(ag.checked && lo.checked)       txt = '⚡ L\'agence et le(s) locataire(s) recevront un email immédiatement.';
-  else if(ag.checked && !lo.checked) txt = '⚡ Seule l\'agence sera prévenue. Un encart lui rappellera d\'informer elle-même le locataire.';
+else if(ag.checked && !lo.checked) txt = '⚡ Seule l\'agence sera prévenue. Le locataire ne recevra aucune convocation.';
   else if(!ag.checked && lo.checked) txt = '⚡ Seul(s) le(s) locataire(s) recevront leur convocation.';
   else                               txt = '⚠️ Aucun email ne sera envoyé — le RDV sera simplement enregistré.';
   note.textContent = txt;
