@@ -353,7 +353,9 @@ function saveSettings(){
     notionToken:CFG.notionToken,
     notionPageId:CFG.notionPageId,
     claudeKey:claudeKey||'',
-    companyName:document.getElementById('set-name')?.value||CFG.companyName,
+   // Nom de societe : champ "Societe" (set-company), pas le nom personnel
+    // (set-name). Cette valeur sert de nom d'expediteur cote serveur.
+    companyName:CFG.companyName,
     companyAddress:CFG.companyAddress,
     companySiret:CFG.companySiret,
     companyTva:CFG.companyTva,
