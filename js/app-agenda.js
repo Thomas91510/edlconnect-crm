@@ -25,6 +25,34 @@ function chPeriod(d){
   renderCalendar();
 }
 
+// ─── Rendu d'une ligne dans la liste laterale des evenements ──────────
+// Les missions EDL sont l'information la plus utile au quotidien : elles
+// recoivent un fond teinte, un liseré plus epais, un texte plus fonce et
+// une pastille, pour se distinguer nettement des RDV commerciaux.
+function renderEvtListItem(e){
+  const estEdl = e.evtType === 'mission';
+  const gcalUrl = e.evtType === 'rdv'
+    ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
+    : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, e.dureeEstimee || '2h', e.adresse, missionCalDesc(e));
+
+  const bordure   = estEdl ? '4px solid #2F7A3E' : '3px solid #1A5FA8';
+  const fond      = estEdl ? '#EDF7EF' : 'transparent';
+  const graisse   = estEdl ? '700' : '600';
+  const couleur   = estEdl ? '#1E5C2C' : 'var(--text)';
+  const pastille  = estEdl
+    ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#2F7A3E;margin-right:6px;vertical-align:middle"></span>'
+    : '';
+
+  return `<div style="border-left:${bordure};background:${fond};padding:7px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="font-size:11px;font-weight:${graisse};color:${couleur}">${pastille}${e.titre||e.agence||'—'}</div>
+      ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#1A5FA8;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
+    </div>
+    <div style="font-size:10px;color:var(--text2)">${fmtDT(e.date)} · ${e.duree||e.dureeEstimee||'—'}</div>
+    ${e.contact?`<div style="font-size:10px;color:var(--text3)">${e.contact}</div>`:''}
+  </div>`;
+}
+
 function renderCalendar(){
   const MONTHS_SHORT=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
   const today=new Date();
@@ -80,7 +108,7 @@ function renderCalendar(){
       const isT=d.getTime()===today.getTime();
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd));
       return `<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)" style="min-height:100px">
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" style="font-size:10px;margin-bottom:2px;cursor:pointer" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" style="font-size:10px;margin-bottom:2px;cursor:pointer${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">
           ${fmtDT(e.date).split(' ')[1]||''} ${(e.titre||e.agence||'').substring(0,20)}${e.evtType==='mission'&&e.dureeEstimee?' ('+e.dureeEstimee+')':''}
         </div>`).join('')}
         ${evts.length===0?'<div style="font-size:10px;color:var(--text3);padding:4px">Libre</div>':''}
@@ -89,18 +117,9 @@ function renderCalendar(){
 
     // Liste événements semaine
     const weekEvts=allEvts.filter(e=>{const d=new Date(e.date);return d>=days[0]&&d<=endDate;}).sort((a,b)=>new Date(a.date)-new Date(b.date));
-    document.getElementById('rdv-list').innerHTML=weekEvts.length?weekEvts.map(e=>{
-      const gcalUrl = e.evtType==='rdv'
-        ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
-        : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, e.dureeEstimee || '2h', e.adresse, missionCalDesc(e));
-      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#1A5FA8'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="font-size:11px;font-weight:600">${e.titre||e.agence||'—'}</div>
-          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#1A5FA8;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
-        </div>
-        <div style="font-size:10px;color:var(--text2)">${fmtDT(e.date)} · ${e.duree||'—'}</div>
-        ${e.contact?`<div style="font-size:10px;color:var(--text3)">${e.contact}</div>`:''}
-      </div>`;}).join(''):'<div class="empty">Aucun événement cette semaine</div>';
+    document.getElementById('rdv-list').innerHTML=weekEvts.length
+      ? weekEvts.map(renderEvtListItem).join('')
+      : '<div class="empty">Aucun événement cette semaine</div>';
 
   } else {
     // Vue mois classique
@@ -123,7 +142,7 @@ function renderCalendar(){
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd));
       html+=`<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)">
         <div class="cal-day-num">${d}</div>
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" style="cursor:pointer" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${(e.titre||e.agence||'').split('—')[0].trim().substring(0,15)}</div>`).join('')}
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" style="cursor:pointer${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${(e.titre||e.agence||'').split('—')[0].trim().substring(0,15)}</div>`).join('')}
       </div>`;
     }
     const body=document.getElementById('cal-body');
@@ -131,17 +150,9 @@ function renderCalendar(){
     body.innerHTML=html;
 
     const monthEvts=allEvts.filter(e=>{if(!e.date)return false;const dt=new Date(e.date);return dt.getMonth()===UI.calMonth&&dt.getFullYear()===UI.calYear;}).sort((a,b)=>new Date(a.date)-new Date(b.date));
-    document.getElementById('rdv-list').innerHTML=monthEvts.length?monthEvts.map(e=>{
-      const gcalUrl = e.evtType==='rdv'
-        ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
-        : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, e.dureeEstimee || '2h', e.adresse, missionCalDesc(e));
-      return `<div style="border-left:3px solid ${e.evtType==='mission'?'#3B6D11':'#1A5FA8'};padding:6px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="font-size:11px;font-weight:600">${e.titre||e.agence||'—'}</div>
-          ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#1A5FA8;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
-        </div>
-        <div style="font-size:10px;color:var(--text2)">${fmtDT(e.date)} · ${e.duree||'—'}</div>
-      </div>`;}).join(''):'<div class="empty">Aucun événement ce mois</div>';
+    document.getElementById('rdv-list').innerHTML=monthEvts.length
+      ? monthEvts.map(renderEvtListItem).join('')
+      : '<div class="empty">Aucun événement ce mois</div>';
   }
 }
 // ─── DETAIL EVENEMENT AGENDA ──────────────────────────────
