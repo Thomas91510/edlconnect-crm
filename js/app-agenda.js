@@ -25,6 +25,38 @@ function chPeriod(d){
   renderCalendar();
 }
 
+// Tri chronologique des evenements a l'interieur d'une journee : sans cela
+// ils s'affichaient dans l'ordre d'insertion (RDV, puis missions, puis taches),
+// ce qui donnait des heures dans le desordre au sein d'une meme case.
+function calTriHoraire(a, b){
+  return String(a.date||'').localeCompare(String(b.date||''));
+}
+
+// ─── Alignement des colonnes du calendrier ────────────────────────────
+// Les libelles de jours et les cases sont rendus dans UN SEUL conteneur
+// grille (#cal-body). Auparavant ils occupaient deux grilles distinctes
+// (#cal-headers et #cal-body) : deux grilles independantes ne s'alignent
+// que si elles font exactement la meme largeur, et le moindre ecart de
+// bordure ou de barre de defilement les decalait visuellement.
+// `minmax(0, 1fr)` complete le dispositif en empechant une case au contenu
+// long d'elargir sa colonne au detriment des autres.
+function calFixerColonnes(el){
+  if(!el) return;
+  if(window.innerWidth > 820){
+    el.style.display = 'grid';
+    el.style.gridTemplateColumns = 'repeat(7, minmax(0, 1fr))';
+    el.style.gap = '3px';
+    el.style.alignItems = 'stretch';
+  } else {
+    // Sur mobile le CSS bascule en flex avec defilement horizontal : ne pas
+    // ecraser ce comportement.
+    el.style.display = '';
+    el.style.gridTemplateColumns = '';
+    el.style.gap = '';
+    el.style.alignItems = '';
+  }
+}
+
 // ─── Rendu d'une ligne dans la liste laterale des evenements ──────────
 // Les missions EDL sont l'information la plus utile au quotidien : elles
 // recoivent un fond teinte, un liseré plus epais, un texte plus fonce et
@@ -94,23 +126,26 @@ function renderCalendar(){
     document.getElementById('cal-label').textContent=`${startStr} — ${endStr}`;
     document.getElementById('rdv-list-title').textContent='Événements de la semaine';
 
+    // En-tetes et cases partagent desormais UNE SEULE grille (voir
+    // calFixerColonnes) : deux grilles distinctes ne s'alignaient pas.
     const hdrs=document.getElementById('cal-headers');
-    hdrs.className='cal-grid';
-    hdrs.innerHTML=days.map(d=>{
+    hdrs.innerHTML='';
+    hdrs.style.display='none';
+
+    const enTetes=days.map(d=>{
       const isT=d.getTime()===today.getTime();
       return `<div class="cal-hdr" style="${isT?'color:var(--blue);font-weight:700':''}">${DAYS[d.getDay()===0?6:d.getDay()-1]}<br><span style="font-size:13px">${d.getDate()}</span></div>`;
     }).join('');
 
     const body=document.getElementById('cal-body');
     body.className='cal-grid';
-    body.innerHTML=days.map(d=>{
+    calFixerColonnes(body);
+    body.innerHTML=enTetes+days.map(d=>{
       const fd=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const isT=d.getTime()===today.getTime();
-      const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd));
-      return `<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)" style="min-height:100px">
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" style="font-size:10px;margin-bottom:2px;cursor:pointer${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">
-          ${fmtDT(e.date).split(' ')[1]||''} ${(e.titre||e.agence||'').substring(0,20)}${e.evtType==='mission'&&e.dureeEstimee?' ('+e.dureeEstimee+')':''}
-        </div>`).join('')}
+      const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd)).sort(calTriHoraire);
+      return `<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)" style="min-height:110px">
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${(e.titre||e.agence||'').replace(/"/g,'&quot;')}" style="font-size:10px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${fmtDT(e.date).split(' ')[1]||''} ${e.titre||e.agence||''}${e.evtType==='mission'&&e.dureeEstimee?' ('+e.dureeEstimee+')':''}</div>`).join('')}
         ${evts.length===0?'<div style="font-size:10px;color:var(--text3);padding:4px">Libre</div>':''}
       </div>`;
     }).join('');
@@ -129,24 +164,27 @@ function renderCalendar(){
     document.getElementById('rdv-list-title').textContent='Événements du mois';
 
     const hdrs=document.getElementById('cal-headers');
-    hdrs.className='cal-grid';
-    hdrs.innerHTML=DAYS.map(d=>`<div class="cal-hdr">${d}</div>`).join('');
+    hdrs.innerHTML='';
+    hdrs.style.display='none';
 
     let startDow=(firstDay.getDay()+6)%7;
-    let html='';
+    // Les 7 libelles de jours ouvrent la grille : meme conteneur, donc
+    // alignement garanti avec les cases quelle que soit la largeur.
+    let html=DAYS.map(d=>`<div class="cal-hdr">${d}</div>`).join('');
     for(let i=0;i<startDow;i++)html+='<div></div>';
     for(let d=1;d<=lastDay.getDate();d++){
       const fd=`${UI.calYear}-${String(UI.calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const dt=new Date(UI.calYear,UI.calMonth,d);
       const isT=dt.getTime()===today.getTime();
-      const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd));
+      const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd)).sort(calTriHoraire);
       html+=`<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)">
         <div class="cal-day-num">${d}</div>
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" style="cursor:pointer${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${(e.titre||e.agence||'').split('—')[0].trim().substring(0,15)}</div>`).join('')}
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${(e.titre||e.agence||'').replace(/"/g,'&quot;')}" style="cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${e.titre||e.agence||''}</div>`).join('')}
       </div>`;
     }
     const body=document.getElementById('cal-body');
     body.className='cal-grid';
+    calFixerColonnes(body);
     body.innerHTML=html;
 
     const monthEvts=allEvts.filter(e=>{if(!e.date)return false;const dt=new Date(e.date);return dt.getMonth()===UI.calMonth&&dt.getFullYear()===UI.calYear;}).sort((a,b)=>new Date(a.date)-new Date(b.date));
