@@ -477,4 +477,189 @@ function saveEditMission(){
   renderDashboard();
 }
 
+// ─── STATISTIQUES EDL DU TABLEAU DE BORD ──────────────────────────────
+// Bloc injecte dynamiquement dans #view-dashboard (evite de modifier
+// index.html, trop volumineux). Appele depuis renderDashboard().
+// Respecte le filtre de mois du tableau de bord (_dashMonth).
+
+// Normalise le type d'EDL : les libelles varient selon la source
+// (formulaire public, saisie manuelle, import) — "EDL Sortant / Entrant",
+// "EDL sortant/entrant", etc. doivent compter dans la meme categorie.
+function statCategorieEdl(type){
+  const t = String(type || '').toLowerCase();
+  const entrant = t.includes('entrant');
+  const sortant = t.includes('sortant');
+  if(t.includes('pré') || t.includes('pre-') || t.includes('pré-')) return 'Pré-état des lieux';
+  if(entrant && sortant) return 'Sortant / Entrant';
+  if(entrant) return 'EDL entrant';
+  if(sortant) return 'EDL sortant';
+  return 'Autre / non précisé';
+}
+
+function statMeuble(m){
+  const v = String(m.bienMeuble || '').toLowerCase();
+  if(!v) return 'Non renseigné';
+  // "Non meublé" contient "meubl" : tester l'exclusion en premier
+  if(v.includes('non') || v.includes('vide') || v === 'nu') return 'Nu / vide';
+  if(v.includes('meubl')) return 'Meublé';
+  return 'Non renseigné';
+}
+
+function statTypeClient(m){
+  const v = String(m.typeClient || '').toLowerCase();
+  if(v.includes('particulier')) return 'Particulier';
+  if(v.includes('profession')) return 'Agence / pro';
+  // Repli : une mission sans typeClient renseigne est rattachee au contact
+  const ref = String(m.agence || '').toLowerCase();
+  if(ref.includes('particulier')) return 'Particulier';
+  const c = (typeof DB !== 'undefined' && DB.contacts)
+    ? DB.contacts.find(x => (x.entreprise || '').toLowerCase() === ref)
+    : null;
+  if(c && String(c.typeClient || '').toLowerCase().includes('particulier')) return 'Particulier';
+  return 'Agence / pro';
+}
+
+// Nature du bien : maison, appartement, ou autre (local, parking...)
+function statNatureBien(m){
+  const v = String(m.bienType || '').toLowerCase();
+  if(!v) return 'Non renseigné';
+  if(v.includes('maison')) return 'Maison';
+  if(v.includes('appart')) return 'Appartement';
+  if(v.includes('studio')) return 'Appartement';
+  return 'Autre (local, parking…)';
+}
+
+// Typologie T1 a T6+ : accepte les notations T3 et F3, et rattache le
+// studio au T1, comme le veut l'usage en gestion locative.
+function statTypologie(m){
+  const v = String(m.bienTypo || '').trim().toLowerCase();
+  if(!v) return 'Non renseignée';
+  if(v.includes('studio')) return 'T1';
+  const found = v.match(/[tf]\s*(\d+)/);
+  if(found){
+    const n = parseInt(found[1], 10);
+    if(n >= 6) return 'T6+';
+    if(n >= 1) return 'T' + n;
+  }
+  return 'Non renseignée';
+}
+
+// Ordre de lecture naturel pour les typologies (plutot que par effectif)
+const ORDRE_TYPOLOGIE = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6+', 'Non renseignée'];
+
+// Une ligne de repartition : libelle, barre proportionnelle, effectif, CA
+function statBarre(libelle, nb, total, couleur, ca){
+  const pct = total > 0 ? Math.round(nb / total * 100) : 0;
+  return `<div style="margin-bottom:9px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;margin-bottom:3px">
+      <span style="font-weight:500">${libelle}</span>
+      <span style="color:var(--text2)"><strong style="color:var(--text)">${nb}</strong> · ${pct}%${ca ? ' · ' + ca.toLocaleString('fr-FR') + ' € HT' : ''}</span>
+    </div>
+    <div style="height:7px;background:var(--bg3);border-radius:4px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${couleur};border-radius:4px;transition:width .4s"></div>
+    </div>
+  </div>`;
+}
+
+// Agrege les missions selon une fonction de classement, trie par effectif
+function statGrouper(missions, classer){
+  const acc = {};
+  missions.forEach(m => {
+    const k = classer(m);
+    if(!acc[k]) acc[k] = { nb: 0, ca: 0 };
+    acc[k].nb++;
+    acc[k].ca += (m.montant || 0);
+  });
+  return Object.entries(acc).sort((a, b) => b[1].nb - a[1].nb);
+}
+
+function renderStatsMissions(){
+  const vue = document.getElementById('view-dashboard');
+  if(!vue) return;
+
+  // Creer le conteneur au premier appel, juste avant le bloc "Pipeline commercial"
+  let bloc = document.getElementById('dash-stats-edl');
+  if(!bloc){
+    bloc = document.createElement('div');
+    bloc.id = 'dash-stats-edl';
+    bloc.className = 'card';
+    bloc.style.marginBottom = '14px';
+    const pipeline = document.getElementById('dash-pipeline');
+    const cible = pipeline ? pipeline.closest('#view-dashboard > div') : null;
+    if(cible) vue.insertBefore(bloc, cible);
+    else vue.appendChild(bloc);
+  }
+
+  const toutes = (typeof DB !== 'undefined' && DB.missions) ? DB.missions : [];
+  const missions = (typeof filterByMonth === 'function') ? filterByMonth(toutes, 'date') : toutes;
+  const total = missions.length;
+
+  // ── Volumes de reference (independants du filtre de mois) ──
+  const maintenant = new Date();
+  const anneeCourante = maintenant.getFullYear();
+  const cleMois = anneeCourante + '-' + String(maintenant.getMonth() + 1).padStart(2, '0');
+  const cetteAnnee = toutes.filter(m => m.date && String(m.date).slice(0, 4) === String(anneeCourante));
+  const ceMois = toutes.filter(m => m.date && String(m.date).slice(0, 7) === cleMois);
+
+  // Moyenne mensuelle : sur les mois reellement couverts, pas sur 12 par defaut
+  const moisDistincts = new Set(toutes.filter(m => m.date).map(m => String(m.date).slice(0, 7)));
+  const moyenneMois = moisDistincts.size > 0 ? Math.round(toutes.filter(m => m.date).length / moisDistincts.size * 10) / 10 : 0;
+
+  const caPeriode = missions.reduce((s, m) => s + (m.montant || 0), 0);
+  const panierMoyen = total > 0 ? Math.round(caPeriode / total) : 0;
+
+  const parType = statGrouper(missions, m => statCategorieEdl(m.type));
+  const parMeuble = statGrouper(missions, statMeuble);
+  const parClient = statGrouper(missions, statTypeClient);
+  const parNature = statGrouper(missions, statNatureBien);
+  // Typologies triees dans l'ordre T1 → T6+, plus lisible qu'un tri par effectif
+  const parTypologie = statGrouper(missions, statTypologie)
+    .sort((a, b) => ORDRE_TYPOLOGIE.indexOf(a[0]) - ORDRE_TYPOLOGIE.indexOf(b[0]));
+
+  const couleursType = {
+    'EDL entrant': '#1A5FA8',
+    'EDL sortant': '#B4750F',
+    'Sortant / Entrant': '#5B3DA5',
+    'Pré-état des lieux': '#0F6E56',
+    'Autre / non précisé': '#8494A1'
+  };
+  const couleursMeuble = { 'Meublé': '#2F7A3E', 'Nu / vide': '#1A5FA8', 'Non renseigné': '#8494A1' };
+  const couleursClient = { 'Agence / pro': '#1A5FA8', 'Particulier': '#0F6E56' };
+  const couleursNature = { 'Maison': '#B4750F', 'Appartement': '#1A5FA8', 'Autre (local, parking…)': '#5B3DA5', 'Non renseigné': '#8494A1' };
+  const couleursTypo = { 'T1': '#8FBEEC', 'T2': '#5B9BD5', 'T3': '#1A5FA8', 'T4': '#0F4C81', 'T5': '#0F6E56', 'T6+': '#2F7A3E', 'Non renseignée': '#8494A1' };
+
+  const kpi = (etiq, val, sous, couleur) => `<div style="flex:1;min-width:130px;padding:12px 14px;border-left:3px solid ${couleur};background:var(--bg2);border-radius:0 var(--radius) var(--radius) 0">
+    <div style="font-size:11px;color:var(--text2);margin-bottom:3px">${etiq}</div>
+    <div style="font-size:21px;font-weight:700;line-height:1.1">${val}</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:2px">${sous}</div>
+  </div>`;
+
+  const colonne = (titre, lignes) => `<div>
+    <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">${titre}</div>
+    ${lignes || '<div style="font-size:11px;color:var(--text3)">Aucune donnée</div>'}
+  </div>`;
+
+  bloc.innerHTML = `
+    <div class="card-head">
+      <span>📊 Volume et répartition des états des lieux</span>
+      <span style="font-size:10px;font-weight:400;color:var(--text2)">${total} mission${total > 1 ? 's' : ''} sur la période affichée</span>
+    </div>
+    <div style="padding:16px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+        ${kpi('Volume total', toutes.length, 'depuis le début', '#0F1E2E')}
+        ${kpi('Cette année', cetteAnnee.length, String(anneeCourante), '#1A5FA8')}
+        ${kpi('Ce mois-ci', ceMois.length, 'en cours', '#2F7A3E')}
+        ${kpi('Moyenne mensuelle', moyenneMois, 'EDL / mois', '#B4750F')}
+        ${kpi('Panier moyen', panierMoyen.toLocaleString('fr-FR') + ' €', 'HT par EDL', '#5B3DA5')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px 26px">
+        ${colonne('Par type d\'EDL', parType.map(([k, v]) => statBarre(k, v.nb, total, couleursType[k] || '#8494A1', v.ca)).join(''))}
+        ${colonne('Meublé / Nu', parMeuble.map(([k, v]) => statBarre(k, v.nb, total, couleursMeuble[k] || '#8494A1', v.ca)).join(''))}
+        ${colonne('Particulier / Agence', parClient.map(([k, v]) => statBarre(k, v.nb, total, couleursClient[k] || '#8494A1', v.ca)).join(''))}
+        ${colonne('Maison / Appartement', parNature.map(([k, v]) => statBarre(k, v.nb, total, couleursNature[k] || '#8494A1', v.ca)).join(''))}
+        ${colonne('Typologie du bien', parTypologie.map(([k, v]) => statBarre(k, v.nb, total, couleursTypo[k] || '#8494A1', v.ca)).join(''))}
+      </div>
+    </div>`;
+}
+
 // ─── CAMPAIGNS ────────────────────────────────────────────
