@@ -673,6 +673,10 @@ function renderDashboard(){
       </div>
       <div style="font-size:10px;color:var(--text2)">${fmtDT(r.date)} · ${r.duree||'—'}${r.contact?' · '+r.contact:''}</div>
     </div>`;}).join(''):'<div class="empty">Aucun RDV à venir</div>';
+
+  // Statistiques EDL (volume, typologie, particulier/agence) — definies
+  // dans app-missions.js, injectees dans le tableau de bord.
+  if(typeof renderStatsMissions === 'function') renderStatsMissions();
 }
 
 function deleteRdvDash(idx){
