@@ -2,6 +2,30 @@
 // Missions et moteur de facturation
 // Genere depuis index.html — NE PAS reordonner les fichiers dans index.html
 
+// ─── Repliage des groupes mensuels ────────────────────────────────────
+// Avec plusieurs dizaines de missions par mois, la liste devient longue a
+// parcourir. Chaque en-tete de mois est donc cliquable. Les mois revolus
+// sont replies d'office : au chargement, on voit le mois courant et les
+// suivants, c'est-a-dire ce qui reste a faire.
+let _moisReplies = null; // Set des cles de mois fermees ; null = pas encore initialise
+
+function cleMoisCourant(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+// Identifiant utilisable dans une classe CSS et un attribut HTML
+function slugMois(cle){
+  return String(cle).replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function toggleMoisMissions(cle){
+  if(!_moisReplies) _moisReplies = new Set();
+  if(_moisReplies.has(cle)) _moisReplies.delete(cle);
+  else _moisReplies.add(cle);
+  renderMissions();
+}
+
 function renderMissions(){
   const list=(UI.missionFilter==='all'?DB.missions:DB.missions.filter(m=>m.statut===UI.missionFilter))
     .slice()
@@ -32,13 +56,30 @@ function renderMissions(){
     groups.get(key).items.push(m);
   });
 
-  document.getElementById('missions-tbody').innerHTML=[...groups.values()].map(group=>{
+  // Premier rendu : replier les mois deja passes, garder le mois courant
+  // et les mois a venir ouverts.
+  if(_moisReplies === null){
+    _moisReplies = new Set();
+    const courant = cleMoisCourant();
+    groups.forEach((g, key) => {
+      if(key !== 'Sans date' && key < courant) _moisReplies.add(key);
+    });
+  }
+
+  document.getElementById('missions-tbody').innerHTML=[...groups.entries()].map(([key, group])=>{
     const totalHT=group.items.reduce((s,m)=>s+(m.montant||0),0);
     const totalTTC=group.items.reduce((s,m)=>s+ttc(m.montant||0),0);
-    const header=`<tr style="background:var(--bg2)"><td colspan="10" style="font-weight:700;font-size:12px;padding:9px 10px">📅 ${group.label} — ${group.items.length} mission${group.items.length>1?'s':''} · <span style="color:var(--blue)">${totalHT.toLocaleString('fr-FR')} € HT</span> · <span style="color:var(--green)">${totalTTC.toLocaleString('fr-FR')} € TTC</span></td></tr>`;
+    const replie=_moisReplies.has(key);
+    const slug=slugMois(key);
+    const chevron=replie?'▸':'▾';
+    const header=`<tr style="background:var(--bg2);cursor:pointer" onclick="toggleMoisMissions('${key}')" title="${replie?'Afficher':'Masquer'} les missions de ${group.label}">
+      <td colspan="10" style="font-weight:700;font-size:12px;padding:9px 10px">
+        <span style="display:inline-block;width:14px;color:var(--text2);font-size:11px">${chevron}</span>📅 ${group.label} — ${group.items.length} mission${group.items.length>1?'s':''} · <span style="color:var(--blue)">${totalHT.toLocaleString('fr-FR')} € HT</span> · <span style="color:var(--green)">${totalTTC.toLocaleString('fr-FR')} € TTC</span>${replie?'<span style="color:var(--text3);font-weight:400;font-size:11px;margin-left:8px">(replié)</span>':''}
+      </td></tr>`;
+    if(replie) return header;
     const rows=group.items.map(m=>{
       const realIdx=DB.missions.indexOf(m);
-      return `<tr>
+      return `<tr class="mrow-${slug}">
       <td style="font-weight:600;font-size:11px">${m.agence}</td>
       <td style="font-size:10px;color:var(--text2)">${m.adresse||'—'}</td>
       <td style="font-size:10px">${m.type}</td>
