@@ -107,6 +107,12 @@ export default async function handler(req) {
     if(!resp.ok) throw new Error('Erreur Supabase missions');
     const rows = await resp.json();
 
+   // Skip ponctuel : pas de rappel J-1 pour Immo Gestion, missions jusqu'au
+    // 26/08/2026 inclus (remplacement temporaire par France EDL 77).
+    // S'arrête tout seul après cette date, pas besoin d'y repenser.
+    const SKIP_RAPPEL_AGENCE = 'immo gestion';
+    const SKIP_RAPPEL_DATE_LIMITE = '2026-08-26';
+
     // Filtrer missions de demain avec un email locataire
     const missionsDemain = rows.filter(r => {
       if(!r.data) return false;
@@ -115,7 +121,10 @@ export default async function handler(req) {
       if(!m.locataireEmail) return false;
       if(m.statut === 'facturée') return false;
       const mDate = m.date.split('T')[0];
-      return mDate === tomorrowStr;
+      if(mDate !== tomorrowStr) return false;
+      const agenceNorm = (m.agence || '').trim().toLowerCase();
+      if(agenceNorm === SKIP_RAPPEL_AGENCE && mDate <= SKIP_RAPPEL_DATE_LIMITE) return false;
+      return true;
     });
 
     let sent = 0;
