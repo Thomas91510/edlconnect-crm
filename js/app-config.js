@@ -631,6 +631,10 @@ const STAGES=['Prospect','Qualifié','Proposé','Négociation','Gagné'];
 const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 
+// Lien de la fiche Google Business, partage par les modeles d'avis et par
+// les envois automatiques J+1 / J+3 (reminder-rdv.js).
+const LIEN_AVIS_GOOGLE = 'https://g.page/r/CQOIf5lzL3xwEBM/review';
+
 const TEMPLATES={
   intro:{label:'🏠 Présentation EDL IDF',subj:'🏠 EDL IDF — Votre partenaire états des lieux en Île-de-France',body:`Bonjour,\n\nJe me permets de vous contacter afin de vous présenter EDL IDF, société spécialisée dans la réalisation d'états des lieux professionnels pour les agences immobilières en Île-de-France.\n\n🏠 Nos prestations :\n• État des lieux d'entrée\n• État des lieux de sortie\n• Pré-état des lieux\n\n✅ Pourquoi choisir EDL IDF ?\n• Disponible 7j/7, matin et soir\n• Rapport numérique remis sous 24h\n• Signature électronique incluse\n• Tarifs dégressifs selon le volume\n• Couverture complète de l'Île-de-France\n\nJe serais ravi d'échanger avec vous sur vos besoins et de vous proposer une grille tarifaire adaptée.`},
   cold:{label:'📋 Prospection à froid',subj:'📋 Externalisez vos états des lieux — EDL IDF',body:`Bonjour,\n\nJe me permets de vous contacter au sujet de l'externalisation de vos états des lieux.\n\nEDL IDF réalise vos EDL entrants, sortants et pré-états des lieux en Île-de-France — rapport remis sous 24h, disponible 7j/7.\n\n✅ Simple à mettre en place\n✅ Tarifs dégressifs selon volume\n✅ Signature électronique incluse\n\nSeriez-vous disponible pour un échange de 15 min cette semaine ?`},
@@ -641,10 +645,45 @@ const TEMPLATES={
     confirm_sortant:{label:'✅ Confirmation EDL sortant',subj:'✅ Confirmation de votre état des lieux de sortie — EDL IDF',body:`Bonjour,\n\nJe vous confirme la prise en charge de votre état des lieux de sortie :\n\n📅 Date : [DATE]\n🕐 Heure : [HEURE]\n📍 Adresse : [ADRESSE]\n\n🔑 Merci de prévoir :\n• L'état des lieux d'entrée (pour comparaison)\n• L'ensemble des clés du logement\n• Les relevés de compteurs actualisés\n• Le locataire sortant (si possible)\n\nLe rapport comparatif vous sera transmis dans les 24h avec mention des éventuelles dégradations constatées et signature électronique des parties.`},
   remerciement:{label:'🙏 Remerciement après mission',subj:'🙏 Merci pour votre confiance — EDL IDF',body:`Bonjour,\n\nJe tenais à vous remercier pour la confiance que vous nous accordez.\n\nVotre état des lieux a été réalisé avec soin et le rapport vous a été transmis dans les délais convenus.\n\nNous espérons que cette prestation a répondu à vos attentes et restons à votre disposition pour toutes vos prochaines missions en Île-de-France.`},
   partenariat:{label:'🤝 Proposition partenariat',subj:'🤝 Partenariat états des lieux — EDL IDF',body:`Bonjour,\n\nJe souhaite vous proposer un partenariat durable pour la prise en charge de vos états des lieux en Île-de-France.\n\n🤝 Ce que nous proposons à nos partenaires :\n• Tarifs préférentiels dégressifs selon volume\n• Priorité de réservation sur nos créneaux\n• Interlocuteur dédié pour votre agence\n• Rapport standardisé à votre charte si souhaité\n• Facturation mensuelle groupée\n\n✅ Déjà partenaires d'agences Century 21, Orpi, Laforêt, Foncia en Île-de-France.\n\nSeriez-vous disponible pour un rendez-vous afin d'étudier ensemble les modalités d'un partenariat adapté ?`},
-  avis_google:{label:'⭐ Avis Google post-prestation',subj:'⭐ Votre avis compte pour nous — EDL IDF',body:`Bonjour,\n\nNous espérons que votre état des lieux s'est déroulé à votre entière satisfaction !\n\nVotre retour est précieux pour nous aider à améliorer nos prestations et à faire connaître EDL IDF.\n\n⭐ Pourriez-vous nous laisser un avis Google en cliquant sur le lien ci-dessous ? Cela ne prend que 30 secondes :\n\n👉 [LIEN AVIS GOOGLE]\n\nMerci pour votre confiance et à très bientôt !`},
+  // Reprend mot pour mot l'email envoye automatiquement a J+1 par
+  // reminder-rdv.js, pour les locataires dont la mission n'est pas dans le CRM.
+  avis_google:{label:'⭐ Avis Google post-prestation',subj:'⭐ Comment s\'est passé votre état des lieux ?',body:`Bonjour,\n\nChez EDL IDF, nous accordons une grande importance à la qualité de nos prestations et à la satisfaction des personnes que nous accompagnons. Votre retour est précieux : il nous permet d'améliorer continuellement nos services.\n\nSi vous avez quelques instants, pourriez-vous partager votre expérience sur notre page Google ? Cela ne prend que quelques minutes et nous aide énormément :\n\n⭐ ${LIEN_AVIS_GOOGLE}\n\nN'hésitez pas si vous avez la moindre question, nous restons à votre entière disposition.\n\nBien cordialement,\nL'équipe EDL IDF`},
+  // Equivalent de la relance automatique a J+3.
+  avis_google_relance:{label:'⭐ Avis Google — relance',subj:'⭐ Votre avis compte pour nous',body:`Bonjour,\n\nNous nous permettons de revenir vers vous au sujet de l'état des lieux réalisé récemment. Si vous n'avez pas encore eu l'occasion de nous laisser un avis, votre retour nous serait très précieux : il ne prend qu'une minute et nous aide beaucoup à faire connaître notre travail.\n\n⭐ ${LIEN_AVIS_GOOGLE}\n\nSi vous l'avez déjà fait, nous vous en remercions sincèrement et vous prions d'ignorer ce message.\n\nBien cordialement,\nL'équipe EDL IDF`},
   summer:{label:'☀️ Offre estivale',subj:'☀️ Offre été 2026 — -10% sur vos EDL | EDL IDF',body:`Bonjour,\n\nL'été approche et avec lui le pic d'activité pour vos états des lieux !\n\n🎁 Offre spéciale été 2026 :\n-10% sur toutes vos missions de juillet à août 2026\n\n✅ Valable pour tout nouveau partenariat signé avant le 30 juin\n✅ Disponible 7j/7 tout l'été\n✅ Rapport remis sous 24h\n\nRéservez dès maintenant vos créneaux sur www.edl-idf.fr`}
 };
 
+// ─── Boutons de modeles ajoutes apres coup ────────────────
+// Injectes en JavaScript plutot que dans index.html : ce fichier fait
+// ~2400 lignes et l'editer directement s'est deja avere risque.
+// Chaque entree cible le bouton existant apres lequel s'inserer.
+const MODELES_SUPPLEMENTAIRES = [
+  { cle: 'avis_google_relance', apres: 'avis_google', icone: 'ti-star' }
+];
+
+function injecterBoutonsModeles(){
+  MODELES_SUPPLEMENTAIRES.forEach(function(mod){
+    const tpl = TEMPLATES[mod.cle];
+    if(!tpl) return;
+    // Deja injecte ? (renderTracking peut relancer plusieurs fois)
+    if(document.querySelector('[data-tpl="' + mod.cle + '"]')) return;
+    const reference = document.querySelector('button[onclick*="applyTpl(\'' + mod.apres + '\')"]');
+    if(!reference) return;
+    const bouton = document.createElement('button');
+    bouton.className = 'btn btn-sm';
+    bouton.style.justifyContent = 'flex-start';
+    bouton.setAttribute('data-tpl', mod.cle);
+    bouton.innerHTML = '<i class="ti ' + mod.icone + '"></i>' + tpl.label.replace(/^[^\s]+\s/, '');
+    bouton.onclick = function(){ applyTpl(mod.cle); };
+    reference.parentNode.insertBefore(bouton, reference.nextSibling);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  // Leger differe : les boutons du Composer sont dans index.html, deja
+  // presents au chargement, mais on laisse le DOM se stabiliser.
+  setTimeout(injecterBoutonsModeles, 300);
+});
 
 // ─── SIGNATURE EMAIL ──────────────────────────────────────
 const EMAIL_SIGNATURE = `
