@@ -15,17 +15,16 @@ export const CAL_EVENT_MAP = {
   T3: { meuble: { slug: 'etat-des-lieux-meuble-t3',    duree: 150 }, nu: { slug: 'etat-des-lieux-classique-t3', duree: 120 } },
   T4: { meuble: { slug: 'etat-des-lieux-meuble-t4',    duree: 180 }, nu: { slug: 'etat-des-lieux-classique-t4', duree: 150 } },
   T5: { meuble: { slug: 'etat-des-lieux-meuble-t5',    duree: 180 }, nu: { slug: 'etat-des-lieux-classique-t5', duree: 180 } },
-  // T6 sert aussi de repli pour "T6+" : le CRM ne propose pas de typologie
-  // au-delà de T6+ (pas de T7 dans le formulaire), alors que Cal.com a un
-  // événement T7 dédié — actuellement de même durée que T6 côté nu (210m),
-  // donc sans impact pratique. À revoir si un T7 meublé (240m) doit un jour
-  // être distingué d'un T6+ meublé (210m) dans le formulaire public.
   T6: { meuble: { slug: 'etat-des-lieux-meuble-t6',    duree: 210 }, nu: { slug: 'etat-des-lieux-classique-t6', duree: 210 } },
+  // T7 = plus grande typologie proposée par le formulaire (remplace l'ancien
+  // repli "T6+" qui n'existait que faute de mieux).
+  T7: { meuble: { slug: 'etat-des-lieux-meuble-t7',    duree: 240 }, nu: { slug: 'etat-des-lieux-classique-t7', duree: 210 } },
 };
 
-// Normalise la typologie saisie sur le formulaire ("Studio", "T1".."T6+")
-// vers une clé de CAL_EVENT_MAP. Studio = T1 (même convention que
-// statTypologie() dans js/app-missions.js). T6+ et au-delà = T6.
+// Normalise la typologie saisie sur le formulaire ("Studio", "T1".."T7") vers
+// une clé de CAL_EVENT_MAP. Studio = T1 (même convention que statTypologie()
+// dans js/app-missions.js). T7 et au-delà = T7 (plus grande typologie prise
+// en charge par Cal.com pour l'instant).
 export function normaliserTypologie(bienTypo) {
   const v = String(bienTypo || '').trim().toLowerCase();
   if (!v) return null;
@@ -33,7 +32,7 @@ export function normaliserTypologie(bienTypo) {
   const m = v.match(/t\s*(\d+)/);
   if (m) {
     const n = parseInt(m[1], 10);
-    if (n >= 6) return 'T6';
+    if (n >= 7) return 'T7';
     if (n >= 1) return 'T' + n;
   }
   return null;

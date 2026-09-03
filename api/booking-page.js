@@ -176,7 +176,7 @@ textarea{min-height:75px;resize:vertical}
         <input type="text" id="adresse" placeholder="12 rue de la Paix, 91000 Évry">
         <div class="form-row">
           <div><label>Type de bien</label><select id="btype"><option value="">— Choisir —</option><option>Appartement</option><option>Maison</option></select></div>
-          <div><label>Typologie</label><select id="btypo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6+</option></select></div>
+          <div><label>Typologie</label><select id="btypo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
         </div>
         <div class="form-row">
           <div><label>Meublé / Nu</label><select id="meuble" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Meublé</option><option>Nu</option></select></div>
