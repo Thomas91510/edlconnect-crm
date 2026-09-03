@@ -67,6 +67,20 @@ export default async function handler(req) {
   try {
     const data = await req.json();
     const { agencyId, contactId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, proprietaire, dateSouhaitee, heure, notes, locataire, locataires, locatairesEntrants } = data;
+    // Particulier passant directement (sans agence intermediaire) : seule la
+    // reservation manuelle du CRM envoie ce champ pour l'instant. Repli sur
+    // "Professionnel" pour ne rien casser sur le formulaire public existant.
+    const typeClient = data.typeClient === 'Particulier' ? 'Particulier' : 'Professionnel';
+
+    // Piège à bots : champ caché côté formulaire public, jamais rempli par un
+    // humain. On répond succès sans rien créer ni envoyer, pour ne pas
+    // révéler le piège à un script qui teste la réponse.
+    if (data.site) {
+      return new Response(JSON.stringify({ success: true, bookingId: 'skip' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
 
     if(!agence || !email || !typeEdl || !adresse) {
       return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400 });
@@ -92,6 +106,31 @@ export default async function handler(req) {
     }
     if(Array.isArray(locatairesEntrants) && locatairesEntrants.length > 10){
       return new Response(JSON.stringify({ error: 'Trop de locataires entrants' }), { status: 400 });
+    }
+
+    // ── Limite de débit par IP (endpoint public, sans authentification) ──
+    // Chaque soumission déclenche 2-3 emails sortants ; sans garde-fou, un
+    // script peut inonder un abonné de fausses réservations et épuiser le
+    // quota Brevo partagé par la plateforme. Comptage simple sur la table
+    // bookings existante (pas de nouvelle table nécessaire).
+    const clientIp = (req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '').split(',')[0].trim();
+    if (clientIp && SUPABASE_SERVICE_KEY && SUPABASE_URL) {
+      try {
+        const uneHeureAvant = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        const compteResp = await fetch(
+          `${SUPABASE_URL}/rest/v1/bookings?select=id&data->>submitterIp=eq.${encodeURIComponent(clientIp)}&created_at=gte.${encodeURIComponent(uneHeureAvant)}&limit=11`,
+          { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+        );
+        if (compteResp.ok) {
+          const rows = await compteResp.json();
+          if (Array.isArray(rows) && rows.length > 10) {
+            return new Response(JSON.stringify({ error: 'Trop de demandes envoyées récemment, réessayez plus tard.' }), {
+              status: 429,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+        }
+      } catch (e) { /* la limite de débit ne doit jamais bloquer une réservation légitime en cas d'erreur */ }
     }
 
     const bookingId = 'booking_' + Date.now();
@@ -157,6 +196,8 @@ export default async function handler(req) {
         id: bookingId,
         agencyId: agencyId || '',
         agence, contact, email, tel,
+        typeClient,
+        submitterIp: clientIp || '',
         typeEdl, adresse,
         bienType: bienType || '',
         bienTypo: bienTypo || '',

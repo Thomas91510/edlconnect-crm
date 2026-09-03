@@ -40,13 +40,74 @@ const SUPA_TABLES = {
 async function saveSettingsToSupabase(settingsData){
   if(!_supaReady||!_currentUser)return;
   try{
+    // Fusionne au lieu d'écraser : la ligne settings porte aussi des champs
+    // gérés ailleurs (ex. invoiceNextNumber, réservé de façon atomique par
+    // reserveInvoiceNumber()) qui ne doivent pas être perdus si cet appel
+    // arrive avec un instantané du formulaire ne les connaissant pas.
+    const{data:existing}=await supabaseClient.from('settings').select('data').eq('user_id',_currentUser.id).maybeSingle();
+    const fusion=Object.assign({},(existing&&existing.data)||{},settingsData);
     const{error}=await supabaseClient.from('settings').upsert({
       user_id:_currentUser.id,
-      data:settingsData,
+      data:fusion,
       updated_at:new Date().toISOString()
     },{onConflict:'user_id'});
     if(error)console.warn('Erreur save settings:',error.message);
   }catch(e){console.warn('Erreur saveSettingsToSupabase:',e);}
+}
+
+// ─── NUMÉROTATION ATOMIQUE DES FACTURES ────────────────────
+// CFG.invoiceNextNumber (localStorage) est purement local à l'appareil : un
+// abonné qui travaille depuis deux appareils/onglets voit chacun maintenir
+// son propre compteur sans jamais se synchroniser, garantissant tôt ou tard
+// une collision de numéro de facture (problème de conformité, pas juste un
+// bug d'affichage). Le numéro est désormais réservé sur la ligne "settings"
+// de l'abonné via une mise à jour conditionnelle (optimistic concurrency) :
+// si un autre appareil a gagné la course entre la lecture et l'écriture, la
+// condition ne matche plus, on relit et on retente — jamais deux appels ne
+// peuvent obtenir le même numéro.
+async function reserveInvoiceNumber(){
+  if(!_supaReady || !_currentUser){
+    // Repli hors-ligne : ancien compteur local (mieux qu'un blocage total,
+    // mais redevient sujet à collision dès que l'abonné a plusieurs appareils).
+    const num = CFG.invoiceNextNumber;
+    CFG.invoiceNextNumber = num + 1;
+    return num;
+  }
+  for(let tentative = 0; tentative < 8; tentative++){
+    const { data: row } = await supabaseClient.from('settings').select('data').eq('user_id', _currentUser.id).maybeSingle();
+    const existing = (row && row.data) || {};
+    const current = Number(existing.invoiceNextNumber) || 1;
+    const fusion = Object.assign({}, existing, { invoiceNextNumber: current + 1 });
+
+    if(!row){
+      // Aucune ligne settings pour cet abonné pour l'instant : insertion
+      // directe. Fenêtre de course résiduelle infime (seulement si le tout
+      // premier appel a lieu simultanément depuis deux appareils avant que
+      // la ligne n'existe) — un cas bien plus étroit que la course actuelle,
+      // qui se produit à chaque facture.
+      const { error } = await supabaseClient.from('settings').insert({
+        user_id: _currentUser.id, data: fusion, updated_at: new Date().toISOString()
+      });
+      if(!error) return current;
+      continue; // quelqu'un d'autre vient de créer la ligne : on relit
+    }
+
+    // Mise à jour conditionnelle : ne s'applique que si invoiceNextNumber
+    // vaut toujours "current" (ou est toujours absent, la toute première
+    // fois) — sinon quelqu'un d'autre a déjà réservé ce numéro entre notre
+    // lecture et notre écriture.
+    let requete = supabaseClient.from('settings')
+      .update({ data: fusion, updated_at: new Date().toISOString() })
+      .eq('user_id', _currentUser.id);
+    requete = (existing.invoiceNextNumber == null)
+      ? requete.is('data->>invoiceNextNumber', null)
+      : requete.eq('data->>invoiceNextNumber', String(existing.invoiceNextNumber));
+    const { data: updated, error } = await requete.select();
+    if(!error && Array.isArray(updated) && updated.length > 0) return current;
+    // Course perdue (ou invoiceNextNumber absent la toute première fois) :
+    // on relit au tour suivant plutôt que d'échouer.
+  }
+  throw new Error('Numérotation de facture indisponible (trop de tentatives concurrentes), réessaie dans un instant.');
 }
 
 async function loadSettingsFromSupabase(){
@@ -165,17 +226,25 @@ async function loadFromSupabase(){
 }
 
 // ─── PUSH D'UN ITEM VERS SUPABASE (format JSONB) ───────────
+// Retourne true/false : certains appelants (ex. confirmation de RDV depuis
+// une réservation) doivent savoir si le push a réellement réussi avant de
+// marquer une réservation comme "traitée" côté serveur — sans ce retour,
+// un échec silencieux ici + une fermeture d'onglet juste après pouvait
+// laisser une réservation marquée traitée sans mission correspondante
+// nulle part (cas constaté le 31/07).
 async function pushToSupabase(dbKey, item){
-  if(!_supaReady || _supaSyncing) return;
+  if(!_supaReady || _supaSyncing) return false;
   const table = SUPA_TABLES[dbKey];
-  if(!table) return;
+  if(!table) return false;
   try{
     const userId = _currentUser?.id || null;
     const row = { id: String(item.id), data: item, updated_at: new Date().toISOString(), user_id: userId };
     const { error } = await supabaseClient.from(table).upsert(row, { onConflict: 'id' });
-    if(error) console.warn(`Erreur push ${dbKey}:`, error.message);
+    if(error){ console.warn(`Erreur push ${dbKey}:`, error.message); return false; }
+    return true;
   }catch(e){
     console.warn('Erreur pushToSupabase:', e);
+    return false;
   }
 }
 

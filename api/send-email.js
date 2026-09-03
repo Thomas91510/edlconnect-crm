@@ -1,7 +1,6 @@
 export const config = { runtime: 'edge' };
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pvuctwflxvvxdawsxceu.supabase.co';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
 // ── Vérifie que l'utilisateur est admin ou sur un plan payant actif. ──
@@ -82,13 +81,41 @@ export default async function handler(req) {
       });
     }
 
+    // Garde-fous minimaux : le corps est transmis à Brevo quasiment tel quel,
+    // sans autre limite que le plan payant. Un compte compromis ou malveillant
+    // pourrait sinon s'en servir comme relais d'envoi en masse via le domaine
+    // partagé de la plateforme.
+    if (!body || !body.to || !body.subject || !(body.htmlContent || body.textContent)) {
+      return new Response(JSON.stringify({ error: 'Requête incomplète (to, subject et contenu requis)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+    const nbDestinataires = Array.isArray(body.to) ? body.to.length : 1;
+    if (nbDestinataires > 50) {
+      return new Response(JSON.stringify({ error: 'Trop de destinataires en un seul envoi (max 50)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    // Marquer l'email avec l'identifiant de l'abonné expéditeur : le compte
+    // Brevo est partagé par toute la plateforme, donc sans ce tag l'endpoint
+    // /api/brevo-tracking (qui interroge les statistiques Brevo) ne peut pas
+    // distinguer les emails d'un abonné de ceux des autres. Voir aussi
+    // brevo-tracking.js qui filtre ses requêtes sur ce même tag.
+    const bodyTague = {
+      ...body,
+      tags: [...(Array.isArray(body.tags) ? body.tags : []), 'sub_' + _user.id]
+    };
+
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'api-key': brevoKey
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(bodyTague)
     });
 
     const data = await response.json();

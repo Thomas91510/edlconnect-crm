@@ -137,6 +137,9 @@ textarea{min-height:75px;resize:vertical}
 
   <!-- PAGE 1 -->
   <div id="p1">
+    <!-- Piège à bots : invisible pour un humain (hors écran, jamais display:none
+         que certains bots savent détecter), un champ rempli signale un script -->
+    <input type="text" id="site" name="site" value="" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">
     <div class="card">
       <div class="card-head"><i class="ti ti-building-store"></i>Votre agence</div>
       <div class="card-body">
@@ -173,10 +176,10 @@ textarea{min-height:75px;resize:vertical}
         <input type="text" id="adresse" placeholder="12 rue de la Paix, 91000 Évry">
         <div class="form-row">
           <div><label>Type de bien</label><select id="btype"><option value="">— Choisir —</option><option>Appartement</option><option>Maison</option></select></div>
-          <div><label>Typologie</label><select id="btypo"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6+</option></select></div>
+          <div><label>Typologie</label><select id="btypo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
         </div>
         <div class="form-row">
-          <div><label>Meublé / Nu</label><select id="meuble"><option value="">— Choisir —</option><option>Meublé</option><option>Nu</option></select></div>
+          <div><label>Meublé / Nu</label><select id="meuble" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Meublé</option><option>Nu</option></select></div>
           <div><label>Superficie (m²)</label><input type="number" id="superficie" placeholder="Ex: 45" min="1" step="0.1"></div>
         </div>
         <div class="form-row">
@@ -194,6 +197,12 @@ textarea{min-height:75px;resize:vertical}
     <div class="card">
       <div class="card-head"><i class="ti ti-calendar"></i>Date souhaitée</div>
       <div class="card-body">
+        <div id="slots-panel" style="display:none;margin-bottom:14px">
+          <label style="margin-bottom:8px">Créneaux disponibles <span class="req">*</span></label>
+          <div id="slots-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px"></div>
+          <div class="hint">Choisissez un créneau ci-dessus, ou indiquez une date libre ci-dessous si aucun ne vous convient.</div>
+        </div>
+        <div id="slots-loading" style="display:none;font-size:12px;color:var(--text2);margin-bottom:14px">⏳ Recherche des créneaux disponibles…</div>
         <div class="form-row">
           <div>
             <label>Date <span class="req">*</span></label>
@@ -313,6 +322,93 @@ function selType(t, btn){
   if(isSE && document.querySelectorAll('.entrant-block').length === 0) addEntrant();
 }
 
+// ─── Créneaux Cal.com (optionnel — dégrade silencieusement) ────────────
+// N'affiche des créneaux que si /api/cal-availability répond des disponibilités
+// réelles. Tant que la fonctionnalité n'est pas activée côté serveur (ou en
+// cas de souci), le formulaire se comporte exactement comme avant : simple
+// champ date libre, aucune régression possible.
+let _creneauxRequeteEnCours = 0;
+async function chargerCreneauxSiPossible(){
+  const btypo = document.getElementById('btypo').value;
+  const meubleVal = document.getElementById('meuble').value;
+  const panel = document.getElementById('slots-panel');
+  const loading = document.getElementById('slots-loading');
+  if(!btypo || !meubleVal){ panel.style.display = 'none'; return; }
+
+  const requeteId = ++_creneauxRequeteEnCours; // évite qu'une réponse tardive écrase une sélection plus récente
+  panel.style.display = 'none';
+  loading.style.display = 'block';
+  try{
+    const resp = await fetch('/api/cal-availability?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal));
+    if(requeteId !== _creneauxRequeteEnCours) return; // une sélection plus récente a déjà relancé une requête
+    loading.style.display = 'none';
+    if(!resp.ok){ return; }
+    const data = await resp.json();
+    if(!data || !data.available || !Array.isArray(data.slots) || !data.slots.length){ return; }
+    afficherCreneaux(data.slots);
+  }catch(e){
+    if(requeteId === _creneauxRequeteEnCours) loading.style.display = 'none';
+    // Silencieux : le champ date libre reste utilisable dans tous les cas.
+  }
+}
+
+function afficherCreneaux(slotsIso){
+  const panel = document.getElementById('slots-panel');
+  const list = document.getElementById('slots-list');
+  // Regroupe par jour pour un affichage lisible, limité aux 40 premiers
+  // créneaux pour ne pas surcharger la page.
+  // Regroupement par jour LOCAL (pas le jour UTC de l'ISO) : Cal.com renvoie
+  // des horodatages UTC, et un créneau tard le soir peut correspondre au
+  // lendemain en UTC tout en restant le même jour dans le fuseau horaire de
+  // l'agence — cohérent avec choisirCreneau() qui utilise aussi les
+  // composants de date locaux (getFullYear/getMonth/getDate).
+  const pad2 = n => String(n).padStart(2,'0');
+  const parJour = {};
+  slotsIso.slice(0, 40).forEach(iso => {
+    const d = new Date(iso);
+    if(isNaN(d)) return;
+    const cleJour = d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+    (parJour[cleJour] = parJour[cleJour] || []).push({ iso, date: d });
+  });
+  const joursTries = Object.keys(parJour).sort();
+  if(!joursTries.length){ panel.style.display = 'none'; return; }
+
+  list.innerHTML = joursTries.map(cleJour => {
+    const dateLabel = new Date(cleJour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
+    const boutons = parJour[cleJour].map(({iso, date}) => {
+      const heureLabel = date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+      return '<button type="button" class="slot-btn" data-iso="' + iso + '" onclick="choisirCreneau(this)" ' +
+        'style="border:1.5px solid var(--border);border-radius:var(--radius);padding:6px 10px;background:#fff;cursor:pointer;font-family:inherit;font-size:12px">' + heureLabel + '</button>';
+    }).join('');
+    return '<div style="width:100%;margin-bottom:6px">' +
+      '<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:capitalize;margin-bottom:4px">' + dateLabel + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px">' + boutons + '</div>' +
+      '</div>';
+  }).join('');
+  panel.style.display = 'block';
+}
+
+function choisirCreneau(btn){
+  document.querySelectorAll('.slot-btn').forEach(b => { b.style.borderColor='var(--border)'; b.style.background='#fff'; b.style.color='var(--text)'; });
+  btn.style.borderColor = 'var(--blue)'; btn.style.background = 'var(--blue-light)'; btn.style.color = 'var(--blue-dark)';
+
+  const d = new Date(btn.getAttribute('data-iso'));
+  if(isNaN(d)) return;
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('date').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+
+  const heureVal = pad(d.getHours()) + 'h' + pad(d.getMinutes());
+  const heureSelect = document.getElementById('heure');
+  if(![...heureSelect.options].some(o => o.value === heureVal)){
+    // Le créneau réel ne tombe pas forcément sur un horaire fixe du menu
+    // (00/30 min) : on ajoute l'option manquante plutôt que de la perdre.
+    const opt = document.createElement('option');
+    opt.value = heureVal; opt.textContent = heureVal;
+    heureSelect.appendChild(opt);
+  }
+  heureSelect.value = heureVal;
+}
+
 function showErr(msg){ const e=document.getElementById('err'); e.textContent='⚠️ '+msg; e.classList.add('show'); e.scrollIntoView({behavior:'smooth',block:'center'}); }
 function hideErr(){ document.getElementById('err').classList.remove('show'); }
 
@@ -333,6 +429,7 @@ function next(from){
     if(!document.getElementById('email').value.trim()) return showErr("Votre email est requis.");
     if(!type) return showErr("Veuillez choisir un type d'état des lieux.");
     setStep(2);
+    chargerCreneauxSiPossible(); // au cas où typologie/meublé étaient déjà remplis (retour arrière)
   } else if(from===2){
     if(!document.getElementById('adresse').value.trim()) return showErr("L'adresse du bien est requise.");
     if(!document.getElementById('date').value) return showErr("La date souhaitée est requise.");
@@ -443,6 +540,7 @@ async function submit(){
   const btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Envoi…';
   const payload = {
+    site: document.getElementById('site').value,
     agencyId: AGENCY_ID,
     contactId: CONTACT_ID,
     agence: document.getElementById('agence').value.trim(),

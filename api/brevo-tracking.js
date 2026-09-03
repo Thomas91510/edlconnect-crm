@@ -3,8 +3,7 @@
 // [{ id, email, subject, statut, date, opens, clicks }]
 export const config = { runtime: 'edge' };
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pvuctwflxvvxdawsxceu.supabase.co';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
 // ── Vérifie que l'utilisateur est admin ou sur un plan payant actif. ──
@@ -66,6 +65,15 @@ export default async function handler(req) {
     const startDate = fmt(start);
     const endDate = fmt(now);
 
+    // Le compte Brevo est UNIQUE et partagé par toute la plateforme : sans
+    // filtre, cet endpoint renvoyait les emails de TOUS les abonnés à
+    // n'importe quel abonné authentifié (faille corrigée ici). Chaque email
+    // envoyé via /api/send-email porte désormais un tag "sub_<user_id>"
+    // (voir send-email.js) ; on ne demande à Brevo que les événements portant
+    // le tag de l'appelant. Les emails envoyés avant ce correctif n'ont pas
+    // ce tag et disparaissent donc du suivi — c'est le sens sûr de l'erreur.
+    const tagAbonne = 'sub_' + _user.id;
+
     // Récupérer les événements transactionnels (pagination par offset)
     // Doc Brevo : GET /v3/smtp/statistics/events
     let allEvents = [];
@@ -74,7 +82,7 @@ export default async function handler(req) {
     const maxPages = 30; // garde-fou : 3000 événements max
 
     for (let page = 0; page < maxPages; page++) {
-      const url = `https://api.brevo.com/v3/smtp/statistics/events?limit=${limit}&offset=${offset}&startDate=${startDate}&endDate=${endDate}&sort=desc`;
+      const url = `https://api.brevo.com/v3/smtp/statistics/events?limit=${limit}&offset=${offset}&startDate=${startDate}&endDate=${endDate}&sort=desc&tags=${encodeURIComponent(tagAbonne)}`;
       const resp = await fetch(url, {
         headers: { 'accept': 'application/json', 'api-key': brevoKey }
       });

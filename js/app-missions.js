@@ -80,10 +80,10 @@ function renderMissions(){
     const rows=group.items.map(m=>{
       const realIdx=DB.missions.indexOf(m);
       return `<tr class="mrow-${slug}">
-      <td style="font-weight:600;font-size:11px">${m.agence}</td>
-      <td style="font-size:10px;color:var(--text2)">${m.adresse||'—'}</td>
-      <td style="font-size:10px">${m.type}</td>
-      <td style="font-size:10px;color:var(--text2)">${[m.bienType,m.bienTypo,m.bienMeuble].filter(Boolean).join(' · ')||'—'}</td>
+      <td style="font-weight:600;font-size:11px">${esc(m.agence)}</td>
+      <td style="font-size:10px;color:var(--text2)">${esc(m.adresse)||'—'}</td>
+      <td style="font-size:10px">${esc(m.type)}</td>
+      <td style="font-size:10px;color:var(--text2)">${esc([m.bienType,m.bienTypo,m.bienMeuble].filter(Boolean).join(' · '))||'—'}</td>
       <td style="font-size:11px">${fmtDT(m.date)}</td>
       <td style="font-weight:600;color:var(--blue)">${(m.montant||0).toLocaleString('fr-FR')} € <span style="font-size:9px;color:var(--text2)">HT</span></td>
       <td style="font-size:10px;color:var(--text2)">${fmtTVA(m.montant)}</td>
@@ -124,10 +124,9 @@ function deleteMission(i){
 // ═══════════════════════════════════════════════════════════
 // ─── FACTURATION — Moteur unifié (mission / mensuelle / particulier) ──
 // ═══════════════════════════════════════════════════════════
-function nextInvoiceNumber(){
+async function nextInvoiceNumber(){
   const year=new Date().getFullYear();
-  const num=CFG.invoiceNextNumber;
-  CFG.invoiceNextNumber=num+1;
+  const num=await reserveInvoiceNumber();
   return `FACT-${year}-${String(num).padStart(4,'0')}`;
 }
 
@@ -263,15 +262,18 @@ function renderInvoicePdf(invoice){
 }
 
 // ── Facture pour une seule mission (bouton dans la liste des missions) ──
-function generateInvoice(i){
+async function generateInvoice(i){
   const m=DB.missions[i];
   if(!m){notify('⚠️ Mission introuvable','warn');return;}
 
   let invoice=m.invoiceId?DB.invoices.find(inv=>inv.id===m.invoiceId):null;
   if(!invoice){
+    let numero;
+    try{ numero=await nextInvoiceNumber(); }
+    catch(e){ notify('⚠️ '+e.message,'warn'); return; }
     invoice={
       id:'inv_'+Date.now(),
-      number:nextInvoiceNumber(),
+      number:numero,
       date:new Date().toISOString(),
       type:'mission',
       clientName:m.agence,
@@ -298,7 +300,7 @@ function generateInvoice(i){
 }
 
 // ── Facture mensuelle groupée (toutes les missions non-facturées d'un client sur un mois) ──
-function generateMonthlyInvoiceFor(agence, yearMonth){
+async function generateMonthlyInvoiceFor(agence, yearMonth){
   // yearMonth format "YYYY-MM"
   if(!agence||!yearMonth){notify('⚠️ Client et mois requis','warn');return;}
   const [year,month]=yearMonth.split('-').map(Number);
@@ -313,10 +315,13 @@ function generateMonthlyInvoiceFor(agence, yearMonth){
     notify('⚠️ Aucune mission non-facturée pour ce client sur ce mois','warn');
     return;
   }
+  let numero;
+  try{ numero=await nextInvoiceNumber(); }
+  catch(e){ notify('⚠️ '+e.message,'warn'); return; }
   const contact=DB.contacts.find(c=>(c.entreprise||'').trim().toLowerCase()===agence.trim().toLowerCase());
   const invoice={
     id:'inv_'+Date.now(),
-    number:nextInvoiceNumber(),
+    number:numero,
     date:new Date().toISOString(),
     type:'mensuelle',
     clientName:agence,
@@ -362,7 +367,7 @@ function openParticulierInvoiceModal(){
   document.getElementById('inv-p-date').value=new Date().toISOString().slice(0,10);
   openModal('modal-invoice-particulier');
 }
-function confirmParticulierInvoice(){
+async function confirmParticulierInvoice(){
   const nom=document.getElementById('inv-p-nom').value.trim();
   const montant=Number(document.getElementById('inv-p-montant').value)||0;
   if(!nom){notify('⚠️ Nom du client requis','warn');return;}
@@ -370,9 +375,12 @@ function confirmParticulierInvoice(){
   const designation=document.getElementById('inv-p-designation').value.trim()||'État des lieux';
   const dateP=document.getElementById('inv-p-date').value;
 
+  let numero;
+  try{ numero=await nextInvoiceNumber(); }
+  catch(e){ notify('⚠️ '+e.message,'warn'); return; }
   const invoice={
     id:'inv_'+Date.now(),
-    number:nextInvoiceNumber(),
+    number:numero,
     date:new Date().toISOString(),
     type:'particulier',
     clientName:nom,
@@ -529,8 +537,11 @@ function statNatureBien(m){
   return 'Autre (local, parking…)';
 }
 
-// Typologie T1 a T6+ : accepte les notations T3 et F3, et rattache le
-// studio au T1, comme le veut l'usage en gestion locative.
+// Typologie T1 a T7+ : accepte les notations T3 et F3, et rattache le
+// studio au T1, comme le veut l'usage en gestion locative. T6 et T7 sont
+// distingues (formulaires de reservation alignes sur les evenements Cal.com
+// dedies) ; T7+ ne sert plus que de filet pour une typologie superieure
+// exceptionnelle (T8...), non proposee dans les formulaires.
 function statTypologie(m){
   const v = String(m.bienTypo || '').trim().toLowerCase();
   if(!v) return 'Non renseignée';
@@ -538,14 +549,14 @@ function statTypologie(m){
   const found = v.match(/[tf]\s*(\d+)/);
   if(found){
     const n = parseInt(found[1], 10);
-    if(n >= 6) return 'T6+';
+    if(n >= 7) return 'T7+';
     if(n >= 1) return 'T' + n;
   }
   return 'Non renseignée';
 }
 
 // Ordre de lecture naturel pour les typologies (plutot que par effectif)
-const ORDRE_TYPOLOGIE = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6+', 'Non renseignée'];
+const ORDRE_TYPOLOGIE = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7+', 'Non renseignée'];
 
 // Une ligne de repartition : libelle, barre proportionnelle, effectif, CA
 function statBarre(libelle, nb, total, couleur, ca){
@@ -612,7 +623,7 @@ function renderStatsMissions(){
   const parMeuble = statGrouper(missions, statMeuble);
   const parClient = statGrouper(missions, statTypeClient);
   const parNature = statGrouper(missions, statNatureBien);
-  // Typologies triees dans l'ordre T1 → T6+, plus lisible qu'un tri par effectif
+  // Typologies triees dans l'ordre T1 → T7+, plus lisible qu'un tri par effectif
   const parTypologie = statGrouper(missions, statTypologie)
     .sort((a, b) => ORDRE_TYPOLOGIE.indexOf(a[0]) - ORDRE_TYPOLOGIE.indexOf(b[0]));
 
@@ -626,7 +637,7 @@ function renderStatsMissions(){
   const couleursMeuble = { 'Meublé': '#2F7A3E', 'Nu / vide': '#1A5FA8', 'Non renseigné': '#8494A1' };
   const couleursClient = { 'Agence / pro': '#1A5FA8', 'Particulier': '#0F6E56' };
   const couleursNature = { 'Maison': '#B4750F', 'Appartement': '#1A5FA8', 'Autre (local, parking…)': '#5B3DA5', 'Non renseigné': '#8494A1' };
-  const couleursTypo = { 'T1': '#8FBEEC', 'T2': '#5B9BD5', 'T3': '#1A5FA8', 'T4': '#0F4C81', 'T5': '#0F6E56', 'T6+': '#2F7A3E', 'Non renseignée': '#8494A1' };
+  const couleursTypo = { 'T1': '#8FBEEC', 'T2': '#5B9BD5', 'T3': '#1A5FA8', 'T4': '#0F4C81', 'T5': '#0F6E56', 'T6': '#2F7A3E', 'T7+': '#1D4F2E', 'Non renseignée': '#8494A1' };
 
   const kpi = (etiq, val, sous, couleur) => `<div style="flex:1;min-width:130px;padding:12px 14px;border-left:3px solid ${couleur};background:var(--bg2);border-radius:0 var(--radius) var(--radius) 0">
     <div style="font-size:11px;color:var(--text2);margin-bottom:3px">${etiq}</div>

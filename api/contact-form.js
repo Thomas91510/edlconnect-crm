@@ -1,5 +1,13 @@
 export const config = { runtime: 'edge' };
 
+// Echappement HTML : endpoint public, les valeurs viennent d'un visiteur
+// anonyme et sont reinjectees dans l'email envoye au propriétaire.
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 // Endpoint public (visiteurs anonymes du site vitrine) — pas d'authentification
 // requise, contrairement à send-email.js qui est réservé aux abonnés connectés.
 export default async function handler(req) {
@@ -18,10 +26,28 @@ export default async function handler(req) {
   }
 
   try {
-    const { nom, email, sujet, message } = await req.json();
+    const { nom, email, sujet, message, site } = await req.json();
+
+    // Piège à bots : champ caché côté formulaire, jamais rempli par un
+    // humain — un bot qui remplit tout automatiquement le renseigne souvent.
+    // On répond succès sans rien envoyer, pour ne pas révéler le piège.
+    if (site) {
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+    }
 
     if (!nom || !email || !message) {
       return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400, headers });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(String(email).trim())) {
+      return new Response(JSON.stringify({ error: 'Email invalide' }), { status: 400, headers });
+    }
+    const limites = { nom: 150, email: 150, sujet: 150, message: 4000 };
+    for (const [champ, max] of Object.entries(limites)) {
+      const val = { nom, email, sujet, message }[champ];
+      if (val != null && String(val).length > max) {
+        return new Response(JSON.stringify({ error: 'Champ trop long : ' + champ }), { status: 400, headers });
+      }
     }
 
     const BREVO_KEY = process.env.BREVO_API_KEY;
@@ -37,7 +63,7 @@ export default async function handler(req) {
         to: [{ email: 'contact@lokentia.fr', name: 'ImmoCheck EDL' }],
         replyTo: { email, name: nom },
         subject: `[Lokentia] Contact : ${sujet || 'Sans sujet'} — ${nom}`,
-        htmlContent: `<p><strong>Nom :</strong> ${nom}</p><p><strong>Email :</strong> ${email}</p><p><strong>Sujet :</strong> ${sujet || '—'}</p><hr><p>${String(message).replace(/\n/g, '<br>')}</p>`,
+        htmlContent: `<p><strong>Nom :</strong> ${esc(nom)}</p><p><strong>Email :</strong> ${esc(email)}</p><p><strong>Sujet :</strong> ${esc(sujet) || '—'}</p><hr><p>${esc(message).replace(/\n/g, '<br>')}</p>`,
         textContent: `Nom : ${nom}\nEmail : ${email}\nSujet : ${sujet || '—'}\n\nMessage :\n${message}`
       })
     });

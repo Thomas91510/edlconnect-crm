@@ -21,6 +21,7 @@
     { "source": "/api/cron-trial", "destination": "/api/cron-trial.js" },
     { "source": "/api/booking-request", "destination": "/api/booking-request.js" },
     { "source": "/api/booking-page", "destination": "/api/booking-page.js" },
+    { "source": "/api/cal-availability", "destination": "/api/cal-availability.js" },
     { "source": "/api/confirm-rdv", "destination": "/api/confirm-rdv.js" },
     { "source": "/api/reminder-rdv", "destination": "/api/reminder-rdv.js" },
     { "source": "/api/get-reservations", "destination": "/api/get-reservations.js" },

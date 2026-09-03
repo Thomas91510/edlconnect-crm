@@ -1,12 +1,13 @@
 export const config = { runtime: 'edge' };
 
+import { SUPABASE_URL, SUPABASE_ANON_KEY as SUPA_ANON } from './_lib/supabase.js';
+
 const BUCKET = 'sauvegardes';
 const TABLES = ['contacts', 'missions', 'prospects', 'deals', 'rdvs', 'campagnes', 'trackings', 'invoices', 'settings'];
 const RETENTION_JOURS = 30;
 const PAGE = 1000;
 
 const ADMIN_EMAILS = ['contact@edl-idf.com'];
-const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
 
 export default async function handler(req) {
   // Acces : le cron Vercel, ou un administrateur connecte
@@ -18,7 +19,7 @@ export default async function handler(req) {
     const token = authHeader.replace('Bearer ', '').trim();
     if (token) {
       try {
-        const uResp = await fetch('https://pvuctwflxvvxdawsxceu.supabase.co/auth/v1/user', {
+        const uResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
           headers: { 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + token }
         });
         if (uResp.ok) {
@@ -38,7 +39,7 @@ export default async function handler(req) {
     });
   }
 
-  const SUPA_URL = process.env.SUPABASE_URL || 'https://pvuctwflxvvxdawsxceu.supabase.co';
+  const SUPA_URL = SUPABASE_URL;
   const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
   if (!SUPA_KEY) {
     return new Response(JSON.stringify({ error: 'SUPABASE_SERVICE_KEY manquante' }), { status: 500 });
