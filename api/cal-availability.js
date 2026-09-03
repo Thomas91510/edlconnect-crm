@@ -39,18 +39,25 @@ export default async function handler(req) {
   }
 
   const CAL_API_KEY = process.env.CAL_API_KEY;
+  const url = new URL(req.url);
+  // Aide au diagnostic pendant la mise au point (avant activation publique) :
+  // &debug=1 renvoie le détail de l'appel Cal.com au lieu de dégrader
+  // silencieusement. À retirer (ou au moins ne plus documenter) une fois
+  // l'intégration validée en conditions réelles.
+  const debug = url.searchParams.get('debug') === '1';
+  const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [] }, debug ? extra : {})), { status: 200, headers });
+
   if (!CAL_API_KEY) {
-    return new Response(JSON.stringify({ available: false, slots: [] }), { status: 200, headers });
+    return repli({ debug: 'CAL_API_KEY absente des variables d\'environnement' });
   }
 
   try {
-    const url = new URL(req.url);
     const bienTypo = url.searchParams.get('bienTypo') || '';
     const meuble = url.searchParams.get('meuble') || '';
 
     const evt = resolveCalEvent(bienTypo, meuble);
     if (!evt) {
-      return new Response(JSON.stringify({ available: false, slots: [] }), { status: 200, headers });
+      return repli({ debug: 'Type de bien non reconnu', bienTypo, meuble });
     }
 
     // Fenêtre glissante : à partir de demain (comme le formulaire actuel qui
@@ -69,7 +76,8 @@ export default async function handler(req) {
     if (!calResp.ok) {
       // Panne Cal.com, clé invalide, ou événement introuvable : on dégrade
       // proprement plutôt que de bloquer un formulaire public avec une 500.
-      return new Response(JSON.stringify({ available: false, slots: [] }), { status: 200, headers });
+      const corpsErreur = await calResp.text().catch(() => '');
+      return repli({ debug: 'Réponse Cal.com non OK', calUrl, calStatus: calResp.status, calBody: corpsErreur.slice(0, 500) });
     }
 
     const calData = await calResp.json();
@@ -88,10 +96,10 @@ export default async function handler(req) {
         .filter(Boolean);
     }
 
-    return new Response(JSON.stringify({ available: slots.length > 0, slots, dureeMinutes: evt.duree }), {
-      status: 200, headers,
-    });
+    const body = { available: slots.length > 0, slots, dureeMinutes: evt.duree };
+    if (debug) { body.debug = 'OK'; body.calUrl = calUrl; body.calDataBrut = calData; }
+    return new Response(JSON.stringify(body), { status: 200, headers });
   } catch (e) {
-    return new Response(JSON.stringify({ available: false, slots: [] }), { status: 200, headers });
+    return repli({ debug: 'Exception : ' + e.message });
   }
 }
