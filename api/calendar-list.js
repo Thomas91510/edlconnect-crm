@@ -1,5 +1,6 @@
 // api/calendar-create.js — Créer un événement Google Calendar
 import { google } from 'googleapis';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 
 async function getCalendarClient() {
   const oauth2Client = new google.auth.OAuth2(
@@ -18,8 +19,8 @@ export default async function handler(req, res) {
   const _authHeader = req.headers['authorization'] || '';
   const _token = _authHeader.replace('Bearer ', '').trim();
   if (!_token) return res.status(401).json({ error: 'Non authentifié' });
-  const _userResp = await fetch('https://pvuctwflxvvxdawsxceu.supabase.co/auth/v1/user', {
-    headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic', 'Authorization': 'Bearer ' + _token }
+  const _userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + _token }
   });
   if (!_userResp.ok) return res.status(401).json({ error: 'Session invalide ou expirée' });
 

@@ -1,5 +1,7 @@
 export const config = { runtime: 'edge' };
 
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
+
 // Echappement HTML : mission/message/locataires proviennent en bout de chaine
 // d'un formulaire de reservation public (aucune authentification), et sont
 // reinjectes tels quels dans des emails envoyes a de vraies agences et de
@@ -14,7 +16,7 @@ function esc(s) {
 // Pour les autres abonnes, on expedie depuis Lokentia avec leur nom, et
 // leurs clients repondent directement sur leur adresse (replyTo).
 const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
-const SUPA_URL_BASE = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+const SUPA_URL_BASE = SUPABASE_URL;
 
 async function identiteAbonne(userId) {
   const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', partenaire: '' };
@@ -66,8 +68,8 @@ export default async function handler(req) {
   if(!_token) {
     return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
   }
-  const _userResp = await fetch(`${'https://pvuctwflxvvxdawsxceu.supabase.co'}/auth/v1/user`, {
-    headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic', 'Authorization': `Bearer ${_token}` }
+  const _userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${_token}` }
   });
   if(!_userResp.ok) {
     return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
