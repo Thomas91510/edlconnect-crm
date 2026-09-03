@@ -124,10 +124,9 @@ function deleteMission(i){
 // ═══════════════════════════════════════════════════════════
 // ─── FACTURATION — Moteur unifié (mission / mensuelle / particulier) ──
 // ═══════════════════════════════════════════════════════════
-function nextInvoiceNumber(){
+async function nextInvoiceNumber(){
   const year=new Date().getFullYear();
-  const num=CFG.invoiceNextNumber;
-  CFG.invoiceNextNumber=num+1;
+  const num=await reserveInvoiceNumber();
   return `FACT-${year}-${String(num).padStart(4,'0')}`;
 }
 
@@ -263,15 +262,18 @@ function renderInvoicePdf(invoice){
 }
 
 // ── Facture pour une seule mission (bouton dans la liste des missions) ──
-function generateInvoice(i){
+async function generateInvoice(i){
   const m=DB.missions[i];
   if(!m){notify('⚠️ Mission introuvable','warn');return;}
 
   let invoice=m.invoiceId?DB.invoices.find(inv=>inv.id===m.invoiceId):null;
   if(!invoice){
+    let numero;
+    try{ numero=await nextInvoiceNumber(); }
+    catch(e){ notify('⚠️ '+e.message,'warn'); return; }
     invoice={
       id:'inv_'+Date.now(),
-      number:nextInvoiceNumber(),
+      number:numero,
       date:new Date().toISOString(),
       type:'mission',
       clientName:m.agence,
@@ -298,7 +300,7 @@ function generateInvoice(i){
 }
 
 // ── Facture mensuelle groupée (toutes les missions non-facturées d'un client sur un mois) ──
-function generateMonthlyInvoiceFor(agence, yearMonth){
+async function generateMonthlyInvoiceFor(agence, yearMonth){
   // yearMonth format "YYYY-MM"
   if(!agence||!yearMonth){notify('⚠️ Client et mois requis','warn');return;}
   const [year,month]=yearMonth.split('-').map(Number);
@@ -313,10 +315,13 @@ function generateMonthlyInvoiceFor(agence, yearMonth){
     notify('⚠️ Aucune mission non-facturée pour ce client sur ce mois','warn');
     return;
   }
+  let numero;
+  try{ numero=await nextInvoiceNumber(); }
+  catch(e){ notify('⚠️ '+e.message,'warn'); return; }
   const contact=DB.contacts.find(c=>(c.entreprise||'').trim().toLowerCase()===agence.trim().toLowerCase());
   const invoice={
     id:'inv_'+Date.now(),
-    number:nextInvoiceNumber(),
+    number:numero,
     date:new Date().toISOString(),
     type:'mensuelle',
     clientName:agence,
@@ -362,7 +367,7 @@ function openParticulierInvoiceModal(){
   document.getElementById('inv-p-date').value=new Date().toISOString().slice(0,10);
   openModal('modal-invoice-particulier');
 }
-function confirmParticulierInvoice(){
+async function confirmParticulierInvoice(){
   const nom=document.getElementById('inv-p-nom').value.trim();
   const montant=Number(document.getElementById('inv-p-montant').value)||0;
   if(!nom){notify('⚠️ Nom du client requis','warn');return;}
@@ -370,9 +375,12 @@ function confirmParticulierInvoice(){
   const designation=document.getElementById('inv-p-designation').value.trim()||'État des lieux';
   const dateP=document.getElementById('inv-p-date').value;
 
+  let numero;
+  try{ numero=await nextInvoiceNumber(); }
+  catch(e){ notify('⚠️ '+e.message,'warn'); return; }
   const invoice={
     id:'inv_'+Date.now(),
-    number:nextInvoiceNumber(),
+    number:numero,
     date:new Date().toISOString(),
     type:'particulier',
     clientName:nom,
