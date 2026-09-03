@@ -474,11 +474,19 @@ async function syncAll(){
 // ─── SAVE FORMS ───────────────────────────────────────────
 function saveContact(){
   if(!checkPlanLimit('contact')) return;
+  const typeClient=document.getElementById('c-type-client').value;
   const ent=document.getElementById('c-ent').value.trim();
-  if(!ent){notify('⚠️ Entreprise requise','warn');return;}
-  DB.contacts.push({id:'local_'+Date.now(),entreprise:ent,contact:document.getElementById('c-contact').value,email:document.getElementById('c-email').value,tel:document.getElementById('c-tel').value,statut:document.getElementById('c-statut').value,source:document.getElementById('c-source').value,notes:document.getElementById('c-notes').value,presence:'notion'});
+  const contactVal=document.getElementById('c-contact').value;
+  if(typeClient==='Particulier'){
+    if(!contactVal.trim()){notify('⚠️ Nom du particulier requis','warn');return;}
+  } else if(!ent){
+    notify('⚠️ Entreprise requise','warn');return;
+  }
+  DB.contacts.push({id:'local_'+Date.now(),entreprise:ent,contact:contactVal,email:document.getElementById('c-email').value,tel:document.getElementById('c-tel').value,statut:document.getElementById('c-statut').value,source:document.getElementById('c-source').value,notes:document.getElementById('c-notes').value,typeClient:typeClient,presence:'notion'});
   detectDuplicates();saveToStorage();closeModal('modal-contact');notify('✅ Contact ajouté !');
   ['c-ent','c-contact','c-email','c-tel','c-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('c-type-client').value='Professionnel';
+  toggleContactTypeUI();
   renderContacts();renderDashboard();
 }
 function saveDeal(){
@@ -675,3 +683,35 @@ function saveRdv(){
 }
 
 // ─── CLAUDE AI COMPOSER ───────────────────────────────────
+
+// === Ajout : sélecteur Professionnel / Particulier dans #modal-contact ===
+(function(){
+  const entField = document.getElementById('c-ent');
+  if(!entField) return;
+  const entWrapper = entField.parentElement;      // <div><label>Entreprise *</label><input id="c-ent"></div>
+  const formGrid = entWrapper.parentElement;       // .form-grid
+  if(!formGrid) return;
+
+  const typeWrapper = document.createElement('div');
+  typeWrapper.innerHTML = `
+    <label>Type de client</label>
+    <select id="c-type-client" onchange="toggleContactTypeUI()">
+      <option>Professionnel</option>
+      <option>Particulier</option>
+    </select>
+  `;
+  formGrid.parentElement.insertBefore(typeWrapper, formGrid);
+})();
+
+function toggleContactTypeUI(){
+  const typeClient=document.getElementById('c-type-client').value;
+  const entField=document.getElementById('c-ent');
+  const entLabel=entField.previousElementSibling;
+  if(typeClient==='Particulier'){
+    if(entLabel) entLabel.textContent='Entreprise';
+    entField.placeholder='(optionnel pour un particulier)';
+  } else {
+    if(entLabel) entLabel.textContent='Entreprise *';
+    entField.placeholder='Orpi Évry';
+  }
+}
