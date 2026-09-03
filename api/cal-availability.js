@@ -46,7 +46,7 @@ export default async function handler(req) {
   // que de continuer à deviner. VERSION sert à confirmer sans ambiguïté
   // quel déploiement répond réellement. À retirer avant l'activation
   // publique définitive.
-  const VERSION = 'cal-availability-diag-v2';
+  const VERSION = 'cal-availability-diag-v3';
   const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [], version: VERSION }, extra)), { status: 200, headers });
 
   if (!CAL_API_KEY) {
