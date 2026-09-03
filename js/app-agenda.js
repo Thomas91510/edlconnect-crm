@@ -213,19 +213,22 @@ function openEvtDetail(type, id){
   const notesEl = document.getElementById('evt-detail-notes');
   const missionBtn = document.getElementById('evt-detail-mission-btn');
 
-  titleEl.innerHTML = `${type === 'mission' ? '🏠' : '📅'} ${e.titre||e.agence||'RDV'} <button class="modal-close" onclick="closeModal(\'modal-evt-detail\')"><i class="ti ti-x"></i></button>`;
+  titleEl.innerHTML = `${type === 'mission' ? '🏠' : '📅'} ${esc(e.titre||e.agence||'RDV')} <button class="modal-close" onclick="closeModal(\'modal-evt-detail\')"><i class="ti ti-x"></i></button>`;
 
+  // Champs venant potentiellement d'une reservation publique (formulaire non
+  // authentifie) : toujours passer par esc() avant affectation a innerHTML,
+  // meme pour un simple libelle de statut.
   const rows = [
-    e.agence        ? ['🏢 Agence',    e.agence]   : null,
-    e.type          ? ['📋 Type EDL',  e.type]      : null,
-    e.adresse       ? ['📍 Adresse',   e.adresse]   : null,
+    e.agence        ? ['🏢 Agence',    esc(e.agence)]   : null,
+    e.type          ? ['📋 Type EDL',  esc(e.type)]      : null,
+    e.adresse       ? ['📍 Adresse',   esc(e.adresse)]   : null,
     e.date          ? ['📅 Date',      fmtDT(e.date)] : null,
-    e.duree         ? ['⏱️ Durée',     e.duree]     : null,
-    e.contact       ? ['👤 Contact',   e.contact]   : null,
-    e.locataireNom  ? ['🧑 Locataire', `${e.locataireNom}${e.locataireTel?' — '+e.locataireTel:''}`] : null,
+    e.duree         ? ['⏱️ Durée',     esc(e.duree)]     : null,
+    e.contact       ? ['👤 Contact',   esc(e.contact)]   : null,
+    e.locataireNom  ? ['🧑 Locataire', `${esc(e.locataireNom)}${e.locataireTel?' — '+esc(e.locataireTel):''}`] : null,
     (e.locatairesEntrants && e.locatairesEntrants.length) ? ['🔑 Entrant(s)', fmtEntrants(e.locatairesEntrants)] : null,
-    e.montant       ? ['💶 Montant',   e.montant+' € HT'] : null,
-    e.statut        ? ['🔖 Statut',    e.statut]    : null,
+    e.montant       ? ['💶 Montant',   esc(e.montant)+' € HT'] : null,
+    e.statut        ? ['🔖 Statut',    esc(e.statut)]    : null,
   ].filter(Boolean);
 
   bodyEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -517,8 +520,13 @@ function autocompleteMission(val){
   if(!matches.length && !extraMatches.length){if(box)box.style.display='none';return;}
   if(box){
     box.style.display='block';
-    const contactRows=matches.map(c=>`<div onclick="selectMissionContact('${c.id}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${c.entreprise||c.contact}</div><div style="color:var(--text2);font-size:10px">${c.email||''} ${c.tel?'· '+c.tel:''}</div></div>`).join('');
-    const missionRows=extraMatches.map(m=>`<div onclick="selectMissionAgence('${m.agence.replace(/'/g,"\\'")}','${(m.email||'').replace(/'/g,"\\'")}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${m.agence}</div><div style="color:var(--text2);font-size:10px">Déjà utilisé en mission · pas encore en contact</div></div>`).join('');
+    // Double echappement pour les valeurs injectees dans l'attribut onclick :
+    // d'abord JS (proteger le litteral '...'), puis HTML (proteger l'attribut
+    // "..." et le contenu affiche) — necessaire car agence/email peuvent
+    // venir d'une reservation publique non authentifiee.
+    const jsAttr = v => esc(String(v||'').replace(/'/g,"\\'"));
+    const contactRows=matches.map(c=>`<div onclick="selectMissionContact('${jsAttr(c.id)}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(c.entreprise||c.contact)}</div><div style="color:var(--text2);font-size:10px">${esc(c.email||'')} ${c.tel?'· '+esc(c.tel):''}</div></div>`).join('');
+    const missionRows=extraMatches.map(m=>`<div onclick="selectMissionAgence('${jsAttr(m.agence)}','${jsAttr(m.email)}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(m.agence)}</div><div style="color:var(--text2);font-size:10px">Déjà utilisé en mission · pas encore en contact</div></div>`).join('');
     box.innerHTML=contactRows+missionRows;
   }
 }

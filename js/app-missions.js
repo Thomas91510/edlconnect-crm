@@ -80,10 +80,10 @@ function renderMissions(){
     const rows=group.items.map(m=>{
       const realIdx=DB.missions.indexOf(m);
       return `<tr class="mrow-${slug}">
-      <td style="font-weight:600;font-size:11px">${m.agence}</td>
-      <td style="font-size:10px;color:var(--text2)">${m.adresse||'—'}</td>
-      <td style="font-size:10px">${m.type}</td>
-      <td style="font-size:10px;color:var(--text2)">${[m.bienType,m.bienTypo,m.bienMeuble].filter(Boolean).join(' · ')||'—'}</td>
+      <td style="font-weight:600;font-size:11px">${esc(m.agence)}</td>
+      <td style="font-size:10px;color:var(--text2)">${esc(m.adresse)||'—'}</td>
+      <td style="font-size:10px">${esc(m.type)}</td>
+      <td style="font-size:10px;color:var(--text2)">${esc([m.bienType,m.bienTypo,m.bienMeuble].filter(Boolean).join(' · '))||'—'}</td>
       <td style="font-size:11px">${fmtDT(m.date)}</td>
       <td style="font-weight:600;color:var(--blue)">${(m.montant||0).toLocaleString('fr-FR')} € <span style="font-size:9px;color:var(--text2)">HT</span></td>
       <td style="font-size:10px;color:var(--text2)">${fmtTVA(m.montant)}</td>

@@ -667,7 +667,7 @@ function renderDashboard(){
   document.getElementById('dash-pipeline').innerHTML=STAGES.map(s=>`<div class="stat-row"><span style="font-size:11px;width:80px;color:var(--text2);flex-shrink:0">${s}</span><div class="progress-bar"><div class="progress-fill" style="width:${Math.round(stageCounts[s]/maxC*100)}%"></div></div><span style="font-size:11px;min-width:16px;text-align:right">${stageCounts[s]}</span></div>`).join('');
 
   // Missions dans le tableau — filtrées
-  document.getElementById('dash-missions').innerHTML=missions.slice(-5).reverse().map(m=>`<tr><td>${m.agence}</td><td style="font-size:10px">${m.type}</td><td>${m.montant} €</td><td>${statusBadge(m.statut)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Aucune</td></tr>';
+  document.getElementById('dash-missions').innerHTML=missions.slice(-5).reverse().map(m=>`<tr><td>${esc(m.agence)}</td><td style="font-size:10px">${esc(m.type)}</td><td>${m.montant} €</td><td>${statusBadge(m.statut)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Aucune</td></tr>';
   document.getElementById('dash-contacts').innerHTML=DB.contacts.slice(0,6).map(c=>`<tr><td style="font-size:11px">${esc(c.entreprise)}</td><td style="font-size:11px;color:var(--text2)">${esc(c.email||'—')}</td><td>${statusBadge(c.statut)}</td></tr>`).join('')||'<tr><td colspan="3" class="empty">Aucun</td></tr>';
   const today=new Date();
   const upcoming=DB.rdvs.filter(r=>new Date(r.date)>=today).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4);

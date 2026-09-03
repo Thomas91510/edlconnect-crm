@@ -66,6 +66,15 @@ export default async function handler(req) {
     const startDate = fmt(start);
     const endDate = fmt(now);
 
+    // Le compte Brevo est UNIQUE et partagé par toute la plateforme : sans
+    // filtre, cet endpoint renvoyait les emails de TOUS les abonnés à
+    // n'importe quel abonné authentifié (faille corrigée ici). Chaque email
+    // envoyé via /api/send-email porte désormais un tag "sub_<user_id>"
+    // (voir send-email.js) ; on ne demande à Brevo que les événements portant
+    // le tag de l'appelant. Les emails envoyés avant ce correctif n'ont pas
+    // ce tag et disparaissent donc du suivi — c'est le sens sûr de l'erreur.
+    const tagAbonne = 'sub_' + _user.id;
+
     // Récupérer les événements transactionnels (pagination par offset)
     // Doc Brevo : GET /v3/smtp/statistics/events
     let allEvents = [];
@@ -74,7 +83,7 @@ export default async function handler(req) {
     const maxPages = 30; // garde-fou : 3000 événements max
 
     for (let page = 0; page < maxPages; page++) {
-      const url = `https://api.brevo.com/v3/smtp/statistics/events?limit=${limit}&offset=${offset}&startDate=${startDate}&endDate=${endDate}&sort=desc`;
+      const url = `https://api.brevo.com/v3/smtp/statistics/events?limit=${limit}&offset=${offset}&startDate=${startDate}&endDate=${endDate}&sort=desc&tags=${encodeURIComponent(tagAbonne)}`;
       const resp = await fetch(url, {
         headers: { 'accept': 'application/json', 'api-key': brevoKey }
       });

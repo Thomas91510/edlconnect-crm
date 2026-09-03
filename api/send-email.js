@@ -82,13 +82,23 @@ export default async function handler(req) {
       });
     }
 
+    // Marquer l'email avec l'identifiant de l'abonné expéditeur : le compte
+    // Brevo est partagé par toute la plateforme, donc sans ce tag l'endpoint
+    // /api/brevo-tracking (qui interroge les statistiques Brevo) ne peut pas
+    // distinguer les emails d'un abonné de ceux des autres. Voir aussi
+    // brevo-tracking.js qui filtre ses requêtes sur ce même tag.
+    const bodyTague = {
+      ...body,
+      tags: [...(Array.isArray(body.tags) ? body.tags : []), 'sub_' + _user.id]
+    };
+
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'api-key': brevoKey
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(bodyTague)
     });
 
     const data = await response.json();

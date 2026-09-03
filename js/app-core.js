@@ -52,7 +52,7 @@ function initials(n){const w=(n||'?').trim().split(' ');return((w[0]||'?')[0]+((
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function statusBadge(s){
   const m={'Client actif':'b-green','Client signé ✅':'b-green','Cible potentielle':'b-blue','Partenaire':'b-teal','Inactif':'b-gray','planifiée':'b-blue','en cours':'b-amber','terminée':'b-teal','facturée':'b-green','Gagné':'b-green','Négociation':'b-amber','Proposé':'b-blue','Qualifié':'b-teal','Prospect':'b-gray','Terminée':'b-gray','Active':'b-green','subscribed':'b-green','unsubscribed':'b-amber','bounced':'b-red','blocked':'b-red'};
-  return `<span class="badge badge-status ${m[s]||'b-gray'}">${s||'—'}</span>`;
+  return `<span class="badge badge-status ${m[s]||'b-gray'}">${esc(s)||'—'}</span>`;
 }
 function presenceBadge(p){
   if(p==='brevo')return '<span class="badge b-teal">Brevo</span>';

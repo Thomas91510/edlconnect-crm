@@ -1,5 +1,15 @@
 export const config = { runtime: 'edge' };
 
+// Echappement HTML : mission/message/locataires proviennent en bout de chaine
+// d'un formulaire de reservation public (aucune authentification), et sont
+// reinjectes tels quels dans des emails envoyes a de vraies agences et de
+// vrais locataires. Sans ceci, n'importe quel compte peut y injecter du HTML.
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 // Domaines authentifies chez Brevo : seuls ceux-ci peuvent servir d'expediteur.
 // Pour les autres abonnes, on expedie depuis Lokentia avec leur nom, et
 // leurs clients repondent directement sur leur adresse (replyTo).
@@ -108,8 +118,8 @@ export default async function handler(req) {
     const heureStr = dateObj ? dateObj.toLocaleTimeString('fr-FR', {
       hour: '2-digit', minute: '2-digit'
     }) : '—';
-    const bien = [mission.bienType, mission.bienTypo, mission.bienMeuble].filter(Boolean).join(' · ') || 'Non précisé';
-    const dureeLabel = mission.dureeEstimee || '1h';
+    const bien = esc([mission.bienType, mission.bienTypo, mission.bienMeuble].filter(Boolean).join(' · ') || 'Non précisé');
+    const dureeLabel = esc(mission.dureeEstimee || '1h');
     const typeEdl = (mission.type || '').toLowerCase();
 
     const isEntrant = typeEdl.includes('entrant');
@@ -119,10 +129,10 @@ export default async function handler(req) {
 
     // Bloc "Expert qui se déplace" (affiché si renseigné)
     const expertBlockAgent = expertNom
-      ? `<tr><td style="color:#6b6b6b;padding:5px 0">Expert</td><td style="font-weight:600">${expertNom}${expertTel ? ' — 📱 ' + expertTel : ''}</td></tr>`
+      ? `<tr><td style="color:#6b6b6b;padding:5px 0">Expert</td><td style="font-weight:600">${esc(expertNom)}${expertTel ? ' — 📱 ' + esc(expertTel) : ''}</td></tr>`
       : '';
     const expertBlockLoc = expertNom
-      ? `👤 Expert qui se déplacera : <strong>${expertNom}</strong>${expertTel ? '<br>📱 ' + expertTel : ''}<br>`
+      ? `👤 Expert qui se déplacera : <strong>${esc(expertNom)}</strong>${expertTel ? '<br>📱 ' + esc(expertTel) : ''}<br>`
       : '';
 
 // Aucun encart particulier : l'email a l'agence est identique, que la
@@ -140,18 +150,18 @@ export default async function handler(req) {
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <h2 style="font-size:20px;margin:0 0 16px 0">✅ Confirmation de votre état des lieux</h2>
     <table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:20px">
-      <tr><td style="color:#6b6b6b;padding:5px 0;width:35%">Type</td><td style="font-weight:600">${mission.type}</td></tr>
-      <tr><td style="color:#6b6b6b;padding:5px 0">Adresse</td><td style="font-weight:600">${mission.adresse}</td></tr>
+      <tr><td style="color:#6b6b6b;padding:5px 0;width:35%">Type</td><td style="font-weight:600">${esc(mission.type)}</td></tr>
+      <tr><td style="color:#6b6b6b;padding:5px 0">Adresse</td><td style="font-weight:600">${esc(mission.adresse)}</td></tr>
       <tr><td style="color:#6b6b6b;padding:5px 0">Bien</td><td>${bien}</td></tr>
       <tr><td style="color:#6b6b6b;padding:5px 0">Date</td><td style="font-weight:600;color:#1A5FA8">${dateStr}</td></tr>
       <tr><td style="color:#6b6b6b;padding:5px 0">Heure</td><td style="font-weight:600;color:#1A5FA8">${heureStr}</td></tr>
       ${expertBlockAgent}
-      ${locataireNom ? `<tr><td style="color:#6b6b6b;padding:5px 0">Locataire</td><td>${locataireNom}</td></tr>` : ''}
-      ${mission.proprietaire ? `<tr><td style="color:#6b6b6b;padding:5px 0">Propriétaire</td><td>${mission.proprietaire}</td></tr>` : ''}
-      ${mission.acces ? `<tr><td style="color:#6b6b6b;padding:5px 0">Accès</td><td>${mission.acces}</td></tr>` : ''}
+      ${locataireNom ? `<tr><td style="color:#6b6b6b;padding:5px 0">Locataire</td><td>${esc(locataireNom)}</td></tr>` : ''}
+      ${mission.proprietaire ? `<tr><td style="color:#6b6b6b;padding:5px 0">Propriétaire</td><td>${esc(mission.proprietaire)}</td></tr>` : ''}
+      ${mission.acces ? `<tr><td style="color:#6b6b6b;padding:5px 0">Accès</td><td>${esc(mission.acces)}</td></tr>` : ''}
     </table>
     ${blocAgencePrevient}
-    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
+    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${esc(message)}</div>` : ''}
     <div style="background:#EAF3DE;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#27500A;line-height:1.7">
       ✅ Notre expert sera présent à l'heure indiquée. Le rapport vous sera transmis dans les <strong>24h</strong> avec signature électronique.
     </div>
@@ -179,14 +189,14 @@ export default async function handler(req) {
     </p>
 
     <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
-      📍 <strong>${mission.adresse}</strong><br>
+      📍 <strong>${esc(mission.adresse)}</strong><br>
       🏠 Type de bien : <strong>${bien}</strong><br>
       📅 Date et heure : <strong>${dateStr} à ${heureStr}</strong><br>
       ⏱️ Durée estimée de l'intervention : <strong>environ ${dureeLabel}</strong><br>
       ${expertBlockLoc}    </div>
 
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
-      Nous intervenons en tant que mandataires de la société <strong>${mission.agence}</strong>.
+      Nous intervenons en tant que mandataires de la société <strong>${esc(mission.agence)}</strong>.
     </p>
 
     <div style="background:#f8f8f6;border-radius:8px;padding:16px;margin-bottom:20px">
@@ -201,7 +211,7 @@ export default async function handler(req) {
       Nous comptons sur votre ponctualité afin d'assurer le bon déroulement de l'état des lieux. 🙏
     </p>
 
-    ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
+    ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${esc(message)}</div>` : ''}
 
     ${IDENT.partenaire ? `<div style="border-top:1px dashed #e5e5e2;margin:20px 0;padding-top:20px">
       <div style="font-size:13px;font-weight:700;color:#1A5FA8;margin-bottom:8px">💡 Astuce pour votre emménagement :</div>
@@ -236,13 +246,13 @@ export default async function handler(req) {
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
-      Suite à notre conversation, nous vous confirmons le rendez-vous pour effectuer l'état des lieux de sortie de votre logement, diligenté par <strong>${mission.agence}</strong>.
+      Suite à notre conversation, nous vous confirmons le rendez-vous pour effectuer l'état des lieux de sortie de votre logement, diligenté par <strong>${esc(mission.agence)}</strong>.
     </p>
 
     <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:24px;font-size:13px;color:#0C447C;line-height:2">
       📅 Date : <strong>${dateStr}</strong><br>
       🕘 Heure : <strong>${heureStr}</strong><br>
-      📍 Adresse : <strong>${mission.adresse}</strong><br>
+      📍 Adresse : <strong>${esc(mission.adresse)}</strong><br>
       ⏱️ Durée estimée de l'intervention : <strong>environ ${dureeLabel}</strong><br>
       ${expertBlockLoc}    </div>
 
@@ -279,7 +289,7 @@ export default async function handler(req) {
       </div>
     </div>
 
-    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
+    ${message ? `<div style="background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#555;line-height:1.7"><strong>💬 Message :</strong><br>${esc(message)}</div>` : ''}
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Pour toute question ou en cas d'empêchement majeur, n'hésitez pas à nous contacter :<br>
@@ -303,14 +313,14 @@ export default async function handler(req) {
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
-      Nous vous confirmons le rendez-vous pour votre <strong>pré-état des lieux</strong>, diligenté par <strong>${mission.agence}</strong>.<br>
+      Nous vous confirmons le rendez-vous pour votre <strong>pré-état des lieux</strong>, diligenté par <strong>${esc(mission.agence)}</strong>.<br>
       Cette visite préventive vous permettra d'anticiper les travaux à réaliser avant votre départ officiel.
     </p>
 
     <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:#0C447C;line-height:2">
       📅 Date : <strong>${dateStr}</strong><br>
       🕘 Heure : <strong>${heureStr}</strong><br>
-      📍 Adresse : <strong>${mission.adresse}</strong><br>
+      📍 Adresse : <strong>${esc(mission.adresse)}</strong><br>
       ⏱️ Durée estimée de l'intervention : <strong>environ ${dureeLabel}</strong><br>
       ${expertBlockLoc}    </div>
 
@@ -328,7 +338,7 @@ export default async function handler(req) {
       ℹ️ <strong>Bon à savoir :</strong> Le pré-état des lieux n'a pas de valeur contractuelle. Il vous donne simplement le temps d'effectuer les réparations nécessaires avant l'état des lieux officiel de sortie.
     </div>
 
-    ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${message}</div>` : ''}
+    ${message ? `<div style="background:#FFF8E6;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#633806;line-height:1.7"><strong>💬 Message :</strong><br>${esc(message)}</div>` : ''}
 
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Pour toute question, n'hésitez pas à nous contacter :<br>
@@ -394,8 +404,8 @@ export default async function handler(req) {
         if(!loc.email) return;
         nbLocataires++;
         const { tpl, sujet } = templatePourLocataire(loc);
-        const nomLoc = (loc.nom || '').trim();
-        const civLoc = (loc.civilite || '').trim();
+        const nomLoc = esc((loc.nom || '').trim());
+        const civLoc = esc((loc.civilite || '').trim());
         // Salutations personnalisées, remplaçant les placeholders des templates
         const salutBonjour = nomLoc
           ? 'Bonjour <strong>' + (civLoc ? civLoc + ' ' + nomLoc : nomLoc) + '</strong>,'
