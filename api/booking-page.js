@@ -137,6 +137,9 @@ textarea{min-height:75px;resize:vertical}
 
   <!-- PAGE 1 -->
   <div id="p1">
+    <!-- Piège à bots : invisible pour un humain (hors écran, jamais display:none
+         que certains bots savent détecter), un champ rempli signale un script -->
+    <input type="text" id="site" name="site" value="" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">
     <div class="card">
       <div class="card-head"><i class="ti ti-building-store"></i>Votre agence</div>
       <div class="card-body">
@@ -443,6 +446,7 @@ async function submit(){
   const btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Envoi…';
   const payload = {
+    site: document.getElementById('site').value,
     agencyId: AGENCY_ID,
     contactId: CONTACT_ID,
     agence: document.getElementById('agence').value.trim(),

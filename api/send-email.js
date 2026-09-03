@@ -82,6 +82,24 @@ export default async function handler(req) {
       });
     }
 
+    // Garde-fous minimaux : le corps est transmis à Brevo quasiment tel quel,
+    // sans autre limite que le plan payant. Un compte compromis ou malveillant
+    // pourrait sinon s'en servir comme relais d'envoi en masse via le domaine
+    // partagé de la plateforme.
+    if (!body || !body.to || !body.subject || !(body.htmlContent || body.textContent)) {
+      return new Response(JSON.stringify({ error: 'Requête incomplète (to, subject et contenu requis)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+    const nbDestinataires = Array.isArray(body.to) ? body.to.length : 1;
+    if (nbDestinataires > 50) {
+      return new Response(JSON.stringify({ error: 'Trop de destinataires en un seul envoi (max 50)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
     // Marquer l'email avec l'identifiant de l'abonné expéditeur : le compte
     // Brevo est partagé par toute la plateforme, donc sans ce tag l'endpoint
     // /api/brevo-tracking (qui interroge les statistiques Brevo) ne peut pas

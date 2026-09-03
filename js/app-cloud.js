@@ -165,17 +165,25 @@ async function loadFromSupabase(){
 }
 
 // ─── PUSH D'UN ITEM VERS SUPABASE (format JSONB) ───────────
+// Retourne true/false : certains appelants (ex. confirmation de RDV depuis
+// une réservation) doivent savoir si le push a réellement réussi avant de
+// marquer une réservation comme "traitée" côté serveur — sans ce retour,
+// un échec silencieux ici + une fermeture d'onglet juste après pouvait
+// laisser une réservation marquée traitée sans mission correspondante
+// nulle part (cas constaté le 31/07).
 async function pushToSupabase(dbKey, item){
-  if(!_supaReady || _supaSyncing) return;
+  if(!_supaReady || _supaSyncing) return false;
   const table = SUPA_TABLES[dbKey];
-  if(!table) return;
+  if(!table) return false;
   try{
     const userId = _currentUser?.id || null;
     const row = { id: String(item.id), data: item, updated_at: new Date().toISOString(), user_id: userId };
     const { error } = await supabaseClient.from(table).upsert(row, { onConflict: 'id' });
-    if(error) console.warn(`Erreur push ${dbKey}:`, error.message);
+    if(error){ console.warn(`Erreur push ${dbKey}:`, error.message); return false; }
+    return true;
   }catch(e){
     console.warn('Erreur pushToSupabase:', e);
+    return false;
   }
 }
 

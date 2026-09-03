@@ -564,6 +564,10 @@ async function sendConfirmRdv(){
     }
 
     if(resp.ok){
+      // Mis à true si la mission n'a pas pu être synchronisée : le message
+      // de succès générique en fin de fonction ne doit alors pas écraser
+      // l'avertissement déjà affiché à l'utilisateur.
+      let syncWarning = false;
       if(_confirmRdvMissionId && _confirmRdvMissionId.startsWith('__resa__')) {
         // Marquer la réservation comme confirmée dans Supabase
         const resaId = window._tempResaId;
@@ -610,18 +614,39 @@ async function sendConfirmRdv(){
           // marquee "importee" juste apres. Sans ce push direct, une fermeture
           // d'onglet dans l'intervalle laisse une reservation traitee sans
           // mission correspondante — cas constate le 31/07.
-          if(typeof pushToSupabase === 'function') await pushToSupabase('missions', mission);
-          pushMissionToEdouard(mission);
+          // On ne marque la reservation "importee" QUE si ce push a reussi
+          // (une reservation apparemment non traitee mais dont la mission
+          // existe deja est sans risque — syncDirtyToSupabase la repoussera
+          // au prochain debounce ; l'inverse — traitee sans mission nulle
+          // part — est le vrai incident a eviter).
+          let missionPushOk = (typeof pushToSupabase === 'function') ? await pushToSupabase('missions', mission) : false;
+          if(!missionPushOk){
+            // Un echec est le plus souvent un blip reseau ponctuel : une
+            // seconde tentative immediate suffit dans la grande majorite
+            // des cas, sans faire attendre l'abonne pour rien.
+            missionPushOk = (typeof pushToSupabase === 'function') ? await pushToSupabase('missions', mission) : false;
+          }
 
-          // Marquer la réservation comme importée ET confirmée dans Supabase
-          const updatedData = { ...r, rdvConfirme: true, statut: 'importee', rdvConfirmeAt: new Date().toISOString(), locataireNotifie: _envLocataires, missionId: mission.id };
-          supabaseClient.from('bookings').update({
-            data: updatedData, updated_at: new Date().toISOString()
-          }).eq('id', r._supaId || r.id).then(() => {
-            _allReservations = _allReservations.filter(x => (x.id||x._supaId) !== resaId);
-            updateReservationsKPIs();
-            filterReservations();
-          });
+          if(!missionPushOk){
+            syncWarning = true;
+            notify('⚠️ Mission enregistrée localement mais pas encore synchronisée avec le cloud — la réservation reste "en attente" par sécurité, la synchro réessaiera automatiquement. Vérifie ta connexion.', 'warn');
+          } else {
+            pushMissionToEdouard(mission);
+
+            // Marquer la réservation comme importée ET confirmée dans Supabase
+            const updatedData = { ...r, rdvConfirme: true, statut: 'importee', rdvConfirmeAt: new Date().toISOString(), locataireNotifie: _envLocataires, missionId: mission.id };
+            supabaseClient.from('bookings').update({
+              data: updatedData, updated_at: new Date().toISOString()
+            }).eq('id', r._supaId || r.id).then(({ error }) => {
+              if(error){
+                notify('⚠️ Mission créée mais le marquage de la réservation comme traitée a échoué — elle peut réapparaître, la mission existe bien.', 'warn');
+                return;
+              }
+              _allReservations = _allReservations.filter(x => (x.id||x._supaId) !== resaId);
+              updateReservationsKPIs();
+              filterReservations();
+            });
+          }
         }
       } else {
         m.rdvConfirme = true;
@@ -643,13 +668,17 @@ async function sendConfirmRdv(){
         }
       }
       closeModal('modal-confirm-rdv');
-      // Message adapte aux destinataires reellement notifies
-      let msgFin;
-      if(_envAgence && _envLocataires)       msgFin = '✅ RDV confirmé — agence et locataire(s) prévenus, mission créée.';
-      else if(_envAgence && !_envLocataires) msgFin = '✅ RDV confirmé — seule l\'agence a été prévenue, mission créée.';
-      else if(!_envAgence && _envLocataires) msgFin = '✅ RDV confirmé — seul(s) le(s) locataire(s) prévenus, mission créée.';
-      else                                   msgFin = '✅ RDV enregistré sans envoi d\'email, mission créée.';
-      notify(msgFin);
+      // Message adapte aux destinataires reellement notifies — sauf si un
+      // avertissement de synchro plus specifique vient deja d'etre affiche,
+      // qu'il ne faut pas ecraser par ce message de succes generique.
+      if(!syncWarning){
+        let msgFin;
+        if(_envAgence && _envLocataires)       msgFin = '✅ RDV confirmé — agence et locataire(s) prévenus, mission créée.';
+        else if(_envAgence && !_envLocataires) msgFin = '✅ RDV confirmé — seule l\'agence a été prévenue, mission créée.';
+        else if(!_envAgence && _envLocataires) msgFin = '✅ RDV confirmé — seul(s) le(s) locataire(s) prévenus, mission créée.';
+        else                                   msgFin = '✅ RDV enregistré sans envoi d\'email, mission créée.';
+        notify(msgFin);
+      }
     } else {
       const err = await resp.json();
       notify('❌ Erreur : ' + (err.error || 'Envoi impossible'), 'err');
