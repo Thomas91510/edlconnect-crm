@@ -650,7 +650,12 @@ const TEMPLATES={
   avis_google:{label:'⭐ Avis Google post-prestation',subj:'⭐ Comment s\'est passé votre état des lieux ?',body:`Bonjour,\n\nChez EDL IDF, nous accordons une grande importance à la qualité de nos prestations et à la satisfaction des personnes que nous accompagnons. Votre retour est précieux : il nous permet d'améliorer continuellement nos services.\n\nSi vous avez quelques instants, pourriez-vous partager votre expérience sur notre page Google ? Cela ne prend que quelques minutes et nous aide énormément :\n\n⭐ ${LIEN_AVIS_GOOGLE}\n\nN'hésitez pas si vous avez la moindre question, nous restons à votre entière disposition.\n\nBien cordialement,\nL'équipe EDL IDF`},
   // Equivalent de la relance automatique a J+3.
   avis_google_relance:{label:'⭐ Avis Google — relance',subj:'⭐ Votre avis compte pour nous',body:`Bonjour,\n\nNous nous permettons de revenir vers vous au sujet de l'état des lieux réalisé récemment. Si vous n'avez pas encore eu l'occasion de nous laisser un avis, votre retour nous serait très précieux : il ne prend qu'une minute et nous aide beaucoup à faire connaître notre travail.\n\n⭐ ${LIEN_AVIS_GOOGLE}\n\nSi vous l'avez déjà fait, nous vous en remercions sincèrement et vous prions d'ignorer ce message.\n\nBien cordialement,\nL'équipe EDL IDF`},
-  summer:{label:'☀️ Offre estivale',subj:'☀️ Offre été 2026 — -10% sur vos EDL | EDL IDF',body:`Bonjour,\n\nL'été approche et avec lui le pic d'activité pour vos états des lieux !\n\n🎁 Offre spéciale été 2026 :\n-10% sur toutes vos missions de juillet à août 2026\n\n✅ Valable pour tout nouveau partenariat signé avant le 30 juin\n✅ Disponible 7j/7 tout l'été\n✅ Rapport remis sous 24h\n\nRéservez dès maintenant vos créneaux sur www.edl-idf.fr`}
+  summer:{label:'☀️ Offre estivale',subj:'☀️ Offre été 2026 — -10% sur vos EDL | EDL IDF',body:`Bonjour,\n\nL'été approche et avec lui le pic d'activité pour vos états des lieux !\n\n🎁 Offre spéciale été 2026 :\n-10% sur toutes vos missions de juillet à août 2026\n\n✅ Valable pour tout nouveau partenariat signé avant le 30 juin\n✅ Disponible 7j/7 tout l'été\n✅ Rapport remis sous 24h\n\nRéservez dès maintenant vos créneaux sur www.edl-idf.fr`},
+  // Version texte brut de l'annonce des creneaux Cal.com envoyee en campagne
+  // Brevo (bandeau bleu, encart colore...) — pratique pour un renvoi ponctuel
+  // depuis une fiche contact, la mise en forme visuelle restant reservee a
+  // l'envoi groupe.
+  nouveaute_creneaux:{label:'🗓️ Créneaux en ligne (nouveauté)',subj:'🗓️ Nouveau : ne perdez plus de temps à trouver une date pour vos états des lieux',body:`Bonjour,\n\nUne nouveauté qui va vous faire gagner du temps au quotidien : notre formulaire de demande d'état des lieux affiche désormais nos disponibilités réelles, en direct. Fini les échanges d'emails pour trouver une date qui convienne des deux côtés — vous voyez immédiatement nos créneaux libres et choisissez celui qui vous arrange.\n\n⏱️ Ce que ça change concrètement pour votre agence :\n• Plus besoin d'attendre notre retour pour savoir si une date vous convient : les créneaux affichés sont réellement disponibles\n• Une demande complète en un seul passage sur le formulaire, sans aller-retour par email ou téléphone\n• Une prise en charge plus rapide de vos dossiers, dès la première visite du formulaire\n\nLe reste ne change pas : même formulaire, mêmes informations à renseigner, et un accusé de réception immédiat par email. Si aucun créneau ne vous convient, vous pouvez toujours indiquer une date libre comme auparavant.\n\nN'hésitez pas si vous avez la moindre question, nous restons à votre entière disposition.\n\nBien cordialement,\nL'équipe EDL IDF`}
 };
 
 // ─── Boutons de modeles ajoutes apres coup ────────────────
@@ -658,7 +663,8 @@ const TEMPLATES={
 // ~2400 lignes et l'editer directement s'est deja avere risque.
 // Chaque entree cible le bouton existant apres lequel s'inserer.
 const MODELES_SUPPLEMENTAIRES = [
-  { cle: 'avis_google_relance', apres: 'avis_google', icone: 'ti-star' }
+  { cle: 'avis_google_relance', apres: 'avis_google', icone: 'ti-star' },
+  { cle: 'nouveaute_creneaux', apres: 'avis_google_relance', icone: 'ti-calendar-event' }
 ];
 
 function injecterBoutonsModeles(){
