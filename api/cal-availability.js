@@ -13,14 +13,9 @@ import { CAL_USERNAME, resolveCalEvent } from './_lib/cal-mapping.js';
 // la saisie de date libre existante — comportement inchangé jusqu'à
 // activation volontaire.
 //
-// IMPORTANT — non vérifié en direct : l'accès réseau vers api.cal.com est
-// bloqué depuis l'environnement de développement utilisé pour écrire ce
-// fichier (politique réseau du bac à sable), donc ni le nom exact des
-// paramètres de /v2/slots, ni la version d'API, ni la forme de la réponse
-// n'ont pu être confirmés contre l'API réelle. Tout ceci est à valider au
-// premier test réel une fois déployé sur Vercel (qui a un accès réseau
-// normal) — voir le README de la conversation pour le détail des points à
-// vérifier avant d'activer la fonctionnalité en production.
+// Format d'appel et forme de réponse validés en conditions réelles le
+// 03/09/2026 contre le compte Cal.com "edl-idf-myqe4m" (réponse groupée par
+// date : { data: { "2026-09-04": [{start:...}], ... }, status: "success" }).
 const CAL_API_VERSION = '2024-09-04';
 const CAL_BASE = 'https://api.cal.com/v2';
 const FENETRE_JOURS = 14;
@@ -40,14 +35,10 @@ export default async function handler(req) {
 
   const CAL_API_KEY = process.env.CAL_API_KEY;
   const url = new URL(req.url);
-  // Diagnostic TEMPORAIREMENT toujours actif (pas besoin de &debug=1) le
-  // temps de la mise au point — un premier essai avec &debug=1 n'a pas fait
-  // apparaître ce champ, donc on retire cette variable de l'équation plutôt
-  // que de continuer à deviner. VERSION sert à confirmer sans ambiguïté
-  // quel déploiement répond réellement. À retirer avant l'activation
-  // publique définitive.
-  const VERSION = 'cal-availability-diag-v3';
-  const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [], version: VERSION }, extra)), { status: 200, headers });
+  // &debug=1 renvoie le détail de l'appel Cal.com (utile en cas de nouveau
+  // souci) au lieu de dégrader silencieusement — sans, comportement normal.
+  const debug = url.searchParams.get('debug') === '1';
+  const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [] }, debug ? extra : {})), { status: 200, headers });
 
   if (!CAL_API_KEY) {
     return repli({ debug: 'CAL_API_KEY absente des variables d\'environnement' });
@@ -98,7 +89,8 @@ export default async function handler(req) {
         .filter(Boolean);
     }
 
-    const body = { available: slots.length > 0, slots, dureeMinutes: evt.duree, version: VERSION, debug: 'OK', calUrl, calDataBrut: calData };
+    const body = { available: slots.length > 0, slots, dureeMinutes: evt.duree };
+    if (debug) { body.debug = 'OK'; body.calUrl = calUrl; body.calDataBrut = calData; }
     return new Response(JSON.stringify(body), { status: 200, headers });
   } catch (e) {
     return repli({ debug: 'Exception : ' + e.message });

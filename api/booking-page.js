@@ -357,18 +357,24 @@ function afficherCreneaux(slotsIso){
   const list = document.getElementById('slots-list');
   // Regroupe par jour pour un affichage lisible, limité aux 40 premiers
   // créneaux pour ne pas surcharger la page.
+  // Regroupement par jour LOCAL (pas le jour UTC de l'ISO) : Cal.com renvoie
+  // des horodatages UTC, et un créneau tard le soir peut correspondre au
+  // lendemain en UTC tout en restant le même jour dans le fuseau horaire de
+  // l'agence — cohérent avec choisirCreneau() qui utilise aussi les
+  // composants de date locaux (getFullYear/getMonth/getDate).
+  const pad2 = n => String(n).padStart(2,'0');
   const parJour = {};
   slotsIso.slice(0, 40).forEach(iso => {
     const d = new Date(iso);
     if(isNaN(d)) return;
-    const cleJour = d.toISOString().split('T')[0];
+    const cleJour = d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
     (parJour[cleJour] = parJour[cleJour] || []).push({ iso, date: d });
   });
   const joursTries = Object.keys(parJour).sort();
   if(!joursTries.length){ panel.style.display = 'none'; return; }
 
   list.innerHTML = joursTries.map(cleJour => {
-    const dateLabel = new Date(cleJour + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
+    const dateLabel = new Date(cleJour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
     const boutons = parJour[cleJour].map(({iso, date}) => {
       const heureLabel = date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
       return '<button type="button" class="slot-btn" data-iso="' + iso + '" onclick="choisirCreneau(this)" ' +
