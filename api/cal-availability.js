@@ -40,12 +40,14 @@ export default async function handler(req) {
 
   const CAL_API_KEY = process.env.CAL_API_KEY;
   const url = new URL(req.url);
-  // Aide au diagnostic pendant la mise au point (avant activation publique) :
-  // &debug=1 renvoie le détail de l'appel Cal.com au lieu de dégrader
-  // silencieusement. À retirer (ou au moins ne plus documenter) une fois
-  // l'intégration validée en conditions réelles.
-  const debug = url.searchParams.get('debug') === '1';
-  const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [] }, debug ? extra : {})), { status: 200, headers });
+  // Diagnostic TEMPORAIREMENT toujours actif (pas besoin de &debug=1) le
+  // temps de la mise au point — un premier essai avec &debug=1 n'a pas fait
+  // apparaître ce champ, donc on retire cette variable de l'équation plutôt
+  // que de continuer à deviner. VERSION sert à confirmer sans ambiguïté
+  // quel déploiement répond réellement. À retirer avant l'activation
+  // publique définitive.
+  const VERSION = 'cal-availability-diag-v2';
+  const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [], version: VERSION }, extra)), { status: 200, headers });
 
   if (!CAL_API_KEY) {
     return repli({ debug: 'CAL_API_KEY absente des variables d\'environnement' });
@@ -96,8 +98,7 @@ export default async function handler(req) {
         .filter(Boolean);
     }
 
-    const body = { available: slots.length > 0, slots, dureeMinutes: evt.duree };
-    if (debug) { body.debug = 'OK'; body.calUrl = calUrl; body.calDataBrut = calData; }
+    const body = { available: slots.length > 0, slots, dureeMinutes: evt.duree, version: VERSION, debug: 'OK', calUrl, calDataBrut: calData };
     return new Response(JSON.stringify(body), { status: 200, headers });
   } catch (e) {
     return repli({ debug: 'Exception : ' + e.message });
