@@ -537,8 +537,11 @@ function statNatureBien(m){
   return 'Autre (local, parking…)';
 }
 
-// Typologie T1 a T6+ : accepte les notations T3 et F3, et rattache le
-// studio au T1, comme le veut l'usage en gestion locative.
+// Typologie T1 a T7+ : accepte les notations T3 et F3, et rattache le
+// studio au T1, comme le veut l'usage en gestion locative. T6 et T7 sont
+// distingues (formulaires de reservation alignes sur les evenements Cal.com
+// dedies) ; T7+ ne sert plus que de filet pour une typologie superieure
+// exceptionnelle (T8...), non proposee dans les formulaires.
 function statTypologie(m){
   const v = String(m.bienTypo || '').trim().toLowerCase();
   if(!v) return 'Non renseignée';
@@ -546,14 +549,14 @@ function statTypologie(m){
   const found = v.match(/[tf]\s*(\d+)/);
   if(found){
     const n = parseInt(found[1], 10);
-    if(n >= 6) return 'T6+';
+    if(n >= 7) return 'T7+';
     if(n >= 1) return 'T' + n;
   }
   return 'Non renseignée';
 }
 
 // Ordre de lecture naturel pour les typologies (plutot que par effectif)
-const ORDRE_TYPOLOGIE = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6+', 'Non renseignée'];
+const ORDRE_TYPOLOGIE = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7+', 'Non renseignée'];
 
 // Une ligne de repartition : libelle, barre proportionnelle, effectif, CA
 function statBarre(libelle, nb, total, couleur, ca){
@@ -620,7 +623,7 @@ function renderStatsMissions(){
   const parMeuble = statGrouper(missions, statMeuble);
   const parClient = statGrouper(missions, statTypeClient);
   const parNature = statGrouper(missions, statNatureBien);
-  // Typologies triees dans l'ordre T1 → T6+, plus lisible qu'un tri par effectif
+  // Typologies triees dans l'ordre T1 → T7+, plus lisible qu'un tri par effectif
   const parTypologie = statGrouper(missions, statTypologie)
     .sort((a, b) => ORDRE_TYPOLOGIE.indexOf(a[0]) - ORDRE_TYPOLOGIE.indexOf(b[0]));
 
@@ -634,7 +637,7 @@ function renderStatsMissions(){
   const couleursMeuble = { 'Meublé': '#2F7A3E', 'Nu / vide': '#1A5FA8', 'Non renseigné': '#8494A1' };
   const couleursClient = { 'Agence / pro': '#1A5FA8', 'Particulier': '#0F6E56' };
   const couleursNature = { 'Maison': '#B4750F', 'Appartement': '#1A5FA8', 'Autre (local, parking…)': '#5B3DA5', 'Non renseigné': '#8494A1' };
-  const couleursTypo = { 'T1': '#8FBEEC', 'T2': '#5B9BD5', 'T3': '#1A5FA8', 'T4': '#0F4C81', 'T5': '#0F6E56', 'T6+': '#2F7A3E', 'Non renseignée': '#8494A1' };
+  const couleursTypo = { 'T1': '#8FBEEC', 'T2': '#5B9BD5', 'T3': '#1A5FA8', 'T4': '#0F4C81', 'T5': '#0F6E56', 'T6': '#2F7A3E', 'T7+': '#1D4F2E', 'Non renseignée': '#8494A1' };
 
   const kpi = (etiq, val, sous, couleur) => `<div style="flex:1;min-width:130px;padding:12px 14px;border-left:3px solid ${couleur};background:var(--bg2);border-radius:0 var(--radius) var(--radius) 0">
     <div style="font-size:11px;color:var(--text2);margin-bottom:3px">${etiq}</div>
