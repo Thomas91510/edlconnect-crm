@@ -67,6 +67,10 @@ export default async function handler(req) {
   try {
     const data = await req.json();
     const { agencyId, contactId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, proprietaire, dateSouhaitee, heure, notes, locataire, locataires, locatairesEntrants } = data;
+    // Particulier passant directement (sans agence intermediaire) : seule la
+    // reservation manuelle du CRM envoie ce champ pour l'instant. Repli sur
+    // "Professionnel" pour ne rien casser sur le formulaire public existant.
+    const typeClient = data.typeClient === 'Particulier' ? 'Particulier' : 'Professionnel';
 
     if(!agence || !email || !typeEdl || !adresse) {
       return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400 });
@@ -157,6 +161,7 @@ export default async function handler(req) {
         id: bookingId,
         agencyId: agencyId || '',
         agence, contact, email, tel,
+        typeClient,
         typeEdl, adresse,
         bienType: bienType || '',
         bienTypo: bienTypo || '',

@@ -13,6 +13,23 @@ function esc(s) {
   });
 }
 
+// Destinataire de l'avis Google post-prestation : le locataire d'ordinaire,
+// mais un particulier ayant reserve en direct (sans agence) n'a pas toujours
+// de "locataire" distinct de lui-meme — on se rabat alors sur son propre
+// email (emailClient), pour ne pas le laisser sans demande d'avis.
+function destinataireAvis(m) {
+  if (m.locataireEmail) {
+    const civilite = m.locataireCivilite || '';
+    const nom = m.locataireNom || '';
+    return { email: m.locataireEmail, nom, salutation: civilite && nom ? `${civilite} ${nom}` : nom };
+  }
+  if ((m.typeClient || '').toLowerCase() === 'particulier' && m.emailClient) {
+    const nom = m.contact || m.agence || '';
+    return { email: m.emailClient, nom, salutation: nom };
+  }
+  return null;
+}
+
 async function identiteAbonne(userId) {
   const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', partenaire: '' };
   if (!userId) return neutre;
@@ -270,7 +287,7 @@ export default async function handler(req) {
     const missionsHier = rows.filter(r => {
       if(!r.data) return false;
       const m = r.data;
-      if(!m.date || !m.locataireEmail) return false;
+      if(!m.date || !destinataireAvis(m)) return false;
       if(m.avisEnvoye) return false;
       if((m.statut || '').toLowerCase().includes('annul')) return false;
       return m.date.split('T')[0] === yesterdayStr;
@@ -282,9 +299,9 @@ export default async function handler(req) {
       const m = row.data;
       const IDENT = await identiteAbonne(row.user_id);
       try {
-        const civilite = m.locataireCivilite || '';
-        const locNom = m.locataireNom || '';
-        const salutation = civilite && locNom ? `${civilite} ${locNom}` : locNom || '';
+        const dest = destinataireAvis(m);
+        const salutation = dest.salutation;
+        const locNom = dest.nom;
 
         const avisHtml = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -321,7 +338,7 @@ export default async function handler(req) {
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
             sender: { name: IDENT.nom, email: IDENT.email },
-            to: [{ email: m.locataireEmail, name: salutation || locNom }],
+            to: [{ email: dest.email, name: salutation || locNom }],
             replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
             subject: '⭐ Comment s\'est passé votre état des lieux ?',
             htmlContent: avisHtml
@@ -354,7 +371,7 @@ export default async function handler(req) {
     const missionsJ3 = rows.filter(r => {
       if(!r.data) return false;
       const m = r.data;
-      if(!m.date || !m.locataireEmail) return false;
+      if(!m.date || !destinataireAvis(m)) return false;
       if(!m.avisEnvoye) return false;      // la 1re demande doit avoir ete envoyee
       if(m.avis2Envoye) return false;      // pas deja relance une 2e fois
       if((m.statut || '').toLowerCase().includes('annul')) return false;
@@ -367,9 +384,9 @@ export default async function handler(req) {
       const m = row.data;
       const IDENT = await identiteAbonne(row.user_id);
       try {
-        const civilite = m.locataireCivilite || '';
-        const locNom = m.locataireNom || '';
-        const salutation = civilite && locNom ? `${civilite} ${locNom}` : locNom || '';
+        const dest = destinataireAvis(m);
+        const salutation = dest.salutation;
+        const locNom = dest.nom;
 
         const avis2Html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -403,7 +420,7 @@ export default async function handler(req) {
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
             sender: { name: IDENT.nom, email: IDENT.email },
-            to: [{ email: m.locataireEmail, name: salutation || locNom }],
+            to: [{ email: dest.email, name: salutation || locNom }],
             replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
             subject: '⭐ Votre avis compte pour nous',
             htmlContent: avis2Html

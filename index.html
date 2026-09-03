@@ -567,9 +567,10 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         </div>
       </div>
       <div id="dash-period-banner" style="display:none;background:var(--blue-bg);color:var(--blue-text);padding:6px 14px;border-radius:var(--radius);margin-bottom:12px;font-size:12px;font-weight:500"></div>
-      <div class="kpi-grid">
+      <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
         <div class="kpi"><div class="kpi-label">Contacts totaux</div><div class="kpi-value" id="k-contacts">—</div><div class="kpi-sub" id="k-contacts-sub"></div></div>
         <div class="kpi"><div class="kpi-label">Missions</div><div class="kpi-value" id="k-missions">—</div><div class="kpi-sub">ce mois</div></div>
+        <div class="kpi"><div class="kpi-label">États des lieux <span style="font-size:9px;color:var(--text3);font-weight:400">total</span></div><div class="kpi-value" id="k-edl-total" style="color:var(--green)">—</div><div class="kpi-sub" id="k-edl-total-sub"></div></div>
         <div class="kpi"><div class="kpi-label">CA total <span id="ca-mode-label" style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="toggleTaxMode()" title="Cliquer pour basculer HT/TTC">HT</span></div><div class="kpi-value" id="k-ca">—</div><div class="kpi-sub" id="k-ca-sub"></div></div>
         <div class="kpi"><div class="kpi-label">Doublons</div><div class="kpi-value" id="k-dups" style="color:var(--amber)">—</div><div class="kpi-sub warn" id="k-dups-sub"></div></div>
       </div>
@@ -1977,12 +1978,16 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       <div id="manual-resa-error" style="display:none;background:var(--red-bg);color:var(--red-text);border-radius:var(--radius);padding:10px 14px;font-size:12px;margin-bottom:12px"></div>
 
       <div class="form-grid" style="margin-bottom:10px">
-        <div><label>Agence <span style="color:var(--red)">*</span></label><input type="text" id="mr-agence" placeholder="Nom de l'agence"></div>
-        <div><label>Email agence <span style="color:var(--red)">*</span></label><input type="email" id="mr-email" placeholder="contact@agence.fr"></div>
+        <div><label>Type de client</label><select id="mr-type-client" onchange="mrToggleTypeClient()"><option value="Professionnel" selected>Professionnel (agence)</option><option value="Particulier">Particulier</option></select></div>
+        <div></div>
+      </div>
+      <div class="form-grid" style="margin-bottom:10px">
+        <div><label id="mr-label-agence">Agence <span style="color:var(--red)">*</span></label><input type="text" id="mr-agence" placeholder="Nom de l'agence"></div>
+        <div><label id="mr-label-email">Email agence <span style="color:var(--red)">*</span></label><input type="email" id="mr-email" placeholder="contact@agence.fr"></div>
       </div>
       <div class="form-grid" style="margin-bottom:10px">
         <div><label>Contact</label><input type="text" id="mr-contact" placeholder="Prénom Nom"></div>
-        <div><label>Tél agence</label><input type="tel" id="mr-tel" placeholder="01 23 45 67 89"></div>
+        <div><label id="mr-label-tel">Tél agence</label><input type="tel" id="mr-tel" placeholder="01 23 45 67 89"></div>
       </div>
 
       <label style="font-weight:600;display:block;margin-bottom:8px">Type d'EDL <span style="color:var(--red)">*</span></label>

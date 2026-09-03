@@ -623,6 +623,17 @@ function renderDashboard(){
   // Missions filtrées
   const missions = filterByMonth(DB.missions, 'date');
   document.getElementById('k-missions').textContent=missions.length;
+
+  // États des lieux — compteur global (toutes missions, tous statuts, indépendant
+  // du filtre de mois), mis à jour à chaque rendu du dashboard donc à chaque
+  // sync temps réel (voir subscribeRealtime dans app-cloud.js) ou action locale.
+  document.getElementById('k-edl-total').textContent=DB.missions.length;
+  const edlCeMois=DB.missions.filter(m=>{
+    if(!m.date)return false;
+    const d=new Date(m.date), now=new Date();
+    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+  }).length;
+  document.getElementById('k-edl-total-sub').textContent=edlCeMois+' ce mois-ci';
   const caHT=missions.reduce((s,m)=>s+(m.montant||0),0);
   document.getElementById('k-ca').textContent=(taxMode==='TTC'?ttc(caHT):caHT).toLocaleString('fr-FR');
   document.getElementById('k-ca-sub').textContent=taxMode==='HT'?`TTC : ${fmtTTC(caHT)}`:`HT : ${caHT.toLocaleString('fr-FR')} €`;

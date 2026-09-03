@@ -257,6 +257,7 @@ function confirmRdvFromReservation(id){
     id: r.id || r._supaId,
     agence: r.agence || '',
     emailClient: r.email || '',
+    typeClient: r.typeClient || 'Professionnel',
     type: r.typeEdl || r.type || 'EDL entrant',
     adresse: r.adresse || '',
     bienType: r.bienType || '',
@@ -329,7 +330,7 @@ function createMissionFromReservation(id){
     agence: r.agence || '',
     emailClient: r.email || '',
     contact: r.contact || '',
-    typeClient: 'Professionnel',
+    typeClient: r.typeClient || 'Professionnel',
     adresse: r.adresse || '',
     bienType: r.bienType || '',
     bienTypo: r.bienTypo || '',
@@ -574,7 +575,7 @@ async function sendConfirmRdv(){
             agence: r.agence || '',
             emailClient: r.email || '',
             contact: r.contact || '',
-            typeClient: 'Professionnel',
+            typeClient: r.typeClient || 'Professionnel',
             adresse: r.adresse || '',
             bienType: r.bienType || '',
             bienTypo: r.bienTypo || '',
@@ -701,6 +702,19 @@ async function pushMissionToEdouard(mission){
 // ─── SAISIE MANUELLE RESERVATION ──────────────────────────
 let _mrSelectedType = '';
 
+// Adapte les libellés du bloc « agence » quand la réservation est faite
+// directement par un particulier (pas d'agence intermédiaire) — le champ
+// typeClient ainsi saisi est celui qui déclenchera plus tard l'envoi de
+// l'avis Google post-prestation (voir reminder-rdv.js).
+function mrToggleTypeClient(){
+  const isParticulier = document.getElementById('mr-type-client').value === 'Particulier';
+  document.getElementById('mr-label-agence').innerHTML = isParticulier ? 'Nom du particulier <span style="color:var(--red)">*</span>' : 'Agence <span style="color:var(--red)">*</span>';
+  document.getElementById('mr-agence').placeholder = isParticulier ? 'Jean Dupont' : "Nom de l'agence";
+  document.getElementById('mr-label-email').innerHTML = isParticulier ? 'Email <span style="color:var(--red)">*</span>' : 'Email agence <span style="color:var(--red)">*</span>';
+  document.getElementById('mr-email').placeholder = isParticulier ? 'jean.dupont@email.fr' : 'contact@agence.fr';
+  document.getElementById('mr-label-tel').textContent = isParticulier ? 'Téléphone' : 'Tél agence';
+}
+
 function mrSelectType(type, btn){
   _mrSelectedType = type;
   document.querySelectorAll('.mr-type-btn').forEach(b => {
@@ -753,6 +767,9 @@ function openManualReservationModal(){
   _mrSelectedType = '';
   _mrEntrants = [];
   mrRenderEntrants();
+  const _tc = document.getElementById('mr-type-client');
+  if(_tc) _tc.value = 'Professionnel';
+  mrToggleTypeClient();
   const _sec = document.getElementById('mr-entrants-section');
   if(_sec) _sec.style.display = 'none';
   const _lbl = document.getElementById('mr-label-locataire');
@@ -820,6 +837,7 @@ async function submitManualReservation(){
     contact: document.getElementById('mr-contact').value.trim() || agence,
     email,
     tel: document.getElementById('mr-tel').value.trim(),
+    typeClient: document.getElementById('mr-type-client')?.value || 'Professionnel',
     typeEdl: _mrSelectedType,
     adresse,
     bienType: document.getElementById('mr-bien-type').value,
