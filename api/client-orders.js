@@ -76,31 +76,17 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;export default asy
       if(m.id) missionMap[m.id] = m.data;
     });
 
-    // Le client a-t-il au moins un document (rapport, etc.) attaché à une de
-    // ses fiches contact ? Indication globale (pas liée précisément à une
-    // demande) plutôt qu'un lien exact demande/document — plus simple, quitte
-    // à afficher "rapport disponible" un peu tôt si un document existe pour
-    // une autre mission de ce même client.
-    let aAuMoinsUnDocument = false;
-    try {
-      const docsResp = await fetch(
-        `${SUPABASE_URL}/rest/v1/contacts?select=data&data->>email=ilike.${encodeURIComponent(userEmail)}`,
-        { headers: supaHeaders }
-      );
-      if (docsResp.ok) {
-        const contactRows = await docsResp.json();
-        aAuMoinsUnDocument = (contactRows || []).some(c => Array.isArray(c.data?.documents) && c.data.documents.some(d => d && d.url));
-      }
-    } catch(_){}
-
     const orders = (rows || []).map(r => {
       // Une mission liée est-elle réellement effectuée ? "terminée" et
       // "facturée" sont les statuts que le CRM écrit vraiment (le statut
       // "réalisée" n'existe dans aucun formulaire et ne se produit jamais).
+      // Le rapport EDL (Edouard) se synchronise en temps réel avec les
+      // locataires : pas de palier intermédiaire "réalisé sans rapport" à
+      // afficher, on passe directement à "rapport disponible".
       const linkedMission = missionMap[r.data?.missionId] || null;
       const missionEffectuee = linkedMission && ['terminée', 'facturée', 'réalisée'].includes(linkedMission.statut);
       let statut = r.data?.statut || 'en_attente';
-      if (missionEffectuee) statut = aAuMoinsUnDocument ? 'rapport_dispo' : 'realise';
+      if (missionEffectuee) statut = 'rapport_dispo';
 
       return {
         id: r.id,

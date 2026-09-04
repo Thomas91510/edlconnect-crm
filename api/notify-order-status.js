@@ -96,48 +96,23 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Mission introuvable' }), { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
 
-    const dejaStatut = !!missionData.notifStatutEnvoye;
-    const dejaRapport = !!missionData.notifRapportEnvoye;
-
-    // Un rapport est-il déjà disponible pour ce client ? Même heuristique
-    // que l'extranet (client-orders.js) : au moins un document sur une de
-    // ses fiches contact, tous abonnés confondus pour cette adresse email.
-    let aUnDocument = false;
-    try {
-      const docsResp = await fetch(
-        `${SUPABASE_URL}/rest/v1/contacts?select=data&data->>email=ilike.${encodeURIComponent(emailClient)}`,
-        { headers: supaHeaders }
-      );
-      if (docsResp.ok) {
-        const contactRows = await docsResp.json();
-        aUnDocument = (contactRows || []).some(c => Array.isArray(c.data?.documents) && c.data.documents.some(d => d && d.url));
-      }
-    } catch (e) { /* best effort */ }
-
-    let envoiType = null;
-    let nouveauxFlags = null;
-    if (!dejaStatut) {
-      envoiType = aUnDocument ? 'rapport_dispo' : 'realise';
-      nouveauxFlags = { notifStatutEnvoye: true, notifRapportEnvoye: aUnDocument };
-    } else if (!dejaRapport && aUnDocument) {
-      envoiType = 'rapport_dispo';
-      nouveauxFlags = { notifRapportEnvoye: true };
-    }
-
-    if (!envoiType) {
+    // Un seul indicateur anti-doublon : le rapport EDL (Edouard) se
+    // synchronise en temps réel avec les locataires, donc pas de palier
+    // intermédiaire "réalisé sans rapport" — dès que la mission est
+    // terminée/facturée, on informe directement que le rapport est
+    // disponible dans l'espace client.
+    if (missionData.notifRapportEnvoye) {
       return new Response(JSON.stringify({ success: true, sent: 'none' }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
+    const nouveauxFlags = { notifRapportEnvoye: true };
 
     const IDENT = await identiteAbonne(_userId, SUPABASE_SERVICE_KEY);
     const dateObj = date ? new Date(date) : null;
     const dateStr = dateObj ? dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
     const lienExtranet = 'https://app.lokentia.fr/extranet';
 
-    const estRapport = envoiType === 'rapport_dispo';
-    const sujet = estRapport ? '📄 Votre rapport d\'état des lieux est disponible' : '✅ Votre état des lieux a été réalisé';
-    const intro = estRapport
-      ? `L'état des lieux ${esc(type || '')} du ${esc(dateStr)}${adresse ? ' — ' + esc(adresse) : ''} est terminé et le rapport est désormais disponible dans votre espace client.`
-      : `L'état des lieux ${esc(type || '')} du ${esc(dateStr)}${adresse ? ' — ' + esc(adresse) : ''} a bien été réalisé. Le rapport vous sera transmis très prochainement dans votre espace client.`;
+    const sujet = '📄 Votre rapport d\'état des lieux est disponible';
+    const intro = `L'état des lieux ${esc(type || '')} du ${esc(dateStr)}${adresse ? ' — ' + esc(adresse) : ''} est terminé et le rapport est désormais disponible dans votre espace client.`;
 
     const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -147,7 +122,7 @@ export default async function handler(req) {
     <span style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
-    <h2 style="font-size:19px;margin:0 0 16px 0">${estRapport ? '📄 Rapport disponible' : '✅ État des lieux réalisé'}</h2>
+    <h2 style="font-size:19px;margin:0 0 16px 0">📄 Rapport disponible</h2>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">${intro}</p>
     <div style="text-align:center;margin:0 0 20px 0">
       <a href="${lienExtranet}" style="display:inline-block;background:#1A5FA8;color:#fff;font-size:13px;font-weight:700;padding:12px 26px;border-radius:8px;text-decoration:none">Se connecter à mon espace client →</a>
@@ -182,7 +157,7 @@ export default async function handler(req) {
       body: JSON.stringify({ data: { ...missionData, ...nouveauxFlags }, updated_at: new Date().toISOString() })
     });
 
-    return new Response(JSON.stringify({ success: true, sent: envoiType }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ success: true, sent: 'rapport_dispo' }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
 
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
