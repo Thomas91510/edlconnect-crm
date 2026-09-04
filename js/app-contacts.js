@@ -382,6 +382,14 @@ function saveContactEdit(){
   c.moyenContact=document.getElementById('fe-moyen-contact').value;
   c.notes=document.getElementById('fe-notes').value;
   c.documents = feGetDocs();
+  // Un document vient peut-être d'être ajouté pour un client dont l'EDL est
+  // déjà réalisé : prévenir l'extranet que son rapport est disponible
+  // (notifierChangementStatutCommande se charge de l'anti-doublon côté API).
+  if(c.documents.length && c.email){
+    DB.missions
+      .filter(m => (m.emailClient||'').toLowerCase() === c.email.toLowerCase() && ['terminée','facturée'].includes(m.statut))
+      .forEach(m => notifierChangementStatutCommande(m));
+  }
   detectDuplicates();saveToStorage();closeModal('modal-fiche');
   notify('✅ Contact mis à jour !');renderContacts();renderDashboard();
 }
