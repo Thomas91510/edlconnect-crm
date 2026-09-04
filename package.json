@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "description": "Lokentia - CRM SaaS pour experts en etat des lieux",
   "private": true,
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "googleapis": "^140.0.0"
   },
