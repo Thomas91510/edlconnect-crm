@@ -19,6 +19,12 @@ import { CAL_USERNAME, resolveCalEvent } from './_lib/cal-mapping.js';
 const CAL_API_VERSION = '2024-09-04';
 const CAL_BASE = 'https://api.cal.com/v2';
 const FENETRE_JOURS = 14;
+// Délai minimum avant un créneau en ligne : une demande déposée l'après-midi
+// ne doit pas pouvoir aboutir à un rendez-vous le jour même ou le lendemain
+// matin, pris de court sans marge d'organisation. Un besoin urgent passe par
+// le message de contact direct affiché sur le formulaire, pas par cette
+// prise de rendez-vous en libre-service.
+const DELAI_MINIMUM_HEURES = 48;
 
 export default async function handler(req) {
   const headers = {
@@ -53,9 +59,10 @@ export default async function handler(req) {
       return repli({ debug: 'Type de bien non reconnu', bienTypo, meuble });
     }
 
-    // Fenêtre glissante : à partir de demain (comme le formulaire actuel qui
-    // fixe déjà "date min = demain"), sur FENETRE_JOURS jours.
-    const debut = new Date(); debut.setDate(debut.getDate() + 1); debut.setHours(0, 0, 0, 0);
+    // Fenêtre glissante : à partir de DELAI_MINIMUM_HEURES à compter de
+    // l'instant de la demande (pas d'un jour calendaire arrondi), sur
+    // FENETRE_JOURS jours.
+    const debut = new Date(Date.now() + DELAI_MINIMUM_HEURES * 60 * 60 * 1000);
     const fin = new Date(debut); fin.setDate(fin.getDate() + FENETRE_JOURS);
 
     const calUrl = `${CAL_BASE}/slots?eventTypeSlug=${encodeURIComponent(evt.slug)}&username=${encodeURIComponent(CAL_USERNAME)}&start=${debut.toISOString()}&end=${fin.toISOString()}`;
@@ -88,6 +95,15 @@ export default async function handler(req) {
         .map(s => (s && (s.time || s.start)) || (typeof s === 'string' ? s : null))
         .filter(Boolean);
     }
+
+    // Filet de sécurité : si jamais Cal.com renvoyait un créneau antérieur au
+    // délai minimum (précision de "start" non garantie), on l'exclut plutôt
+    // que de compter uniquement sur le paramètre envoyé.
+    const seuil = debut.getTime();
+    slots = slots.filter(iso => {
+      const t = new Date(iso).getTime();
+      return !isNaN(t) && t >= seuil;
+    });
 
     const body = { available: slots.length > 0, slots, dureeMinutes: evt.duree };
     if (debug) { body.debug = 'OK'; body.calUrl = calUrl; body.calDataBrut = calData; }
