@@ -281,6 +281,17 @@ async function sendMagicLink() {
 
 async function doLogout() {
   await sb.auth.signOut();
+  // Repartir d'un écran de connexion propre : sans ceci, le message de
+  // succès ("Lien envoyé !") et l'email d'une précédente tentative restent
+  // affichés tant que la page n'est pas rechargée.
+  const msgEl = document.getElementById('login-msg');
+  if(msgEl){ msgEl.textContent = ''; msgEl.className = ''; }
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-email').disabled = false;
+  const btn = document.getElementById('login-btn');
+  btn.style.display = '';
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-mail"></i> Recevoir mon lien de connexion';
   showLogin();
 }
 
