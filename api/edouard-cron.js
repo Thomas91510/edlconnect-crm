@@ -1,38 +1,20 @@
 export const config = { runtime: 'edge' };
 import { origineAutorisee } from './_lib/cors.js';
+import { identiteAbonne as identiteAbonneBase } from './_lib/identite.js';
 
 const EDOUARD_BASE = 'https://europe-west3-edouard-immo.cloudfunctions.net/api';
 const BUCKET = 'rapports';
 const MAX_PAR_RUN = 10;
-// Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
-const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
+// Identite d'envoi propre a chaque abonne (repli neutre Lokentia), avec cache
+// pour eviter de refaire l'appel Supabase a chaque mission d'un meme abonne.
 const _cacheIdentites = {};
 
 async function identiteAbonne(supaUrl, supaKey, userId) {
-  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '' };
-  if (!userId) return neutre;
+  if (!userId) return { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '' };
   if (_cacheIdentites[userId]) return _cacheIdentites[userId];
-  try {
-    const r = await fetch(supaUrl + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
-      headers: { 'apikey': supaKey, 'Authorization': 'Bearer ' + supaKey }
-    });
-    if (!r.ok) return neutre;
-    const rows = await r.json();
-    const d = (rows && rows[0] && rows[0].data) || {};
-    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
-    const mail = (d.expediteurEmail || d.userEmail || '').trim();
-    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
-    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
-    const ident = {
-      nom: nom,
-      email: peutExpedier ? mail : neutre.email,
-      replyTo: (!peutExpedier && mail) ? mail : '',
-      tel: (d.expediteurTel || '').trim(),
-      signature: (d.expediteurSignature || '').trim()
-    };
-    _cacheIdentites[userId] = ident;
-    return ident;
-  } catch (e) { return neutre; }
+  const ident = await identiteAbonneBase(supaUrl, supaKey, userId);
+  _cacheIdentites[userId] = ident;
+  return ident;
 }
 // Correspondance des types d'etat des lieux chez Edouard
 const LIBELLE_TYPE = { 1: "d'entree", 2: 'de sortie' }; // limite de missions traitées par exécution

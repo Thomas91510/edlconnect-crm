@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
+import { identiteAbonne } from './_lib/identite.js';
 
 // Echappement HTML : les champs proviennent du CRM (saisie libre agence/mission)
 // et sont reinjectes dans un email envoye a un client final.
@@ -9,31 +10,6 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   });
-}
-
-const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
-
-async function identiteAbonne(userId, serviceKey) {
-  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '' };
-  if (!userId || !serviceKey) return neutre;
-  try {
-    const r = await fetch(SUPABASE_URL + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
-      headers: { 'apikey': serviceKey, 'Authorization': 'Bearer ' + serviceKey }
-    });
-    if (!r.ok) return neutre;
-    const rows = await r.json();
-    const d = (rows && rows[0] && rows[0].data) || {};
-    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
-    const mail = (d.expediteurEmail || d.userEmail || '').trim();
-    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
-    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
-    return {
-      nom,
-      email: peutExpedier ? mail : neutre.email,
-      replyTo: (!peutExpedier && mail) ? mail : '',
-      tel: (d.expediteurTel || '').trim()
-    };
-  } catch (e) { return neutre; }
 }
 
 export default async function handler(req) {
@@ -107,7 +83,7 @@ export default async function handler(req) {
     }
     const nouveauxFlags = { notifRapportEnvoye: true };
 
-    const IDENT = await identiteAbonne(_userId, SUPABASE_SERVICE_KEY);
+    const IDENT = await identiteAbonne(SUPABASE_URL, SUPABASE_SERVICE_KEY, _userId);
     const dateObj = date ? new Date(date) : null;
     const dateStr = dateObj ? dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
     const lienExtranet = 'https://app.lokentia.fr/extranet';

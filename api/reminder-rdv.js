@@ -1,7 +1,9 @@
 export const config = { runtime: 'edge' };
 
-// Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
-const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
+import { identiteAbonne as identiteAbonneBase } from './_lib/identite.js';
+
+// Identite d'envoi propre a chaque abonne (repli neutre Lokentia), avec cache
+// pour eviter de refaire l'appel Supabase a chaque mission d'un meme abonne.
 const SUPA_URL_BASE = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 const _cacheIdentites = {};
 
@@ -31,35 +33,11 @@ function destinataireAvis(m) {
 }
 
 async function identiteAbonne(userId) {
-  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', partenaire: '' };
-  if (!userId) return neutre;
+  if (!userId) return { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', partenaire: '' };
   if (_cacheIdentites[userId]) return _cacheIdentites[userId];
-  try {
-    const key = process.env.SUPABASE_SERVICE_KEY;
-    if (!key) return neutre;
-    const r = await fetch(SUPA_URL_BASE + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
-      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
-    });
-    if (!r.ok) return neutre;
-    const rows = await r.json();
-    const d = (rows && rows[0] && rows[0].data) || {};
-    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
-    const mail = (d.expediteurEmail || d.userEmail || '').trim();
-    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
-    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
-    const ident = {
-      nom: nom,
-      email: peutExpedier ? mail : neutre.email,
-      replyTo: (!peutExpedier && mail) ? mail : '',
-      tel: (d.expediteurTel || '').trim(),
-      signature: (d.expediteurSignature || '').trim(),
-      partenaire: (d.expediteurPartenaire || '').trim()
-    };
-    _cacheIdentites[userId] = ident;
-    return ident;
-  } catch (e) {
-    return neutre;
-  }
+  const ident = await identiteAbonneBase(SUPA_URL_BASE, process.env.SUPABASE_SERVICE_KEY, userId);
+  _cacheIdentites[userId] = ident;
+  return ident;
 }
 
 export default async function handler(req) {
