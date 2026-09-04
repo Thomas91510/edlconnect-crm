@@ -215,8 +215,8 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-t
   table{font-size:12px}
 }
 
-/* ─── MOBILE & TABLETTE PORTRAIT (≤820px) ───────────────────*/
-@media (max-width:820px){
+/* ─── MOBILE & TABLETTE PORTRAIT (≤680px) ───────────────────*/
+@media (max-width:680px){
   body{overflow:auto;height:auto;min-height:100vh}
   .crm{flex-direction:column;height:auto;min-height:100vh}
 
@@ -372,13 +372,13 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-t
 }
 #mobile-nav-bar button i{font-size:22px}
 #mobile-nav-bar button.active{color:var(--blue)}
-@media (max-width:820px){
+@media (max-width:680px){
   #mobile-nav-bar{display:block}
 }
 /* CORRECTIONS MOBILE v2 */
 html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
-@media (max-width: 820px) {
+@media (max-width: 680px) {
   /* KPI emails : 2 colonnes */
   .kpi-grid[style*="repeat(5"] { grid-template-columns: 1fr 1fr !important; }
   
@@ -584,8 +584,13 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <div class="kpi"><div class="kpi-label">CA total <span id="ca-mode-label" style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="toggleTaxMode()" title="Cliquer pour basculer HT/TTC">HT</span></div><div class="kpi-value" id="k-ca">—</div><div class="kpi-sub" id="k-ca-sub"></div></div>
         <div class="kpi"><div class="kpi-label">Doublons</div><div class="kpi-value" id="k-dups" style="color:var(--amber)">—</div><div class="kpi-sub warn" id="k-dups-sub"></div></div>
       </div>
-      <!-- KPIs Email Tracking -->
-      <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-top:-6px">
+      <!-- KPIs Email Tracking : repliés par défaut (moins consultés au quotidien
+           que les KPI principaux), état mémorisé dans localStorage -->
+      <button onclick="toggleEmailKpis()" id="email-kpis-toggle" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text2);padding:4px 2px;margin-top:-2px">
+        <i class="ti ti-chevron-right" id="email-kpis-chevron" style="font-size:13px;transition:transform .15s"></i>
+        📧 Stats email tracking
+      </button>
+      <div class="kpi-grid" id="email-kpis-grid" style="grid-template-columns:repeat(5,1fr);margin-top:6px;display:none">
         <div class="kpi" style="border-left:3px solid #888780">
           <div class="kpi-label">📤 Emails envoyés</div>
           <div class="kpi-value" id="k-sent-total">—</div>

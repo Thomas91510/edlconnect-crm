@@ -567,4 +567,23 @@ async function chargerResaPendingCount(){
   } catch(e) { /* best-effort, silencieux */ }
 }
 
+// Repli des KPI email tracking (moins consultes au quotidien que les KPI
+// principaux) : replies par defaut, etat memorise pour rester tel quel
+// d'une session a l'autre.
+const CLE_EMAIL_KPIS_OUVERT = 'edl_dash_email_kpis_open';
+
+function toggleEmailKpis(forcerOuvert){
+  const grid = document.getElementById('email-kpis-grid');
+  const chevron = document.getElementById('email-kpis-chevron');
+  if(!grid || !chevron) return;
+  const ouvert = forcerOuvert !== undefined ? forcerOuvert : (grid.style.display === 'none');
+  grid.style.display = ouvert ? 'grid' : 'none';
+  chevron.style.transform = ouvert ? 'rotate(90deg)' : 'rotate(0deg)';
+  localStorage.setItem(CLE_EMAIL_KPIS_OUVERT, ouvert ? '1' : '0');
+}
+
+function syncEmailKpisToggle(){
+  toggleEmailKpis(localStorage.getItem(CLE_EMAIL_KPIS_OUVERT) === '1');
+}
+
 // ─── FICHE CONTACT ────────────────────────────────────────
