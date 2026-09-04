@@ -372,4 +372,199 @@ function checkBackupReminder(){
   }
 }
 
+// ─── RECHERCHE GLOBALE (Cmd+K / Ctrl+K) ──────────────────────────────
+// Cherche a travers les contacts et les missions deja charges en memoire
+// (DB.contacts, DB.missions) : tout est deja cote client, pas d'appel
+// serveur necessaire. Un resultat clique ouvre directement la fiche/le
+// modal existant (openFiche, editMission), sans passer par un nouvel
+// ecran dedie.
+let _gsResults = [];
+let _gsIndex = -1;
+
+function openGlobalSearch(){
+  document.querySelectorAll('.modal-bg.open').forEach(el=>el.classList.remove('open'));
+  openModal('modal-global-search');
+  const input = document.getElementById('global-search-input');
+  input.value = '';
+  renderGlobalSearchResults('');
+  setTimeout(()=>input.focus(), 30);
+}
+
+function closeGlobalSearch(){
+  closeModal('modal-global-search');
+}
+
+function _gsNormalise(s){
+  return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+}
+
+function renderGlobalSearchResults(q){
+  const terme = _gsNormalise(q).trim();
+  const box = document.getElementById('global-search-results');
+  _gsIndex = -1;
+
+  if(!terme){
+    box.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--text2);text-align:center">Tape pour chercher un contact ou une mission…</div>';
+    _gsResults = [];
+    return;
+  }
+
+  const contacts = (DB.contacts||[]).filter(c=>
+    _gsNormalise([c.entreprise,c.contact,c.email,c.tel].filter(Boolean).join(' ')).includes(terme)
+  ).slice(0,8).map(c=>({
+    type:'contact', id:c.id,
+    titre: c.entreprise||c.contact||'—',
+    sousTitre: [c.contact, c.email].filter(Boolean).join(' · '),
+    icone:'ti-building-store'
+  }));
+
+  const missions = (DB.missions||[]).filter(m=>
+    _gsNormalise([m.agence,m.adresse,m.type,m.emailClient].filter(Boolean).join(' ')).includes(terme)
+  ).slice(0,8).map(m=>({
+    type:'mission', id:m.id,
+    titre: m.adresse || m.agence || '—',
+    sousTitre: [m.agence, fmtDT(m.date)].filter(Boolean).join(' · '),
+    icone:'ti-clipboard-list'
+  }));
+
+  _gsResults = [...contacts, ...missions];
+
+  if(!_gsResults.length){
+    box.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--text2);text-align:center">Aucun résultat pour « '+esc(q)+' »</div>';
+    return;
+  }
+
+  box.innerHTML = _gsResults.map((r,i)=>`
+    <div class="gs-result" onclick="ouvrirResultatRecherche(${i})" onmouseenter="_gsSurligner(${i})"
+      style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer">
+      <i class="ti ${r.icone}" style="font-size:16px;color:var(--text2);flex-shrink:0"></i>
+      <div style="min-width:0;flex:1">
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.titre)}</div>
+        <div style="font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.sousTitre)}</div>
+      </div>
+      <span style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;flex-shrink:0">${r.type==='contact'?'Contact':'Mission'}</span>
+    </div>`).join('');
+
+  _gsSurligner(0);
+}
+
+function _gsSurligner(i){
+  _gsIndex = i;
+  document.querySelectorAll('#global-search-results .gs-result').forEach((el,idx)=>{
+    el.style.background = idx===i ? 'var(--bg2)' : '';
+  });
+}
+
+function ouvrirResultatRecherche(i){
+  const r = _gsResults[i];
+  if(!r) return;
+  closeGlobalSearch();
+  if(r.type==='contact'){
+    openFiche(r.id);
+  } else if(r.type==='mission'){
+    nav('missions');
+    const idx = DB.missions.findIndex(m=>m.id===r.id);
+    if(idx>-1) editMission(idx);
+  }
+}
+
+function handleGlobalSearchKeydown(e){
+  if(e.key==='Escape'){ e.preventDefault(); closeGlobalSearch(); return; }
+  if(e.key==='ArrowDown'){ e.preventDefault(); if(_gsResults.length) _gsSurligner((_gsIndex+1)%_gsResults.length); return; }
+  if(e.key==='ArrowUp'){ e.preventDefault(); if(_gsResults.length) _gsSurligner((_gsIndex-1+_gsResults.length)%_gsResults.length); return; }
+  if(e.key==='Enter'){ e.preventDefault(); if(_gsIndex>-1) ouvrirResultatRecherche(_gsIndex); return; }
+}
+
+document.addEventListener('keydown', function(e){
+  if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){
+    e.preventDefault();
+    openGlobalSearch();
+  }
+});
+
+// ─── TABLEAU DE BORD "AUJOURD'HUI" ───────────────────────────────────
+// Section operationnelle du dashboard (distincte des KPI statistiques
+// plus bas) : ce qui demande l'attention de l'utilisateur maintenant,
+// plutot que des totaux a lire. Tout se calcule depuis DB.missions deja
+// en memoire, sauf les reservations qui necessitent un appel API dedie
+// (elles ne sont chargees qu'a la visite de l'onglet Reservations).
+function renderAujourdhui(){
+  const box = document.getElementById('dash-today-content');
+  if(!box) return;
+
+  const missions = DB.missions || [];
+  const estAnnulee = m => (m.statut||'').toLowerCase().includes('annul');
+
+  const maintenant = new Date();
+  const debutAuj = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate());
+  const finDemain = new Date(debutAuj.getTime() + 2*24*60*60*1000);
+
+  // RDV dont la date tombe aujourd'hui ou demain
+  const rdvProches = missions.filter(m=>{
+    if(!m.date || estAnnulee(m)) return false;
+    const d = new Date(m.date);
+    return d >= debutAuj && d < finDemain;
+  });
+
+  // Mission passee sans rapport recupere (ni par Edouard, ni saisi a la main)
+  // et pas deja facturee : signale un dossier qui reste a cloturer. Comparaison
+  // au debut du jour (comme avisAttente ci-dessous), pas a l'instant present :
+  // une mission prevue plus tot dans la journee ne doit pas etre signalee
+  // avant meme que la journee soit terminee.
+  const rapportsAttente = missions.filter(m=>{
+    if(!m.date || estAnnulee(m)) return false;
+    if(m.rapportUrl) return false;
+    if((m.statut||'').toLowerCase()==='facturée') return false;
+    return new Date(m.date) < debutAuj;
+  });
+
+  // Mission passee avec un locataire identifie, dont la premiere demande
+  // d'avis (envoyee automatiquement par le cron J+1) n'est pas encore partie.
+  const avisAttente = missions.filter(m=>{
+    if(!m.date || estAnnulee(m)) return false;
+    if(!m.locataireEmail || m.avisEnvoye) return false;
+    return new Date(m.date) < debutAuj;
+  });
+
+  const items = [
+    { label:"RDV aujourd'hui / demain", count: rdvProches.length, icone:'ti-calendar-event', couleur:'var(--blue)', action:"nav('missions')" },
+    { label:'Rapports en attente', count: rapportsAttente.length, icone:'ti-file-alert', couleur:'var(--amber, #B45309)', action:"nav('missions')" },
+    { label:'Réservations non traitées', count:'—', id:'dash-today-resa', icone:'ti-inbox', couleur:'var(--red-text, #A32D2D)', action:"nav('reservations')" },
+    { label:'Avis à relancer', count: avisAttente.length, icone:'ti-star', couleur:'var(--green)', action:"nav('missions')" }
+  ];
+
+  box.innerHTML = items.map(it=>`
+    <div onclick="${it.action}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border2);cursor:pointer;background:var(--bg2)">
+      <i class="ti ${it.icone}" style="font-size:20px;color:${it.couleur};flex-shrink:0"></i>
+      <div style="min-width:0">
+        <div style="font-size:18px;font-weight:700"${it.id?` id="${it.id}"`:''}>${it.count}</div>
+        <div style="font-size:10.5px;color:var(--text2)">${it.label}</div>
+      </div>
+    </div>`).join('');
+
+  chargerResaPendingCount();
+}
+
+// Les reservations ne sont chargees en memoire (_allReservations) qu'a la
+// premiere visite de l'onglet Reservations : sans cet appel dedie, le
+// compteur du dashboard resterait a "—" pour quiconque atterrit d'abord
+// sur l'accueil (le cas le plus frequent).
+async function chargerResaPendingCount(){
+  const el = document.getElementById('dash-today-resa');
+  // renderDashboard() est aussi appele une premiere fois a l'initialisation
+  // de la page, avant checkAuth() : _currentUser peut donc ne pas encore
+  // exister comme variable a ce moment-la (pas seulement valoir null).
+  if(!el || !_supaReady || typeof _currentUser === 'undefined' || !_currentUser) return;
+  try {
+    const tk = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const resp = await fetch('/api/get-reservations', { headers: { 'Authorization': 'Bearer ' + tk } });
+    if(!resp.ok) return;
+    const rows = await resp.json();
+    const pending = (rows||[]).filter(r=>r.statut!=='importee' && !r.rdvConfirme).length;
+    // Revalider l'element : le dashboard peut avoir ete re-rendu pendant l'appel
+    const elApres = document.getElementById('dash-today-resa');
+    if(elApres) elApres.textContent = pending;
+  } catch(e) { /* best-effort, silencieux */ }
+}
+
 // ─── FICHE CONTACT ────────────────────────────────────────
