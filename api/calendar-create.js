@@ -65,6 +65,26 @@ export default async function handler(req, res) {
 
     return res.status(201).json({ success: true, gcalId: event.data.id, link: event.data.htmlLink });
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    // Diagnostic temporaire (voir PR "invalid_client") : le Client ID Google
+    // n'est pas un secret (il apparait deja cote navigateur dans tout flux
+    // OAuth public), donc affiche en entier pour comparaison directe avec
+    // Google Cloud Console. Le secret et le refresh token, eux, ne sont
+    // jamais renvoyes en entier — juste leur longueur et leurs 2 premiers/
+    // derniers caracteres, de quoi reperer un espace ou une troncature sans
+    // exposer la valeur utilisable.
+    const apercu = v => {
+      const s = String(v || '');
+      if (!s) return '(absent)';
+      if (s.length <= 8) return `longueur ${s.length}`;
+      return `longueur ${s.length}, commence par "${s.slice(0, 2)}", finit par "${s.slice(-2)}"`;
+    };
+    return res.status(500).json({
+      error: e.message,
+      diagnostic: {
+        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '(absent)',
+        GOOGLE_CLIENT_SECRET: apercu(process.env.GOOGLE_CLIENT_SECRET),
+        GOOGLE_REFRESH_TOKEN: apercu(process.env.GOOGLE_REFRESH_TOKEN)
+      }
+    });
   }
 }
