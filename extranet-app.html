@@ -261,11 +261,11 @@ async function loadOrders() {
     const resp = await fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken} });
     const orders = await resp.json();
     document.getElementById('kpi-total').textContent = orders.length;
-    document.getElementById('kpi-pending').textContent = orders.filter(o=>o.statut!=='realise'&&o.statut!=='confirmee').length;
-    document.getElementById('kpi-done').textContent = orders.filter(o=>o.statut==='realise').length;
+    document.getElementById('kpi-pending').textContent = orders.filter(o=>o.statut!=='rapport_dispo'&&o.statut!=='confirmee').length;
+    document.getElementById('kpi-done').textContent = orders.filter(o=>o.statut==='rapport_dispo').length;
     if (!orders.length) { document.getElementById('orders-list').innerHTML='<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Aucune commande pour le moment.</div>'; return; }
     document.getElementById('orders-list').innerHTML = orders.map(o => {
-      const badge = o.statut==='realise' ? '<span class="badge badge-done">✅ Réalisé</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
+      const badge = o.statut==='rapport_dispo' ? '<span class="badge badge-done">📄 Rapport disponible</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
       const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
       return `<div class="card" onclick='openDetail(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
         <div style="padding:14px 16px">
@@ -294,7 +294,7 @@ async function loadDocs() {
 
 function openDetail(o) {
   document.getElementById('detail-title').textContent = o.typeEdl||'État des lieux';
-  const badge = o.statut==='realise'?'<span class="badge badge-done" style="font-size:12px;padding:5px 14px">✅ Réalisé</span>':o.statut==='confirmee'||o.statut==='importee'?'<span class="badge badge-confirmed" style="font-size:12px;padding:5px 14px">📅 Confirmé</span>':'<span class="badge badge-pending" style="font-size:12px;padding:5px 14px">⏳ En attente</span>';
+  const badge = o.statut==='rapport_dispo'?'<span class="badge badge-done" style="font-size:12px;padding:5px 14px">📄 Rapport disponible</span>':o.statut==='confirmee'||o.statut==='importee'?'<span class="badge badge-confirmed" style="font-size:12px;padding:5px 14px">📅 Confirmé</span>':'<span class="badge badge-pending" style="font-size:12px;padding:5px 14px">⏳ En attente</span>';
   const rows = [['📋 Type',esc(o.typeEdl)||'—'],['📍 Adresse',esc(o.adresse)||'—'],['🏠 Bien',[o.bienType,o.bienTypo,o.meuble].filter(Boolean).map(esc).join(' · ')||'—'],['📅 Date souhaitée',o.dateSouhaitee?new Date(o.dateSouhaitee).toLocaleDateString('fr-FR'):'—'],['🕐 Heure',esc(o.heure)||'—'],['🧑 Locataire',esc(o.locataireNom)||'—'],['📱 Téléphone',esc(o.locataireTel)||'—'],['🔑 Entrant(s)',(o.locatairesEntrants||[]).map(e=>[e.prenom,e.nom].filter(Boolean).map(esc).join(' ')+(e.tel?' · '+esc(e.tel):'')).join('<br>')||'—'],['🏠 Propriétaire',esc(o.proprietaire)||'—']].filter(([,v])=>v&&v!=='—');
   document.getElementById('detail-body').innerHTML = `<div style="text-align:center;margin-bottom:20px">${badge}</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #f0f0f0"><td style="color:#6b6b6b;padding:10px 0;width:40%;vertical-align:top">${k}</td><td style="font-weight:500;padding:10px 0">${v}</td></tr>`).join('')}</table><div style="font-size:11px;color:#999;text-align:center">Commande reçue le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'—'}</div><div style="margin-top:16px"><button onclick="closeDetail()" style="width:100%;padding:12px;background:#1A5FA8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button></div>`;
   document.getElementById('detail-modal').classList.add('open');
