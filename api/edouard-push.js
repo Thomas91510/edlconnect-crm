@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
+import { origineAutorisee } from './_lib/cors.js';
 
 const EDOUARD_BASE = 'https://europe-west3-edouard-immo.cloudfunctions.net/api';
 
@@ -67,7 +68,7 @@ async function edouardPost(path, body, apiKey) {
 
 export default async function handler(req) {
   const CORS = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': origineAutorisee(req),
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json'

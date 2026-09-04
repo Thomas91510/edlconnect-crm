@@ -1,4 +1,5 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
+import { origineAutorisee } from './_lib/cors.js';
 
 const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
@@ -30,20 +31,20 @@ export default async function handler(req) {
   const _authHeader = req.headers.get('authorization') || '';
   const _token = _authHeader.replace('Bearer ', '').trim();
   if(!_token) {
-    return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
   const _userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${_token}` }
   });
   if(!_userResp.ok) {
-    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
 
   // ── Fonctionnalité réservée aux plans Starter/Pro (coût API à chaque appel) ──
   const _user = await _userResp.json();
   const _autorise = await planAutorise(_user && _user.id, _user && _user.email);
   if (!_autorise) {
-    return new Response(JSON.stringify({ error: 'La rédaction assistée par IA est réservée aux plans Starter et Pro.', planRequis: true }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: 'La rédaction assistée par IA est réservée aux plans Starter et Pro.', planRequis: true }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
 
   try {

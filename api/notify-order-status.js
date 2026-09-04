@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
+import { origineAutorisee } from './_lib/cors.js';
 
 // Echappement HTML : les champs proviennent du CRM (saisie libre agence/mission)
 // et sont reinjectes dans un email envoye a un client final.
@@ -39,7 +40,7 @@ export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': origineAutorisee(req),
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       }
@@ -59,18 +60,18 @@ export default async function handler(req) {
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace('Bearer ', '').trim();
   if (!token) {
-    return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
   const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` }
   });
   if (!userResp.ok) {
-    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
   const _user = await userResp.json();
   const _userId = _user && _user.id;
   if (!_userId) {
-    return new Response(JSON.stringify({ error: 'Utilisateur introuvable' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: 'Utilisateur introuvable' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
 
   const supaHeaders = { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` };
@@ -78,7 +79,7 @@ export default async function handler(req) {
   try {
     const { missionId, emailClient, adresse, type, date, agence } = await req.json();
     if (!missionId || !emailClient) {
-      return new Response(JSON.stringify({ error: 'Données manquantes' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Données manquantes' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
     }
 
     // Vérifier que la mission appartient bien à l'abonné appelant, et
@@ -88,12 +89,12 @@ export default async function handler(req) {
       { headers: supaHeaders }
     );
     if (!missionResp.ok) {
-      return new Response(JSON.stringify({ error: 'Mission introuvable' }), { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Mission introuvable' }), { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
     }
     const missionRows = await missionResp.json();
     const missionData = (missionRows && missionRows[0] && missionRows[0].data) || null;
     if (!missionData) {
-      return new Response(JSON.stringify({ error: 'Mission introuvable' }), { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Mission introuvable' }), { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
     }
 
     // Un seul indicateur anti-doublon : le rapport EDL (Edouard) se
@@ -102,7 +103,7 @@ export default async function handler(req) {
     // terminée/facturée, on informe directement que le rapport est
     // disponible dans l'espace client.
     if (missionData.notifRapportEnvoye) {
-      return new Response(JSON.stringify({ success: true, sent: 'none' }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ success: true, sent: 'none' }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
     }
     const nouveauxFlags = { notifRapportEnvoye: true };
 
@@ -157,9 +158,9 @@ export default async function handler(req) {
       body: JSON.stringify({ data: { ...missionData, ...nouveauxFlags }, updated_at: new Date().toISOString() })
     });
 
-    return new Response(JSON.stringify({ success: true, sent: 'rapport_dispo' }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ success: true, sent: 'rapport_dispo' }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
 
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
 }

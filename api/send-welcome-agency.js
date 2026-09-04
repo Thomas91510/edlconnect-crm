@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
+import { origineAutorisee } from './_lib/cors.js';
 
 // Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
 const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
@@ -38,7 +39,7 @@ export default async function handler(req) {
   if(req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': origineAutorisee(req),
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       }
@@ -53,13 +54,13 @@ export default async function handler(req) {
   const _authHeader = req.headers.get('authorization') || '';
   const _token = _authHeader.replace('Bearer ', '').trim();
   if(!_token) {
-    return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
   const _userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${_token}` }
   });
   if(!_userResp.ok) {
-    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
 
   const _user = await _userResp.json();
@@ -206,7 +207,7 @@ export default async function handler(req) {
     if(resp.ok) {
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
       });
     } else {
       const err = await resp.json();

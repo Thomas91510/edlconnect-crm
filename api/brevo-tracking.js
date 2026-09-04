@@ -4,6 +4,7 @@
 export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
+import { origineAutorisee } from './_lib/cors.js';
 const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
 // ── Vérifie que l'utilisateur est admin ou sur un plan payant actif. ──
@@ -26,7 +27,7 @@ async function planAutorise(userId, email) {
 export default async function handler(req) {
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': origineAutorisee(req),
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };

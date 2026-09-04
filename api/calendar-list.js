@@ -1,6 +1,7 @@
 // api/calendar-create.js — Créer un événement Google Calendar
 import { google } from 'googleapis';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
+import { origineAutorisee } from './_lib/cors.js';
 
 async function getCalendarClient() {
   const oauth2Client = new google.auth.OAuth2(
@@ -15,7 +16,7 @@ async function getCalendarClient() {
 export default async function handler(req, res) {
   // ── Authentification obligatoire : jeton de session Supabase ──
 
-  if (req.method === 'OPTIONS') { res.setHeader('Access-Control-Allow-Origin','*'); res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization'); return res.status(200).end(); }
+  if (req.method === 'OPTIONS') { res.setHeader('Access-Control-Allow-Origin', origineAutorisee(req)); res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization'); return res.status(200).end(); }
   const _authHeader = req.headers['authorization'] || '';
   const _token = _authHeader.replace('Bearer ', '').trim();
   if (!_token) return res.status(401).json({ error: 'Non authentifié' });
@@ -24,7 +25,7 @@ export default async function handler(req, res) {
   });
   if (!_userResp.ok) return res.status(401).json({ error: 'Session invalide ou expirée' });
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', origineAutorisee(req));
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
