@@ -23,10 +23,30 @@ let DB={
   prospects:[],
   dups:[],
   brevoContacts:[],
-  agents:[]
+  agents:[],
+  // Missions réalisées pour des clients hors CRM (ex. un partenaire dont les
+  // dossiers ne passent pas par des fiches "mission" individuelles) : un
+  // volume d'EDL + un CA ajoutés par mois, pour que les totaux du dashboard
+  // reflètent l'activité réelle sans forcer la saisie d'une mission par dossier.
+  ajustementsExternes:[]
 };
 
 let UI={contactFilter:'all',contactSearch:'',missionFilter:'all',calMonth:new Date().getMonth(),calYear:new Date().getFullYear()};
+
+// Cumule le nombre d'EDL et le CA des ajustements externes (clients hors
+// CRM) pour un mois donne ('YYYY-MM') ou pour tous les mois ('all').
+// Utilise par le dashboard (app-contacts.js) et les stats missions
+// (app-missions.js) pour que ces totaux "manuels" se fondent dans les
+// compteurs globaux et respectent le meme filtre de mois que le reste.
+function ajustementsPourMois(mois){
+  const liste = Array.isArray(DB.ajustementsExternes) ? DB.ajustementsExternes : [];
+  const filtres = mois === 'all' ? liste : liste.filter(a => a.mois === mois);
+  return filtres.reduce((acc, a) => {
+    acc.nb += Number(a.nbEdl) || 0;
+    acc.ca += Number(a.ca) || 0;
+    return acc;
+  }, { nb: 0, ca: 0 });
+}
 
 // ─── UTILS ────────────────────────────────────────────────
 function notify(msg,type=''){
@@ -233,7 +253,7 @@ function loadFromStorage(){
   }catch(e){}
   // Garde-fou : si les données sauvegardées datent d'avant l'ajout d'un champ (ex: invoices),
   // s'assurer que tous les tableaux attendus existent pour éviter les erreurs "Cannot read properties of undefined"
-  const expectedArrays=['contacts','deals','missions','campaigns','rdvs','invoices','trackings','prospects','dups','brevoContacts','agents'];
+  const expectedArrays=['contacts','deals','missions','campaigns','rdvs','invoices','trackings','prospects','dups','brevoContacts','agents','ajustementsExternes'];
   expectedArrays.forEach(key=>{ if(!Array.isArray(DB[key])) DB[key]=[]; });
   // Dédoublonner les contacts au chargement (protection permanente)
   const seen=new Set();
