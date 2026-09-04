@@ -601,6 +601,18 @@ function renderStatsMissions(){
     else vue.appendChild(bloc);
   }
 
+  // Préserver la saisie en cours dans le formulaire d'ajustement externe :
+  // ce bloc est reconstruit (innerHTML) à chaque changement de page vers le
+  // dashboard (et à chaque sync temps réel), ce qui effaçait sinon les
+  // champs mois/nb EDL/CA/note dès qu'on allait consulter une info ailleurs
+  // avant de finir la saisie.
+  const _ajSaisieEnCours = {
+    mois: document.getElementById('aj-mois')?.value,
+    nb: document.getElementById('aj-nb')?.value,
+    ca: document.getElementById('aj-ca')?.value,
+    note: document.getElementById('aj-note')?.value
+  };
+
   const toutes = (typeof DB !== 'undefined' && DB.missions) ? DB.missions : [];
   const missions = (typeof filterByMonth === 'function') ? filterByMonth(toutes, 'date') : toutes;
 
@@ -725,6 +737,17 @@ function renderStatsMissions(){
         </div>
       </div>
     </div>`;
+
+  // Restaurer la saisie en cours capturée avant la reconstruction du bloc
+  // (cf. commentaire plus haut) — seulement les champs que l'abonné avait
+  // effectivement commencé à remplir, sans écraser la valeur par défaut du
+  // mois pré-rempli si rien n'avait été saisi.
+  if(_ajSaisieEnCours.mois && _ajSaisieEnCours.mois !== cleMois){
+    const el = document.getElementById('aj-mois'); if(el) el.value = _ajSaisieEnCours.mois;
+  }
+  if(_ajSaisieEnCours.nb){ const el = document.getElementById('aj-nb'); if(el) el.value = _ajSaisieEnCours.nb; }
+  if(_ajSaisieEnCours.ca){ const el = document.getElementById('aj-ca'); if(el) el.value = _ajSaisieEnCours.ca; }
+  if(_ajSaisieEnCours.note){ const el = document.getElementById('aj-note'); if(el) el.value = _ajSaisieEnCours.note; }
 }
 
 // Sauvegarde ciblée des ajustements externes dans Supabase (settings), sans
