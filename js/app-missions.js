@@ -603,7 +603,6 @@ function renderStatsMissions(){
 
   const toutes = (typeof DB !== 'undefined' && DB.missions) ? DB.missions : [];
   const missions = (typeof filterByMonth === 'function') ? filterByMonth(toutes, 'date') : toutes;
-  const total = missions.length;
 
   // ── Volumes de reference (independants du filtre de mois) ──
   const maintenant = new Date();
@@ -612,11 +611,33 @@ function renderStatsMissions(){
   const cetteAnnee = toutes.filter(m => m.date && String(m.date).slice(0, 4) === String(anneeCourante));
   const ceMois = toutes.filter(m => m.date && String(m.date).slice(0, 7) === cleMois);
 
-  // Moyenne mensuelle : sur les mois reellement couverts, pas sur 12 par defaut
-  const moisDistincts = new Set(toutes.filter(m => m.date).map(m => String(m.date).slice(0, 7)));
-  const moyenneMois = moisDistincts.size > 0 ? Math.round(toutes.filter(m => m.date).length / moisDistincts.size * 10) / 10 : 0;
+  // Ajustements externes (EDL/CA de clients hors CRM, ex. un partenaire) —
+  // saisis par mois dans le panneau ci-dessous, fondus dans les totaux pour
+  // que le volume et le CA reflètent l'activité réelle sans forcer une fiche
+  // mission par dossier. cf. ajustementsPourMois() dans app-core.js.
+  const ajustements = Array.isArray(DB.ajustementsExternes) ? DB.ajustementsExternes : [];
+  const ajTous = ajustementsPourMois('all');
+  const ajAnnee = ajustements.filter(a => String(a.mois).slice(0, 4) === String(anneeCourante))
+    .reduce((acc, a) => { acc.nb += Number(a.nbEdl) || 0; acc.ca += Number(a.ca) || 0; return acc; }, { nb: 0, ca: 0 });
+  const ajMois = ajustementsPourMois(cleMois);
+  const ajPeriode = (typeof _dashMonth !== 'undefined') ? ajustementsPourMois(_dashMonth) : ajTous;
 
-  const caPeriode = missions.reduce((s, m) => s + (m.montant || 0), 0);
+  // "total" inclut les ajustements hors CRM pour les totaux affichés (badge,
+  // panier moyen) ; les repartitions par categorie ci-dessous n'ont pas cette
+  // granularite pour un ajustement en montant global, donc leurs pourcentages
+  // restent calcules sur les seules missions du CRM (baseMissions).
+  const baseMissions = missions.length;
+  const total = baseMissions + ajPeriode.nb;
+
+  // Moyenne mensuelle : sur les mois reellement couverts, pas sur 12 par defaut
+  const moisDistincts = new Set([
+    ...toutes.filter(m => m.date).map(m => String(m.date).slice(0, 7)),
+    ...ajustements.map(a => a.mois).filter(Boolean)
+  ]);
+  const volumeTotal = toutes.filter(m => m.date).length + ajTous.nb;
+  const moyenneMois = moisDistincts.size > 0 ? Math.round(volumeTotal / moisDistincts.size * 10) / 10 : 0;
+
+  const caPeriode = missions.reduce((s, m) => s + (m.montant || 0), 0) + ajPeriode.ca;
   const panierMoyen = total > 0 ? Math.round(caPeriode / total) : 0;
 
   const parType = statGrouper(missions, m => statCategorieEdl(m.type));
@@ -650,27 +671,100 @@ function renderStatsMissions(){
     ${lignes || '<div style="font-size:11px;color:var(--text3)">Aucune donnée</div>'}
   </div>`;
 
+  const noteAjustement = (nb) => nb > 0 ? ` <span style="color:var(--text3)">(dont ${nb} hors CRM)</span>` : '';
+
+  const ajustementsTries = [...ajustements].sort((a, b) => String(b.mois).localeCompare(String(a.mois)));
+  const listeAjustementsHtml = ajustementsTries.length
+    ? ajustementsTries.map(a => {
+        const [y, m] = String(a.mois || '').split('-');
+        const label = (y && m) ? new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : esc(a.mois || '—');
+        return `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:12px">
+          <div style="flex:1">
+            <strong>${label}</strong> — ${Number(a.nbEdl) || 0} EDL · ${(Number(a.ca) || 0).toLocaleString('fr-FR')} € HT
+            ${a.note ? `<div style="color:var(--text3);font-size:11px">${esc(a.note)}</div>` : ''}
+          </div>
+          <button class="btn btn-sm" onclick="removeAjustementExterne('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
+        </div>`;
+      }).join('')
+    : '<div style="font-size:11px;color:var(--text3)">Aucun ajustement enregistré.</div>';
+
   bloc.innerHTML = `
     <div class="card-head">
       <span>📊 Volume et répartition des états des lieux</span>
-      <span style="font-size:10px;font-weight:400;color:var(--text2)">${total} mission${total > 1 ? 's' : ''} sur la période affichée</span>
+      <span style="font-size:10px;font-weight:400;color:var(--text2)">${total} mission${total > 1 ? 's' : ''} sur la période affichée${noteAjustement(ajPeriode.nb)}</span>
     </div>
     <div style="padding:16px">
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
-        ${kpi('Volume total', toutes.length, 'depuis le début', '#0F1E2E')}
-        ${kpi('Cette année', cetteAnnee.length, String(anneeCourante), '#1A5FA8')}
-        ${kpi('Ce mois-ci', ceMois.length, 'en cours', '#2F7A3E')}
+        ${kpi('Volume total', volumeTotal, 'depuis le début' + noteAjustement(ajTous.nb), '#0F1E2E')}
+        ${kpi('Cette année', cetteAnnee.length + ajAnnee.nb, String(anneeCourante) + noteAjustement(ajAnnee.nb), '#1A5FA8')}
+        ${kpi('Ce mois-ci', ceMois.length + ajMois.nb, 'en cours' + noteAjustement(ajMois.nb), '#2F7A3E')}
         ${kpi('Moyenne mensuelle', moyenneMois, 'EDL / mois', '#B4750F')}
         ${kpi('Panier moyen', panierMoyen.toLocaleString('fr-FR') + ' €', 'HT par EDL', '#5B3DA5')}
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px 26px">
-        ${colonne('Par type d\'EDL', parType.map(([k, v]) => statBarre(k, v.nb, total, couleursType[k] || '#8494A1', v.ca)).join(''))}
-        ${colonne('Meublé / Nu', parMeuble.map(([k, v]) => statBarre(k, v.nb, total, couleursMeuble[k] || '#8494A1', v.ca)).join(''))}
-        ${colonne('Particulier / Agence', parClient.map(([k, v]) => statBarre(k, v.nb, total, couleursClient[k] || '#8494A1', v.ca)).join(''))}
-        ${colonne('Maison / Appartement', parNature.map(([k, v]) => statBarre(k, v.nb, total, couleursNature[k] || '#8494A1', v.ca)).join(''))}
-        ${colonne('Typologie du bien', parTypologie.map(([k, v]) => statBarre(k, v.nb, total, couleursTypo[k] || '#8494A1', v.ca)).join(''))}
+        ${colonne('Par type d\'EDL', parType.map(([k, v]) => statBarre(k, v.nb, baseMissions, couleursType[k] || '#8494A1', v.ca)).join(''))}
+        ${colonne('Meublé / Nu', parMeuble.map(([k, v]) => statBarre(k, v.nb, baseMissions, couleursMeuble[k] || '#8494A1', v.ca)).join(''))}
+        ${colonne('Particulier / Agence', parClient.map(([k, v]) => statBarre(k, v.nb, baseMissions, couleursClient[k] || '#8494A1', v.ca)).join(''))}
+        ${colonne('Maison / Appartement', parNature.map(([k, v]) => statBarre(k, v.nb, baseMissions, couleursNature[k] || '#8494A1', v.ca)).join(''))}
+        ${colonne('Typologie du bien', parTypologie.map(([k, v]) => statBarre(k, v.nb, baseMissions, couleursTypo[k] || '#8494A1', v.ca)).join(''))}
+      </div>
+      <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Ajustement externe (clients hors CRM)</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Pour un partenaire dont les dossiers ne passent pas par une fiche mission : ajoutez ici un nombre d'EDL et un CA par mois, ils viennent s'ajouter aux totaux ci-dessus.</div>
+        <div id="ajustements-liste" style="margin-bottom:12px">${listeAjustementsHtml}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div><label style="font-size:10px;color:var(--text2);display:block;margin-bottom:3px">Mois</label>
+            <input type="month" id="aj-mois" style="font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:6px" value="${cleMois}"></div>
+          <div><label style="font-size:10px;color:var(--text2);display:block;margin-bottom:3px">Nb EDL</label>
+            <input type="number" id="aj-nb" min="0" step="1" style="width:80px;font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:6px"></div>
+          <div><label style="font-size:10px;color:var(--text2);display:block;margin-bottom:3px">CA (€ HT)</label>
+            <input type="number" id="aj-ca" min="0" step="1" style="width:100px;font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:6px"></div>
+          <div style="flex:1;min-width:140px"><label style="font-size:10px;color:var(--text2);display:block;margin-bottom:3px">Note (optionnel)</label>
+            <input type="text" id="aj-note" placeholder="Ex. Partenaire Century 21" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:6px"></div>
+          <button class="btn btn-sm" onclick="ajouterAjustementExterne()"><i class="ti ti-plus"></i>Ajouter</button>
+        </div>
       </div>
     </div>`;
+}
+
+// Sauvegarde ciblée des ajustements externes dans Supabase (settings), sans
+// lire le formulaire de réglages — même pattern que persistAgents().
+async function persistAjustementsExternes(){
+  if(typeof saveSettingsToSupabase !== 'function') return;
+  try{
+    if(!_supaReady || !_currentUser) return;
+    const { data } = await supabaseClient.from('settings').select('data').eq('user_id', _currentUser.id).maybeSingle();
+    const s = (data && data.data) ? data.data : {};
+    s.ajustementsExternes = DB.ajustementsExternes || [];
+    await saveSettingsToSupabase(s);
+  }catch(e){ console.warn('persistAjustementsExternes:', e); }
+}
+
+function ajouterAjustementExterne(){
+  const moisEl = document.getElementById('aj-mois');
+  const nbEl = document.getElementById('aj-nb');
+  const caEl = document.getElementById('aj-ca');
+  const noteEl = document.getElementById('aj-note');
+  const mois = moisEl ? moisEl.value : '';
+  const nbEdl = Math.max(0, parseInt(nbEl ? nbEl.value : '0', 10) || 0);
+  const ca = Math.max(0, parseFloat(caEl ? caEl.value : '0') || 0);
+  const note = noteEl ? noteEl.value.trim() : '';
+  if(!mois){ notify('⚠️ Sélectionne un mois', 'warn'); return; }
+  if(!nbEdl && !ca){ notify('⚠️ Indique un nombre d\'EDL et/ou un CA', 'warn'); return; }
+  if(!Array.isArray(DB.ajustementsExternes)) DB.ajustementsExternes = [];
+  DB.ajustementsExternes.push({ id: 'aj_' + Date.now(), mois, nbEdl, ca, note });
+  saveToStorage();
+  persistAjustementsExternes();
+  renderDashboard();
+  notify('✅ Ajustement ajouté');
+}
+
+function removeAjustementExterne(id){
+  if(!confirm('Supprimer cet ajustement ?')) return;
+  DB.ajustementsExternes = (DB.ajustementsExternes || []).filter(a => a.id !== id);
+  saveToStorage();
+  persistAjustementsExternes();
+  renderDashboard();
 }
 
 // ─── CAMPAIGNS ────────────────────────────────────────────

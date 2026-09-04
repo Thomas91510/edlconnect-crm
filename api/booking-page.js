@@ -200,7 +200,10 @@ textarea{min-height:75px;resize:vertical}
         <div id="slots-panel" style="display:none;margin-bottom:14px">
           <label style="margin-bottom:8px">Créneaux disponibles <span class="req">*</span></label>
           <div id="slots-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px"></div>
-          <div class="hint">Choisissez un créneau ci-dessus, ou indiquez une date libre ci-dessous si aucun ne vous convient.</div>
+          <div class="hint">Choisissez un créneau ci-dessus, ou indiquez une date libre ci-dessous si aucun ne vous convient. Ces créneaux sont proposés à partir de 48h suivant votre demande.</div>
+          <div style="background:#FFF3CD;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11.5px;color:#633806;line-height:1.6">
+            ⚡ Besoin d'un état des lieux en urgence (aujourd'hui ou demain) ? Contactez-nous directement${IDENT.tel ? ` au <a href="tel:${identTelHref}" style="color:#633806;font-weight:600">${IDENT.tel}</a>` : ` par email à <a href="mailto:${IDENT.email}" style="color:#633806;font-weight:600">${IDENT.email}</a>`} plutôt que via ce formulaire.
+          </div>
         </div>
         <div id="slots-loading" style="display:none;font-size:12px;color:var(--text2);margin-bottom:14px">⏳ Recherche des créneaux disponibles…</div>
         <div class="form-row">

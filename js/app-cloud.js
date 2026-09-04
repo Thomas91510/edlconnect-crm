@@ -144,6 +144,12 @@ async function loadSettingsFromSupabase(){
       DB.agents = s.agents;
       try{ if(typeof renderAgentsSettings === 'function') renderAgentsSettings(); }catch(e){}
     }
+    // Ajustements externes (EDL/CA hors CRM, ex. un partenaire) — stockés
+    // dans settings comme les agents, pas dans une table dédiée.
+    if(Array.isArray(s.ajustementsExternes)){
+      DB.ajustementsExternes = s.ajustementsExternes;
+      try{ if(typeof renderDashboard === 'function') renderDashboard(); }catch(e){}
+    }
     console.log('✅ Paramètres chargés depuis Supabase');
   }catch(e){console.warn('Erreur loadSettingsFromSupabase:',e);}
 }

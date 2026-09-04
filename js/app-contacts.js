@@ -622,19 +622,26 @@ function renderDashboard(){
 
   // Missions filtrées
   const missions = filterByMonth(DB.missions, 'date');
-  document.getElementById('k-missions').textContent=missions.length;
+  // Ajustements externes (clients hors CRM, ex. un partenaire) pour la
+  // période affichée — se fondent dans les totaux plutôt que de forcer une
+  // fiche mission par dossier. cf. ajustementsPourMois() dans app-core.js.
+  const ajPeriode = ajustementsPourMois(_dashMonth);
+  document.getElementById('k-missions').textContent=missions.length + ajPeriode.nb;
 
   // États des lieux — compteur global (toutes missions, tous statuts, indépendant
   // du filtre de mois), mis à jour à chaque rendu du dashboard donc à chaque
   // sync temps réel (voir subscribeRealtime dans app-cloud.js) ou action locale.
-  document.getElementById('k-edl-total').textContent=DB.missions.length;
+  const ajTous = ajustementsPourMois('all');
+  document.getElementById('k-edl-total').textContent=DB.missions.length + ajTous.nb;
+  const now=new Date();
+  const cleMoisCourant = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   const edlCeMois=DB.missions.filter(m=>{
     if(!m.date)return false;
-    const d=new Date(m.date), now=new Date();
+    const d=new Date(m.date);
     return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
-  }).length;
+  }).length + ajustementsPourMois(cleMoisCourant).nb;
   document.getElementById('k-edl-total-sub').textContent=edlCeMois+' ce mois-ci';
-  const caHT=missions.reduce((s,m)=>s+(m.montant||0),0);
+  const caHT=missions.reduce((s,m)=>s+(m.montant||0),0) + ajPeriode.ca;
   document.getElementById('k-ca').textContent=(taxMode==='TTC'?ttc(caHT):caHT).toLocaleString('fr-FR');
   document.getElementById('k-ca-sub').textContent=taxMode==='HT'?`TTC : ${fmtTTC(caHT)}`:`HT : ${caHT.toLocaleString('fr-FR')} €`;
 
