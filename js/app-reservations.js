@@ -193,9 +193,13 @@ function ensureConfirmRdvOptions(){
       '<input type="checkbox" id="confirm-rdv-envoi-agence" checked style="width:17px;height:17px;cursor:pointer;flex-shrink:0">' +
       '<span>📧 Confirmation à l\'agence</span>' +
     '</label>' +
-    '<label style="display:flex;align-items:center;gap:9px;margin:0;cursor:pointer;font-size:13px;color:var(--text)">' +
+    '<label style="display:flex;align-items:center;gap:9px;margin:0 0 8px 0;cursor:pointer;font-size:13px;color:var(--text)">' +
       '<input type="checkbox" id="confirm-rdv-envoi-locataires" checked style="width:17px;height:17px;cursor:pointer;flex-shrink:0">' +
       '<span>👤 Convocation au(x) locataire(s)</span>' +
+    '</label>' +
+    '<label style="display:flex;align-items:center;gap:9px;margin:0 0 4px 22px;cursor:pointer;font-size:12.5px;color:var(--text2)">' +
+      '<input type="checkbox" id="confirm-rdv-envoi-sms" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">' +
+      '<span>📱 + SMS de confirmation (nécessite un expéditeur SMS Brevo déjà validé)</span>' +
     '</label>' +
     '<div id="confirm-rdv-envoi-note" style="font-size:11.5px;color:var(--text2);margin-top:9px;line-height:1.5"></div>';
 
@@ -203,21 +207,31 @@ function ensureConfirmRdvOptions(){
 
   document.getElementById('confirm-rdv-envoi-agence').addEventListener('change', updateConfirmRdvEnvoiNote);
   document.getElementById('confirm-rdv-envoi-locataires').addEventListener('change', updateConfirmRdvEnvoiNote);
+  document.getElementById('confirm-rdv-envoi-sms').addEventListener('change', updateConfirmRdvEnvoiNote);
 }
 
 // Met a jour le bandeau pour qu'il reflete la selection reelle.
 function updateConfirmRdvEnvoiNote(){
   const ag = document.getElementById('confirm-rdv-envoi-agence');
   const lo = document.getElementById('confirm-rdv-envoi-locataires');
+  const sms = document.getElementById('confirm-rdv-envoi-sms');
   const note = document.getElementById('confirm-rdv-envoi-note');
   const btn = document.getElementById('confirm-rdv-btn');
   if(!ag || !lo || !note) return;
+
+  // Le SMS est un complément à la convocation locataire : sans locataire
+  // notifié, la case SMS n'a pas de sens — on la désactive et décoche.
+  if(sms){
+    sms.disabled = !lo.checked;
+    if(!lo.checked) sms.checked = false;
+  }
 
   let txt = '';
   if(ag.checked && lo.checked)       txt = '⚡ L\'agence et le(s) locataire(s) recevront un email immédiatement.';
 else if(ag.checked && !lo.checked) txt = '⚡ Seule l\'agence sera prévenue. Le locataire ne recevra aucune convocation.';
   else if(!ag.checked && lo.checked) txt = '⚡ Seul(s) le(s) locataire(s) recevront leur convocation.';
   else                               txt = '⚠️ Aucun email ne sera envoyé — le RDV sera simplement enregistré.';
+  if(lo.checked && sms && sms.checked) txt += ' Un SMS de confirmation sera aussi envoyé aux locataires disposant d\'un numéro.';
   note.textContent = txt;
   note.style.color = (!ag.checked && !lo.checked) ? 'var(--amber-text)' : 'var(--text2)';
 
@@ -243,8 +257,12 @@ function resetConfirmRdvOptions(){
   ensureConfirmRdvOptions();
   const ag = document.getElementById('confirm-rdv-envoi-agence');
   const lo = document.getElementById('confirm-rdv-envoi-locataires');
+  const sms = document.getElementById('confirm-rdv-envoi-sms');
   if(ag) ag.checked = true;
   if(lo) lo.checked = true;
+  // Décochée par défaut à chaque ouverture : canal optionnel (coûte des
+  // crédits Brevo), à cocher volontairement une fois testé.
+  if(sms) sms.checked = false;
   updateConfirmRdvEnvoiNote();
 }
 
@@ -466,6 +484,7 @@ async function sendConfirmRdv(){
   // Destinataires retenus (cases de la modal)
   const _envAgence = document.getElementById('confirm-rdv-envoi-agence')?.checked !== false;
   const _envLocataires = document.getElementById('confirm-rdv-envoi-locataires')?.checked !== false;
+  const _envSms = document.getElementById('confirm-rdv-envoi-sms')?.checked === true;
 
   const agentEmail = document.getElementById('confirm-rdv-agent-email').value.trim();
   // L'email de l'agence n'est exige que si on lui envoie effectivement quelque chose
@@ -546,7 +565,8 @@ async function sendConfirmRdv(){
     expertTel: expertAgent ? expertAgent.tel : '',
     message: document.getElementById('confirm-rdv-message').value.trim(),
     envoyerAgence: _envAgence,
-    envoyerLocataires: _envLocataires
+    envoyerLocataires: _envLocataires,
+    envoyerSmsLocataires: _envSms
   };
 
   try {
@@ -677,6 +697,7 @@ async function sendConfirmRdv(){
         else if(_envAgence && !_envLocataires) msgFin = '✅ RDV confirmé — seule l\'agence a été prévenue, mission créée.';
         else if(!_envAgence && _envLocataires) msgFin = '✅ RDV confirmé — seul(s) le(s) locataire(s) prévenus, mission créée.';
         else                                   msgFin = '✅ RDV enregistré sans envoi d\'email, mission créée.';
+        if(_envLocataires && _envSms) msgFin = msgFin.replace(', mission créée.', ' (+ SMS), mission créée.');
         notify(msgFin);
       }
     } else {

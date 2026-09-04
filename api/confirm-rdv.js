@@ -12,6 +12,32 @@ function esc(s) {
   });
 }
 
+// Format attendu par l'API SMS de Brevo : indicatif pays sans "+" (ex.
+// "336XXXXXXXX"). Les numeros saisis dans le CRM sont en format francais
+// local ("06 XX XX XX XX", "0033 6...", etc.) — normalisation best-effort,
+// sans validation stricte (un numero mal forme echouera simplement a
+// l'envoi, sans bloquer les emails qui restent le canal principal).
+function normaliserTelFR(tel) {
+  const digits = String(tel || '').replace(/[^\d+]/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('+33')) return digits.slice(1);
+  if (digits.startsWith('0033')) return digits.slice(2);
+  if (digits.startsWith('33')) return digits;
+  if (digits.startsWith('0') && digits.length === 10) return '33' + digits.slice(1);
+  return digits.replace(/^\+/, '');
+}
+
+// L'expediteur SMS Brevo doit etre alphanumerique, sans accents ni espaces,
+// 11 caracteres maximum — derive du nom de l'abonne plutot que d'un
+// identifiant fixe, pour rester coherent avec l'expediteur email.
+function smsSenderDepuisNom(nom) {
+  const s = String(nom || 'Lokentia')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]/g, '')
+    .slice(0, 11);
+  return s || 'Lokentia';
+}
+
 // Domaines authentifies chez Brevo : seuls ceux-ci peuvent servir d'expediteur.
 // Pour les autres abonnes, on expedie depuis Lokentia avec leur nom, et
 // leurs clients repondent directement sur leur adresse (replyTo).
@@ -84,7 +110,7 @@ export default async function handler(req) {
   }
 
   try {
-    const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, locataires, expertNom, expertTel, message, envoyerAgence, envoyerLocataires } = await req.json();
+    const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, locataires, expertNom, expertTel, message, envoyerAgence, envoyerLocataires, envoyerSmsLocataires } = await req.json();
 
     // Destinataires : par defaut on envoie a tout le monde, pour rester
     // compatible avec les appels qui ne precisent rien. Le CRM transmet
@@ -384,6 +410,7 @@ export default async function handler(req) {
     const emailsToSend = [];
     let nbAgence = 0;
     let nbLocataires = 0;
+    let nbSms = 0;
 
     if(_envAgence){
       nbAgence = 1;
@@ -432,9 +459,30 @@ export default async function handler(req) {
       });
     }
 
+    // Envoyer en plus un SMS court à chaque locataire disposant d'un numéro,
+    // en complément de l'email (moins de rendez-vous manqués). Option
+    // distincte de "envoyerLocataires" : coûte des crédits Brevo et suppose
+    // un expéditeur SMS déjà validé côté compte Brevo de l'abonné, donc
+    // décochée par défaut dans le CRM tant que ce n'est pas testé.
+    if(_envLocataires && envoyerSmsLocataires){
+      const smsSender = smsSenderDepuisNom(IDENT.nom);
+      const dateCourte = dateObj ? dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '';
+      allLocataires.forEach(loc => {
+        const telNorm = normaliserTelFR(loc.tel);
+        if(!telNorm) return;
+        nbSms++;
+        const contenu = `RDV EDL confirme le ${dateCourte} a ${heureStr} - ${mission.adresse}. Infos au ${IDENT.tel || IDENT.email}`.slice(0, 160);
+        emailsToSend.push(fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
+          body: JSON.stringify({ sender: smsSender, recipient: telNorm, content: contenu, type: 'transactional' })
+        }));
+      });
+    }
+
     await Promise.all(emailsToSend);
 
-    return new Response(JSON.stringify({ success: true, envoyes: { agence: nbAgence, locataires: nbLocataires } }), {
+    return new Response(JSON.stringify({ success: true, envoyes: { agence: nbAgence, locataires: nbLocataires, sms: nbSms } }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
