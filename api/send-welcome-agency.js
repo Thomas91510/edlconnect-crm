@@ -2,37 +2,9 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
+import { identiteAbonne } from './_lib/identite.js';
 
-// Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
-const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
 const SUPA_URL_IDENT = SUPABASE_URL;
-
-async function identiteAbonne(userId) {
-  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', notifEmail: 'contact@edl-idf.com' };
-  if (!userId) return neutre;
-  try {
-    const key = process.env.SUPABASE_SERVICE_KEY;
-    if (!key) return neutre;
-    const r = await fetch(SUPA_URL_IDENT + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
-      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
-    });
-    if (!r.ok) return neutre;
-    const rows = await r.json();
-    const d = (rows && rows[0] && rows[0].data) || {};
-    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
-    const mail = (d.expediteurEmail || d.userEmail || '').trim();
-    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
-    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
-    return {
-      nom: nom,
-      email: peutExpedier ? mail : neutre.email,
-      replyTo: (!peutExpedier && mail) ? mail : '',
-      tel: (d.expediteurTel || '').trim(),
-      signature: (d.expediteurSignature || '').trim(),
-      notifEmail: mail || neutre.notifEmail
-    };
-  } catch (e) { return neutre; }
-}
 
 
 export default async function handler(req) {
@@ -64,7 +36,7 @@ export default async function handler(req) {
   }
 
   const _user = await _userResp.json();
-  const IDENT = await identiteAbonne(_user && _user.id);
+  const IDENT = await identiteAbonne(SUPA_URL_IDENT, process.env.SUPABASE_SERVICE_KEY, _user && _user.id);
 
   const BREVO_KEY = process.env.BREVO_API_KEY;
   if(!BREVO_KEY) {

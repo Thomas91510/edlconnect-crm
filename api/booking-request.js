@@ -1,8 +1,7 @@
 export const config = { runtime: 'edge' };
 import { origineAutorisee } from './_lib/cors.js';
+import { identiteAbonne } from './_lib/identite.js';
 
-// Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
-const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
 const SUPA_URL_IDENT = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 
 // Echappement HTML : cet endpoint est public et non authentifie.
@@ -13,34 +12,6 @@ function esc(s) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   });
 }
-
-async function identiteAbonne(userId) {
-  const neutre = { nom: 'Lokentia', email: 'contact@lokentia.fr', replyTo: '', tel: '', signature: '', notifEmail: 'contact@edl-idf.com' };
-  if (!userId) return neutre;
-  try {
-    const key = process.env.SUPABASE_SERVICE_KEY;
-    if (!key) return neutre;
-    const r = await fetch(SUPA_URL_IDENT + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
-      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
-    });
-    if (!r.ok) return neutre;
-    const rows = await r.json();
-    const d = (rows && rows[0] && rows[0].data) || {};
-    const nom = (d.expediteurNom || d.companyName || '').trim() || neutre.nom;
-    const mail = (d.expediteurEmail || d.userEmail || '').trim();
-    const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
-    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
-    return {
-      nom: nom,
-      email: peutExpedier ? mail : neutre.email,
-      replyTo: (!peutExpedier && mail) ? mail : '',
-      tel: (d.expediteurTel || '').trim(),
-      signature: (d.expediteurSignature || '').trim(),
-      notifEmail: mail || neutre.notifEmail
-    };
-  } catch (e) { return neutre; }
-}
-
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -187,7 +158,7 @@ export default async function handler(req) {
     }
     if (!ownerId) ownerSource = 'introuvable';
 
-    const IDENT = await identiteAbonne(ownerId);
+    const IDENT = await identiteAbonne(SUPA_URL_IDENT, SUPABASE_SERVICE_KEY, ownerId);
     // Nom affiche aux clients : celui de l'abonne, jamais un nom code en dur.
     const EXPERT = IDENT.signature || IDENT.nom;
 
