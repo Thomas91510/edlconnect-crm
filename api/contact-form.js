@@ -1,4 +1,5 @@
 export const config = { runtime: 'edge' };
+import { origineAutorisee } from './_lib/cors.js';
 
 // Echappement HTML : endpoint public, les valeurs viennent d'un visiteur
 // anonyme et sont reinjectees dans l'email envoye au propriétaire.
@@ -13,7 +14,7 @@ function esc(s) {
 export default async function handler(req) {
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': origineAutorisee(req),
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };

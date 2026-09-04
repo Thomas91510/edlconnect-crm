@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
+import { origineAutorisee } from './_lib/cors.js';
 const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
 // ── Vérifie que l'utilisateur est admin ou sur un plan payant actif. ──
@@ -24,7 +25,7 @@ export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': origineAutorisee(req),
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       }
@@ -42,7 +43,7 @@ export default async function handler(req) {
   if (!token) {
     return new Response(JSON.stringify({ error: 'Non authentifié' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
   }
 
@@ -56,7 +57,7 @@ export default async function handler(req) {
   if (!userResp.ok) {
     return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
   }
 
@@ -66,7 +67,7 @@ export default async function handler(req) {
   if (!_autorise) {
     return new Response(JSON.stringify({ error: 'L\'envoi de campagnes email est réservé aux plans Starter et Pro.', planRequis: true }), {
       status: 403,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
   }
 
@@ -77,7 +78,7 @@ export default async function handler(req) {
     if (!brevoKey) {
       return new Response(JSON.stringify({ error: 'Clé API Brevo non configurée' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
       });
     }
 
@@ -88,14 +89,14 @@ export default async function handler(req) {
     if (!body || !body.to || !body.subject || !(body.htmlContent || body.textContent)) {
       return new Response(JSON.stringify({ error: 'Requête incomplète (to, subject et contenu requis)' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
       });
     }
     const nbDestinataires = Array.isArray(body.to) ? body.to.length : 1;
     if (nbDestinataires > 50) {
       return new Response(JSON.stringify({ error: 'Trop de destinataires en un seul envoi (max 50)' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
       });
     }
 
@@ -122,13 +123,13 @@ export default async function handler(req) {
 
     return new Response(JSON.stringify(data), {
       status: response.status,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
   }
 }

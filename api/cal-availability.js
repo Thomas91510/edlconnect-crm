@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 
 import { CAL_USERNAME, resolveCalEvent } from './_lib/cal-mapping.js';
+import { origineAutorisee } from './_lib/cors.js';
 
 // Endpoint public (appelé depuis le formulaire de réservation en ligne, non
 // authentifié) qui renvoie les créneaux réellement libres de l'expert pour
@@ -29,7 +30,7 @@ const DELAI_MINIMUM_HEURES = 48;
 export default async function handler(req) {
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': origineAutorisee(req),
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };

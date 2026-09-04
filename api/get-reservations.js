@@ -1,12 +1,13 @@
 export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
+import { origineAutorisee } from './_lib/cors.js';
 
 export default async function handler(req) {
   if(req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': origineAutorisee(req),
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       }
@@ -30,7 +31,7 @@ export default async function handler(req) {
   if(!token) {
     return new Response(JSON.stringify({ error: 'Non authentifié' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
   }
 
@@ -44,7 +45,7 @@ export default async function handler(req) {
   if(!userResp.ok) {
     return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
   }
 
@@ -54,7 +55,7 @@ export default async function handler(req) {
   if(!_userId) {
     return new Response(JSON.stringify({ error: 'Utilisateur introuvable' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
   }
 
@@ -90,7 +91,7 @@ export default async function handler(req) {
 
     return new Response(JSON.stringify(reservations), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
 
   } catch(e) {

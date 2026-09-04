@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY as SUPA_ANON } from './_lib/supabase.js';
+import { origineAutorisee } from './_lib/cors.js';
 
 const BUCKET = 'sauvegardes';
 const TABLES = ['contacts', 'missions', 'prospects', 'deals', 'rdvs', 'campagnes', 'trackings', 'invoices', 'settings'];
@@ -145,7 +146,7 @@ export default async function handler(req) {
 
     return new Response(JSON.stringify({ success: true, journal: journal }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
 
   } catch (e) {

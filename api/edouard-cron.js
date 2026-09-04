@@ -1,4 +1,5 @@
 export const config = { runtime: 'edge' };
+import { origineAutorisee } from './_lib/cors.js';
 
 const EDOUARD_BASE = 'https://europe-west3-edouard-immo.cloudfunctions.net/api';
 const BUCKET = 'rapports';
@@ -393,7 +394,7 @@ export default async function handler(req) {
 
     return new Response(JSON.stringify({ success: true, journal: journal }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
 
   } catch (e) {

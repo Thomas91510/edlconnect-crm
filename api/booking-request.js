@@ -1,4 +1,5 @@
 export const config = { runtime: 'edge' };
+import { origineAutorisee } from './_lib/cors.js';
 
 // Identite d'envoi propre a chaque abonne (repli neutre Lokentia)
 const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
@@ -53,7 +54,7 @@ export default async function handler(req) {
   if(req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': origineAutorisee(req),
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       }
@@ -78,7 +79,7 @@ export default async function handler(req) {
     if (data.site) {
       return new Response(JSON.stringify({ success: true, bookingId: 'skip' }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
       });
     }
 
@@ -126,7 +127,7 @@ export default async function handler(req) {
           if (Array.isArray(rows) && rows.length > 10) {
             return new Response(JSON.stringify({ error: 'Trop de demandes envoyées récemment, réessayez plus tard.' }), {
               status: 429,
-              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
             });
           }
         }
@@ -361,13 +362,13 @@ export default async function handler(req) {
 
     return new Response(JSON.stringify({ success: true, bookingId }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
 
   } catch(e) {
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
   }
 }
