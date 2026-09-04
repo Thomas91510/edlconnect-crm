@@ -2,6 +2,7 @@
 import { google } from 'googleapis';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
+import { dureeEnMinutes } from './_lib/duree.js';
 
 async function getCalendarClient() {
   const oauth2Client = new google.auth.OAuth2(
@@ -40,8 +41,7 @@ export default async function handler(req, res) {
     const startDt = new Date(date);
     if (isNaN(startDt)) return res.status(400).json({ error: `Date invalide : ${date}` });
 
-    const dureeMap = { '30 min': 30, '1h': 60, '1h30': 90, '2h': 120, '3h': 180 };
-    const minutes = dureeMap[duree] || 60;
+    const minutes = dureeEnMinutes(duree);
     const endDt = new Date(startDt.getTime() + minutes * 60000);
 
     const calendar = await getCalendarClient();

@@ -453,6 +453,28 @@ function openConfirmRdvModal(missionId){
   openModal('modal-confirm-rdv');
 }
 
+// Ajoute automatiquement un RDV confirmé au Google Agenda du compte connecté
+// à l'app (un seul compte pour l'instant — voir GOOGLE_REFRESH_TOKEN côté
+// serveur, pas encore un compte par abonné). Best-effort : ne doit jamais
+// bloquer ni faire échouer la confirmation elle-même si Google Calendar
+// n'est pas configuré ou indisponible.
+async function ajouterRdvGoogleCalendar(m){
+  if(!m || !m.date) return;
+  try{
+    await fetch('/api/calendar-create', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        titre: `EDL — ${m.type || ''} · ${m.agence || ''}`,
+        date: m.date,
+        duree: m.dureeEstimee || '1h',
+        lieu: m.adresse || '',
+        description: (typeof missionCalDesc === 'function') ? missionCalDesc(m) : ''
+      })
+    });
+  }catch(e){ /* best-effort, ne bloque jamais la confirmation */ }
+}
+
 async function sendConfirmRdv(){
   // Gérer le cas réservation directe (sans mission importée)
   let m;
@@ -632,6 +654,7 @@ async function sendConfirmRdv(){
             notify('⚠️ Mission enregistrée localement mais pas encore synchronisée avec le cloud — la réservation reste "en attente" par sécurité, la synchro réessaiera automatiquement. Vérifie ta connexion.', 'warn');
           } else {
             pushMissionToEdouard(mission);
+            ajouterRdvGoogleCalendar(mission);
 
             // Marquer la réservation comme importée ET confirmée dans Supabase
             const updatedData = { ...r, rdvConfirme: true, statut: 'importee', rdvConfirmeAt: new Date().toISOString(), locataireNotifie: _envLocataires, missionId: mission.id };
@@ -657,6 +680,7 @@ async function sendConfirmRdv(){
         if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
         renderMissions();
         pushMissionToEdouard(m);
+        ajouterRdvGoogleCalendar(m);
         // Mettre aussi à jour le statut dans Supabase bookings si la mission a un _supaId
         if(_supaReady && m._supaId){
           supabaseClient.from('bookings').update({
