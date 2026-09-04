@@ -11,27 +11,10 @@ const CFG={
   set notionPageId(v){localStorage.setItem('edl_notion_page',v);},
   get brevoKey(){return localStorage.getItem('edl_brevo_key')||window._brevoKeyFromFile||'';},
   set brevoKey(v){localStorage.setItem('edl_brevo_key',v);},
-  // ── Infos société pour la facturation ──
+  // Nom de société : sert aussi de repli pour le nom d'expéditeur des
+  // emails (cf. identiteAbonne() côté serveur) quand expediteurNom est vide.
   get companyName(){return localStorage.getItem('edl_co_name')||'EDL IDF';},
   set companyName(v){localStorage.setItem('edl_co_name',v);},
-  get companyAddress(){return localStorage.getItem('edl_co_address')||'18 Grande Rue, 91510 Lardy';},
-  set companyAddress(v){localStorage.setItem('edl_co_address',v);},
-  get companySiret(){return localStorage.getItem('edl_co_siret')||'';},
-  set companySiret(v){localStorage.setItem('edl_co_siret',v);},
-  get companyTva(){return localStorage.getItem('edl_co_tva')||'';},
-  set companyTva(v){localStorage.setItem('edl_co_tva',v);},
-  get companyCapital(){return localStorage.getItem('edl_co_capital')||'';},
-  set companyCapital(v){localStorage.setItem('edl_co_capital',v);},
-  get companyIban(){return localStorage.getItem('edl_co_iban')||'';},
-  set companyIban(v){localStorage.setItem('edl_co_iban',v);},
-  get companyBic(){return localStorage.getItem('edl_co_bic')||'';},
-  set companyBic(v){localStorage.setItem('edl_co_bic',v);},
-  get companyPaymentTerms(){return localStorage.getItem('edl_co_payterms')||'Paiement à réception de facture';},
-  set companyPaymentTerms(v){localStorage.setItem('edl_co_payterms',v);},
-  get companyLogo(){return localStorage.getItem('edl_co_logo')||'';}, // base64
-  set companyLogo(v){localStorage.setItem('edl_co_logo',v);},
-get invoiceNextNumber(){return parseInt(localStorage.getItem('edl_invoice_next')||'1',10);},
-  set invoiceNextNumber(v){localStorage.setItem('edl_invoice_next',String(v));},
   // ── Profil de l'abonne ──
   get userName(){return localStorage.getItem('edl_user_name')||'';},
   set userName(v){localStorage.setItem('edl_user_name',v);},

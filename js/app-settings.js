@@ -287,41 +287,10 @@ function loadSettingsForm(){
   _set('set-exp-partenaire',CFG.expediteurPartenaire);
   const ck=document.getElementById('set-claude-key');
   if(ck) ck.value=localStorage.getItem('edl_claude_key')||'';
-  // Champs de facturation
-  document.getElementById('set-co-address').value=CFG.companyAddress||'';
-  document.getElementById('set-co-siret').value=CFG.companySiret||'';
-  document.getElementById('set-co-tva').value=CFG.companyTva||'';
-  document.getElementById('set-co-capital').value=CFG.companyCapital||'';
-  document.getElementById('set-co-iban').value=CFG.companyIban||'';
-  document.getElementById('set-co-bic').value=CFG.companyBic||'';
-  document.getElementById('set-co-payterms').value=CFG.companyPaymentTerms||'';
-  if(CFG.companyLogo){
-    document.getElementById('logo-preview').src=CFG.companyLogo;
-    document.getElementById('logo-preview-wrap').style.display='block';
-  }
   // Afficher une alerte si les clés ne sont pas configurées
   if(!CFG.brevoKey){
     setTimeout(()=>notify('⚠️ Clé API Brevo non configurée — va dans Paramètres','warn'),1000);
   }
-}
-function handleLogoUpload(e){
-  const file=e.target.files[0];
-  if(!file)return;
-  if(file.size>1500000){notify('⚠️ Logo trop volumineux (max 1,5 Mo)','warn');return;}
-  const reader=new FileReader();
-  reader.onload=function(ev){
-    CFG.companyLogo=ev.target.result;
-    document.getElementById('logo-preview').src=ev.target.result;
-    document.getElementById('logo-preview-wrap').style.display='block';
-    notify('✅ Logo chargé !');
-  };
-  reader.readAsDataURL(file);
-}
-function removeLogo(){
-  CFG.companyLogo='';
-  document.getElementById('logo-preview-wrap').style.display='none';
-  document.getElementById('set-logo-upload').value='';
-  notify('🗑️ Logo retiré');
 }
 function saveSettings(){
   CFG.notionToken=document.getElementById('set-notion-token').value.trim();
@@ -339,14 +308,6 @@ function saveSettings(){
   CFG.expediteurPartenaire=_get('set-exp-partenaire');
   const claudeKey=document.getElementById('set-claude-key')?.value.trim();
   if(claudeKey) localStorage.setItem('edl_claude_key', claudeKey);
-  // Facturation
-  CFG.companyAddress=document.getElementById('set-co-address').value.trim();
-  CFG.companySiret=document.getElementById('set-co-siret').value.trim();
-  CFG.companyTva=document.getElementById('set-co-tva').value.trim();
-  CFG.companyCapital=document.getElementById('set-co-capital').value.trim();
-  CFG.companyIban=document.getElementById('set-co-iban').value.trim();
-  CFG.companyBic=document.getElementById('set-co-bic').value.trim();
-  CFG.companyPaymentTerms=document.getElementById('set-co-payterms').value.trim()||'Paiement à réception de facture';
   // Sauvegarder dans Supabase (lié au user_id)
   const settingsData={
     brevoKey:CFG.brevoKey,
@@ -356,13 +317,6 @@ function saveSettings(){
    // Nom de societe : champ "Societe" (set-company), pas le nom personnel
     // (set-name). Cette valeur sert de nom d'expediteur cote serveur.
     companyName:CFG.companyName,
-    companyAddress:CFG.companyAddress,
-    companySiret:CFG.companySiret,
-    companyTva:CFG.companyTva,
-    companyIban:CFG.companyIban,
-    companyBic:CFG.companyBic,
-    companyLogo:CFG.companyLogo||'',
-    companyPaymentTerms:CFG.companyPaymentTerms,
     userName:CFG.userName||'',
     userEmail:CFG.userEmail||'',
     expediteurNom:CFG.expediteurNom||'',
@@ -789,26 +743,11 @@ function obNext(step){
     // Sauvegarder étape 1
     localStorage.setItem('edl_co_name', company);
     localStorage.setItem('edl_user_name', name);
-    const address=document.getElementById('ob-address').value.trim();
-    if(address) localStorage.setItem('edl_co_address', address);
     const sidebarName=document.getElementById('sidebar-company-name');
     if(sidebarName) sidebarName.textContent=company;
     document.getElementById('ob-page-1').style.display='none';
     document.getElementById('ob-page-2').style.display='block';
     obUpdateSteps(2);
-  } else if(step===2){
-    // Sauvegarder étape 2
-    const siret=document.getElementById('ob-siret').value.trim();
-    const tva=document.getElementById('ob-tva').value.trim();
-    const iban=document.getElementById('ob-iban').value.trim();
-    const bic=document.getElementById('ob-bic').value.trim();
-    if(siret) localStorage.setItem('edl_co_siret', siret);
-    if(tva) localStorage.setItem('edl_co_tva', tva);
-    if(iban) localStorage.setItem('edl_co_iban', iban);
-    if(bic) localStorage.setItem('edl_co_bic', bic);
-    document.getElementById('ob-page-2').style.display='none';
-    document.getElementById('ob-page-3').style.display='block';
-    obUpdateSteps(3);
   }
 }
 function obBack(step){
@@ -816,14 +755,10 @@ function obBack(step){
     document.getElementById('ob-page-2').style.display='none';
     document.getElementById('ob-page-1').style.display='block';
     obUpdateSteps(1);
-  } else if(step===3){
-    document.getElementById('ob-page-3').style.display='none';
-    document.getElementById('ob-page-2').style.display='block';
-    obUpdateSteps(2);
   }
 }
 async function obFinish(){
-  // Sauvegarder étape 3
+  // Sauvegarder étape 2
   const brevo=document.getElementById('ob-brevo').value.trim();
   const mistral=document.getElementById('ob-mistral').value.trim();
   if(brevo) localStorage.setItem('edl_brevo_key', brevo);
@@ -833,11 +768,6 @@ async function obFinish(){
   // Pousser les settings vers Supabase
   const settingsData={
     companyName: localStorage.getItem('edl_co_name')||'',
-    companyAddress: localStorage.getItem('edl_co_address')||'',
-    companySiret: localStorage.getItem('edl_co_siret')||'',
-    companyTva: localStorage.getItem('edl_co_tva')||'',
-    companyIban: localStorage.getItem('edl_co_iban')||'',
-    companyBic: localStorage.getItem('edl_co_bic')||'',
     brevoKey: brevo||'',
     claudeKey: mistral||''
   };
