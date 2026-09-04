@@ -359,7 +359,7 @@ async function loadOrders() {
     const resp = await fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken} });
     _ordersCache = trierCommandes(await resp.json());
     document.getElementById('kpi-total').textContent = _ordersCache.length;
-    document.getElementById('kpi-pending').textContent = _ordersCache.filter(o=>o.statut!=='rapport_dispo'&&o.statut!=='confirmee').length;
+    document.getElementById('kpi-pending').textContent = _ordersCache.filter(o=>o.statut!=='rapport_dispo').length;
     document.getElementById('kpi-done').textContent = _ordersCache.filter(o=>o.statut==='rapport_dispo').length;
     appliquerFiltresCommandes();
   } catch(e) { document.getElementById('orders-list').innerHTML='<div style="color:#fc8181;font-size:13px;padding:20px 0">Erreur de chargement.</div>'; }
