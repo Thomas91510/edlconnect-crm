@@ -76,6 +76,26 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;export default asy
       if(m.id) missionMap[m.id] = m.data;
     });
 
+    // Documents (rapports Edouard ou ajoutés à la main) taggés avec la
+    // mission exacte à laquelle ils appartiennent — permet de proposer un
+    // lien direct vers CE rapport plutôt qu'une liste de documents non
+    // reliée à la demande consultée.
+    const docsParMission = {};
+    try {
+      const docsResp = await fetch(
+        `${SUPABASE_URL}/rest/v1/contacts?select=data&data->>email=ilike.${encodeURIComponent(userEmail)}`,
+        { headers: supaHeaders }
+      );
+      if (docsResp.ok) {
+        const contactRows = await docsResp.json();
+        (contactRows || []).forEach(c => {
+          (c.data?.documents || []).forEach(d => {
+            if (d && d.url && d.missionId) docsParMission[d.missionId] = d;
+          });
+        });
+      }
+    } catch(_){}
+
     const orders = (rows || []).map(r => {
       // Une mission liée est-elle réellement effectuée ? "terminée" et
       // "facturée" sont les statuts que le CRM écrit vraiment (le statut
@@ -86,7 +106,12 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;export default asy
       const linkedMission = missionMap[r.data?.missionId] || null;
       const missionEffectuee = linkedMission && ['terminée', 'facturée', 'réalisée'].includes(linkedMission.statut);
       let statut = r.data?.statut || 'en_attente';
-      if (missionEffectuee) statut = 'rapport_dispo';
+      let rapportUrl = '';
+      if (missionEffectuee) {
+        statut = 'rapport_dispo';
+        const doc = linkedMission.id ? docsParMission[linkedMission.id] : null;
+        if (doc) rapportUrl = doc.url;
+      }
 
       return {
         id: r.id,
@@ -96,6 +121,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;export default asy
         bienTypo: r.data?.bienTypo || '',
         meuble: r.data?.meuble || '',
         statut,
+        rapportUrl,
         dateSouhaitee: r.data?.dateSouhaitee || '',
         heure: r.data?.heure || '',
         locataireNom: r.data?.locataireNom || (r.data?.locataire?.nom) || '',
