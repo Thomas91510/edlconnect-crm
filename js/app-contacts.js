@@ -225,31 +225,6 @@ function renderFicheCommandes(c){
     return false;
   }).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
-  // Factures déjà émises pour ce client (par nom d'agence)
-  const invoices=(DB.invoices||[]).filter(inv=>(inv.clientName||'').toLowerCase()===nom)
-    .sort((a,b)=>new Date(b.date)-new Date(a.date));
-
-  const invoicesHtml=`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.03em">📄 Factures émises${invoices.length?' ('+invoices.length+')':''}</div>
-      <button class="btn btn-sm" onclick="openMonthlyInvoiceModal('${(c.entreprise||'').replace(/'/g,"\\'")}')"><i class="ti ti-calendar-stats"></i>Facturer le mois</button>
-    </div>
-    ${invoices.length?invoices.map(inv=>{
-      const totalHT=inv.lineItems.reduce((s,li)=>s+(li.qty||1)*(li.puHT||0),0);
-      return `<div style="display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;margin-bottom:6px;font-size:11px">
-        <div>
-          <span style="font-weight:600">${inv.number}</span>
-          <span style="color:var(--text2);margin-left:8px">${new Date(inv.date).toLocaleDateString('fr-FR')} · ${inv.lineItems.length} prestation${inv.lineItems.length>1?'s':''}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-weight:700;color:var(--green)">${totalHT.toLocaleString('fr-FR')} € HT</span>
-          <button class="btn btn-sm" onclick="redownloadInvoice('${inv.id}')" title="Re-télécharger"><i class="ti ti-download"></i></button>
-        </div>
-      </div>`;
-    }).join(''):'<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Aucune facture émise pour ce client pour le moment.</div>'}
-    <div style="height:1px;background:var(--border);margin:14px 0"></div>
-  `;
-
   // Badge nombre commandes
   const countEl=document.getElementById('ftab-commandes-count');
   if(countEl)countEl.textContent=missions.length>0?`(${missions.length})`:'';
@@ -261,7 +236,7 @@ function renderFicheCommandes(c){
   const caTotal=missions.filter(m=>m.statut==='facturée'||m.statut==='terminée').reduce((s,m)=>s+(m.montant||0),0);
 
   if(!missions.length){
-    document.getElementById('fiche-commandes-list').innerHTML=invoicesHtml+`
+    document.getElementById('fiche-commandes-list').innerHTML=`
       <div class="empty" style="padding:24px">
         <div style="font-size:28px;margin-bottom:8px">📋</div>
         <div style="font-weight:500;margin-bottom:4px">Aucune commande trouvée</div>
@@ -286,7 +261,7 @@ function renderFicheCommandes(c){
     groups.get(key).items.push(m);
   });
 
-  document.getElementById('fiche-commandes-list').innerHTML=invoicesHtml+`
+  document.getElementById('fiche-commandes-list').innerHTML=`
     <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
       <div style="background:var(--green-bg);border-radius:var(--radius);padding:8px 12px;font-size:12px">
         <div style="font-size:10px;color:var(--green-text);font-weight:600;margin-bottom:2px">CA TOTAL</div>

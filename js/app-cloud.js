@@ -41,9 +41,9 @@ async function saveSettingsToSupabase(settingsData){
   if(!_supaReady||!_currentUser)return;
   try{
     // Fusionne au lieu d'écraser : la ligne settings porte aussi des champs
-    // gérés ailleurs (ex. invoiceNextNumber, réservé de façon atomique par
-    // reserveInvoiceNumber()) qui ne doivent pas être perdus si cet appel
-    // arrive avec un instantané du formulaire ne les connaissant pas.
+    // gérés ailleurs (agents, ajustementsExternes) qui ne doivent pas être
+    // perdus si cet appel arrive avec un instantané du formulaire ne les
+    // connaissant pas.
     const{data:existing}=await supabaseClient.from('settings').select('data').eq('user_id',_currentUser.id).maybeSingle();
     const fusion=Object.assign({},(existing&&existing.data)||{},settingsData);
     const{error}=await supabaseClient.from('settings').upsert({
@@ -53,61 +53,6 @@ async function saveSettingsToSupabase(settingsData){
     },{onConflict:'user_id'});
     if(error)console.warn('Erreur save settings:',error.message);
   }catch(e){console.warn('Erreur saveSettingsToSupabase:',e);}
-}
-
-// ─── NUMÉROTATION ATOMIQUE DES FACTURES ────────────────────
-// CFG.invoiceNextNumber (localStorage) est purement local à l'appareil : un
-// abonné qui travaille depuis deux appareils/onglets voit chacun maintenir
-// son propre compteur sans jamais se synchroniser, garantissant tôt ou tard
-// une collision de numéro de facture (problème de conformité, pas juste un
-// bug d'affichage). Le numéro est désormais réservé sur la ligne "settings"
-// de l'abonné via une mise à jour conditionnelle (optimistic concurrency) :
-// si un autre appareil a gagné la course entre la lecture et l'écriture, la
-// condition ne matche plus, on relit et on retente — jamais deux appels ne
-// peuvent obtenir le même numéro.
-async function reserveInvoiceNumber(){
-  if(!_supaReady || !_currentUser){
-    // Repli hors-ligne : ancien compteur local (mieux qu'un blocage total,
-    // mais redevient sujet à collision dès que l'abonné a plusieurs appareils).
-    const num = CFG.invoiceNextNumber;
-    CFG.invoiceNextNumber = num + 1;
-    return num;
-  }
-  for(let tentative = 0; tentative < 8; tentative++){
-    const { data: row } = await supabaseClient.from('settings').select('data').eq('user_id', _currentUser.id).maybeSingle();
-    const existing = (row && row.data) || {};
-    const current = Number(existing.invoiceNextNumber) || 1;
-    const fusion = Object.assign({}, existing, { invoiceNextNumber: current + 1 });
-
-    if(!row){
-      // Aucune ligne settings pour cet abonné pour l'instant : insertion
-      // directe. Fenêtre de course résiduelle infime (seulement si le tout
-      // premier appel a lieu simultanément depuis deux appareils avant que
-      // la ligne n'existe) — un cas bien plus étroit que la course actuelle,
-      // qui se produit à chaque facture.
-      const { error } = await supabaseClient.from('settings').insert({
-        user_id: _currentUser.id, data: fusion, updated_at: new Date().toISOString()
-      });
-      if(!error) return current;
-      continue; // quelqu'un d'autre vient de créer la ligne : on relit
-    }
-
-    // Mise à jour conditionnelle : ne s'applique que si invoiceNextNumber
-    // vaut toujours "current" (ou est toujours absent, la toute première
-    // fois) — sinon quelqu'un d'autre a déjà réservé ce numéro entre notre
-    // lecture et notre écriture.
-    let requete = supabaseClient.from('settings')
-      .update({ data: fusion, updated_at: new Date().toISOString() })
-      .eq('user_id', _currentUser.id);
-    requete = (existing.invoiceNextNumber == null)
-      ? requete.is('data->>invoiceNextNumber', null)
-      : requete.eq('data->>invoiceNextNumber', String(existing.invoiceNextNumber));
-    const { data: updated, error } = await requete.select();
-    if(!error && Array.isArray(updated) && updated.length > 0) return current;
-    // Course perdue (ou invoiceNextNumber absent la toute première fois) :
-    // on relit au tour suivant plutôt que d'échouer.
-  }
-  throw new Error('Numérotation de facture indisponible (trop de tentatives concurrentes), réessaie dans un instant.');
 }
 
 async function loadSettingsFromSupabase(){
@@ -123,13 +68,6 @@ async function loadSettingsFromSupabase(){
     if(s.notionPageId){localStorage.setItem('edl_notion_page',s.notionPageId);}
     if(s.claudeKey){localStorage.setItem('edl_claude_key',s.claudeKey);}
     if(s.companyName){localStorage.setItem('edl_co_name',s.companyName);}
-    if(s.companyAddress){localStorage.setItem('edl_co_address',s.companyAddress);}
-    if(s.companySiret){localStorage.setItem('edl_co_siret',s.companySiret);}
-    if(s.companyTva){localStorage.setItem('edl_co_tva',s.companyTva);}
-    if(s.companyIban){localStorage.setItem('edl_co_iban',s.companyIban);}
-    if(s.companyBic){localStorage.setItem('edl_co_bic',s.companyBic);}
-    if(s.companyLogo){localStorage.setItem('edl_co_logo',s.companyLogo);}
-    if(s.companyPaymentTerms){localStorage.setItem('edl_co_payterms',s.companyPaymentTerms);}
     // Profil de l'abonné
     if(s.userName){localStorage.setItem('edl_user_name',s.userName);}
     if(s.userEmail){localStorage.setItem('edl_user_email',s.userEmail);}

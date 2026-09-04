@@ -789,8 +789,6 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       <div class="page-header">
         <div class="page-title">Missions EDL</div>
         <div style="display:flex;gap:8px">
-          <button class="btn" onclick="openParticulierInvoiceModal()"><i class="ti ti-file-invoice"></i>Facture particulier</button>
-          <button class="btn" onclick="openMonthlyInvoiceModal()"><i class="ti ti-calendar-stats"></i>Facture mensuelle</button>
           <button class="btn btn-primary" onclick="openNewMissionModal()"><i class="ti ti-plus"></i>Nouvelle mission</button>
         </div>
       </div>
@@ -991,7 +989,6 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
     <button class="btn btn-sm" onclick="scrollToHelp('h-reservations')">📥 Réservations</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-extranet')">🔑 Extranet</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-agents')">👤 Agents</button>
-    <button class="btn btn-sm" onclick="scrollToHelp('h-facturation')">📄 Facturation</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-emails')">✉️ Emails</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-agenda')">📅 Agenda</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-faq')">❓ FAQ</button>
@@ -1058,28 +1055,12 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       <strong>Créer</strong> → "+ Nouvelle mission" → agence, type, adresse, date, montant<br>
       <strong>Modifier</strong> → icône ✏️ à droite de la ligne<br>
       <strong>Supprimer</strong> → icône 🗑️ à droite de la ligne<br>
-      <strong>Changer le statut</strong> → menu déroulant directement dans le tableau<br>
-      <strong>Générer une facture</strong> → icône 📄 à droite de la ligne
+      <strong>Changer le statut</strong> → menu déroulant directement dans le tableau
     </div>
-    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
       <div style="background:var(--blue-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--blue-text)">📅 <strong>Planifiée</strong> — Mission programmée</div>
       <div style="background:var(--amber-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--amber-text)">⏳ <strong>En cours</strong> — En réalisation</div>
-      <div style="background:var(--teal-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--teal-text)">🏁 <strong>Terminée</strong> — Non facturée</div>
-      <div style="background:var(--green-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--green-text)">✅ <strong>Facturée</strong> — Facture générée</div>
-    </div>
-  </div>
-
-  <div class="settings-section" id="h-facturation">
-    <div class="settings-title">📄 Facturation</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Générez des factures PDF professionnelles automatiquement.</p>
-    <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Par mission</strong> → icône 📄 à droite de chaque mission<br>
-      <strong>Mensuelle groupée</strong> → bouton "Facture mensuelle" → saisir client + mois<br>
-      <strong>Particulier</strong> → bouton "Facture particulier" → saisir les infos<br>
-      <strong>Re-télécharger</strong> → fiche contact → onglet Commandes → bouton ⬇️
-    </div>
-    <div style="margin-top:10px;background:var(--amber-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--amber-text)">
-      ⚠️ Configurez vos infos dans Paramètres → Facturation avant la première facture (SIRET, IBAN, logo…)
+      <div style="background:var(--teal-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--teal-text)">🏁 <strong>Terminée</strong> — Réalisée</div>
     </div>
   </div>
 
@@ -1159,8 +1140,6 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
       <strong>Q : Comment envoyer un email via Brevo ?</strong><br>
       R : Composer → destinataire → message → "Envoyer via Brevo". Clé API Brevo requise dans Paramètres.<br><br>
-      <strong>Q : Comment générer une facture groupée ?</strong><br>
-      R : Missions → "Facture mensuelle" → nom exact de l'agence + mois → "Générer".<br><br>
       <strong>Q : Comment voir les emails envoyés à un contact ?</strong><br>
       R : Fiche contact → onglet "Emails & tracking" → historique de tous les emails envoyés via Lokentia.<br><br>
       <strong>Q : Mes données sont-elles sauvegardées ?</strong><br>
@@ -1387,24 +1366,6 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <input id="set-exp-signature" placeholder="Ex : Marie Dupont — Gérante — Cabinet Dupont">
         <label>Lien partenaire déménagement (facultatif)</label>
         <input id="set-exp-partenaire" placeholder="https://... — laisser vide pour ne pas l'afficher">
-      </div>
-      <div class="settings-section">
-        <div class="settings-title"><i class="ti ti-file-invoice" style="font-size:18px"></i>Facturation</div>
-        <label>Logo (PNG/JPG, fond transparent recommandé)</label>
-        <input type="file" id="set-logo-upload" accept="image/png,image/jpeg" onchange="handleLogoUpload(event)">
-        <div id="logo-preview-wrap" style="margin:8px 0;display:none">
-          <img id="logo-preview" style="max-height:60px;max-width:200px;border:1px solid var(--border);border-radius:6px;padding:6px;background:#fff">
-          <button class="btn btn-sm" onclick="removeLogo()" style="margin-left:8px"><i class="ti ti-trash"></i>Retirer</button>
-        </div>
-        <label>Adresse du siège</label><input id="set-co-address" placeholder="18 Grande Rue, 91510 Lardy">
-        <label>SIRET</label><input id="set-co-siret" placeholder="123 456 789 00012 (14 chiffres)">
-        <label>N° TVA intracommunautaire</label><input id="set-co-tva" placeholder="FR12 345678901">
-        <label>Capital social</label><input id="set-co-capital" placeholder="Ex : 1 000 €">
-        <label>IBAN</label><input id="set-co-iban" placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX">
-        <label>BIC</label><input id="set-co-bic" placeholder="XXXXXXXX">
-        <label>Conditions de paiement (affichées sur la facture)</label>
-        <input id="set-co-payterms" placeholder="Ex : Paiement à réception de facture">
-        <div style="font-size:11px;color:var(--text2);margin-top:6px">Ces informations apparaissent automatiquement sur chaque facture générée depuis une mission.</div>
       </div>
       <button class="btn btn-primary" onclick="saveSettings()"><i class="ti ti-check"></i>Enregistrer les paramètres</button>
     </div>
@@ -2096,7 +2057,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       <div><label>Typologie</label><select id="m-bien-typo"><option value="">—</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
       <div><label>Meublé / Nu</label><select id="m-bien-meuble"><option value="">—</option><option>Meublé</option><option>Nu</option></select></div>
       <div><label>Montant (€)</label><input type="number" id="m-montant" placeholder="160"></div>
-      <div><label>Statut</label><select id="m-statut"><option>planifiée</option><option>en cours</option><option>terminée</option><option>facturée</option></select></div>
+      <div><label>Statut</label><select id="m-statut"><option>planifiée</option><option>en cours</option><option>terminée</option></select></div>
     </div>
     <label>Notes</label><textarea id="m-notes" style="min-height:50px"></textarea>
     <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end">
@@ -2106,43 +2067,6 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
   </div>
 </div>
 
-<div class="modal-bg" id="modal-invoice-monthly">
-  <div class="modal">
-    <div class="modal-title">Facture mensuelle groupée <button class="modal-close" onclick="closeModal('modal-invoice-monthly')"><i class="ti ti-x"></i></button></div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Regroupe toutes les missions <strong>non encore facturées</strong> de ce client sur le mois choisi, dans une seule facture.</div>
-    <label>Client (nom exact de l'agence)</label>
-    <input id="inv-month-client" placeholder="Immo Gestion Era">
-    <label>Mois</label>
-    <input type="month" id="inv-month-month">
-    <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end">
-      <button class="btn" onclick="closeModal('modal-invoice-monthly')">Annuler</button>
-      <button class="btn btn-primary" onclick="confirmMonthlyInvoice()"><i class="ti ti-file-invoice"></i>Générer la facture</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-bg" id="modal-invoice-particulier">
-  <div class="modal">
-    <div class="modal-title">Facture pour un particulier <button class="modal-close" onclick="closeModal('modal-invoice-particulier')"><i class="ti ti-x"></i></button></div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Pour une prestation hors agence (vente directe à un particulier), sans créer de mission.</div>
-    <label>Nom du client *</label>
-    <input id="inv-p-nom" placeholder="M. et Mme Dupont">
-    <label>Email (optionnel)</label>
-    <input type="email" id="inv-p-email" placeholder="dupont@email.fr">
-    <label>Adresse</label>
-    <input id="inv-p-adresse" placeholder="12 rue de la Paix, 91000 Évry">
-    <label>Désignation de la prestation</label>
-    <input id="inv-p-designation" placeholder="État des lieux">
-    <div class="form-grid">
-      <div><label>Date de la prestation</label><input type="date" id="inv-p-date"></div>
-      <div><label>Montant HT (€) *</label><input type="number" id="inv-p-montant" placeholder="160"></div>
-    </div>
-    <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end">
-      <button class="btn" onclick="closeModal('modal-invoice-particulier')">Annuler</button>
-      <button class="btn btn-primary" onclick="confirmParticulierInvoice()"><i class="ti ti-file-invoice"></i>Générer la facture</button>
-    </div>
-  </div>
-</div>
 
 <div class="modal-bg" id="modal-rdv">
   <div class="modal">
@@ -2410,11 +2334,6 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       <div style="color:var(--border2);font-size:16px;margin-top:2px">›</div>
       <div class="ob-step" data-step="2" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text3)">
         <div style="width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">2</div>
-        Facturation
-      </div>
-      <div style="color:var(--border2);font-size:16px;margin-top:2px">›</div>
-      <div class="ob-step" data-step="3" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text3)">
-        <div style="width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">3</div>
         Intégrations
       </div>
     </div>
@@ -2422,13 +2341,11 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
     <!-- Étape 1 : Votre entreprise -->
     <div id="ob-page-1">
       <div style="font-size:22px;font-weight:700;color:var(--blue);margin-bottom:4px">👋 Bienvenue sur Lokentia !</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Configurons votre espace en 3 minutes. Commençons par votre entreprise.</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Configurons votre espace en 2 minutes. Commençons par votre entreprise.</div>
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-top:0">Nom de votre entreprise *</label>
       <input type="text" id="ob-company" placeholder="Ex : EDL Bretagne, Check&State, Mon EDL Pro…" style="margin-bottom:12px;width:100%">
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Votre nom complet *</label>
       <input type="text" id="ob-name" placeholder="Ex : Marie Dupont" style="margin-bottom:12px;width:100%">
-      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Adresse du siège</label>
-      <input type="text" id="ob-address" placeholder="Ex : 12 rue de la Paix, 75001 Paris" style="margin-bottom:12px;width:100%">
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Téléphone professionnel</label>
       <input type="tel" id="ob-phone" placeholder="Ex : 06 12 34 56 78" style="margin-bottom:24px;width:100%">
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:13px" onclick="obNext(1)">
@@ -2436,30 +2353,8 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       </button>
     </div>
 
-    <!-- Étape 2 : Facturation -->
+    <!-- Étape 2 : Intégrations -->
     <div id="ob-page-2" style="display:none">
-      <div style="font-size:20px;font-weight:700;color:var(--blue);margin-bottom:4px">📄 Informations de facturation</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Ces infos apparaîtront sur vos factures PDF. Vous pourrez les modifier plus tard.</div>
-      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-top:0">SIRET</label>
-      <input type="text" id="ob-siret" placeholder="Ex : 123 456 789 00012" style="margin-bottom:12px;width:100%">
-      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">N° TVA intracommunautaire</label>
-      <input type="text" id="ob-tva" placeholder="Ex : FR12 345678901" style="margin-bottom:12px;width:100%">
-      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">IBAN</label>
-      <input type="text" id="ob-iban" placeholder="Ex : FR76 XXXX XXXX XXXX XXXX XXXX XXX" style="margin-bottom:12px;width:100%">
-      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">BIC</label>
-      <input type="text" id="ob-bic" placeholder="Ex : XXXXXXXX" style="margin-bottom:24px;width:100%">
-      <div style="display:flex;gap:10px">
-        <button class="btn" style="flex:1;justify-content:center;padding:12px" onclick="obBack(2)">
-          <i class="ti ti-arrow-left"></i> Retour
-        </button>
-        <button class="btn btn-primary" style="flex:2;justify-content:center;padding:12px;font-size:13px" onclick="obNext(2)">
-          Continuer <i class="ti ti-arrow-right"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Étape 3 : Intégrations -->
-    <div id="ob-page-3" style="display:none">
       <div style="font-size:20px;font-weight:700;color:var(--blue);margin-bottom:4px">🔌 Connectez vos outils</div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Optionnel — vous pourrez configurer ces clés plus tard dans Paramètres.</div>
       <div style="background:var(--blue-bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px">
@@ -2475,7 +2370,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <div style="font-size:10px;color:var(--text2);margin-top:4px">Clé gratuite sur <a href="https://console.mistral.ai/api-keys" target="_blank" style="color:var(--blue)">console.mistral.ai</a></div>
       </div>
       <div style="display:flex;gap:10px">
-        <button class="btn" style="flex:1;justify-content:center;padding:12px" onclick="obBack(3)">
+        <button class="btn" style="flex:1;justify-content:center;padding:12px" onclick="obBack(2)">
           <i class="ti ti-arrow-left"></i> Retour
         </button>
         <button class="btn btn-primary" style="flex:2;justify-content:center;padding:12px;font-size:13px" onclick="obFinish()">
