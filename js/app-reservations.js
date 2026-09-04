@@ -461,7 +461,7 @@ function openConfirmRdvModal(missionId){
 async function ajouterRdvGoogleCalendar(m){
   if(!m || !m.date) return;
   try{
-    await fetch('/api/calendar-create', {
+    const resp = await fetch('/api/calendar-create', {
       method: 'POST',
       headers: await _authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
@@ -472,7 +472,14 @@ async function ajouterRdvGoogleCalendar(m){
         description: (typeof missionCalDesc === 'function') ? missionCalDesc(m) : ''
       })
     });
-  }catch(e){ /* best-effort, ne bloque jamais la confirmation */ }
+    // Ne bloque jamais la confirmation du RDV : un echec (jeton Google
+    // expire, variables manquantes sur Vercel...) reste silencieux pour
+    // l'utilisateur, mais visible dans la console pour diagnostiquer.
+    if(!resp.ok){
+      const corps = await resp.text().catch(()=>'(reponse illisible)');
+      console.warn('Google Agenda : ajout du RDV echoue (HTTP ' + resp.status + ')', corps);
+    }
+  }catch(e){ console.warn('Google Agenda : ajout du RDV echoue', e); }
 }
 
 async function sendConfirmRdv(){
