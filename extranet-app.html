@@ -193,6 +193,14 @@ let _userEmail = '';
 let _accessToken = '';
 let _selectedType = '';
 
+// N'accepter que les URL http(s) — bloque les schémas dangereux (javascript:, data:)
+function urlSure(u) {
+  try {
+    const parsed = new URL(String(u || ''), window.location.origin);
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : '';
+  } catch (e) { return ''; }
+}
+
 // Auth au chargement
 sb.auth.onAuthStateChange((event, session) => {
   if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
@@ -267,6 +275,8 @@ async function loadOrders() {
     document.getElementById('orders-list').innerHTML = orders.map(o => {
       const badge = o.statut==='rapport_dispo' ? '<span class="badge badge-done">📄 Rapport disponible</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
       const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
+      const lienRapport = urlSure(o.rapportUrl);
+      const boutonRapport = lienRapport ? `<a href="${lienRapport}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;color:#5fd6b8;text-decoration:none;font-size:11px;font-weight:600;background:rgba(15,110,86,0.2);padding:4px 10px;border-radius:20px;margin-top:8px;width:fit-content"><i class="ti ti-file-download" style="font-size:12px"></i> Ouvrir mon rapport</a>` : '';
       return `<div class="card" onclick='openDetail(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
         <div style="padding:14px 16px">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
@@ -276,6 +286,7 @@ async function loadOrders() {
           <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse||'—'}</div>
           ${dateRdv?`<div style="font-size:11px;color:#7bb8ef;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${o.heure?' à '+o.heure:''}</div>`:''}
           <div style="font-size:11px;color:rgba(255,255,255,0.25)">Demandé le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR'):'—'}</div>
+          ${boutonRapport}
         </div>
       </div>`;
     }).join('');
@@ -296,7 +307,9 @@ function openDetail(o) {
   document.getElementById('detail-title').textContent = o.typeEdl||'État des lieux';
   const badge = o.statut==='rapport_dispo'?'<span class="badge badge-done" style="font-size:12px;padding:5px 14px">📄 Rapport disponible</span>':o.statut==='confirmee'||o.statut==='importee'?'<span class="badge badge-confirmed" style="font-size:12px;padding:5px 14px">📅 Confirmé</span>':'<span class="badge badge-pending" style="font-size:12px;padding:5px 14px">⏳ En attente</span>';
   const rows = [['📋 Type',esc(o.typeEdl)||'—'],['📍 Adresse',esc(o.adresse)||'—'],['🏠 Bien',[o.bienType,o.bienTypo,o.meuble].filter(Boolean).map(esc).join(' · ')||'—'],['📅 Date souhaitée',o.dateSouhaitee?new Date(o.dateSouhaitee).toLocaleDateString('fr-FR'):'—'],['🕐 Heure',esc(o.heure)||'—'],['🧑 Locataire',esc(o.locataireNom)||'—'],['📱 Téléphone',esc(o.locataireTel)||'—'],['🔑 Entrant(s)',(o.locatairesEntrants||[]).map(e=>[e.prenom,e.nom].filter(Boolean).map(esc).join(' ')+(e.tel?' · '+esc(e.tel):'')).join('<br>')||'—'],['🏠 Propriétaire',esc(o.proprietaire)||'—']].filter(([,v])=>v&&v!=='—');
-  document.getElementById('detail-body').innerHTML = `<div style="text-align:center;margin-bottom:20px">${badge}</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #f0f0f0"><td style="color:#6b6b6b;padding:10px 0;width:40%;vertical-align:top">${k}</td><td style="font-weight:500;padding:10px 0">${v}</td></tr>`).join('')}</table><div style="font-size:11px;color:#999;text-align:center">Commande reçue le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'—'}</div><div style="margin-top:16px"><button onclick="closeDetail()" style="width:100%;padding:12px;background:#1A5FA8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button></div>`;
+  const lienRapportDetail = urlSure(o.rapportUrl);
+  const boutonRapportDetail = lienRapportDetail ? `<a href="${lienRapportDetail}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#0F6E56;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;margin-bottom:10px;box-sizing:border-box"><i class="ti ti-file-download"></i> Ouvrir mon rapport</a>` : '';
+  document.getElementById('detail-body').innerHTML = `<div style="text-align:center;margin-bottom:20px">${badge}</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #f0f0f0"><td style="color:#6b6b6b;padding:10px 0;width:40%;vertical-align:top">${k}</td><td style="font-weight:500;padding:10px 0">${v}</td></tr>`).join('')}</table><div style="font-size:11px;color:#999;text-align:center;margin-bottom:16px">Commande reçue le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'—'}</div>${boutonRapportDetail}<button onclick="closeDetail()" style="width:100%;padding:12px;background:#1A5FA8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button>`;
   document.getElementById('detail-modal').classList.add('open');
 }
 function closeDetail() { document.getElementById('detail-modal').classList.remove('open'); }

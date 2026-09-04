@@ -323,7 +323,10 @@ export default async function handler(req) {
                   const cdata = contact.data || {};
                   const docs = Array.isArray(cdata.documents) ? cdata.documents : [];
                   if (!docs.find(d => d && (d.url === rapportUrl || (d.situationId && d.situationId === sitId)))) {
-                    docs.push({ nom: nomDoc, url: rapportUrl, situationId: sitId });
+                    // missionId permet à l'extranet client de proposer un lien
+                    // direct vers CE rapport plutôt qu'une liste de documents
+                    // non reliée à la demande consultée.
+                    docs.push({ nom: nomDoc, url: rapportUrl, situationId: sitId, missionId: row.id });
                     cdata.documents = docs;
                     await fetch(SUPA_URL + '/rest/v1/contacts?id=eq.' + encodeURIComponent(contact.id), {
                       method: 'PATCH',
