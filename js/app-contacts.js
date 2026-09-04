@@ -580,6 +580,7 @@ function renderDashboard(){
   detectDuplicates();
   buildMonthOptions();
   renderAujourdhui();
+  syncEmailKpisToggle();
 
   // Bannière période sélectionnée
   const banner = document.getElementById('dash-period-banner');
