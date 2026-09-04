@@ -43,6 +43,7 @@
     .type-btn.selected{border-color:#378ADD;background:rgba(24,95,165,0.2);color:#7bb8ef}
     .msg-success{color:#68d391;font-size:12px;text-align:center;margin-top:10px}
     .msg-error{color:#fc8181;font-size:12px;text-align:center;margin-top:10px}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
@@ -105,7 +106,12 @@
       <i class="ti ti-plus" style="font-size:16px"></i> Nouvelle commande d'état des lieux
     </button>
 
-    <div class="section-label">Mes commandes</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="section-label" style="margin-bottom:0">Mes commandes</div>
+      <button onclick="loadOrders()" id="refresh-btn" style="background:none;border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:5px 10px;cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;display:flex;align-items:center;gap:4px">
+        <i class="ti ti-refresh" style="font-size:12px"></i> Actualiser
+      </button>
+    </div>
     <div id="orders-list"><div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Chargement…</div></div>
 
     <div id="docs-section" style="display:none;margin-top:16px">
@@ -263,11 +269,39 @@ async function doLogout() {
   showLogin();
 }
 
+// Priorité d'affichage : les commandes actives (pas encore de rapport)
+// remontent en premier, triées par date de RDV la plus proche — plutôt que
+// par date de demande, qui ne reflète pas l'urgence réelle. Les commandes
+// terminées passent en dernier, les plus récentes en tête.
+function trierCommandes(orders){
+  const rang = o => o.statut === 'rapport_dispo' ? 1 : 0;
+  return [...orders].sort((a, b) => {
+    const ra = rang(a), rb = rang(b);
+    if(ra !== rb) return ra - rb;
+    if(ra === 0){
+      const da = a.dateSouhaitee ? new Date(a.dateSouhaitee).getTime() : Infinity;
+      const db = b.dateSouhaitee ? new Date(b.dateSouhaitee).getTime() : Infinity;
+      if(da !== db) return da - db;
+    }
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+}
+
+function ancienneteTexte(createdAt){
+  if(!createdAt) return '';
+  const jours = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+  if(jours <= 0) return "Reçue aujourd'hui";
+  if(jours === 1) return 'En attente depuis 1 jour';
+  return `En attente depuis ${jours} jours`;
+}
+
 async function loadOrders() {
+  const refreshBtn = document.getElementById('refresh-btn');
+  if(refreshBtn) refreshBtn.querySelector('i').style.animation = 'spin .6s linear infinite';
   document.getElementById('orders-list').innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Chargement…</div>';
   try {
     const resp = await fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken} });
-    const orders = await resp.json();
+    const orders = trierCommandes(await resp.json());
     document.getElementById('kpi-total').textContent = orders.length;
     document.getElementById('kpi-pending').textContent = orders.filter(o=>o.statut!=='rapport_dispo'&&o.statut!=='confirmee').length;
     document.getElementById('kpi-done').textContent = orders.filter(o=>o.statut==='rapport_dispo').length;
@@ -277,6 +311,7 @@ async function loadOrders() {
       const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
       const lienRapport = urlSure(o.rapportUrl);
       const boutonRapport = lienRapport ? `<a href="${lienRapport}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;color:#5fd6b8;text-decoration:none;font-size:11px;font-weight:600;background:rgba(15,110,86,0.2);padding:4px 10px;border-radius:20px;margin-top:8px;width:fit-content"><i class="ti ti-file-download" style="font-size:12px"></i> Ouvrir mon rapport</a>` : '';
+      const anciennete = o.statut==='en_attente' ? `<div style="font-size:11px;color:#f6c05e;margin-bottom:4px"><i class="ti ti-clock" style="font-size:11px"></i> ${ancienneteTexte(o.createdAt)}</div>` : '';
       return `<div class="card" onclick='openDetail(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
         <div style="padding:14px 16px">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
@@ -285,12 +320,14 @@ async function loadOrders() {
           </div>
           <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse||'—'}</div>
           ${dateRdv?`<div style="font-size:11px;color:#7bb8ef;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${o.heure?' à '+o.heure:''}</div>`:''}
+          ${anciennete}
           <div style="font-size:11px;color:rgba(255,255,255,0.25)">Demandé le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR'):'—'}</div>
           ${boutonRapport}
         </div>
       </div>`;
     }).join('');
   } catch(e) { document.getElementById('orders-list').innerHTML='<div style="color:#fc8181;font-size:13px;padding:20px 0">Erreur de chargement.</div>'; }
+  finally { if(refreshBtn) refreshBtn.querySelector('i').style.animation = ''; }
 }
 
 async function loadDocs() {
