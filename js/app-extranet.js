@@ -165,8 +165,8 @@ async function showExtranetDashboard(userEmail, accessToken){
     const orders = await resp.json();
 
     document.getElementById('extranet-total').textContent = orders.length;
-    document.getElementById('extranet-pending').textContent = orders.filter(o => o.statut !== 'realise' && o.statut !== 'confirmee').length;
-    document.getElementById('extranet-done').textContent = orders.filter(o => o.statut === 'realise').length;
+    document.getElementById('extranet-pending').textContent = orders.filter(o => o.statut !== 'realise' && o.statut !== 'rapport_dispo' && o.statut !== 'confirmee').length;
+    document.getElementById('extranet-done').textContent = orders.filter(o => o.statut === 'realise' || o.statut === 'rapport_dispo').length;
 
     if(!orders.length){
       listEl.innerHTML = '<div class="card" style="padding:30px;text-align:center;color:var(--text3)">Aucune commande trouvée pour cette adresse email.</div>';
@@ -185,6 +185,7 @@ async function showExtranetDashboard(userEmail, accessToken){
 
     listEl.innerHTML = orders.map(o => {
       const statutBadge = (s) => {
+        if(s === 'rapport_dispo') return '<span style="background:rgba(15,110,86,0.25);color:#5fd6b8;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:0.5px solid rgba(15,110,86,0.4)">📄 Rapport disponible</span>';
         if(s === 'realise') return '<span style="background:rgba(56,161,105,0.2);color:#68d391;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:0.5px solid rgba(56,161,105,0.3)">✅ Réalisé</span>';
         if(s === 'confirmee' || s === 'importee') return '<span style="background:rgba(24,95,165,0.2);color:#7bb8ef;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:0.5px solid rgba(55,138,221,0.3)">📅 Confirmé</span>';
         return '<span style="background:rgba(186,117,23,0.2);color:#f6c05e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:0.5px solid rgba(186,117,23,0.3)">⏳ En attente</span>';
@@ -282,6 +283,7 @@ function openExtranetOrderDetail(o){
   title.textContent = o.typeEdl || 'État des lieux';
 
   const statutBadge = (s) => {
+    if(s === 'rapport_dispo') return '<span style="color:#0F6E56;background:#E1F5EE;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">📄 Rapport disponible</span>';
     if(s === 'realise') return '<span style="color:#27AE60;background:#EAF3DE;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">✅ Réalisé</span>';
     if(s === 'confirmee' || s === 'importee') return '<span style="color:#1A5FA8;background:#F4F7FA;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">📅 Confirmé</span>';
     return '<span style="color:#B45309;background:#FEF3C7;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">⏳ En attente</span>';
