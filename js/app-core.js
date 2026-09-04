@@ -48,6 +48,32 @@ function ajustementsPourMois(mois){
   }, { nb: 0, ca: 0 });
 }
 
+// Prévient par email le client (agence ou particulier) que sa demande est
+// passée à "réalisé" ou que son rapport est désormais disponible dans
+// l'extranet — sans quoi ces deux statuts, corrigés côté extranet, restent
+// invisibles tant que le client ne pense pas à se reconnecter de lui-même.
+// Best-effort : une erreur ici ne doit jamais bloquer le flux appelant
+// (changement de statut, génération de facture, ajout de document).
+async function notifierChangementStatutCommande(mission){
+  if(!mission || !mission.emailClient) return;
+  if(!['terminée','facturée'].includes(mission.statut)) return;
+  try{
+    if(typeof _authHeaders !== 'function' || !_supaReady) return;
+    await fetch('/api/notify-order-status', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        missionId: mission.id,
+        emailClient: mission.emailClient,
+        adresse: mission.adresse || '',
+        type: mission.type || '',
+        date: mission.date || '',
+        agence: mission.agence || ''
+      })
+    });
+  }catch(e){ console.warn('notifierChangementStatutCommande:', e); }
+}
+
 // ─── UTILS ────────────────────────────────────────────────
 function notify(msg,type=''){
   const n=document.getElementById('notif');

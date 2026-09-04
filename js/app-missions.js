@@ -108,7 +108,7 @@ function filterMissions(f,btn){
   if(btn)btn.classList.add('active');
   renderMissions();
 }
-function updateMissionStatus(i,v){DB.missions[i].statut=v;saveToStorage();notify('✅ Statut mis à jour');renderMissions();}
+function updateMissionStatus(i,v){DB.missions[i].statut=v;saveToStorage();notify('✅ Statut mis à jour');renderMissions();notifierChangementStatutCommande(DB.missions[i]);}
 function deleteMission(i){
   const m=DB.missions[i];
   if(!m)return;
@@ -296,6 +296,7 @@ async function generateInvoice(i){
     syncDirtyToSupabase();
     notify(`✅ Facture ${invoice.number} générée`);
     renderMissions();
+    notifierChangementStatutCommande(m);
   }
 }
 
@@ -342,6 +343,7 @@ async function generateMonthlyInvoiceFor(agence, yearMonth){
     notify(`✅ Facture groupée ${invoice.number} générée (${candidates.length} mission${candidates.length>1?'s':''})`);
     renderMissions();
     closeModal('modal-invoice-monthly');
+    candidates.forEach(m => notifierChangementStatutCommande(m));
   }
 }
 
