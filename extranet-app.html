@@ -112,6 +112,15 @@
         <i class="ti ti-refresh" style="font-size:12px"></i> Actualiser
       </button>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="orders-search" placeholder="Rechercher une adresse, un type…" oninput="appliquerFiltresCommandes()" style="flex:1;font-size:12px">
+      <select id="orders-filter-statut" onchange="appliquerFiltresCommandes()" style="width:auto;font-size:12px">
+        <option value="all">Tous les statuts</option>
+        <option value="en_attente">⏳ En attente</option>
+        <option value="confirmee">📅 Confirmé</option>
+        <option value="rapport_dispo">📄 Rapport disponible</option>
+      </select>
+    </div>
     <div id="orders-list"><div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Chargement…</div></div>
 
     <div id="docs-section" style="display:none;margin-top:16px">
@@ -142,6 +151,12 @@
         <button class="type-btn" onclick="selectType('EDL sortant',this)">🏠 EDL sortant<br><span style="font-size:10px;opacity:.6">État des lieux de sortie</span></button>
         <button class="type-btn" onclick="selectType('EDL Sortant / Entrant',this)">🔄 Sortant / Entrant<br><span style="font-size:10px;opacity:.6">Les deux le même jour</span></button>
         <button class="type-btn" onclick="selectType('Pré-état des lieux',this)">📋 Pré-état des lieux<br><span style="font-size:10px;opacity:.6">Avant la sortie</span></button>
+      </div>
+      <div id="prefill-section" style="display:none;margin-bottom:14px">
+        <div class="form-label">Réutiliser un bien déjà demandé</div>
+        <select id="prefill-select" onchange="reutiliserAdresse(this.value)">
+          <option value="">— Nouveau bien —</option>
+        </select>
       </div>
       <div class="form-label">Adresse du bien *</div>
       <input id="f-adresse" placeholder="12 rue de la Paix, 91000 Évry" style="margin-bottom:10px">
@@ -295,37 +310,58 @@ function ancienneteTexte(createdAt){
   return `En attente depuis ${jours} jours`;
 }
 
+let _ordersCache = [];
+
+function renderOrdersList(orders){
+  if (!orders.length) { document.getElementById('orders-list').innerHTML='<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Aucune commande ne correspond.</div>'; return; }
+  document.getElementById('orders-list').innerHTML = orders.map(o => {
+    const badge = o.statut==='rapport_dispo' ? '<span class="badge badge-done">📄 Rapport disponible</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
+    const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
+    const lienRapport = urlSure(o.rapportUrl);
+    const boutonRapport = lienRapport ? `<a href="${lienRapport}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;color:#5fd6b8;text-decoration:none;font-size:11px;font-weight:600;background:rgba(15,110,86,0.2);padding:4px 10px;border-radius:20px;margin-top:8px;width:fit-content"><i class="ti ti-file-download" style="font-size:12px"></i> Ouvrir mon rapport</a>` : '';
+    const anciennete = o.statut==='en_attente' ? `<div style="font-size:11px;color:#f6c05e;margin-bottom:4px"><i class="ti ti-clock" style="font-size:11px"></i> ${ancienneteTexte(o.createdAt)}</div>` : '';
+    return `<div class="card" onclick='openDetail(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
+      <div style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+          <div style="font-weight:600;font-size:13px;color:#fff">${o.typeEdl||'État des lieux'}</div>
+          <div style="display:flex;align-items:center;gap:6px">${badge}<i class="ti ti-chevron-right" style="color:rgba(255,255,255,0.25);font-size:13px"></i></div>
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse||'—'}</div>
+        ${dateRdv?`<div style="font-size:11px;color:#7bb8ef;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${o.heure?' à '+o.heure:''}</div>`:''}
+        ${anciennete}
+        <div style="font-size:11px;color:rgba(255,255,255,0.25)">Demandé le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR'):'—'}</div>
+        ${boutonRapport}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Recherche (adresse/type) + filtre de statut, appliqués côté client sur la
+// liste déjà chargée — pas de nouvel appel réseau à chaque frappe.
+function appliquerFiltresCommandes(){
+  const q = (document.getElementById('orders-search')?.value || '').trim().toLowerCase();
+  const statutVoulu = document.getElementById('orders-filter-statut')?.value || 'all';
+  let filtres = _ordersCache;
+  if(statutVoulu !== 'all'){
+    filtres = filtres.filter(o => statutVoulu === 'confirmee' ? (o.statut === 'confirmee' || o.statut === 'importee') : o.statut === statutVoulu);
+  }
+  if(q){
+    filtres = filtres.filter(o => (o.adresse||'').toLowerCase().includes(q) || (o.typeEdl||'').toLowerCase().includes(q));
+  }
+  renderOrdersList(filtres);
+}
+
 async function loadOrders() {
   const refreshBtn = document.getElementById('refresh-btn');
   if(refreshBtn) refreshBtn.querySelector('i').style.animation = 'spin .6s linear infinite';
   document.getElementById('orders-list').innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Chargement…</div>';
   try {
     const resp = await fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken} });
-    const orders = trierCommandes(await resp.json());
-    document.getElementById('kpi-total').textContent = orders.length;
-    document.getElementById('kpi-pending').textContent = orders.filter(o=>o.statut!=='rapport_dispo'&&o.statut!=='confirmee').length;
-    document.getElementById('kpi-done').textContent = orders.filter(o=>o.statut==='rapport_dispo').length;
-    if (!orders.length) { document.getElementById('orders-list').innerHTML='<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px 0">Aucune commande pour le moment.</div>'; return; }
-    document.getElementById('orders-list').innerHTML = orders.map(o => {
-      const badge = o.statut==='rapport_dispo' ? '<span class="badge badge-done">📄 Rapport disponible</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
-      const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
-      const lienRapport = urlSure(o.rapportUrl);
-      const boutonRapport = lienRapport ? `<a href="${lienRapport}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;color:#5fd6b8;text-decoration:none;font-size:11px;font-weight:600;background:rgba(15,110,86,0.2);padding:4px 10px;border-radius:20px;margin-top:8px;width:fit-content"><i class="ti ti-file-download" style="font-size:12px"></i> Ouvrir mon rapport</a>` : '';
-      const anciennete = o.statut==='en_attente' ? `<div style="font-size:11px;color:#f6c05e;margin-bottom:4px"><i class="ti ti-clock" style="font-size:11px"></i> ${ancienneteTexte(o.createdAt)}</div>` : '';
-      return `<div class="card" onclick='openDetail(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
-        <div style="padding:14px 16px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
-            <div style="font-weight:600;font-size:13px;color:#fff">${o.typeEdl||'État des lieux'}</div>
-            <div style="display:flex;align-items:center;gap:6px">${badge}<i class="ti ti-chevron-right" style="color:rgba(255,255,255,0.25);font-size:13px"></i></div>
-          </div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse||'—'}</div>
-          ${dateRdv?`<div style="font-size:11px;color:#7bb8ef;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${o.heure?' à '+o.heure:''}</div>`:''}
-          ${anciennete}
-          <div style="font-size:11px;color:rgba(255,255,255,0.25)">Demandé le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR'):'—'}</div>
-          ${boutonRapport}
-        </div>
-      </div>`;
-    }).join('');
+    _ordersCache = trierCommandes(await resp.json());
+    document.getElementById('kpi-total').textContent = _ordersCache.length;
+    document.getElementById('kpi-pending').textContent = _ordersCache.filter(o=>o.statut!=='rapport_dispo'&&o.statut!=='confirmee').length;
+    document.getElementById('kpi-done').textContent = _ordersCache.filter(o=>o.statut==='rapport_dispo').length;
+    appliquerFiltresCommandes();
   } catch(e) { document.getElementById('orders-list').innerHTML='<div style="color:#fc8181;font-size:13px;padding:20px 0">Erreur de chargement.</div>'; }
   finally { if(refreshBtn) refreshBtn.querySelector('i').style.animation = ''; }
 }
@@ -394,9 +430,44 @@ function showOrderForm() {
   document.getElementById('dashboard').style.display='none';
   document.getElementById('order-form').style.display='block';
   if (!loadDraft()) { _selectedType=''; document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected')}); }
+  remplirBiensConnus();
   saveDraft(true);
 }
 function hideOrderForm() { document.getElementById('order-form').style.display='none'; document.getElementById('dashboard').style.display='block'; saveDraft(false); }
+
+// Un même bien revient souvent d'une prestation à l'autre (locataire qui
+// change, même adresse) : proposer de réutiliser les infos du logement
+// (hors locataire et type d'EDL, propres à chaque visite) depuis une
+// commande précédente, plutôt que tout ressaisir.
+function remplirBiensConnus(){
+  const sel = document.getElementById('prefill-select');
+  const wrap = document.getElementById('prefill-section');
+  if(!sel || !wrap) return;
+  const vues = new Set();
+  const biens = [];
+  _ordersCache.forEach(o => {
+    if(!o.adresse || vues.has(o.adresse)) return;
+    vues.add(o.adresse);
+    biens.push(o);
+  });
+  if(!biens.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  sel.innerHTML = '<option value="">— Nouveau bien —</option>' +
+    biens.map((o,i) => `<option value="${i}">${esc(o.adresse)}</option>`).join('');
+  sel._biens = biens;
+}
+function reutiliserAdresse(idx){
+  const sel = document.getElementById('prefill-select');
+  const bien = sel && sel._biens && sel._biens[idx];
+  if(!bien) return;
+  document.getElementById('f-adresse').value = bien.adresse || '';
+  if(bien.bienType) document.getElementById('f-bien').value = bien.bienType;
+  if(bien.meuble) document.getElementById('f-meuble').value = bien.meuble;
+  document.getElementById('f-superficie').value = bien.superficie || '';
+  document.getElementById('f-acces').value = bien.acces || '';
+  document.getElementById('f-proprietaire').value = bien.proprietaire || '';
+  saveDraft();
+}
 function selectType(t,btn) { _selectedType=t; document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); toggleEntrants(); saveDraft(); }
 
 // ─── Locataires entrants (type Sortant / Entrant uniquement) ───
