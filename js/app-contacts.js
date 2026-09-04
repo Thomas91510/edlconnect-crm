@@ -579,6 +579,7 @@ function renderDashboard(){
   document.getElementById('today-label').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   detectDuplicates();
   buildMonthOptions();
+  renderAujourdhui();
 
   // Bannière période sélectionnée
   const banner = document.getElementById('dash-period-banner');
