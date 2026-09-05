@@ -395,6 +395,51 @@ function createMissionFromReservation(id){
 // ═══════════════════════════════════════════════════════════
 let _confirmRdvMissionId = null;
 
+// Miroir côté client de CAL_EVENT_MAP (api/_lib/cal-mapping.js) : les mêmes
+// durées que celles configurées sur les événements Cal.com correspondants,
+// pour préremplir la durée du RDV à la confirmation plutôt que de laisser
+// systématiquement "1h" par défaut quel que soit le type de bien.
+const DUREE_PAR_TYPOLOGIE_MIN = {
+  T1: { meuble: 90,  nu: 60  },
+  T2: { meuble: 120, nu: 90  },
+  T3: { meuble: 150, nu: 120 },
+  T4: { meuble: 180, nu: 150 },
+  T5: { meuble: 180, nu: 180 },
+  T6: { meuble: 210, nu: 210 },
+  T7: { meuble: 240, nu: 210 }
+};
+
+function normaliserTypologieDuree(bienTypo){
+  const v = String(bienTypo || '').trim().toLowerCase();
+  if(!v) return null;
+  if(v.includes('studio')) return 'T1';
+  const m = v.match(/t\s*(\d+)/);
+  if(m){
+    const n = parseInt(m[1], 10);
+    if(n >= 7) return 'T7';
+    if(n >= 1) return 'T' + n;
+  }
+  return null;
+}
+
+function dureeSuggereeMinutes(bienTypo, bienMeuble){
+  const typo = normaliserTypologieDuree(bienTypo);
+  if(!typo) return null;
+  const entry = DUREE_PAR_TYPOLOGIE_MIN[typo];
+  if(!entry) return null;
+  const estMeuble = String(bienMeuble || '').trim().toLowerCase().includes('meubl');
+  return estMeuble ? entry.meuble : entry.nu;
+}
+
+// Convertit des minutes vers le format des <option> du select durée
+// ("1h", "1h30", "3h"...) : sans attribut value, la valeur d'une <option>
+// est son propre texte, donc ce format doit correspondre exactement.
+function minutesVersOptionDuree(min){
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h + 'h' + (m ? m : '');
+}
+
 function openConfirmRdvModal(missionId){
   const m = DB.missions.find(x => x.id === missionId);
   if(!m){ notify("Mission introuvable", "warn"); return; }
@@ -436,6 +481,15 @@ function openConfirmRdvModal(missionId){
       if(opts.includes(h)) heureEl.value = h;
       else heureEl.value = '';
     }catch(e){}
+  }
+  // Prérempli avec la durée type de la typologie/meublé du bien (celle
+  // configurée sur l'événement Cal.com correspondant) — reste modifiable.
+  const dureeSelect = document.getElementById('confirm-rdv-duree');
+  if(dureeSelect){
+    const dureeMin = dureeSuggereeMinutes(m.bienTypo, m.bienMeuble);
+    const opt = dureeMin ? minutesVersOptionDuree(dureeMin) : '1h';
+    const valeurs = [...dureeSelect.options].map(o => o.value);
+    dureeSelect.value = valeurs.includes(opt) ? opt : '1h';
   }
   document.getElementById('confirm-rdv-agent-email').value = m.emailClient || contact?.email || '';
   document.getElementById('confirm-rdv-loc-email').value = m.locataireEmail || '';
