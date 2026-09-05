@@ -98,6 +98,31 @@ textarea{min-height:75px;resize:vertical}
 .success-icon{width:70px;height:70px;background:var(--green-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:30px}
 .recap-box{background:var(--blue-light);border-radius:var(--radius);padding:16px;text-align:left;font-size:12px;color:var(--blue-dark);line-height:2;margin-top:20px}
 .footer{text-align:center;font-size:11px;color:var(--text3);margin-top:28px;padding-top:14px;border-top:1px solid var(--border)}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-nav-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .15s;flex-shrink:0}
+.cal-nav-btn:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
+.cal-nav-btn:disabled{opacity:.35;cursor:not-allowed}
+.cal-nav-btn svg{width:16px;height:16px}
+.cal-mois-label{font-size:12px;font-weight:600;color:var(--text2);text-align:center}
+.cal-jours-semaine{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px}
+.cal-jours-semaine span{text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em}
+.cal-grille{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-jour{aspect-ratio:1;display:flex;align-items:center;justify-content:center;position:relative;border-radius:8px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;border:none;background:none;font-family:inherit;color:var(--text)}
+.cal-jour--indispo{color:var(--text3);font-weight:400;cursor:default}
+.cal-jour--horsFenetre{opacity:.35}
+.cal-jour--dispo{background:var(--blue-light);color:var(--blue-dark);cursor:pointer;transition:all .12s}
+.cal-jour--dispo:hover{background:#E4EDF7}
+.cal-jour--aujourdhui::after{content:'';position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--text3)}
+.cal-jour--dispo.cal-jour--aujourdhui::after{background:var(--blue)}
+.cal-jour--selection{background:var(--blue) !important;color:#fff !important}
+.cal-jour--selection.cal-jour--aujourdhui::after{background:#fff}
+.slots-zone{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.slots-zone-titre{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+.slots-zone-vide{font-size:12px;color:var(--text2);padding:8px 0}
+.slot-row{display:flex;flex-wrap:wrap;gap:8px}
+.slot-btn{border:1.5px solid var(--border);border-radius:var(--radius);padding:8px 14px;background:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:var(--text);transition:all .12s}
+.slot-btn:hover{border-color:var(--blue);background:var(--blue-light)}
+.slot-btn.sel{border-color:var(--blue);background:var(--blue);color:#fff}
 @media(max-width:480px){
   .form-row{grid-template-columns:1fr}
   .card-body{padding:14px}
@@ -199,14 +224,23 @@ textarea{min-height:75px;resize:vertical}
       <div class="card-body">
         <div id="slots-panel" style="display:none;margin-bottom:14px">
           <label style="margin-bottom:8px">Créneaux disponibles <span class="req">*</span></label>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
-            <button type="button" id="slots-prev" onclick="changerPeriodeCreneaux(-1)" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:5px 10px;background:#fff;cursor:pointer;font-family:inherit;font-size:12px" disabled>‹ Période précédente</button>
-            <span id="slots-periode-label" style="font-size:11px;color:var(--text2);text-align:center"></span>
-            <button type="button" id="slots-next" onclick="changerPeriodeCreneaux(1)" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:5px 10px;background:#fff;cursor:pointer;font-family:inherit;font-size:12px">Période suivante ›</button>
+          <div class="cal-nav">
+            <button type="button" class="cal-nav-btn" id="slots-prev" onclick="changerPeriodeCreneaux(-1)" aria-label="Période précédente" disabled>
+              <svg viewBox="0 0 20 20" fill="none"><path d="M12.5 5l-5 5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <span class="cal-mois-label" id="slots-periode-label"></span>
+            <button type="button" class="cal-nav-btn" id="slots-next" onclick="changerPeriodeCreneaux(1)" aria-label="Période suivante">
+              <svg viewBox="0 0 20 20" fill="none"><path d="M7.5 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
           </div>
-          <div id="slots-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px"></div>
-          <div id="slots-vide" style="display:none;font-size:12px;color:var(--text2);padding:10px 0">Aucun créneau disponible sur cette période — essayez « Période suivante », ou indiquez une date libre ci-dessous.</div>
-          <div class="hint">Choisissez un créneau ci-dessus, ou indiquez une date libre ci-dessous si aucun ne vous convient. Ces créneaux sont proposés à partir de 48h suivant votre demande.</div>
+          <div class="cal-jours-semaine"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
+          <div class="cal-grille" id="cal-grille"></div>
+          <div class="slots-zone">
+            <div class="slots-zone-titre" id="slots-titre">Choisissez d'abord une date</div>
+            <div class="slot-row" id="slots-row"></div>
+            <div class="slots-zone-vide" id="slots-vide" style="display:none"></div>
+          </div>
+          <div class="hint">Les jours en bleu ont au moins un créneau disponible. Ces créneaux sont proposés à partir de 48h suivant votre demande.</div>
           <div style="background:#FFF3CD;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11.5px;color:#633806;line-height:1.6">
             ⚡ Besoin d'un état des lieux en urgence (aujourd'hui ou demain) ? Contactez-nous directement${IDENT.tel ? ` au <a href="tel:${identTelHref}" style="color:#633806;font-weight:600">${IDENT.tel}</a>` : ` par email à <a href="mailto:${IDENT.email}" style="color:#633806;font-weight:600">${IDENT.email}</a>`} plutôt que via ce formulaire.
           </div>
@@ -380,10 +414,20 @@ function changerPeriodeCreneaux(direction){
   chargerCreneauxSiPossible(false);
 }
 
+// Regroupement par jour LOCAL (pas le jour UTC de l'ISO) : Cal.com renvoie
+// des horodatages UTC, et un créneau tard le soir peut correspondre au
+// lendemain en UTC tout en restant le même jour dans le fuseau horaire de
+// l'agence — cohérent avec choisirCreneau() qui utilise aussi les
+// composants de date locaux (getFullYear/getMonth/getDate).
+let _creneauxParJour = {};
+let _creneauxJourSelectionne = null;
+let _creneauxFenetreDebut = null;
+let _creneauxFenetreDernierJour = null;
+const _pad2 = n => String(n).padStart(2,'0');
+const _cleJourLocal = d => d.getFullYear() + '-' + _pad2(d.getMonth()+1) + '-' + _pad2(d.getDate());
+
 function afficherCreneaux(slotsIso, fenetreDebutIso, fenetreFinIso){
   const panel = document.getElementById('slots-panel');
-  const list = document.getElementById('slots-list');
-  const vide = document.getElementById('slots-vide');
   const label = document.getElementById('slots-periode-label');
   const btnPrev = document.getElementById('slots-prev');
 
@@ -393,49 +437,101 @@ function afficherCreneaux(slotsIso, fenetreDebutIso, fenetreFinIso){
   }
   if(btnPrev) btnPrev.disabled = _creneauxDecalageJours <= 0;
 
-  // Regroupe par jour pour un affichage lisible, limité aux 40 premiers
-  // créneaux pour ne pas surcharger la page.
-  // Regroupement par jour LOCAL (pas le jour UTC de l'ISO) : Cal.com renvoie
-  // des horodatages UTC, et un créneau tard le soir peut correspondre au
-  // lendemain en UTC tout en restant le même jour dans le fuseau horaire de
-  // l'agence — cohérent avec choisirCreneau() qui utilise aussi les
-  // composants de date locaux (getFullYear/getMonth/getDate).
-  const pad2 = n => String(n).padStart(2,'0');
-  const parJour = {};
-  slotsIso.slice(0, 40).forEach(iso => {
+  // Limité aux 200 premiers créneaux pour ne pas surcharger la page.
+  _creneauxParJour = {};
+  slotsIso.slice(0, 200).forEach(iso => {
     const d = new Date(iso);
     if(isNaN(d)) return;
-    const cleJour = d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
-    (parJour[cleJour] = parJour[cleJour] || []).push({ iso, date: d });
+    const cle = _cleJourLocal(d);
+    (_creneauxParJour[cle] = _creneauxParJour[cle] || []).push({ iso, date: d });
   });
-  const joursTries = Object.keys(parJour).sort();
+  _creneauxJourSelectionne = null;
+  _creneauxFenetreDebut = new Date(fenetreDebutIso);
+  // fenetreFin est une borne exclusive (fenetreDebut + FENETRE_JOURS) : le
+  // dernier jour réel de la fenêtre est la veille.
+  _creneauxFenetreDernierJour = new Date(new Date(fenetreFinIso).getTime() - 24*60*60*1000);
 
-  if(!joursTries.length){
-    list.innerHTML = '';
-    if(vide) vide.style.display = 'block';
-    panel.style.display = 'block';
-    return;
-  }
-  if(vide) vide.style.display = 'none';
-
-  list.innerHTML = joursTries.map(cleJour => {
-    const dateLabel = new Date(cleJour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
-    const boutons = parJour[cleJour].map(({iso, date}) => {
-      const heureLabel = date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
-      return '<button type="button" class="slot-btn" data-iso="' + iso + '" onclick="choisirCreneau(this)" ' +
-        'style="border:1.5px solid var(--border);border-radius:var(--radius);padding:6px 10px;background:#fff;cursor:pointer;font-family:inherit;font-size:12px">' + heureLabel + '</button>';
-    }).join('');
-    return '<div style="width:100%;margin-bottom:6px">' +
-      '<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:capitalize;margin-bottom:4px">' + dateLabel + '</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:6px">' + boutons + '</div>' +
-      '</div>';
-  }).join('');
+  rendreCalendrierCreneaux();
+  rendreSlotsJour();
   panel.style.display = 'block';
 }
 
+function rendreCalendrierCreneaux(){
+  const grille = document.getElementById('cal-grille');
+  if(!grille || !_creneauxFenetreDebut || !_creneauxFenetreDernierJour) return;
+
+  const auDebutSemaine = d => { const x = new Date(d); x.setHours(0,0,0,0); const j = (x.getDay()+6)%7; x.setDate(x.getDate()-j); return x; };
+  const auFinSemaine = d => { const x = new Date(d); x.setHours(0,0,0,0); const j = (x.getDay()+6)%7; x.setDate(x.getDate()+(6-j)); return x; };
+
+  const debutFenetreJour = new Date(_creneauxFenetreDebut); debutFenetreJour.setHours(0,0,0,0);
+  const dernierJourFenetreJour = new Date(_creneauxFenetreDernierJour); dernierJourFenetreJour.setHours(0,0,0,0);
+  const startGrid = auDebutSemaine(debutFenetreJour);
+  const endGrid = auFinSemaine(dernierJourFenetreJour);
+  const aujourdhui = new Date(); aujourdhui.setHours(0,0,0,0);
+
+  let html = '';
+  for(let d = new Date(startGrid); d <= endGrid; d.setDate(d.getDate()+1)){
+    const cle = _cleJourLocal(d);
+    const dansFenetre = d >= debutFenetreJour && d <= dernierJourFenetreJour;
+    const dispo = dansFenetre && _creneauxParJour[cle] && _creneauxParJour[cle].length > 0;
+    const estAujourdhui = d.getTime() === aujourdhui.getTime();
+    const estSelection = _creneauxJourSelectionne === cle;
+    const classes = ['cal-jour'];
+    if(!dansFenetre) classes.push('cal-jour--horsFenetre');
+    classes.push(dispo ? 'cal-jour--dispo' : 'cal-jour--indispo');
+    if(estAujourdhui) classes.push('cal-jour--aujourdhui');
+    if(estSelection) classes.push('cal-jour--selection');
+    const onclick = dispo ? ' onclick="choisirJourCreneau(\\'' + cle + '\\')"' : '';
+    html += '<button type="button" class="' + classes.join(' ') + '"' + onclick + '>' + d.getDate() + '</button>';
+  }
+  grille.innerHTML = html;
+}
+
+function choisirJourCreneau(cle){
+  _creneauxJourSelectionne = cle;
+  rendreCalendrierCreneaux();
+  rendreSlotsJour();
+}
+
+function rendreSlotsJour(){
+  const titre = document.getElementById('slots-titre');
+  const row = document.getElementById('slots-row');
+  const vide = document.getElementById('slots-vide');
+  if(!titre || !row || !vide) return;
+
+  if(!Object.keys(_creneauxParJour).length){
+    titre.style.display = 'none';
+    row.innerHTML = '';
+    vide.textContent = 'Aucun créneau disponible sur cette période — essayez « Période suivante », ou indiquez une date libre ci-dessous.';
+    vide.style.display = 'block';
+    return;
+  }
+  titre.style.display = 'block';
+  vide.style.display = 'none';
+
+  if(!_creneauxJourSelectionne){
+    titre.textContent = "Choisissez d'abord une date";
+    row.innerHTML = '';
+    return;
+  }
+  const creneaux = _creneauxParJour[_creneauxJourSelectionne] || [];
+  const dateLabel = new Date(_creneauxJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  titre.textContent = 'Créneaux du ' + dateLabel;
+  if(!creneaux.length){
+    row.innerHTML = '';
+    vide.textContent = 'Aucun créneau disponible ce jour-là.';
+    vide.style.display = 'block';
+    return;
+  }
+  row.innerHTML = creneaux.map(({iso, date}) => {
+    const heureLabel = date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    return '<button type="button" class="slot-btn" data-iso="' + iso + '" onclick="choisirCreneau(this)">' + heureLabel + '</button>';
+  }).join('');
+}
+
 function choisirCreneau(btn){
-  document.querySelectorAll('.slot-btn').forEach(b => { b.style.borderColor='var(--border)'; b.style.background='#fff'; b.style.color='var(--text)'; });
-  btn.style.borderColor = 'var(--blue)'; btn.style.background = 'var(--blue-light)'; btn.style.color = 'var(--blue-dark)';
+  document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
 
   const d = new Date(btn.getAttribute('data-iso'));
   if(isNaN(d)) return;
