@@ -199,7 +199,13 @@ textarea{min-height:75px;resize:vertical}
       <div class="card-body">
         <div id="slots-panel" style="display:none;margin-bottom:14px">
           <label style="margin-bottom:8px">Créneaux disponibles <span class="req">*</span></label>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+            <button type="button" id="slots-prev" onclick="changerPeriodeCreneaux(-1)" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:5px 10px;background:#fff;cursor:pointer;font-family:inherit;font-size:12px" disabled>‹ Période précédente</button>
+            <span id="slots-periode-label" style="font-size:11px;color:var(--text2);text-align:center"></span>
+            <button type="button" id="slots-next" onclick="changerPeriodeCreneaux(1)" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:5px 10px;background:#fff;cursor:pointer;font-family:inherit;font-size:12px">Période suivante ›</button>
+          </div>
           <div id="slots-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px"></div>
+          <div id="slots-vide" style="display:none;font-size:12px;color:var(--text2);padding:10px 0">Aucun créneau disponible sur cette période — essayez « Période suivante », ou indiquez une date libre ci-dessous.</div>
           <div class="hint">Choisissez un créneau ci-dessus, ou indiquez une date libre ci-dessous si aucun ne vous convient. Ces créneaux sont proposés à partir de 48h suivant votre demande.</div>
           <div style="background:#FFF3CD;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11.5px;color:#633806;line-height:1.6">
             ⚡ Besoin d'un état des lieux en urgence (aujourd'hui ou demain) ? Contactez-nous directement${IDENT.tel ? ` au <a href="tel:${identTelHref}" style="color:#633806;font-weight:600">${IDENT.tel}</a>` : ` par email à <a href="mailto:${IDENT.email}" style="color:#633806;font-weight:600">${IDENT.email}</a>`} plutôt que via ce formulaire.
@@ -330,34 +336,63 @@ function selType(t, btn){
 // réelles. Tant que la fonctionnalité n'est pas activée côté serveur (ou en
 // cas de souci), le formulaire se comporte exactement comme avant : simple
 // champ date libre, aucune régression possible.
+//
+// Pagination par fenêtre de FENETRE_JOURS_CLIENT jours (miroir de
+// FENETRE_JOURS côté serveur) : un client voulant un RDV dans 2 mois peut
+// avancer la fenêtre plutôt que d'être limité aux ~14 prochains jours.
 let _creneauxRequeteEnCours = 0;
-async function chargerCreneauxSiPossible(){
+let _creneauxDecalageJours = 0;
+const FENETRE_JOURS_CLIENT = 14;
+
+async function chargerCreneauxSiPossible(reinitialiserPeriode){
   const btypo = document.getElementById('btypo').value;
   const meubleVal = document.getElementById('meuble').value;
   const panel = document.getElementById('slots-panel');
   const loading = document.getElementById('slots-loading');
   if(!btypo || !meubleVal){ panel.style.display = 'none'; return; }
+  if(reinitialiserPeriode !== false) _creneauxDecalageJours = 0;
 
   const requeteId = ++_creneauxRequeteEnCours; // évite qu'une réponse tardive écrase une sélection plus récente
   panel.style.display = 'none';
   loading.style.display = 'block';
   try{
-    const resp = await fetch('/api/cal-availability?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal));
+    const resp = await fetch('/api/cal-availability?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&decalage=' + _creneauxDecalageJours);
     if(requeteId !== _creneauxRequeteEnCours) return; // une sélection plus récente a déjà relancé une requête
     loading.style.display = 'none';
     if(!resp.ok){ return; }
     const data = await resp.json();
-    if(!data || !data.available || !Array.isArray(data.slots) || !data.slots.length){ return; }
-    afficherCreneaux(data.slots);
+    // "configured=false" = fonctionnalité non activée côté serveur (ou type
+    // de bien non reconnu) : comportement inchangé, on reste sur la saisie
+    // de date libre. "configured=true" = la fonctionnalité répond bel et
+    // bien, même si cette fenêtre précise n'a aucun créneau — dans ce cas on
+    // garde le panneau visible (avec la navigation) plutôt que de le cacher,
+    // sinon les flèches deviennent inutilisables dès qu'une période est vide.
+    if(!data || !data.configured || !Array.isArray(data.slots)){ return; }
+    afficherCreneaux(data.slots, data.fenetreDebut, data.fenetreFin);
   }catch(e){
     if(requeteId === _creneauxRequeteEnCours) loading.style.display = 'none';
     // Silencieux : le champ date libre reste utilisable dans tous les cas.
   }
 }
 
-function afficherCreneaux(slotsIso){
+function changerPeriodeCreneaux(direction){
+  _creneauxDecalageJours = Math.max(0, _creneauxDecalageJours + direction * FENETRE_JOURS_CLIENT);
+  chargerCreneauxSiPossible(false);
+}
+
+function afficherCreneaux(slotsIso, fenetreDebutIso, fenetreFinIso){
   const panel = document.getElementById('slots-panel');
   const list = document.getElementById('slots-list');
+  const vide = document.getElementById('slots-vide');
+  const label = document.getElementById('slots-periode-label');
+  const btnPrev = document.getElementById('slots-prev');
+
+  if(label && fenetreDebutIso && fenetreFinIso){
+    const fmt = iso => new Date(iso).toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+    label.textContent = fmt(fenetreDebutIso) + ' → ' + fmt(fenetreFinIso);
+  }
+  if(btnPrev) btnPrev.disabled = _creneauxDecalageJours <= 0;
+
   // Regroupe par jour pour un affichage lisible, limité aux 40 premiers
   // créneaux pour ne pas surcharger la page.
   // Regroupement par jour LOCAL (pas le jour UTC de l'ISO) : Cal.com renvoie
@@ -374,7 +409,14 @@ function afficherCreneaux(slotsIso){
     (parJour[cleJour] = parJour[cleJour] || []).push({ iso, date: d });
   });
   const joursTries = Object.keys(parJour).sort();
-  if(!joursTries.length){ panel.style.display = 'none'; return; }
+
+  if(!joursTries.length){
+    list.innerHTML = '';
+    if(vide) vide.style.display = 'block';
+    panel.style.display = 'block';
+    return;
+  }
+  if(vide) vide.style.display = 'none';
 
   list.innerHTML = joursTries.map(cleJour => {
     const dateLabel = new Date(cleJour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
