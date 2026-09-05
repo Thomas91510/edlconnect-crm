@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { CAL_USERNAME, resolveCalEvent } from './_lib/cal-mapping.js';
 import { origineAutorisee } from './_lib/cors.js';
+import { minuitParisEnUTC, moisActuelParis } from './_lib/fuseau-paris.js';
 
 // Endpoint public (appelé depuis le formulaire de réservation en ligne, non
 // authentifié) qui renvoie les créneaux réellement libres de l'expert pour
@@ -19,7 +20,6 @@ import { origineAutorisee } from './_lib/cors.js';
 // date : { data: { "2026-09-04": [{start:...}], ... }, status: "success" }).
 const CAL_API_VERSION = '2024-09-04';
 const CAL_BASE = 'https://api.cal.com/v2';
-const FENETRE_JOURS = 14;
 // Délai minimum avant un créneau en ligne : une demande déposée l'après-midi
 // ne doit pas pouvoir aboutir à un rendez-vous le jour même ou le lendemain
 // matin, pris de court sans marge d'organisation. Un besoin urgent passe par
@@ -54,31 +54,42 @@ export default async function handler(req) {
   try {
     const bienTypo = url.searchParams.get('bienTypo') || '';
     const meuble = url.searchParams.get('meuble') || '';
-    // Décalage en jours pour naviguer vers une fenêtre plus lointaine (ex.
-    // un RDV souhaité dans 2 mois) : 0 = fenêtre par défaut, chaque "page"
-    // suivante avance de FENETRE_JOURS. Jamais négatif — la fenêtre par
-    // défaut part déjà du délai minimum, impossible de reculer avant.
-    const decalageJours = Math.max(0, parseInt(url.searchParams.get('decalage') || '0', 10) || 0);
 
     const evt = resolveCalEvent(bienTypo, meuble);
     if (!evt) {
       return repli({ debug: 'Type de bien non reconnu', bienTypo, meuble });
     }
 
-    // Fenêtre glissante : à partir de DELAI_MINIMUM_HEURES à compter de
-    // l'instant de la demande (pas d'un jour calendaire arrondi), sur
-    // FENETRE_JOURS jours — décalée de decalageJours pour la pagination.
-    const debut = new Date(Date.now() + DELAI_MINIMUM_HEURES * 60 * 60 * 1000 + decalageJours * 24 * 60 * 60 * 1000);
-    const fin = new Date(debut); fin.setDate(fin.getDate() + FENETRE_JOURS);
+    // Mois calendaire affiché (ex. "2026-09" pour tout septembre), pour
+    // naviguer mois par mois sans limite dans le temps plutôt que par
+    // fenêtre glissante de quelques jours. Par défaut : le mois en cours.
+    // Jamais un mois déjà révolu — impossible de reculer avant le mois
+    // courant, qui contient déjà le délai minimum de 48h le cas échéant.
+    const { annee: anneeCourante, mois: moisCourant } = moisActuelParis();
+    const moisDemande = (url.searchParams.get('mois') || '').match(/^(\d{4})-(\d{2})$/);
+    let annee = anneeCourante, mois = moisCourant;
+    if (moisDemande) {
+      annee = parseInt(moisDemande[1], 10);
+      mois = parseInt(moisDemande[2], 10);
+    }
+    if (annee < anneeCourante || (annee === anneeCourante && mois < moisCourant)) {
+      annee = anneeCourante; mois = moisCourant;
+    }
 
+    const moisSuivant = mois === 12 ? { annee: annee + 1, mois: 1 } : { annee, mois: mois + 1 };
     // timeZone est indispensable : sans lui, Cal.com calcule les creneaux par
     // rapport a un fuseau par defaut (constate : les horaires renvoyes ne
     // correspondaient pas du tout a ceux affiches sur la page Cal.com
     // publique du meme evenement/jour, ex. le 30/09/2026 constate en
     // conditions reelles). L'expert opere en France, d'ou Europe/Paris fixe
     // (meme fuseau que celui deja utilise pour les evenements Google Agenda
-    // dans calendar-create.js).
-    const calUrl = `${CAL_BASE}/slots?eventTypeSlug=${encodeURIComponent(evt.slug)}&username=${encodeURIComponent(CAL_USERNAME)}&start=${debut.toISOString()}&end=${fin.toISOString()}&timeZone=${encodeURIComponent('Europe/Paris')}`;
+    // dans calendar-create.js) — et les bornes du mois sont calculées dans ce
+    // même fuseau (minuitParisEnUTC) pour couvrir exactement "tout le mois"
+    // vu depuis Paris, quelle que soit l'heure d'été/hiver en vigueur.
+    const debutMois = minuitParisEnUTC(annee, mois, 1);
+    const finMois = minuitParisEnUTC(moisSuivant.annee, moisSuivant.mois, 1);
+
+    const calUrl = `${CAL_BASE}/slots?eventTypeSlug=${encodeURIComponent(evt.slug)}&username=${encodeURIComponent(CAL_USERNAME)}&start=${debutMois.toISOString()}&end=${finMois.toISOString()}&timeZone=${encodeURIComponent('Europe/Paris')}`;
     const calResp = await fetch(calUrl, {
       headers: {
         'Authorization': `Bearer ${CAL_API_KEY}`,
@@ -109,10 +120,10 @@ export default async function handler(req) {
         .filter(Boolean);
     }
 
-    // Filet de sécurité : si jamais Cal.com renvoyait un créneau antérieur au
-    // délai minimum (précision de "start" non garantie), on l'exclut plutôt
-    // que de compter uniquement sur le paramètre envoyé.
-    const seuil = debut.getTime();
+    // Filet de sécurité : jamais un créneau avant le délai minimum de 48h,
+    // même si le mois affiché (ex. le mois en cours) commence avant cette
+    // échéance — indépendant des bornes du mois envoyées à Cal.com.
+    const seuil = Date.now() + DELAI_MINIMUM_HEURES * 60 * 60 * 1000;
     slots = slots.filter(iso => {
       const t = new Date(iso).getTime();
       return !isNaN(t) && t >= seuil;
@@ -123,8 +134,9 @@ export default async function handler(req) {
       slots,
       dureeMinutes: evt.duree,
       configured: true,
-      fenetreDebut: debut.toISOString(),
-      fenetreFin: fin.toISOString()
+      mois: annee + '-' + String(mois).padStart(2, '0'),
+      fenetreDebut: debutMois.toISOString(),
+      fenetreFin: finMois.toISOString()
     };
     if (debug) { body.debug = 'OK'; body.calUrl = calUrl; body.calDataBrut = calData; }
     return new Response(JSON.stringify(body), { status: 200, headers });

@@ -65,18 +65,44 @@ for (const { bienTypo, meuble, attendu } of TOUTES_COMBOS) {
   });
 }
 
-test('la pagination (decalage) avance la fenêtre sans repasser par timeZone', async () => {
+test('mois explicite : renvoie exactement les bornes de ce mois calendaire (Paris)', async () => {
   let urlAppelee = null;
   global.fetch = async (u) => { urlAppelee = u; return reponseCalMock(); };
 
-  const respBase = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
-  const bodyBase = await respBase.json();
+  // Octobre 2026 : la France passe en heure d'hiver le 25/10, donc le 1er
+  // octobre est encore en CEST (UTC+2) et le 1er novembre déjà en CET (UTC+1)
+  // — un bon test que les deux bornes sont calculées indépendamment.
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu', mois: '2026-10' }));
+  const body = await resp.json();
 
-  const respDecalee = await handler(requete({ bienTypo: 'T1', meuble: 'Nu', decalage: '14' }));
-  const bodyDecalee = await respDecalee.json();
-
-  assert.ok(new Date(bodyDecalee.fenetreDebut) > new Date(bodyBase.fenetreDebut));
+  assert.equal(body.mois, '2026-10');
+  assert.equal(body.fenetreDebut, '2026-09-30T22:00:00.000Z');
+  assert.equal(body.fenetreFin, '2026-10-31T23:00:00.000Z');
+  assert.equal(new URL(urlAppelee).searchParams.get('start'), '2026-09-30T22:00:00.000Z');
+  assert.equal(new URL(urlAppelee).searchParams.get('end'), '2026-10-31T23:00:00.000Z');
   assert.equal(new URL(urlAppelee).searchParams.get('timeZone'), 'Europe/Paris');
+});
+
+test('un mois déjà révolu est ramené au mois courant', async () => {
+  global.fetch = async () => reponseCalMock();
+
+  const respCourant = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const bodyCourant = await respCourant.json();
+
+  const respPasse = await handler(requete({ bienTypo: 'T1', meuble: 'Nu', mois: '2020-01' }));
+  const bodyPasse = await respPasse.json();
+
+  assert.equal(bodyPasse.mois, bodyCourant.mois);
+});
+
+test('décembre → janvier : le changement d\'année est géré', async () => {
+  global.fetch = async () => reponseCalMock();
+
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu', mois: '2026-12' }));
+  const body = await resp.json();
+
+  assert.equal(body.mois, '2026-12');
+  assert.equal(body.fenetreFin, '2026-12-31T23:00:00.000Z'); // 1er janvier 2027 à Paris (CET, UTC+1)
 });
 
 test('type de bien non reconnu : repli sans appeler Cal.com', async () => {
