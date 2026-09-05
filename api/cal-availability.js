@@ -71,7 +71,14 @@ export default async function handler(req) {
     const debut = new Date(Date.now() + DELAI_MINIMUM_HEURES * 60 * 60 * 1000 + decalageJours * 24 * 60 * 60 * 1000);
     const fin = new Date(debut); fin.setDate(fin.getDate() + FENETRE_JOURS);
 
-    const calUrl = `${CAL_BASE}/slots?eventTypeSlug=${encodeURIComponent(evt.slug)}&username=${encodeURIComponent(CAL_USERNAME)}&start=${debut.toISOString()}&end=${fin.toISOString()}`;
+    // timeZone est indispensable : sans lui, Cal.com calcule les creneaux par
+    // rapport a un fuseau par defaut (constate : les horaires renvoyes ne
+    // correspondaient pas du tout a ceux affiches sur la page Cal.com
+    // publique du meme evenement/jour, ex. le 30/09/2026 constate en
+    // conditions reelles). L'expert opere en France, d'ou Europe/Paris fixe
+    // (meme fuseau que celui deja utilise pour les evenements Google Agenda
+    // dans calendar-create.js).
+    const calUrl = `${CAL_BASE}/slots?eventTypeSlug=${encodeURIComponent(evt.slug)}&username=${encodeURIComponent(CAL_USERNAME)}&start=${debut.toISOString()}&end=${fin.toISOString()}&timeZone=${encodeURIComponent('Europe/Paris')}`;
     const calResp = await fetch(calUrl, {
       headers: {
         'Authorization': `Bearer ${CAL_API_KEY}`,
