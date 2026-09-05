@@ -45,7 +45,7 @@ export default async function handler(req) {
   // &debug=1 renvoie le détail de l'appel Cal.com (utile en cas de nouveau
   // souci) au lieu de dégrader silencieusement — sans, comportement normal.
   const debug = url.searchParams.get('debug') === '1';
-  const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [] }, debug ? extra : {})), { status: 200, headers });
+  const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [], configured: false }, debug ? extra : {})), { status: 200, headers });
 
   if (!CAL_API_KEY) {
     return repli({ debug: 'CAL_API_KEY absente des variables d\'environnement' });
@@ -54,6 +54,11 @@ export default async function handler(req) {
   try {
     const bienTypo = url.searchParams.get('bienTypo') || '';
     const meuble = url.searchParams.get('meuble') || '';
+    // Décalage en jours pour naviguer vers une fenêtre plus lointaine (ex.
+    // un RDV souhaité dans 2 mois) : 0 = fenêtre par défaut, chaque "page"
+    // suivante avance de FENETRE_JOURS. Jamais négatif — la fenêtre par
+    // défaut part déjà du délai minimum, impossible de reculer avant.
+    const decalageJours = Math.max(0, parseInt(url.searchParams.get('decalage') || '0', 10) || 0);
 
     const evt = resolveCalEvent(bienTypo, meuble);
     if (!evt) {
@@ -62,8 +67,8 @@ export default async function handler(req) {
 
     // Fenêtre glissante : à partir de DELAI_MINIMUM_HEURES à compter de
     // l'instant de la demande (pas d'un jour calendaire arrondi), sur
-    // FENETRE_JOURS jours.
-    const debut = new Date(Date.now() + DELAI_MINIMUM_HEURES * 60 * 60 * 1000);
+    // FENETRE_JOURS jours — décalée de decalageJours pour la pagination.
+    const debut = new Date(Date.now() + DELAI_MINIMUM_HEURES * 60 * 60 * 1000 + decalageJours * 24 * 60 * 60 * 1000);
     const fin = new Date(debut); fin.setDate(fin.getDate() + FENETRE_JOURS);
 
     const calUrl = `${CAL_BASE}/slots?eventTypeSlug=${encodeURIComponent(evt.slug)}&username=${encodeURIComponent(CAL_USERNAME)}&start=${debut.toISOString()}&end=${fin.toISOString()}`;
@@ -106,7 +111,14 @@ export default async function handler(req) {
       return !isNaN(t) && t >= seuil;
     });
 
-    const body = { available: slots.length > 0, slots, dureeMinutes: evt.duree };
+    const body = {
+      available: slots.length > 0,
+      slots,
+      dureeMinutes: evt.duree,
+      configured: true,
+      fenetreDebut: debut.toISOString(),
+      fenetreFin: fin.toISOString()
+    };
     if (debug) { body.debug = 'OK'; body.calUrl = calUrl; body.calDataBrut = calData; }
     return new Response(JSON.stringify(body), { status: 200, headers });
   } catch (e) {
