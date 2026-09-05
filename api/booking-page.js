@@ -371,12 +371,13 @@ function selType(t, btn){
 // cas de souci), le formulaire se comporte exactement comme avant : simple
 // champ date libre, aucune régression possible.
 //
-// Pagination par fenêtre de FENETRE_JOURS_CLIENT jours (miroir de
-// FENETRE_JOURS côté serveur) : un client voulant un RDV dans 2 mois peut
-// avancer la fenêtre plutôt que d'être limité aux ~14 prochains jours.
+// Navigation par mois calendaire complet (miroir du paramètre "mois" côté
+// serveur) : le calendrier affiche tout un mois à la fois (ex. tout
+// septembre), sans limite dans le temps vers l'avenir — jamais avant le mois
+// courant vers le passé.
 let _creneauxRequeteEnCours = 0;
-let _creneauxDecalageJours = 0;
-const FENETRE_JOURS_CLIENT = 14;
+let _creneauxMoisAffiche = null; // { annee, mois } — mois 1-12
+let _creneauxMoisInitial = null; // mois courant au premier chargement, pour désactiver "précédent"
 
 async function chargerCreneauxSiPossible(reinitialiserPeriode){
   const btypo = document.getElementById('btypo').value;
@@ -384,13 +385,18 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
   const panel = document.getElementById('slots-panel');
   const loading = document.getElementById('slots-loading');
   if(!btypo || !meubleVal){ panel.style.display = 'none'; return; }
-  if(reinitialiserPeriode !== false) _creneauxDecalageJours = 0;
+  if(reinitialiserPeriode !== false || !_creneauxMoisAffiche){
+    const maintenant = new Date();
+    _creneauxMoisAffiche = { annee: maintenant.getFullYear(), mois: maintenant.getMonth() + 1 };
+    _creneauxMoisInitial = { ..._creneauxMoisAffiche };
+  }
 
   const requeteId = ++_creneauxRequeteEnCours; // évite qu'une réponse tardive écrase une sélection plus récente
   panel.style.display = 'none';
   loading.style.display = 'block';
   try{
-    const resp = await fetch('/api/cal-availability?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&decalage=' + _creneauxDecalageJours);
+    const moisParam = _creneauxMoisAffiche.annee + '-' + String(_creneauxMoisAffiche.mois).padStart(2,'0');
+    const resp = await fetch('/api/cal-availability?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam);
     if(requeteId !== _creneauxRequeteEnCours) return; // une sélection plus récente a déjà relancé une requête
     loading.style.display = 'none';
     if(!resp.ok){ return; }
@@ -402,7 +408,7 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
     // garde le panneau visible (avec la navigation) plutôt que de le cacher,
     // sinon les flèches deviennent inutilisables dès qu'une période est vide.
     if(!data || !data.configured || !Array.isArray(data.slots)){ return; }
-    afficherCreneaux(data.slots, data.fenetreDebut, data.fenetreFin);
+    afficherCreneaux(data.slots);
   }catch(e){
     if(requeteId === _creneauxRequeteEnCours) loading.style.display = 'none';
     // Silencieux : le champ date libre reste utilisable dans tous les cas.
@@ -410,7 +416,14 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
 }
 
 function changerPeriodeCreneaux(direction){
-  _creneauxDecalageJours = Math.max(0, _creneauxDecalageJours + direction * FENETRE_JOURS_CLIENT);
+  let annee = _creneauxMoisAffiche.annee, mois = _creneauxMoisAffiche.mois + direction;
+  if(mois < 1){ mois = 12; annee--; }
+  else if(mois > 12){ mois = 1; annee++; }
+  // Jamais avant le mois courant, quel que soit le nombre de clics "précédent".
+  if(annee < _creneauxMoisInitial.annee || (annee === _creneauxMoisInitial.annee && mois < _creneauxMoisInitial.mois)){
+    annee = _creneauxMoisInitial.annee; mois = _creneauxMoisInitial.mois;
+  }
+  _creneauxMoisAffiche = { annee, mois };
   chargerCreneauxSiPossible(false);
 }
 
@@ -421,35 +434,30 @@ function changerPeriodeCreneaux(direction){
 // composants de date locaux (getFullYear/getMonth/getDate).
 let _creneauxParJour = {};
 let _creneauxJourSelectionne = null;
-let _creneauxFenetreDebut = null;
-let _creneauxFenetreDernierJour = null;
 const _pad2 = n => String(n).padStart(2,'0');
 const _cleJourLocal = d => d.getFullYear() + '-' + _pad2(d.getMonth()+1) + '-' + _pad2(d.getDate());
 
-function afficherCreneaux(slotsIso, fenetreDebutIso, fenetreFinIso){
+function afficherCreneaux(slotsIso){
   const panel = document.getElementById('slots-panel');
   const label = document.getElementById('slots-periode-label');
   const btnPrev = document.getElementById('slots-prev');
 
-  if(label && fenetreDebutIso && fenetreFinIso){
-    const fmt = iso => new Date(iso).toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
-    label.textContent = fmt(fenetreDebutIso) + ' → ' + fmt(fenetreFinIso);
+  if(label && _creneauxMoisAffiche){
+    const d = new Date(_creneauxMoisAffiche.annee, _creneauxMoisAffiche.mois - 1, 1);
+    label.textContent = d.toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
   }
-  if(btnPrev) btnPrev.disabled = _creneauxDecalageJours <= 0;
+  if(btnPrev) btnPrev.disabled = _creneauxMoisAffiche.annee === _creneauxMoisInitial.annee && _creneauxMoisAffiche.mois === _creneauxMoisInitial.mois;
 
-  // Limité aux 200 premiers créneaux pour ne pas surcharger la page.
+  // Limité aux 2000 premiers créneaux (un mois complet, toutes typologies
+  // confondues, n'en approche jamais autant) pour ne pas surcharger la page.
   _creneauxParJour = {};
-  slotsIso.slice(0, 200).forEach(iso => {
+  slotsIso.slice(0, 2000).forEach(iso => {
     const d = new Date(iso);
     if(isNaN(d)) return;
     const cle = _cleJourLocal(d);
     (_creneauxParJour[cle] = _creneauxParJour[cle] || []).push({ iso, date: d });
   });
   _creneauxJourSelectionne = null;
-  _creneauxFenetreDebut = new Date(fenetreDebutIso);
-  // fenetreFin est une borne exclusive (fenetreDebut + FENETRE_JOURS) : le
-  // dernier jour réel de la fenêtre est la veille.
-  _creneauxFenetreDernierJour = new Date(new Date(fenetreFinIso).getTime() - 24*60*60*1000);
 
   rendreCalendrierCreneaux();
   rendreSlotsJour();
@@ -458,26 +466,28 @@ function afficherCreneaux(slotsIso, fenetreDebutIso, fenetreFinIso){
 
 function rendreCalendrierCreneaux(){
   const grille = document.getElementById('cal-grille');
-  if(!grille || !_creneauxFenetreDebut || !_creneauxFenetreDernierJour) return;
+  if(!grille || !_creneauxMoisAffiche) return;
+
+  const { annee, mois } = _creneauxMoisAffiche; // mois 1-12
+  const premierJourMois = new Date(annee, mois - 1, 1);
+  const dernierJourMois = new Date(annee, mois, 0); // jour 0 du mois suivant = dernier jour de ce mois
 
   const auDebutSemaine = d => { const x = new Date(d); x.setHours(0,0,0,0); const j = (x.getDay()+6)%7; x.setDate(x.getDate()-j); return x; };
   const auFinSemaine = d => { const x = new Date(d); x.setHours(0,0,0,0); const j = (x.getDay()+6)%7; x.setDate(x.getDate()+(6-j)); return x; };
 
-  const debutFenetreJour = new Date(_creneauxFenetreDebut); debutFenetreJour.setHours(0,0,0,0);
-  const dernierJourFenetreJour = new Date(_creneauxFenetreDernierJour); dernierJourFenetreJour.setHours(0,0,0,0);
-  const startGrid = auDebutSemaine(debutFenetreJour);
-  const endGrid = auFinSemaine(dernierJourFenetreJour);
+  const startGrid = auDebutSemaine(premierJourMois);
+  const endGrid = auFinSemaine(dernierJourMois);
   const aujourdhui = new Date(); aujourdhui.setHours(0,0,0,0);
 
   let html = '';
   for(let d = new Date(startGrid); d <= endGrid; d.setDate(d.getDate()+1)){
     const cle = _cleJourLocal(d);
-    const dansFenetre = d >= debutFenetreJour && d <= dernierJourFenetreJour;
-    const dispo = dansFenetre && _creneauxParJour[cle] && _creneauxParJour[cle].length > 0;
+    const dansMois = d.getMonth() === (mois - 1) && d.getFullYear() === annee;
+    const dispo = dansMois && _creneauxParJour[cle] && _creneauxParJour[cle].length > 0;
     const estAujourdhui = d.getTime() === aujourdhui.getTime();
     const estSelection = _creneauxJourSelectionne === cle;
     const classes = ['cal-jour'];
-    if(!dansFenetre) classes.push('cal-jour--horsFenetre');
+    if(!dansMois) classes.push('cal-jour--horsFenetre');
     classes.push(dispo ? 'cal-jour--dispo' : 'cal-jour--indispo');
     if(estAujourdhui) classes.push('cal-jour--aujourdhui');
     if(estSelection) classes.push('cal-jour--selection');
