@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
@@ -50,7 +51,18 @@ export default async function handler(req) {
     }
 
     const user = await userResp.json();
-    const email = user?.email || '';
+    const callerEmail = user?.email || '';
+
+    // ── Aperçu admin : voir cf. api/client-orders.js — un administrateur
+    // peut demander les documents d'un autre client via "clientEmail" dans
+    // le corps, jamais accepté pour un appelant non-admin.
+    let email = callerEmail;
+    if (ADMIN_EMAILS.includes((callerEmail || '').toLowerCase().trim())) {
+      let body = {};
+      try { body = await req.json(); } catch (_) {}
+      const clientEmail = (body && body.clientEmail || '').trim();
+      if (clientEmail) email = clientEmail;
+    }
 
     if (!email) {
       return new Response(JSON.stringify([]), {

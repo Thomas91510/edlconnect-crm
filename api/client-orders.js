@@ -2,7 +2,10 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;export default async function handler(req) {
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const ADMIN_EMAILS = ['contact@edl-idf.com'];
+
+export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
@@ -38,10 +41,22 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;export default asy
     }
 
     const userData = await userResp.json();
-    const userEmail = (userData.email || '').toLowerCase().trim();
+    const callerEmail = (userData.email || '').toLowerCase().trim();
 
-    if (!userEmail) {
+    if (!callerEmail) {
       return new Response(JSON.stringify({ error: 'Email introuvable sur ce compte.' }), { status: 400 });
+    }
+
+    // ── Aperçu admin : un administrateur peut consulter les commandes d'un
+    // autre client (ex. vérifier ce qu'une agence voit avec ses rapports),
+    // en précisant "clientEmail" dans le corps — jamais accepté pour un
+    // appelant non-admin, qui ne voit toujours que ses propres commandes.
+    let userEmail = callerEmail;
+    if (ADMIN_EMAILS.includes(callerEmail)) {
+      let body = {};
+      try { body = await req.json(); } catch (_) {}
+      const clientEmail = (body && body.clientEmail || '').toLowerCase().trim();
+      if (clientEmail) userEmail = clientEmail;
     }
 
     const supaHeaders = {

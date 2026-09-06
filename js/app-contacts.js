@@ -809,6 +809,85 @@ function filterContactsTab(f,btn){
 function searchContacts(v){UI.contactSearch=v;renderContacts();}
 function emailContactQuick(email){nav('compose');setTimeout(()=>{document.getElementById('to-f').value=email;},100);}
 
+// ─── Aperçu extranet (admin) ────────────────────────────────
+// Montre exactement ce qu'un client donné voit dans son espace extranet
+// (commandes, statuts, rapports, documents), sans avoir besoin de son email
+// pour se connecter à sa place — utile pour vérifier ce qui s'affiche une
+// fois un rapport disponible. Réutilise l'admin override de
+// /api/client-orders et /api/client-documents (paramètre clientEmail,
+// n'a d'effet que pour l'email admin authentifié côté serveur).
+function previewExtranetClient(){
+  const c = DB.contacts.find(x => x.id === currentFicheId);
+  if(!c){ notify('Contact introuvable', 'warn'); return; }
+  if(!c.email){ notify("⚠️ Ce contact n'a pas d'email renseigné", 'warn'); return; }
+  closeModal('modal-fiche');
+  document.getElementById('extranet-preview-email').textContent = c.email;
+  document.getElementById('extranet-preview-body').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text2)"><i class="ti ti-loader"></i> Chargement…</div>';
+  openModal('modal-extranet-preview');
+  chargerApercuExtranet(c.email);
+}
+
+// Même garde-fou que urlSure() dans extranet-app.html : n'accepte que les
+// URL http(s), et ne transforme jamais une valeur vide en URL de la racine
+// du site (cf. le bug corrigé où "Ouvrir mon rapport" ouvrait le CRM).
+function _urlSureApercuExtranet(u){
+  if(!u) return '';
+  try{
+    const parsed = new URL(String(u), window.location.origin);
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : '';
+  }catch(e){ return ''; }
+}
+
+async function chargerApercuExtranet(email){
+  const body = document.getElementById('extranet-preview-body');
+  try{
+    const token = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const [ordersResp, docsResp] = await Promise.all([
+      fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({ clientEmail: email }) }),
+      fetch('/api/client-documents', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({ clientEmail: email }) })
+    ]);
+    if(!ordersResp.ok) throw new Error('HTTP ' + ordersResp.status);
+    const orders = await ordersResp.json();
+    const docs = docsResp.ok ? await docsResp.json() : [];
+
+    if(!orders.length && !docs.length){
+      body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text2)">Aucune commande ni document trouvé pour cet email.</div>';
+      return;
+    }
+
+    const badge = (s) => {
+      if(s === 'rapport_dispo') return '<span style="background:#EAF3DE;color:#27500A;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap">📄 Rapport disponible</span>';
+      if(s === 'confirmee' || s === 'importee') return '<span style="background:#F4F7FA;color:#0C447C;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap">📅 Confirmé</span>';
+      return '<span style="background:#FFF3CD;color:#8a5a00;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap">⏳ En attente</span>';
+    };
+
+    const cartesCommandes = orders.map(o => {
+      const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
+      const lienRapport = _urlSureApercuExtranet(o.rapportUrl);
+      const boutonRapport = lienRapport ? `<a href="${lienRapport}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:5px;color:#0F6E56;text-decoration:none;font-size:11px;font-weight:600;background:#E3F5EF;padding:4px 10px;border-radius:20px;margin-top:8px;width:fit-content"><i class="ti ti-file-download" style="font-size:12px"></i> Ouvrir mon rapport</a>` : '';
+      return `<div style="background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+          <div style="font-weight:600;font-size:13px">${esc(o.typeEdl||'État des lieux')}</div>
+          ${badge(o.statut)}
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${esc(o.adresse||'—')}</div>
+        ${dateRdv?`<div style="font-size:11px;color:#0C447C;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${o.heure?' à '+esc(o.heure):''}</div>`:''}
+        <div style="font-size:11px;color:var(--text3)">Demandé le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR'):'—'}</div>
+        ${boutonRapport}
+      </div>`;
+    }).join('');
+
+    const docsUtiles = docs.map(d => ({ nom: d.nom, href: _urlSureApercuExtranet(d.url) })).filter(d => d.href);
+    const cartesDocs = docsUtiles.length ? `
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 8px">Mes documents</div>
+      ${docsUtiles.map(d => `<a href="${d.href}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;text-decoration:none;color:var(--text);border:1px solid var(--border);margin-bottom:6px;background:#F4F7FA"><span style="font-size:16px">📄</span><span style="flex:1;font-size:12px;font-weight:500">${esc(d.nom)}</span><span style="font-size:11px;color:#0C447C">Ouvrir →</span></a>`).join('')}` : '';
+
+    body.innerHTML = (cartesCommandes || '<div style="text-align:center;padding:20px;color:var(--text2)">Aucune commande.</div>') + cartesDocs;
+  }catch(e){
+    body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red-text)">Erreur lors du chargement de l\'aperçu.</div>';
+  }
+}
+
 // ─── PIPELINE ─────────────────────────────────────────────
 function renderPipeline(){
   const board=document.getElementById('pipeline-board');
