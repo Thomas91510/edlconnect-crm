@@ -472,6 +472,11 @@ function nav(v){
   if(v!=='reservations' && _resaAutoRefreshInterval) silentRefreshReservations();
   if(v==='settings')loadSettingsForm();
   if(v==='help'){}
+  // Synchronise la barre mobile même quand la navigation vient du tiroir
+  // complet (ex. Contacts, Composer) : les vues absentes du raccourci
+  // rapide allument "Plus" plutôt que de laisser un ancien onglet actif.
+  const vuesRaccourcis=['dashboard','reservations','missions','agenda'];
+  updateMobileNav(vuesRaccourcis.includes(v)?v:'plus');
   closeMobileSidebar(); // ferme le menu mobile après navigation
 }
 

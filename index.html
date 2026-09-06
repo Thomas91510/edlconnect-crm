@@ -210,9 +210,35 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-t
 
 /* ─── TABLETTE (≤1024px) ─────────────────────────────────── */
 @media (max-width:1024px){
-  .sidebar{width:190px;min-width:190px}
   .kpi-row, .summary-grid{flex-wrap:wrap}
   table{font-size:12px}
+}
+
+/* ─── TABLETTE : rail à icônes (681–1024px) ─────────────────
+   En dessous, la sidebar devient le tiroir mobile pleine largeur (règle
+   suivante) ; au-dessus, la sidebar complète. Ici, un rail étroit avec
+   uniquement les icônes — les libellés (.nav-label) sont dans des <span>
+   dédiés pour rester ciblables sans dépendre d'un style inline. */
+@media (min-width:681px) and (max-width:1024px){
+  .sidebar{width:60px;min-width:60px}
+  .logo{padding:14px 0;display:flex;justify-content:center}
+  .logo-top{gap:0}
+  .logo-top > div, .logo-badges{display:none}
+  .nav-section{display:none}
+  .nav-label{display:none}
+  .nav-item{justify-content:center;padding:0}
+  .nav-icon{margin-right:0}
+  .nav-item .nav-badge{
+    position:absolute;top:2px;right:2px;margin-left:0;
+    width:8px;height:8px;padding:0;font-size:0;border-radius:50%;
+  }
+  .nav-item{position:relative}
+  .sidebar-search{justify-content:center;padding:8px 0 !important}
+  #sidebar-footer-full > *:not(.sync-row){display:none !important}
+  #sidebar-footer-full{padding:10px 0}
+  #sidebar-footer-full .sync-row{justify-content:center;padding:0}
+  #sidebar-footer-full #sync-text{display:none}
+  .logo-icon, .sidebar .logo svg{margin:0 auto}
 }
 
 /* ─── MOBILE & TABLETTE PORTRAIT (≤680px) ───────────────────*/
@@ -476,79 +502,79 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
 
     <div style="padding:8px 10px;flex:1;display:flex;flex-direction:column;overflow-y:auto">
 
-      <button onclick="openGlobalSearch()" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;margin-bottom:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);font-size:12px;cursor:pointer;text-align:left">
+      <button class="sidebar-search" onclick="openGlobalSearch()" title="Rechercher (⌘K)" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;margin-bottom:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);font-size:12px;cursor:pointer;text-align:left">
         <i class="ti ti-search" style="font-size:14px"></i>
-        <span style="flex:1">Rechercher…</span>
-        <span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,0.08)">⌘K</span>
+        <span class="nav-label" style="flex:1">Rechercher…</span>
+        <span class="nav-label" style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,0.08)">⌘K</span>
       </button>
 
-      <button class="nav-item active" onclick="nav('dashboard')">
+      <button class="nav-item active" onclick="nav('dashboard')" title="Accueil">
         <div class="nav-icon" style="background:rgba(24,95,165,0.2)"><i class="ti ti-layout-dashboard" style="color:#7bb8ef"></i></div>
-        Accueil
+        <span class="nav-label">Accueil</span>
       </button>
 
       <span class="nav-section">Activité</span>
-      <button class="nav-item" onclick="nav('reservations')">
+      <button class="nav-item" onclick="nav('reservations')" title="Réservations">
         <div class="nav-icon" style="background:rgba(229,62,62,0.12)"><i class="ti ti-inbox" style="color:#fc8181"></i></div>
-        Réservations
+        <span class="nav-label">Réservations</span>
         <span class="nav-badge nb-red" id="resa-nav-badge" style="display:none"></span>
       </button>
-      <button class="nav-item" onclick="nav('missions')">
+      <button class="nav-item" onclick="nav('missions')" title="Missions EDL">
         <div class="nav-icon" style="background:rgba(56,161,105,0.12)"><i class="ti ti-clipboard-list" style="color:#68d391"></i></div>
-        Missions EDL
+        <span class="nav-label">Missions EDL</span>
       </button>
-      <button class="nav-item" onclick="nav('agenda')">
+      <button class="nav-item" onclick="nav('agenda')" title="Agenda">
         <div class="nav-icon" style="background:rgba(55,138,221,0.12)"><i class="ti ti-calendar" style="color:#7bb8ef"></i></div>
-        Agenda
+        <span class="nav-label">Agenda</span>
       </button>
 
       <span class="nav-section">Commercial</span>
-      <button class="nav-item" onclick="nav('contacts')">
+      <button class="nav-item" onclick="nav('contacts')" title="Contacts & Agences">
         <div class="nav-icon" style="background:rgba(24,95,165,0.15)"><i class="ti ti-building-store" style="color:#7bb8ef"></i></div>
-        Contacts & Agences
+        <span class="nav-label">Contacts &amp; Agences</span>
         <span class="nav-badge nb-amber" id="dup-nav-badge" style="display:none"></span>
       </button>
-      <button class="nav-item" onclick="nav('prospection')">
+      <button class="nav-item" onclick="nav('prospection')" title="Prospection">
         <div class="nav-icon" style="background:rgba(186,117,23,0.12)"><i class="ti ti-target" style="color:#f6c05e"></i></div>
-        Prospection
+        <span class="nav-label">Prospection</span>
         <span class="nav-badge nb-amber" id="prosp-badge" style="display:none"></span>
       </button>
-      <button class="nav-item" onclick="nav('pipeline')">
+      <button class="nav-item" onclick="nav('pipeline')" title="Pipeline">
         <div class="nav-icon" style="background:rgba(55,138,221,0.1)"><i class="ti ti-chart-bar" style="color:#7bb8ef"></i></div>
-        Pipeline
+        <span class="nav-label">Pipeline</span>
       </button>
 
       <span class="nav-section">Communication</span>
-      <button class="nav-item" onclick="nav('compose')">
+      <button class="nav-item" onclick="nav('compose')" title="Composer">
         <div class="nav-icon" style="background:rgba(24,95,165,0.15)"><i class="ti ti-send" style="color:#7bb8ef"></i></div>
-        Composer
+        <span class="nav-label">Composer</span>
       </button>
-      <button class="nav-item" onclick="nav('campaigns')">
+      <button class="nav-item" onclick="nav('campaigns')" title="Campagnes">
         <div class="nav-icon" style="background:rgba(55,138,221,0.1)"><i class="ti ti-speakerphone" style="color:#7bb8ef"></i></div>
-        Campagnes
+        <span class="nav-label">Campagnes</span>
       </button>
 
       <span class="nav-section">Outils</span>
-      <button class="nav-item" onclick="nav('brevo')">
+      <button class="nav-item" onclick="nav('brevo')" title="Sync Brevo">
         <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-refresh" style="color:rgba(255,255,255,0.3)"></i></div>
-        Sync Brevo
+        <span class="nav-label">Sync Brevo</span>
       </button>
-      <button class="nav-item" onclick="nav('settings')">
+      <button class="nav-item" onclick="nav('settings')" title="Paramètres">
         <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-settings" style="color:rgba(255,255,255,0.3)"></i></div>
-        Paramètres
+        <span class="nav-label">Paramètres</span>
       </button>
-      <button class="nav-item" onclick="nav('help')">
+      <button class="nav-item" onclick="nav('help')" title="Guide & Aide">
         <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-help-circle" style="color:rgba(255,255,255,0.3)"></i></div>
-        Guide & Aide
+        <span class="nav-label">Guide &amp; Aide</span>
       </button>
-      <button class="nav-item" id="nav-admin" style="display:none" onclick="nav('admin')">
+      <button class="nav-item" id="nav-admin" style="display:none" onclick="nav('admin')" title="Admin">
         <div class="nav-icon" style="background:rgba(186,117,23,0.12)"><i class="ti ti-shield-lock" style="color:#f6c05e"></i></div>
-        Admin
+        <span class="nav-label">Admin</span>
       </button>
 
     </div>
 
-    <div style="padding:10px;border-top:1px solid rgba(24,95,165,0.2)">
+    <div class="sidebar-footer" id="sidebar-footer-full">
       <div style="display:flex;gap:5px;margin-bottom:8px">
         <button class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;background:rgba(24,95,165,0.15);border:0.5px solid rgba(55,138,221,0.25);color:rgba(255,255,255,0.5);border-radius:8px" onclick="saveBackup()" title="Sauvegarder">
           <i class="ti ti-device-floppy"></i>Sauvegarder
@@ -2333,10 +2359,10 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
 <div id="mobile-nav-bar">
   <div class="mnav-items">
     <button onclick="nav('dashboard');closeMobileSidebar();updateMobileNav('dashboard')" id="mnav-dashboard" class="active">
-      <i class="ti ti-layout-dashboard"></i>Dashboard
+      <i class="ti ti-layout-dashboard"></i>Accueil
     </button>
-    <button onclick="nav('contacts');closeMobileSidebar();updateMobileNav('contacts')" id="mnav-contacts">
-      <i class="ti ti-building-store"></i>Contacts
+    <button onclick="nav('reservations');closeMobileSidebar();updateMobileNav('reservations')" id="mnav-reservations">
+      <i class="ti ti-inbox"></i>Réservations
     </button>
     <button onclick="nav('missions');closeMobileSidebar();updateMobileNav('missions')" id="mnav-missions">
       <i class="ti ti-file-check"></i>Missions
@@ -2344,8 +2370,8 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
     <button onclick="nav('agenda');closeMobileSidebar();updateMobileNav('agenda')" id="mnav-agenda">
       <i class="ti ti-calendar"></i>Agenda
     </button>
-    <button onclick="nav('compose');closeMobileSidebar();updateMobileNav('compose')" id="mnav-compose">
-      <i class="ti ti-send"></i>Email
+    <button onclick="toggleMobileSidebar();updateMobileNav('plus')" id="mnav-plus">
+      <i class="ti ti-menu-2"></i>Plus
     </button>
   </div>
 </div>
