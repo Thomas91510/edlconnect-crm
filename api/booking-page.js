@@ -1,4 +1,5 @@
 export const config = { runtime: 'edge' };
+import { escapeIlike } from './_lib/ilike.js';
 
 export default async function handler(req) {
   const url = new URL(req.url);
@@ -19,7 +20,7 @@ export default async function handler(req) {
         if (r1.ok) { const rows = await r1.json(); ownerId = (rows[0] && rows[0].user_id) || ''; }
       }
       if (!ownerId && agencyName) {
-        const r2 = await fetch(SUPA + '/rest/v1/contacts?select=user_id&data-%3E%3Eentreprise=ilike.' + encodeURIComponent(agencyName) + '&limit=1', { headers: h });
+        const r2 = await fetch(SUPA + '/rest/v1/contacts?select=user_id&data-%3E%3Eentreprise=ilike.' + encodeURIComponent(escapeIlike(agencyName)) + '&limit=1', { headers: h });
         if (r2.ok) { const rows = await r2.json(); ownerId = (rows[0] && rows[0].user_id) || ''; }
       }
       if (ownerId) {

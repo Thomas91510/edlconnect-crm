@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 import { origineAutorisee } from './_lib/cors.js';
 import { identiteAbonne } from './_lib/identite.js';
+import { escapeIlike } from './_lib/ilike.js';
 
 const SUPA_URL_IDENT = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 
@@ -141,11 +142,11 @@ export default async function handler(req) {
         if (ownerId) ownerSource = 'contactId';
       }
       if (!ownerId && email) {
-        ownerId = await chercher('data-%3E%3Eemail=ilike.' + encodeURIComponent(email));
+        ownerId = await chercher('data-%3E%3Eemail=ilike.' + encodeURIComponent(escapeIlike(email)));
         if (ownerId) ownerSource = 'email';
       }
       if (!ownerId && agence) {
-        ownerId = await chercher('data-%3E%3Eentreprise=ilike.' + encodeURIComponent(agence));
+        ownerId = await chercher('data-%3E%3Eentreprise=ilike.' + encodeURIComponent(escapeIlike(agence)));
         if (ownerId) ownerSource = 'nomAgence';
       }
     }

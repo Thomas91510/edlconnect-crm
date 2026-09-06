@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 import { origineAutorisee } from './_lib/cors.js';
 import { identiteAbonne as identiteAbonneBase } from './_lib/identite.js';
+import { escapeIlike } from './_lib/ilike.js';
 
 const EDOUARD_BASE = 'https://europe-west3-edouard-immo.cloudfunctions.net/api';
 const BUCKET = 'rapports';
@@ -296,7 +297,7 @@ export default async function handler(req) {
           if (m.emailClient) {
             try {
               const ctResp = await fetch(
-                SUPA_URL + '/rest/v1/contacts?select=id,data&user_id=eq.' + encodeURIComponent(row.user_id || '') + '&data->>email=ilike.' + encodeURIComponent(m.emailClient),
+                SUPA_URL + '/rest/v1/contacts?select=id,data&user_id=eq.' + encodeURIComponent(row.user_id || '') + '&data->>email=ilike.' + encodeURIComponent(escapeIlike(m.emailClient)),
                 { headers: supaHeaders }
               );
               if (ctResp.ok) {

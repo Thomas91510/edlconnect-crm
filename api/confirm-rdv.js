@@ -15,6 +15,28 @@ function esc(s) {
 }
 
 const SUPA_URL_BASE = SUPABASE_URL;
+const ADMIN_EMAILS = ['contact@edl-idf.com'];
+
+// Contrairement aux autres endpoints d'envoi (send-email.js,
+// send-welcome-agency.js), cette route ne vérifiait qu'une session valide —
+// pas de contrôle d'abonnement — alors qu'elle peut expédier un email par
+// destinataire (agence + chaque locataire). Alignement sur le même contrôle
+// pour qu'un compte sans plan payant ne puisse pas s'en servir comme relais.
+async function planAutorise(userId, email) {
+  if (email && ADMIN_EMAILS.includes(email)) return true;
+  try {
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (!key || !userId) return false;
+    const r = await fetch(SUPABASE_URL + '/rest/v1/user_plans?select=plan,status&user_id=eq.' + encodeURIComponent(userId), {
+      headers: { apikey: key, Authorization: 'Bearer ' + key }
+    });
+    if (!r.ok) return false;
+    const rows = await r.json();
+    const p = rows && rows[0];
+    if (!p) return false;
+    return (p.plan === 'starter' || p.plan === 'pro') && p.status === 'active';
+  } catch (e) { return false; }
+}
 
 export default async function handler(req) {
   if(req.method === 'OPTIONS') {
@@ -45,6 +67,15 @@ export default async function handler(req) {
   }
 
   const _user = await _userResp.json();
+
+  const _autorise = await planAutorise(_user && _user.id, _user && _user.email);
+  if (!_autorise) {
+    return new Response(JSON.stringify({ error: 'Cette action est réservée aux comptes admin ou sur un plan payant actif.', planRequis: true }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
+    });
+  }
+
   const IDENT = await identiteAbonne(SUPA_URL_BASE, process.env.SUPABASE_SERVICE_KEY, _user && _user.id);
 
   const BREVO_KEY = process.env.BREVO_API_KEY;
@@ -74,6 +105,9 @@ export default async function handler(req) {
 
     if(!mission) {
       return new Response(JSON.stringify({ error: 'Données manquantes' }), { status: 400 });
+    }
+    if(allLocataires.length > 10) {
+      return new Response(JSON.stringify({ error: 'Trop de locataires (max 10)' }), { status: 400 });
     }
     if(_envAgence && !agentEmail) {
       return new Response(JSON.stringify({ error: "Email de l'agence requis" }), { status: 400 });
