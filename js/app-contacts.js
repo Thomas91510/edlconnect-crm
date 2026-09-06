@@ -369,46 +369,6 @@ function deleteContact(){
   notify('Contact supprimé');renderContacts();renderDashboard();
 }
 
-async function loadGmailEmails(contactId, email){
-  const btn=document.getElementById(`gmail-load-btn-${contactId}`);
-  const status=document.getElementById(`gmail-status-${contactId}`);
-  if(btn)btn.disabled=true;
-  if(status)status.textContent='Chargement…';
-  try{
-    const resp=await fetch(`/api/gmail-emails?email=${encodeURIComponent(email)}`,{headers:await _authHeaders()});
-    if(!resp.ok){
-      const err=await resp.json();
-      if(status)status.textContent='❌ '+(err.error||'Erreur');
-      if(btn)btn.disabled=false;
-      return;
-    }
-    const data=await resp.json();
-    const gmailEmails=data.emails||[];
-    const c=DB.contacts.find(x=>x.id===contactId);
-    if(c){
-      if(!c.history)c.history=[];
-      let added=0;
-      gmailEmails.forEach(ge=>{
-        if(!c.history.find(h=>h.id===ge.id)){
-          c.history.push(ge);
-          added++;
-        }
-      });
-      if(added>0){saveToStorage();syncDirtyToSupabase();}
-      if(gmailEmails.length===0){
-        if(status)status.textContent='Aucun email Gmail trouvé pour ce contact';
-      } else {
-        if(status)status.textContent=`✅ ${gmailEmails.length} email${gmailEmails.length>1?'s':''} chargé${gmailEmails.length>1?'s':''}`;
-      }
-      renderFicheEmails(c);
-    }
-    if(btn)btn.disabled=false;
-  }catch(e){
-    if(status)status.textContent='❌ Serveur non joignable — relance START_CRM';
-    if(btn)btn.disabled=false;
-  }
-}
-
 function renderFicheEmails(c){
   const emailLower=(c.email||'').toLowerCase();
   const fromHistory=(c.history||[]);

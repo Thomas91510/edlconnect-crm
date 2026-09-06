@@ -7,7 +7,14 @@
 // site tiers), plus les previews Vercel de ce projet le temps de tester une
 // PR avant de la merger.
 const ORIGINE_PROD = 'https://app.lokentia.fr';
-const RE_PREVIEW_VERCEL = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
+// Vercel nomme un déploiement preview "<projet>-<hash-ou-branche>-<équipe>.vercel.app" :
+// un seul label avant ".vercel.app". Exiger qu'il commence par le nom du
+// projet (au lieu de "n'importe quel label") évite de faire confiance à
+// n'importe quel autre projet Vercel gratuit. Nom de projet confirmé via le
+// check "Vercel" posté sur les PR de ce dépôt : edlconnect-crm-v2 — si un
+// vrai preview cesse de matcher, ajouter son préfixe exact ci-dessous
+// plutôt que de revenir à un motif ouvert.
+const RE_PREVIEW_VERCEL = /^https:\/\/(edlconnect-crm-v2|edlconnect-crm|lokentia-crm|lokentia)(-[a-z0-9-]+)?\.vercel\.app$/;
 
 // Renvoie l'origine à autoriser pour CETTE requête : celle du visiteur si
 // elle est légitime (reflétée telle quelle, seule façon correcte de

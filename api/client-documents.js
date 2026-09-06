@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
+import { escapeIlike } from './_lib/ilike.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
@@ -60,7 +61,7 @@ export default async function handler(req) {
     if (ADMIN_EMAILS.includes((callerEmail || '').toLowerCase().trim())) {
       let body = {};
       try { body = await req.json(); } catch (_) {}
-      const clientEmail = (body && body.clientEmail || '').trim();
+      const clientEmail = (body && body.clientEmail || '').toLowerCase().trim();
       if (clientEmail) email = clientEmail;
     }
 
@@ -74,7 +75,7 @@ export default async function handler(req) {
     // Chercher tous les contacts dont l'email correspond (dans toutes les agences)
     // Les documents sont stockés dans la colonne JSONB data des contacts
     const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/contacts?select=data&data->>email=ilike.${encodeURIComponent(email)}`,
+      `${SUPABASE_URL}/rest/v1/contacts?select=data&data->>email=ilike.${encodeURIComponent(escapeIlike(email))}`,
       {
         headers: {
           'apikey': SUPABASE_SERVICE_KEY,

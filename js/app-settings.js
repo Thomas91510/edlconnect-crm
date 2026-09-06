@@ -352,10 +352,6 @@ function saveSettings(){
   } catch(e){ console.warn('brevo_config.json non trouvé:', e); }
 })();
 document.addEventListener('DOMContentLoaded', function() {
-  // Vérifier si mode booking AVANT tout le reste
-  if(checkBookingMode()) return; // Si mode booking, on s'arrête ici
-  if(checkExtranetMode()) return; // Si mode extranet client, on s'arrête ici aussi
-
   loadFromStorage();
   renderDashboard();
   renderCalendar();

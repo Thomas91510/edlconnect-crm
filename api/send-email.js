@@ -92,9 +92,15 @@ export default async function handler(req) {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
       });
     }
-    const nbDestinataires = Array.isArray(body.to) ? body.to.length : 1;
-    if (nbDestinataires > 50) {
-      return new Response(JSON.stringify({ error: 'Trop de destinataires en un seul envoi (max 50)' }), {
+    // Le plafond doit porter sur to + cc + bcc ensemble : cc/bcc passent tels
+    // quels vers Brevo (voir bodyTague ci-dessous), donc les laisser hors du
+    // calcul permettrait de contourner la limite anti-envoi-de-masse via ces
+    // deux champs plutôt que "to".
+    const nbTo = Array.isArray(body.to) ? body.to.length : 1;
+    const nbCc = Array.isArray(body.cc) ? body.cc.length : (body.cc ? 1 : 0);
+    const nbBcc = Array.isArray(body.bcc) ? body.bcc.length : (body.bcc ? 1 : 0);
+    if (nbTo + nbCc + nbBcc > 50) {
+      return new Response(JSON.stringify({ error: 'Trop de destinataires en un seul envoi (max 50, to + cc + bcc compris)' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
       });
