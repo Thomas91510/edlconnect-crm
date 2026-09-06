@@ -405,9 +405,6 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-t
 html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
 @media (max-width: 680px) {
-  /* KPI emails : 2 colonnes */
-  .kpi-grid[style*="repeat(5"] { grid-template-columns: 1fr 1fr !important; }
-  
   /* Prospection kanban */
   #prosp-board { overflow-x:auto !important; display:flex !important; scroll-snap-type:x mandatory !important; padding-bottom:8px; }
   .prosp-col { min-width:82vw !important; max-width:82vw !important; scroll-snap-align:start !important; flex-shrink:0 !important; }
@@ -621,9 +618,9 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
       <div id="dash-period-banner" style="display:none;background:var(--blue-bg);color:var(--blue-text);padding:6px 14px;border-radius:var(--radius);margin-bottom:12px;font-size:12px;font-weight:500"></div>
       <div class="card" style="margin-bottom:14px">
         <div class="card-head">📌 Aujourd'hui</div>
-        <div id="dash-today-content" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px"></div>
+        <div id="dash-today-content" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:12px"></div>
       </div>
-      <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+      <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
         <div class="kpi"><div class="kpi-label">Contacts totaux</div><div class="kpi-value" id="k-contacts">—</div><div class="kpi-sub" id="k-contacts-sub"></div></div>
         <div class="kpi"><div class="kpi-label">Missions</div><div class="kpi-value" id="k-missions">—</div><div class="kpi-sub">ce mois</div></div>
         <div class="kpi"><div class="kpi-label">États des lieux <span style="font-size:9px;color:var(--text3);font-weight:400">total</span></div><div class="kpi-value" id="k-edl-total" style="color:var(--green)">—</div><div class="kpi-sub" id="k-edl-total-sub"></div></div>
@@ -636,7 +633,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <i class="ti ti-chevron-right" id="email-kpis-chevron" style="font-size:13px;transition:transform .15s"></i>
         📧 Stats email tracking
       </button>
-      <div class="kpi-grid" id="email-kpis-grid" style="grid-template-columns:repeat(5,1fr);margin-top:6px;display:none">
+      <div class="kpi-grid" id="email-kpis-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:6px;display:none">
         <div class="kpi" style="border-left:3px solid #888780">
           <div class="kpi-label">📤 Emails envoyés</div>
           <div class="kpi-value" id="k-sent-total">—</div>
@@ -663,7 +660,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
           <div class="kpi-sub" id="k-no-reply-pct"></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px">
         <div class="card">
           <div class="card-head">Pipeline commercial</div>
           <div style="padding:12px" id="dash-pipeline"></div>
