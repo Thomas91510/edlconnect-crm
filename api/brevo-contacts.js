@@ -2,7 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
-const ADMIN_EMAILS = ['contact@edl-idf.com'];
+import { ADMIN_EMAILS } from './_lib/admin.js';
 
 // ── Vérifie que l'utilisateur est admin ou sur un plan payant actif. ──
 async function planAutorise(userId, email) {

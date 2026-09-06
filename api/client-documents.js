@@ -3,8 +3,8 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { escapeIlike } from './_lib/ilike.js';
+import { ADMIN_EMAILS } from './_lib/admin.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {

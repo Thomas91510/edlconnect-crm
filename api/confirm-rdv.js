@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { identiteAbonne } from './_lib/identite.js';
+import { ADMIN_EMAILS } from './_lib/admin.js';
 
 // Echappement HTML : mission/message/locataires proviennent en bout de chaine
 // d'un formulaire de reservation public (aucune authentification), et sont
@@ -15,7 +16,6 @@ function esc(s) {
 }
 
 const SUPA_URL_BASE = SUPABASE_URL;
-const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
 // Contrairement aux autres endpoints d'envoi (send-email.js,
 // send-welcome-agency.js), cette route ne vérifiait qu'une session valide —

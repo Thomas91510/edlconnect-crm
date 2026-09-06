@@ -2,7 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
-const ADMIN_EMAILS = ['contact@edl-idf.com'];
+import { ADMIN_EMAILS } from './_lib/admin.js';
 const PLANS_VALIDES = ['free', 'starter', 'pro'];
 const STATUTS_VALIDES = ['active', 'suspended', 'expired', 'signed'];
 const ROLES_VALIDES = ['expert', 'agence'];
