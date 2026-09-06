@@ -51,8 +51,7 @@ async function edouardGet(path, apiKey) {
 }
 
 import { SUPABASE_URL as SUPA_URL, SUPABASE_ANON_KEY as SUPA_ANON } from './_lib/supabase.js';
-
-const ADMIN_EMAILS = ['contact@edl-idf.com'];
+import { ADMIN_EMAILS } from './_lib/admin.js';
 
 export default async function handler(req) {
   // Accès autorisé : (1) le cron Vercel, (2) un administrateur connecté

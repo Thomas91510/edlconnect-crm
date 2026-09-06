@@ -9,6 +9,9 @@
   "dependencies": {
     "googleapis": "^140.0.0"
   },
+  "devDependencies": {
+    "jsdom": "^30.0.1"
+  },
   "engines": {
     "node": ">=18"
   }

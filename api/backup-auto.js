@@ -2,13 +2,12 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY as SUPA_ANON } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
+import { ADMIN_EMAILS } from './_lib/admin.js';
 
 const BUCKET = 'sauvegardes';
 const TABLES = ['contacts', 'missions', 'prospects', 'deals', 'rdvs', 'campagnes', 'trackings', 'invoices', 'settings'];
 const RETENTION_JOURS = 30;
 const PAGE = 1000;
-
-const ADMIN_EMAILS = ['contact@edl-idf.com'];
 
 export default async function handler(req) {
   // Acces : le cron Vercel, ou un administrateur connecte
