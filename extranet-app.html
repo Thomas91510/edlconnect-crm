@@ -44,6 +44,33 @@
     .msg-success{color:#68d391;font-size:12px;text-align:center;margin-top:10px}
     .msg-error{color:#fc8181;font-size:12px;text-align:center;margin-top:10px}
     @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    /* Calendrier de créneaux Cal.com (mêmes fonctions que le formulaire public
+       /booking, adaptées au thème sombre de l'extranet) */
+    .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .cal-nav-btn{width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.6);transition:all .15s;flex-shrink:0}
+    .cal-nav-btn:hover:not(:disabled){border-color:#378ADD;color:#7bb8ef}
+    .cal-nav-btn:disabled{opacity:.35;cursor:not-allowed}
+    .cal-nav-btn svg{width:16px;height:16px}
+    .cal-mois-label{font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);text-align:center}
+    .cal-jours-semaine{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px}
+    .cal-jours-semaine span{text-align:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.03em}
+    .cal-grille{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+    .cal-jour{aspect-ratio:1;display:flex;align-items:center;justify-content:center;position:relative;border-radius:8px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;border:none;background:none;font-family:inherit;color:#fff}
+    .cal-jour--indispo{color:rgba(255,255,255,0.25);font-weight:400;cursor:default}
+    .cal-jour--horsFenetre{opacity:.35}
+    .cal-jour--dispo{background:rgba(24,95,165,0.2);color:#7bb8ef;cursor:pointer;transition:all .12s}
+    .cal-jour--dispo:hover{background:rgba(55,138,221,0.3)}
+    .cal-jour--aujourdhui::after{content:'';position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.3)}
+    .cal-jour--dispo.cal-jour--aujourdhui::after{background:#7bb8ef}
+    .cal-jour--selection{background:#1A5FA8 !important;color:#fff !important}
+    .cal-jour--selection.cal-jour--aujourdhui::after{background:#fff}
+    .slots-zone{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.1)}
+    .slots-zone-titre{font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+    .slots-zone-vide{font-size:12px;color:rgba(255,255,255,0.4);padding:8px 0}
+    .slot-row{display:flex;flex-wrap:wrap;gap:8px}
+    .slot-btn{border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 14px;background:rgba(255,255,255,0.06);cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:#fff;transition:all .12s}
+    .slot-btn:hover{border-color:#378ADD;background:rgba(24,95,165,0.2)}
+    .slot-btn.sel{border-color:#378ADD;background:#1A5FA8;color:#fff}
   </style>
 </head>
 <body>
@@ -162,7 +189,8 @@
       <input id="f-adresse" placeholder="12 rue de la Paix, 91000 Évry" style="margin-bottom:10px">
       <div class="form-grid" style="margin-bottom:10px">
         <div><div class="form-label">Type de bien</div><select id="f-bien"><option>Appartement</option><option>Maison</option><option>Studio</option><option>Local commercial</option><option>Parking</option><option>Autre</option></select></div>
-        <div><div class="form-label">Meublé / Nu</div><select id="f-meuble"><option>Nu</option><option>Meublé</option></select></div>
+        <div><div class="form-label">Typologie</div><select id="f-typo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
+        <div><div class="form-label">Meublé / Nu</div><select id="f-meuble" onchange="chargerCreneauxSiPossible()"><option>Nu</option><option>Meublé</option></select></div>
         <div><div class="form-label">Superficie (m²)</div><input id="f-superficie" type="number" placeholder="45" min="1"></div>
         <div><div class="form-label">Date d'entrée</div><input id="f-date-entree" type="date"></div>
       </div>
@@ -170,6 +198,27 @@
       <input id="f-acces" placeholder="Code : A1234" style="margin-bottom:14px">
       <div class="form-label">Nom du propriétaire</div>
       <input id="f-proprietaire" placeholder="Ex: M. Dupont" style="margin-bottom:14px">
+      <div id="slots-panel" style="display:none;margin-bottom:14px">
+        <div class="form-label">Créneaux disponibles *</div>
+        <div class="cal-nav">
+          <button type="button" class="cal-nav-btn" id="slots-prev" onclick="changerPeriodeCreneaux(-1)" aria-label="Mois précédent" disabled>
+            <svg viewBox="0 0 20 20" fill="none"><path d="M12.5 5l-5 5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <span class="cal-mois-label" id="slots-periode-label"></span>
+          <button type="button" class="cal-nav-btn" id="slots-next" onclick="changerPeriodeCreneaux(1)" aria-label="Mois suivant">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M7.5 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="cal-jours-semaine"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
+        <div class="cal-grille" id="cal-grille"></div>
+        <div class="slots-zone">
+          <div class="slots-zone-titre" id="slots-titre">Choisissez d'abord une date</div>
+          <div class="slot-row" id="slots-row"></div>
+          <div class="slots-zone-vide" id="slots-vide" style="display:none"></div>
+        </div>
+        <div style="font-size:10.5px;color:rgba(255,255,255,0.4);margin-top:14px;line-height:1.6">Les jours en bleu ont au moins un créneau disponible. Ces créneaux sont proposés à partir de 48h suivant votre demande.</div>
+      </div>
+      <div id="slots-loading" style="display:none;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:14px">⏳ Recherche des créneaux disponibles…</div>
       <div class="form-grid" style="margin-bottom:14px">
         <div><div class="form-label">Date souhaitée *</div><input id="f-date" type="date"></div>
         <div><div class="form-label">Heure souhaitée</div><select id="f-heure"><option value="">— Flexible —</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option></select></div>
@@ -400,7 +449,7 @@ function closeDetail() { document.getElementById('detail-modal').classList.remov
 
 // ===== BROUILLON AUTO : la saisie survit aux changements de page =====
 const DRAFT_KEY = 'lokentia_brouillon_reservation';
-const DRAFT_FIELDS = ['f-adresse','f-bien','f-meuble','f-superficie','f-date-entree','f-acces','f-proprietaire','f-date','f-heure','f-loc-nom','f-loc-tel','f-loc-email','f-notes'];
+const DRAFT_FIELDS = ['f-adresse','f-bien','f-typo','f-meuble','f-superficie','f-date-entree','f-acces','f-proprietaire','f-date','f-heure','f-loc-nom','f-loc-tel','f-loc-email','f-notes'];
 function saveDraft(open) {
   try {
     const isOpen = (open !== undefined) ? open : (document.getElementById('order-form').style.display === 'block');
@@ -433,6 +482,7 @@ function restoreDraft() {
     document.getElementById('dashboard').style.display = 'none';
     document.getElementById('order-form').style.display = 'block';
   }
+  chargerCreneauxSiPossible(); // au cas où typologie/meublé étaient déjà remplis dans le brouillon
 }
 document.addEventListener('input', e => { if (e.target && e.target.closest && e.target.closest('#order-form')) saveDraft(); });
 document.addEventListener('change', e => { if (e.target && e.target.closest && e.target.closest('#order-form')) saveDraft(); });
@@ -473,10 +523,12 @@ function reutiliserAdresse(idx){
   if(!bien) return;
   document.getElementById('f-adresse').value = bien.adresse || '';
   if(bien.bienType) document.getElementById('f-bien').value = bien.bienType;
+  if(bien.bienTypo) document.getElementById('f-typo').value = bien.bienTypo;
   if(bien.meuble) document.getElementById('f-meuble').value = bien.meuble;
   document.getElementById('f-superficie').value = bien.superficie || '';
   document.getElementById('f-acces').value = bien.acces || '';
   document.getElementById('f-proprietaire').value = bien.proprietaire || '';
+  chargerCreneauxSiPossible();
   saveDraft();
 }
 function selectType(t,btn) { _selectedType=t; document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); toggleEntrants(); saveDraft(); }
@@ -510,6 +562,184 @@ function toggleEntrants(){
   if(show && _entrants.length === 0) addEntrant();
 }
 
+// ─── Créneaux Cal.com (optionnel — dégrade silencieusement) ────────────
+// Même logique et même endpoint que le formulaire public /booking (voir
+// api/booking-page.js) : navigation par mois calendaire complet, sans limite
+// dans le temps vers l'avenir, jamais avant le mois courant vers le passé.
+// Tant que /api/cal-availability ne répond pas de disponibilités réelles
+// (fonctionnalité non configurée, ou typologie non reconnue), la saisie de
+// date/heure libre en dessous reste utilisable sans aucune régression.
+let _creneauxRequeteEnCours = 0;
+let _creneauxMoisAffiche = null; // { annee, mois } — mois 1-12
+let _creneauxMoisInitial = null;
+
+async function chargerCreneauxSiPossible(reinitialiserPeriode){
+  const btypo = document.getElementById('f-typo').value;
+  const meubleVal = document.getElementById('f-meuble').value;
+  const panel = document.getElementById('slots-panel');
+  const loading = document.getElementById('slots-loading');
+  if(!btypo || !meubleVal){ panel.style.display = 'none'; return; }
+  if(reinitialiserPeriode !== false || !_creneauxMoisAffiche){
+    const maintenant = new Date();
+    _creneauxMoisAffiche = { annee: maintenant.getFullYear(), mois: maintenant.getMonth() + 1 };
+    _creneauxMoisInitial = { ..._creneauxMoisAffiche };
+  }
+
+  const requeteId = ++_creneauxRequeteEnCours;
+  panel.style.display = 'none';
+  loading.style.display = 'block';
+  try{
+    const moisParam = _creneauxMoisAffiche.annee + '-' + String(_creneauxMoisAffiche.mois).padStart(2,'0');
+    const resp = await fetch('/api/cal-availability?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam);
+    if(requeteId !== _creneauxRequeteEnCours) return;
+    loading.style.display = 'none';
+    if(!resp.ok){ return; }
+    const data = await resp.json();
+    if(!data || !data.configured || !Array.isArray(data.slots)){ return; }
+    afficherCreneaux(data.slots);
+  }catch(e){
+    if(requeteId === _creneauxRequeteEnCours) loading.style.display = 'none';
+  }
+}
+
+function changerPeriodeCreneaux(direction){
+  let annee = _creneauxMoisAffiche.annee, mois = _creneauxMoisAffiche.mois + direction;
+  if(mois < 1){ mois = 12; annee--; }
+  else if(mois > 12){ mois = 1; annee++; }
+  if(annee < _creneauxMoisInitial.annee || (annee === _creneauxMoisInitial.annee && mois < _creneauxMoisInitial.mois)){
+    annee = _creneauxMoisInitial.annee; mois = _creneauxMoisInitial.mois;
+  }
+  _creneauxMoisAffiche = { annee, mois };
+  chargerCreneauxSiPossible(false);
+}
+
+let _creneauxParJour = {};
+let _creneauxJourSelectionne = null;
+const _pad2 = n => String(n).padStart(2,'0');
+const _cleJourLocal = d => d.getFullYear() + '-' + _pad2(d.getMonth()+1) + '-' + _pad2(d.getDate());
+
+function afficherCreneaux(slotsIso){
+  const panel = document.getElementById('slots-panel');
+  const label = document.getElementById('slots-periode-label');
+  const btnPrev = document.getElementById('slots-prev');
+
+  if(label && _creneauxMoisAffiche){
+    const d = new Date(_creneauxMoisAffiche.annee, _creneauxMoisAffiche.mois - 1, 1);
+    label.textContent = d.toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
+  }
+  if(btnPrev) btnPrev.disabled = _creneauxMoisAffiche.annee === _creneauxMoisInitial.annee && _creneauxMoisAffiche.mois === _creneauxMoisInitial.mois;
+
+  _creneauxParJour = {};
+  slotsIso.slice(0, 2000).forEach(iso => {
+    const d = new Date(iso);
+    if(isNaN(d)) return;
+    const cle = _cleJourLocal(d);
+    (_creneauxParJour[cle] = _creneauxParJour[cle] || []).push({ iso, date: d });
+  });
+  _creneauxJourSelectionne = null;
+
+  rendreCalendrierCreneaux();
+  rendreSlotsJour();
+  panel.style.display = 'block';
+}
+
+function rendreCalendrierCreneaux(){
+  const grille = document.getElementById('cal-grille');
+  if(!grille || !_creneauxMoisAffiche) return;
+
+  const { annee, mois } = _creneauxMoisAffiche;
+  const premierJourMois = new Date(annee, mois - 1, 1);
+  const dernierJourMois = new Date(annee, mois, 0);
+
+  const auDebutSemaine = d => { const x = new Date(d); x.setHours(0,0,0,0); const j = (x.getDay()+6)%7; x.setDate(x.getDate()-j); return x; };
+  const auFinSemaine = d => { const x = new Date(d); x.setHours(0,0,0,0); const j = (x.getDay()+6)%7; x.setDate(x.getDate()+(6-j)); return x; };
+
+  const startGrid = auDebutSemaine(premierJourMois);
+  const endGrid = auFinSemaine(dernierJourMois);
+  const aujourdhui = new Date(); aujourdhui.setHours(0,0,0,0);
+
+  let html = '';
+  for(let d = new Date(startGrid); d <= endGrid; d.setDate(d.getDate()+1)){
+    const cle = _cleJourLocal(d);
+    const dansMois = d.getMonth() === (mois - 1) && d.getFullYear() === annee;
+    const dispo = dansMois && _creneauxParJour[cle] && _creneauxParJour[cle].length > 0;
+    const estAujourdhui = d.getTime() === aujourdhui.getTime();
+    const estSelection = _creneauxJourSelectionne === cle;
+    const classes = ['cal-jour'];
+    if(!dansMois) classes.push('cal-jour--horsFenetre');
+    classes.push(dispo ? 'cal-jour--dispo' : 'cal-jour--indispo');
+    if(estAujourdhui) classes.push('cal-jour--aujourdhui');
+    if(estSelection) classes.push('cal-jour--selection');
+    const onclick = dispo ? ' onclick="choisirJourCreneau(\'' + cle + '\')"' : '';
+    html += '<button type="button" class="' + classes.join(' ') + '"' + onclick + '>' + d.getDate() + '</button>';
+  }
+  grille.innerHTML = html;
+}
+
+function choisirJourCreneau(cle){
+  _creneauxJourSelectionne = cle;
+  rendreCalendrierCreneaux();
+  rendreSlotsJour();
+}
+
+function rendreSlotsJour(){
+  const titre = document.getElementById('slots-titre');
+  const row = document.getElementById('slots-row');
+  const vide = document.getElementById('slots-vide');
+  if(!titre || !row || !vide) return;
+
+  if(!Object.keys(_creneauxParJour).length){
+    titre.style.display = 'none';
+    row.innerHTML = '';
+    vide.textContent = 'Aucun créneau disponible sur cette période — essayez « Mois suivant », ou indiquez une date libre ci-dessous.';
+    vide.style.display = 'block';
+    return;
+  }
+  titre.style.display = 'block';
+  vide.style.display = 'none';
+
+  if(!_creneauxJourSelectionne){
+    titre.textContent = "Choisissez d'abord une date";
+    row.innerHTML = '';
+    return;
+  }
+  const creneaux = _creneauxParJour[_creneauxJourSelectionne] || [];
+  const dateLabel = new Date(_creneauxJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  titre.textContent = 'Créneaux du ' + dateLabel;
+  if(!creneaux.length){
+    row.innerHTML = '';
+    vide.textContent = 'Aucun créneau disponible ce jour-là.';
+    vide.style.display = 'block';
+    return;
+  }
+  row.innerHTML = creneaux.map(({iso, date}) => {
+    const heureLabel = date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    return '<button type="button" class="slot-btn" data-iso="' + iso + '" onclick="choisirCreneauExtranet(this)">' + heureLabel + '</button>';
+  }).join('');
+}
+
+function choisirCreneauExtranet(btn){
+  document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+
+  const d = new Date(btn.getAttribute('data-iso'));
+  if(isNaN(d)) return;
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('f-date').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+
+  // Le menu "Heure souhaitée" de l'extranet utilise le format "HH:MM" (avec
+  // ":"), contrairement au formulaire public qui utilise "HHhMM".
+  const heureVal = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  const heureSelect = document.getElementById('f-heure');
+  if(![...heureSelect.options].some(o => o.value === heureVal)){
+    const opt = document.createElement('option');
+    opt.value = heureVal; opt.textContent = heureVal;
+    heureSelect.appendChild(opt);
+  }
+  heureSelect.value = heureVal;
+  saveDraft();
+}
+
 async function submitOrder() {
   const errEl = document.getElementById('form-error');
   const adresse = document.getElementById('f-adresse').value.trim();
@@ -534,7 +764,7 @@ async function submitOrder() {
   const btn = document.getElementById('form-submit-btn');
   btn.disabled=true; btn.innerHTML='<i class="ti ti-loader"></i> Envoi…';
   const locataire = {nom:locNom,tel:locTel,email:document.getElementById('f-loc-email').value.trim()};
-  const payload = {agencyId:'',agence:_userEmail,contact:_userEmail,email:_userEmail,tel:'',typeEdl:_selectedType,adresse,bienType:document.getElementById('f-bien').value,bienTypo:'',meuble:document.getElementById('f-meuble').value,superficie:document.getElementById('f-superficie').value||'',dateEntree:document.getElementById('f-date-entree').value||'',acces:document.getElementById('f-acces').value.trim(),proprietaire:document.getElementById('f-proprietaire').value.trim(),dateSouhaitee:date,heure:document.getElementById('f-heure').value,notes:document.getElementById('f-notes').value.trim(),locataire,locataires:[locataire],locatairesEntrants,source:'extranet'};
+  const payload = {agencyId:'',agence:_userEmail,contact:_userEmail,email:_userEmail,tel:'',typeEdl:_selectedType,adresse,bienType:document.getElementById('f-bien').value,bienTypo:document.getElementById('f-typo').value,meuble:document.getElementById('f-meuble').value,superficie:document.getElementById('f-superficie').value||'',dateEntree:document.getElementById('f-date-entree').value||'',acces:document.getElementById('f-acces').value.trim(),proprietaire:document.getElementById('f-proprietaire').value.trim(),dateSouhaitee:date,heure:document.getElementById('f-heure').value,notes:document.getElementById('f-notes').value.trim(),locataire,locataires:[locataire],locatairesEntrants,source:'extranet'};
   try {
     const resp = await fetch('/api/booking-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const r = await resp.json();
