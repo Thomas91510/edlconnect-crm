@@ -2157,6 +2157,7 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <button class="btn btn-primary btn-sm" id="fiche-email-btn"><i class="ti ti-send"></i>Envoyer un email</button>
         <button class="btn btn-sm" onclick="ficheTab('edit',document.getElementById('ftab-edit'))"><i class="ti ti-edit"></i>Modifier</button>
         <button class="btn btn-sm" id="fiche-booking-btn" onclick="copyBookingLink()" style="background:var(--green-bg);color:var(--green-text);border-color:var(--green)"><i class="ti ti-link"></i>Lien booking</button>
+        <button class="btn btn-sm" onclick="previewExtranetClient()"><i class="ti ti-eye"></i>Aperçu extranet</button>
       </div>
     </div>
     <div id="fiche-commandes" style="display:none">
@@ -2232,6 +2233,24 @@ html[data-mode="extranet"] #view-extranet{display:block!important;width:100vw!im
         <button class="btn btn-danger btn-sm" onclick="deleteContact()"><i class="ti ti-trash"></i>Supprimer</button>
         <button class="btn btn-primary" onclick="saveContactEdit()"><i class="ti ti-check"></i>Enregistrer</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL APERÇU EXTRANET (admin) : montre exactement ce qu'un client donné
+     voit dans son espace extranet, sans avoir besoin de son email pour se
+     connecter à sa place. -->
+<div class="modal-bg" id="modal-extranet-preview">
+  <div class="modal" style="width:480px;max-width:96vw">
+    <div class="modal-title">
+      <div><div style="font-size:15px;font-weight:700">👁 Aperçu extranet</div><div style="font-size:11px;color:var(--text2)" id="extranet-preview-email"></div></div>
+      <button class="modal-close" onclick="closeModal('modal-extranet-preview')"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="background:#FFF8E6;border:1px solid #F3DFA0;border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:11px;color:#7A5A0A">
+      Vue en lecture — c'est exactement ce que ce client voit dans son espace, en thème clair.
+    </div>
+    <div id="extranet-preview-body" style="max-height:65vh;overflow-y:auto">
+      <div style="text-align:center;padding:30px;color:var(--text2)"><i class="ti ti-loader"></i> Chargement…</div>
     </div>
   </div>
 </div>
