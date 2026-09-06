@@ -5,6 +5,37 @@ import { origineAutorisee } from './_lib/cors.js';
 import { identiteAbonne } from './_lib/identite.js';
 
 const SUPA_URL_IDENT = SUPABASE_URL;
+const ADMIN_EMAILS = ['contact@edl-idf.com'];
+
+// Echappement HTML : companyName/contactName viennent d'un formulaire de
+// saisie côté CRM et sont réinjectés tels quels dans un email envoyé à un
+// tiers (l'agence invitée) ; sans ceci, n'importe quel compte peut y
+// injecter du HTML/du contenu de phishing.
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+// Contrairement à send-welcome.js (auto-envoi), cet endpoint envoie à un
+// tiers arbitraire : réservé aux comptes admin ou sur un plan payant actif,
+// pour qu'un simple compte extranet client (même Supabase, même projet) ne
+// puisse pas s'en servir comme relais d'email.
+async function planAutorise(userId, email) {
+  if (email && ADMIN_EMAILS.includes(email)) return true;
+  try {
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (!key || !userId) return false;
+    const r = await fetch(SUPABASE_URL + '/rest/v1/user_plans?select=plan,status&user_id=eq.' + encodeURIComponent(userId), {
+      headers: { apikey: key, Authorization: 'Bearer ' + key }
+    });
+    if (!r.ok) return false;
+    const rows = await r.json();
+    const p = rows && rows[0];
+    if (!p) return false;
+    return (p.plan === 'starter' || p.plan === 'pro') && p.status === 'active';
+  } catch (e) { return false; }
+}
 
 
 export default async function handler(req) {
@@ -36,6 +67,15 @@ export default async function handler(req) {
   }
 
   const _user = await _userResp.json();
+
+  const _autorise = await planAutorise(_user && _user.id, _user && _user.email);
+  if (!_autorise) {
+    return new Response(JSON.stringify({ error: 'Cette action est réservée aux comptes admin ou sur un plan payant actif.', planRequis: true }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
+    });
+  }
+
   const IDENT = await identiteAbonne(SUPA_URL_IDENT, process.env.SUPABASE_SERVICE_KEY, _user && _user.id);
 
   const BREVO_KEY = process.env.BREVO_API_KEY;
@@ -68,7 +108,7 @@ export default async function handler(req) {
   <div style="background:#fff;padding:32px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
 
     <p style="font-size:15px;color:#1a1a1a;margin:0 0 16px 0">
-      Bonjour${contactName ? ' <strong>' + contactName + '</strong>' : ''},
+      Bonjour${contactName ? ' <strong>' + esc(contactName) + '</strong>' : ''},
     </p>
 
     <p style="font-size:13px;color:#444;line-height:1.8;margin:0 0 20px 0">

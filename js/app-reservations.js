@@ -1014,4 +1014,3 @@ function copyBookingLink(){
   });
 }
 
-// checkBookingMode est appelé depuis le DOMContentLoaded principal

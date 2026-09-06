@@ -77,11 +77,11 @@ function renderEvtListItem(e){
 
   return `<div style="border-left:${bordure};background:${fond};padding:7px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div style="font-size:11px;font-weight:${graisse};color:${couleur}">${pastille}${e.titre||e.agence||'—'}</div>
+      <div style="font-size:11px;font-weight:${graisse};color:${couleur}">${pastille}${esc(e.titre||e.agence||'—')}</div>
       ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#1A5FA8;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
     </div>
     <div style="font-size:10px;color:var(--text2)">${fmtDT(e.date)} · ${e.duree||e.dureeEstimee||'—'}</div>
-    ${e.contact?`<div style="font-size:10px;color:var(--text3)">${e.contact}</div>`:''}
+    ${e.contact?`<div style="font-size:10px;color:var(--text3)">${esc(e.contact)}</div>`:''}
   </div>`;
 }
 
@@ -145,7 +145,7 @@ function renderCalendar(){
       const isT=d.getTime()===today.getTime();
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd)).sort(calTriHoraire);
       return `<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)" style="min-height:110px">
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${(e.titre||e.agence||'').replace(/"/g,'&quot;')}" style="font-size:10px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${fmtDT(e.date).split(' ')[1]||''} ${e.titre||e.agence||''}${e.evtType==='mission'&&e.dureeEstimee?' ('+e.dureeEstimee+')':''}</div>`).join('')}
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${esc(e.titre||e.agence||'')}" style="font-size:10px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${fmtDT(e.date).split(' ')[1]||''} ${esc(e.titre||e.agence||'')}${e.evtType==='mission'&&e.dureeEstimee?' ('+e.dureeEstimee+')':''}</div>`).join('')}
         ${evts.length===0?'<div style="font-size:10px;color:var(--text3);padding:4px">Libre</div>':''}
       </div>`;
     }).join('');
@@ -179,7 +179,7 @@ function renderCalendar(){
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd)).sort(calTriHoraire);
       html+=`<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)">
         <div class="cal-day-num">${d}</div>
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${(e.titre||e.agence||'').replace(/"/g,'&quot;')}" style="cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${e.titre||e.agence||''}</div>`).join('')}
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${esc(e.titre||e.agence||'')}" style="cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${esc(e.titre||e.agence||'')}</div>`).join('')}
       </div>`;
     }
     const body=document.getElementById('cal-body');

@@ -3,6 +3,15 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 
+// Echappement HTML : companyName vient d'un champ de saisie libre côté
+// client (onboarding) ; sans ceci, n'importe quel compte authentifié peut
+// injecter du HTML dans un email envoyé via l'adresse Lokentia.
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 export default async function handler(req) {
   if(req.method === 'OPTIONS') {
     return new Response(null, {
@@ -31,19 +40,29 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
   }
 
+  // L'email de bienvenue est un auto-envoi lié à l'onboarding : on n'envoie
+  // jamais qu'à l'adresse vérifiée de l'appelant, jamais à une adresse
+  // fournie dans le corps de la requête (sinon n'importe quel compte
+  // authentifié — y compris un simple client extranet — peut se servir de
+  // cet endpoint pour relayer un email arbitraire via l'adresse Lokentia).
+  const _user = await _userResp.json();
+  const recipientEmail = (_user && _user.email || '').trim();
+  if(!recipientEmail) {
+    return new Response(JSON.stringify({ error: 'Email introuvable pour ce compte' }), { status: 400 });
+  }
+
   const BREVO_KEY = process.env.BREVO_API_KEY;
   if(!BREVO_KEY) {
     return new Response(JSON.stringify({ error: 'Clé Brevo manquante' }), { status: 500 });
   }
 
   try {
-    const { email, companyName, agencyId } = await req.json();
+    const { companyName } = await req.json();
     // Générer le lien booking personnalisé
     const agencySlug = (companyName||'').toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g,'')
       .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     const bookingLink = `https://app.lokentia.fr/booking?agency=${agencySlug}&name=${encodeURIComponent(companyName||'')}`;
-    if(!email) return new Response(JSON.stringify({ error: 'Email requis' }), { status: 400 });
 
     const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -53,7 +72,7 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         sender: { name: 'Thomas — Lokentia', email: 'contact@lokentia.fr' },
-        to: [{ email }],
+        to: [{ email: recipientEmail }],
         subject: '👋 Bienvenue sur Lokentia — votre essai de 15 jours commence !',
         htmlContent: `
           <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
@@ -66,7 +85,7 @@ export default async function handler(req) {
             <div style="background:#fff;padding:32px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
               <h2 style="font-size:22px;margin-bottom:12px">Bienvenue sur Lokentia ! 🎉</h2>
               <p style="color:#6b6b6b;line-height:1.7;margin-bottom:20px">
-                ${companyName ? `Bonjour et bienvenue <strong>${companyName}</strong> !` : 'Bonjour et bienvenue !'}
+                ${companyName ? `Bonjour et bienvenue <strong>${esc(companyName)}</strong> !` : 'Bonjour et bienvenue !'}
                 <br>Votre essai gratuit de <strong>15 jours</strong> vient de commencer.
               </p>
               <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:24px">
