@@ -189,7 +189,7 @@
       <input id="f-adresse" placeholder="12 rue de la Paix, 91000 Évry" style="margin-bottom:10px">
       <div class="form-grid" style="margin-bottom:10px">
         <div><div class="form-label">Type de bien</div><select id="f-bien"><option>Appartement</option><option>Maison</option><option>Studio</option><option>Local commercial</option><option>Parking</option><option>Autre</option></select></div>
-        <div><div class="form-label">Typologie</div><select id="f-typo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
+        <div><div class="form-label">Typologie *</div><select id="f-typo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
         <div><div class="form-label">Meublé / Nu</div><select id="f-meuble" onchange="chargerCreneauxSiPossible()"><option>Nu</option><option>Meublé</option></select></div>
         <div><div class="form-label">Superficie (m²)</div><input id="f-superficie" type="number" placeholder="45" min="1"></div>
         <div><div class="form-label">Date d'entrée</div><input id="f-date-entree" type="date"></div>
@@ -748,11 +748,13 @@ function choisirCreneauExtranet(btn){
 async function submitOrder() {
   const errEl = document.getElementById('form-error');
   const adresse = document.getElementById('f-adresse').value.trim();
+  const typo = document.getElementById('f-typo').value;
   const locNom = document.getElementById('f-loc-nom').value.trim();
   const locTel = document.getElementById('f-loc-tel').value.trim();
   const date = document.getElementById('f-date').value;
   if (!_selectedType) { errEl.textContent='Sélectionnez un type d\'état des lieux.'; errEl.style.display='block'; return; }
   if (!adresse) { errEl.textContent='L\'adresse est requise.'; errEl.style.display='block'; return; }
+  if (!typo) { errEl.textContent='La typologie du bien est requise.'; errEl.style.display='block'; return; }
   if (!locNom) { errEl.textContent='Le nom du locataire est requis.'; errEl.style.display='block'; return; }
   if (!locTel) { errEl.textContent='Le téléphone du locataire est requis.'; errEl.style.display='block'; return; }
   if (!date) { errEl.textContent='La date souhaitée est requise.'; errEl.style.display='block'; return; }
