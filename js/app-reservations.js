@@ -159,15 +159,15 @@ function renderReservations(list){
       : '<span class="badge b-amber">⏳ En attente</span>';
 
     return `<tr>
-      <td style="font-size:11px">${dateDemande}</td>
-      <td style="font-weight:600;font-size:12px">${esc(r.agence || '—')}</td>
-      <td style="font-size:11px">${esc(r.typeEdl || r.type || '—')}</td>
-      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.adresse || '—')}</td>
-      <td style="font-size:11px;font-weight:600;color:var(--blue)">${dateSouhaitee}</td>
-      <td style="font-size:11px">${locataire}</td>
-      <td style="font-size:11px">${r.proprietaire ? esc(r.proprietaire) : '<span style="color:var(--text3,#c8c8c8)">—</span>'}</td>
-      <td>${statut}</td>
-      <td style="display:flex;gap:4px;flex-wrap:wrap">
+      <td data-label="Date demande" style="font-size:11px">${dateDemande}</td>
+      <td data-label="Agence" style="font-weight:600;font-size:12px">${esc(r.agence || '—')}</td>
+      <td data-label="Type EDL" style="font-size:11px">${esc(r.typeEdl || r.type || '—')}</td>
+      <td data-label="Adresse" style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.adresse || '—')}</td>
+      <td data-label="Date souhaitée" style="font-size:11px;font-weight:600;color:var(--blue)">${dateSouhaitee}</td>
+      <td data-label="Locataire" style="font-size:11px">${locataire}</td>
+      <td data-label="Propriétaire" style="font-size:11px">${r.proprietaire ? esc(r.proprietaire) : '<span style="color:var(--text3,#c8c8c8)">—</span>'}</td>
+      <td data-label="Statut">${statut}</td>
+      <td class="tbl-cards-actions" style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="confirmRdvFromReservation('${esc(r.id || r._supaId)}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
           <i class="ti ti-calendar-check" style="font-size:11px"></i> Confirmer & Créer
         </button>
