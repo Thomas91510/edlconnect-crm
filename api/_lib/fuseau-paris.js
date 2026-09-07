@@ -24,10 +24,11 @@ function decalageParisMs(instantMs) {
   return vuCommeUTC - instantMs;
 }
 
-// Instant UTC correspondant à minuit (00:00:00) le `jour`/`mois1`/`annee`
-// donné, heure de Paris. `mois1` est 1-indexé (1 = janvier).
-export function minuitParisEnUTC(annee, mois1, jour) {
-  const cibleUTCNombre = Date.UTC(annee, mois1 - 1, jour, 0, 0, 0);
+// Instant UTC correspondant à l'heure civile donnée, heure de Paris.
+// `mois1` est 1-indexé (1 = janvier). `heure`/`minute`/`seconde` par défaut à
+// 0 pour l'usage "minuit" historique de cette fonction.
+export function parisEnUTC(annee, mois1, jour, heure = 0, minute = 0, seconde = 0) {
+  const cibleUTCNombre = Date.UTC(annee, mois1 - 1, jour, heure, minute, seconde);
   let instant = cibleUTCNombre;
   // Deux itérations suffisent : le décalage Paris ne prend que deux valeurs
   // (CET +1h / CEST +2h), donc converge dès la première correction sauf tout
@@ -36,6 +37,11 @@ export function minuitParisEnUTC(annee, mois1, jour) {
     instant = cibleUTCNombre - decalageParisMs(instant);
   }
   return new Date(instant);
+}
+
+// Alias conservé pour les appelants existants (minuit = heure/minute/seconde à 0).
+export function minuitParisEnUTC(annee, mois1, jour) {
+  return parisEnUTC(annee, mois1, jour);
 }
 
 // Année et mois (1-12) actuels vus depuis le fuseau Europe/Paris — utilisé

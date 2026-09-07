@@ -3,6 +3,23 @@ import { google } from 'googleapis';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { dureeEnMinutes } from './_lib/duree.js';
+import { parisEnUTC } from './_lib/fuseau-paris.js';
+
+// Le CRM envoie une date "AAAA-MM-JJTHH:mm:ss" sans fuseau — l'heure de Paris
+// telle que saisie par l'utilisateur, pas un instant UTC. `new Date(...)` sur
+// une telle chaîne (sans Z ni offset) est interprétée comme l'heure locale du
+// *runtime*, pas celle de Paris ; sur Vercel ce runtime tourne en UTC, ce qui
+// décale l'événement de 1h (CET) ou 2h (CEST) une fois affiché dans Google
+// Calendar avec timeZone:'Europe/Paris'. On ne réinterprète que les chaînes
+// réellement sans fuseau : une date qui en porte déjà un (Z ou +hh:mm) est
+// laissée à new Date(), qui la traite alors correctement.
+const RE_DATE_SANS_FUSEAU = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/;
+function versInstantUTC(date) {
+  const m = RE_DATE_SANS_FUSEAU.exec(String(date || '').trim());
+  if (!m) return new Date(date);
+  const [, annee, mois, jour, heure, minute, seconde] = m;
+  return parisEnUTC(+annee, +mois, +jour, +heure, +minute, seconde ? +seconde : 0);
+}
 
 async function getCalendarClient() {
   const oauth2Client = new google.auth.OAuth2(
@@ -38,7 +55,7 @@ export default async function handler(req, res) {
 
   try {
     const { titre, date, duree, lieu, description } = req.body;
-    const startDt = new Date(date);
+    const startDt = versInstantUTC(date);
     if (isNaN(startDt)) return res.status(400).json({ error: `Date invalide : ${date}` });
 
     const minutes = dureeEnMinutes(duree);
