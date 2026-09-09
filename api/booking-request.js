@@ -39,7 +39,7 @@ export default async function handler(req) {
 
   try {
     const data = await req.json();
-    const { agencyId, contactId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, proprietaire, dateSouhaitee, heure, notes, locataire, locataires, locatairesEntrants } = data;
+    const { agencyId, contactId, agence, contact, email, tel, typeEdl, adresse, bienType, bienTypo, meuble, superficie, dateEntree, acces, proprietaire, dateSouhaitee, heure, notes, locataire, locataires, locatairesEntrants, pieceJointes } = data;
     // Particulier passant directement (sans agence intermediaire) : seule la
     // reservation manuelle du CRM envoie ce champ pour l'instant. Repli sur
     // "Professionnel" pour ne rien casser sur le formulaire public existant.
@@ -80,6 +80,13 @@ export default async function handler(req) {
     if(Array.isArray(locatairesEntrants) && locatairesEntrants.length > 10){
       return new Response(JSON.stringify({ error: 'Trop de locataires entrants' }), { status: 400 });
     }
+    // Les fichiers sont déjà déposés (api/upload-booking-attachment.js) avant
+    // cet appel — on ne reçoit ici que {nom, path}, jamais le contenu.
+    const piecesJointesValidees = Array.isArray(pieceJointes)
+      ? pieceJointes.slice(0, 10)
+          .map(p => ({ nom: String(p?.nom || '').slice(0, 200), path: String(p?.path || '').slice(0, 300) }))
+          .filter(p => p.path)
+      : [];
 
     // ── Limite de débit par IP (endpoint public, sans authentification) ──
     // Chaque soumission déclenche 2-3 emails sortants ; sans garde-fou, un
@@ -188,6 +195,7 @@ export default async function handler(req) {
         locataireNom: locataire?.nom || '',
         locataireTel: locataire?.tel || '',
         locataireEmail: locataire?.email || '',
+        piecesJointes: piecesJointesValidees,
         ownerId: ownerId,
         ownerSource: ownerSource,
         source: 'booking',
@@ -292,6 +300,7 @@ export default async function handler(req) {
                   <tr><td style="color:#999;padding:5px 0">Locataire</td><td><strong>${esc(locataire?.nom || '—')}</strong><br>📞 ${esc(locataire?.tel || '—')}${locataire?.email ? '<br>✉️ ' + esc(locataire.email) : ''}</td></tr>
                   ${(locatairesEntrants && locatairesEntrants.length) ? `<tr><td style="color:#999;padding:5px 0">Locataire(s) entrant(s)</td><td>${locatairesEntrants.map(e => `<strong>${esc((e.prenom||'') + ' ' + (e.nom||''))}</strong> · 📞 ${esc(e.tel||'—')}${e.email ? ' · ✉️ ' + esc(e.email) : ''}`).join('<br>')}</td></tr>` : ''}
                   ${notes ? `<tr><td style="color:#999;padding:5px 0">Notes</td><td style="color:#6b6b6b">${esc(notes)}</td></tr>` : ''}
+                  ${piecesJointesValidees.length ? `<tr><td style="color:#999;padding:5px 0">Pièces jointes</td><td>📎 ${piecesJointesValidees.length} fichier(s) — à consulter dans le CRM</td></tr>` : ''}
                 </table>
                 <div style="margin-top:20px;text-align:center">
                   <a href="https://app.lokentia.fr" style="background:#1A5FA8;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;display:inline-block">

@@ -265,6 +265,14 @@ textarea{min-height:75px;resize:vertical}
         <textarea id="notes" placeholder="Clés à récupérer à l'agence, présence du propriétaire…"></textarea>
       </div>
     </div>
+    <div class="card">
+      <div class="card-head"><i class="ti ti-paperclip"></i>Pièces jointes (optionnel)</div>
+      <div class="card-body">
+        <input type="file" id="attachments-input" multiple onchange="onAttachmentsSelected(this)">
+        <div class="hint">Tous formats acceptés · 25 Mo max par fichier · 10 fichiers max</div>
+        <div id="attachments-list" style="margin-top:10px"></div>
+      </div>
+    </div>
     <div class="btn-row">
       <button class="btn" onclick="prev(2)"><i class="ti ti-arrow-left"></i> Retour</button>
       <button class="btn btn-primary" onclick="next(2)">Suivant <i class="ti ti-arrow-right"></i></button>
@@ -563,6 +571,59 @@ function choisirCreneau(btn){
 
 function showErr(msg){ const e=document.getElementById('err'); e.textContent='⚠️ '+msg; e.classList.add('show'); e.scrollIntoView({behavior:'smooth',block:'center'}); }
 function hideErr(){ document.getElementById('err').classList.remove('show'); }
+function escAtt(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+// ─── Pièces jointes (tout format accepté, dépôt immédiat à la sélection) ──
+// Un jeton unique regroupe les fichiers d'une même soumission avant même
+// que la réservation n'existe (elle n'est créée qu'à l'envoi final) — voir
+// api/upload-booking-attachment.js.
+const _attachToken = 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+let _attachments = [];
+const MAX_PIECES_JOINTES = 10;
+
+async function onAttachmentsSelected(input){
+  const fichiers = Array.from(input.files || []);
+  input.value = '';
+  for(const f of fichiers){
+    if(_attachments.length >= MAX_PIECES_JOINTES){ showErr('Maximum ' + MAX_PIECES_JOINTES + ' fichiers.'); break; }
+    const entree = { nom: f.name, path: '', status: 'uploading' };
+    _attachments.push(entree);
+    renderAttachments();
+    try{
+      const form = new FormData();
+      form.append('file', f);
+      form.append('token', _attachToken);
+      const resp = await fetch('/api/upload-booking-attachment', { method: 'POST', body: form });
+      const data = await resp.json().catch(() => ({}));
+      if(resp.ok && data.success){
+        entree.path = data.path;
+        entree.status = 'ok';
+      } else {
+        entree.status = 'error';
+        entree.error = data.error || 'Échec du dépôt';
+      }
+    }catch(e){
+      entree.status = 'error';
+      entree.error = 'Erreur réseau';
+    }
+    renderAttachments();
+  }
+}
+
+function removeAttachment(i){ _attachments.splice(i, 1); renderAttachments(); }
+
+function renderAttachments(){
+  const wrap = document.getElementById('attachments-list');
+  if(!wrap) return;
+  wrap.innerHTML = _attachments.map((a, i) => {
+    const icon = a.status === 'uploading' ? '⏳' : a.status === 'error' ? '⚠️' : '📎';
+    const label = a.status === 'error' ? (a.nom + ' — ' + (a.error || 'échec')) : a.nom;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:12px">'
+      + '<span>' + icon + '</span>'
+      + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escAtt(label) + '</span>'
+      + '<span onclick="removeAttachment(' + i + ')" style="cursor:pointer;color:var(--text3)">✕</span></div>';
+  }).join('');
+}
 
 function setStep(n){
   [1,2,3].forEach(i=>{
@@ -686,6 +747,7 @@ async function submit(){
     }
     if(locatairesEntrants.length === 0) return showErr('Ajoutez au moins un locataire entrant.');
   }
+  if(_attachments.some(a => a.status === 'uploading')) return showErr("Patientez, l'envoi des pièces jointes est en cours…");
   const locNom = locataires[0]?.nom || '';
   const locTel = locataires[0]?.tel || '';
   const locCivilite = locataires[0]?.civilite || '';
@@ -713,7 +775,8 @@ async function submit(){
     notes: document.getElementById('notes').value.trim(),
     locataire: locataires[0] || {},
     locataires: locataires,
-    locatairesEntrants: locatairesEntrants
+    locatairesEntrants: locatairesEntrants,
+    pieceJointes: _attachments.filter(a => a.status === 'ok').map(a => ({ nom: a.nom, path: a.path }))
   };
   try {
     const resp = await fetch('/api/booking-request', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
