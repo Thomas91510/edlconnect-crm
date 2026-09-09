@@ -77,6 +77,19 @@ async function notifierChangementStatutCommande(mission){
   }catch(e){ console.warn('notifierChangementStatutCommande:', e); }
 }
 
+// Affiche le commit réellement déployé (api/version.js expose
+// VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement, aucune maintenance
+// manuelle) — utile pour vérifier en un coup d'œil qu'un déploiement a
+// bien pris effet, comme sur l'extranet.
+(async function afficherVersionCrm(){
+  try {
+    const resp = await fetch('/api/version');
+    const data = await resp.json();
+    const el = document.getElementById('app-version');
+    if(el && data.sha) el.textContent = (data.env === 'production' ? '' : data.env + ' · ') + data.sha;
+  } catch(e) {}
+})();
+
 // ─── UTILS ────────────────────────────────────────────────
 function notify(msg,type=''){
   const n=document.getElementById('notif');
