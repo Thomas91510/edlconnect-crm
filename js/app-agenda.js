@@ -560,9 +560,11 @@ function saveMission(){
     date:document.getElementById('m-date').value,
     montant:Number(document.getElementById('m-montant').value)||0,
     statut:document.getElementById('m-statut').value,
-    notes:document.getElementById('m-notes').value
+    notes:document.getElementById('m-notes').value,
+    avenantUrl:(document.getElementById('m-avenant-url')?.value||'').trim()
   };
   DB.missions.push(mission);
+  if(typeof pushToSupabase === 'function') pushToSupabase('missions', mission);
   // Rattachement automatique au contact
   const contact=DB.contacts.find(c=>
     (email&&(c.email||'').toLowerCase()===email.toLowerCase())||
@@ -598,7 +600,7 @@ function saveMission(){
     renderContacts();
   }
   saveToStorage();closeModal('modal-mission');
-  ['m-agence','m-adresse','m-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['m-agence','m-adresse','m-notes','m-avenant-url'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const emailEl=document.getElementById('m-email');if(emailEl)emailEl.value='';
   renderMissions();renderDashboard();
 }

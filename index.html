@@ -1620,6 +1620,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       <div><label>Statut</label><select id="m-statut"><option>planifiée</option><option>en cours</option><option>terminée</option></select></div>
     </div>
     <label>Notes</label><textarea id="m-notes" style="min-height:50px"></textarea>
+    <label>Avenant (lien du document, optionnel)</label><input id="m-avenant-url" placeholder="https://drive.google.com/...">
     <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end">
       <button class="btn" onclick="closeModal('modal-mission')">Annuler</button>
       <button class="btn btn-primary" id="mission-save-btn" onclick="saveMission()"><i class="ti ti-check"></i>Enregistrer</button>
@@ -1693,6 +1694,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       <button class="tab" id="ftab-commandes" onclick="ficheTab('commandes',this)">Commandes <span id="ftab-commandes-count"></span></button>
       <button class="tab" id="ftab-taches" onclick="ficheTab('taches',this)">Tâches <span id="ftab-taches-count" style="font-size:10px;background:var(--blue-bg);color:var(--blue-text);padding:1px 5px;border-radius:8px;margin-left:2px"></span></button>
       <button class="tab" id="ftab-emails" onclick="ficheTab('emails',this)">Emails & tracking</button>
+      <button class="tab" id="ftab-messages" onclick="ficheTab('messages',this)">Messages <span id="ftab-messages-count" style="font-size:10px;background:var(--blue-bg);color:var(--blue-text);padding:1px 5px;border-radius:8px;margin-left:2px"></span></button>
       <button class="tab" id="ftab-edit" onclick="ficheTab('edit',this)">Modifier</button>
     </div>
     <div id="fiche-infos">
@@ -1729,6 +1731,13 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     </div>
     <div id="fiche-emails" style="display:none">
       <div id="fiche-emails-list"></div>
+    </div>
+    <div id="fiche-messages" style="display:none">
+      <div id="fiche-messages-thread" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:10px;padding:4px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="fiche-message-input" placeholder="Écrire un message au client…" onkeydown="if(event.key==='Enter'){sendContactMessage()}" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="sendContactMessage()"><i class="ti ti-send"></i></button>
+      </div>
     </div>
     <div id="fiche-edit" style="display:none">
       <div class="form-grid">
@@ -1773,6 +1782,15 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Ces documents seront visibles par le client dans son espace extranet. Collez l'URL de partage Google Drive de chaque document.</div>
       <div id="fe-docs-list"></div>
       <button type="button" onclick="feAddDoc()" class="btn btn-sm" style="margin-top:6px"><i class="ti ti-plus"></i> Ajouter un document</button>
+
+      <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border2)">
+        <label style="font-weight:600;display:block;margin-bottom:4px">🧾 Déposer une facture (PDF)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="file" id="fe-facture-file" accept="application/pdf" style="flex:1">
+          <button type="button" class="btn btn-sm" onclick="uploadFactureCourante()"><i class="ti ti-upload"></i> Déposer</button>
+        </div>
+        <div id="fe-facture-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
+      </div>
 
       <div style="margin-top:12px;display:flex;gap:7px;justify-content:flex-end">
         <button class="btn btn-danger btn-sm" onclick="deleteContact()"><i class="ti ti-trash"></i>Supprimer</button>

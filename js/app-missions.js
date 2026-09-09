@@ -174,6 +174,7 @@ function editMission(i){
   document.getElementById('m-adresse').value   = m.adresse   || '';
   document.getElementById('m-montant').value   = m.montant   || '';
   document.getElementById('m-notes').value     = m.notes     || '';
+  const av=document.getElementById('m-avenant-url');if(av)av.value=m.avenantUrl||'';
   const bt=document.getElementById('m-bien-type');if(bt)bt.value=m.bienType||'';
   const btypo=document.getElementById('m-bien-typo');if(btypo)btypo.value=m.bienTypo||'';
   const bm=document.getElementById('m-bien-meuble');if(bm)bm.value=m.bienMeuble||'';
@@ -224,8 +225,10 @@ function saveEditMission(){
   m.bienMeuble  = document.getElementById('m-bien-meuble')?.value || '';
   m.statut      = document.getElementById('m-statut').value;
   m.date        = document.getElementById('m-date').value;
+  m.avenantUrl  = (document.getElementById('m-avenant-url')?.value || '').trim();
 
   saveToStorage();
+  if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
   closeModal('modal-mission');
   notify('✅ Mission mise à jour !');
   _editMissionIdx = null;
@@ -235,6 +238,7 @@ function saveEditMission(){
   const btn = document.getElementById('mission-save-btn');
   btn.innerHTML = '<i class="ti ti-check"></i>Enregistrer';
   btn.onclick = saveMission;
+  const avReset=document.getElementById('m-avenant-url');if(avReset)avReset.value='';
 
   renderMissions();
   renderDashboard();

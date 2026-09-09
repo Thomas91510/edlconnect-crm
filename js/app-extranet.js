@@ -13,6 +13,10 @@ function feRenderDocs(docs){
   }
   wrap.innerHTML = _feDocs.map((d,i) => `
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <select onchange="feUpdateDoc(${i},'type',this.value)" style="flex:0 0 auto">
+        <option value="document"${(d.type||'document')==='document'?' selected':''}>📁 Document</option>
+        <option value="facture"${d.type==='facture'?' selected':''}>🧾 Facture</option>
+      </select>
       <input type="text" value="${esc(d.nom||'')}" placeholder="Nom du document" onchange="feUpdateDoc(${i},'nom',this.value)" style="flex:1">
       <input type="url" value="${esc(d.url||'')}" placeholder="https://drive.google.com/..." onchange="feUpdateDoc(${i},'url',this.value)" style="flex:2">
       <button onclick="feRemoveDoc(${i})" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px">✕</button>
@@ -23,12 +27,58 @@ let _feDocs = [];
 function feUpdateDoc(i, field, val){ _feDocs[i][field] = val; }
 function feRemoveDoc(i){ _feDocs.splice(i,1); feRenderDocs(_feDocs); }
 function feAddDoc(){
-  _feDocs.push({ nom:'', url:'' });
+  _feDocs.push({ nom:'', url:'', type:'document' });
   feRenderDocs(_feDocs);
   const inputs = document.querySelectorAll('#fe-docs-list input[type="text"]');
   if(inputs.length) inputs[inputs.length-1].focus();
 }
 function feGetDocs(){ return _feDocs.filter(d => d.url && d.url.trim()); }
+
+// Dépose une facture PDF pour le client dont l'email est dans #fe-email.
+// Écrit directement en base (via /api/upload-facture), puis reflète le
+// document dans _feDocs pour que le bouton "Enregistrer" de la fiche —
+// qui écrase c.documents avec feGetDocs() — n'efface pas ce qui vient
+// d'être déposé.
+async function uploadFactureCourante(){
+  const fileInput = document.getElementById('fe-facture-file');
+  const statusEl = document.getElementById('fe-facture-status');
+  const email = (document.getElementById('fe-email')?.value || '').trim();
+  const file = fileInput?.files?.[0];
+
+  if(!email){ notify('⚠️ Renseigne d\'abord l\'email du client', 'warn'); return; }
+  if(!file){ notify('⚠️ Choisis un fichier PDF', 'warn'); return; }
+  if(file.type !== 'application/pdf'){ notify('⚠️ Le fichier doit être un PDF', 'warn'); return; }
+
+  if(statusEl) statusEl.textContent = 'Envoi en cours…';
+  try{
+    const form = new FormData();
+    form.append('file', file);
+    form.append('clientEmail', email);
+    form.append('nom', 'Facture — ' + file.name.replace(/\.pdf$/i, ''));
+
+    const resp = await fetch('/api/upload-facture', {
+      method: 'POST',
+      headers: await _authHeaders(),
+      body: form
+    });
+    const data = await resp.json().catch(() => ({}));
+
+    if(!resp.ok || !data.success){
+      notify('❌ ' + (data.error || 'Échec du dépôt'), 'err');
+      if(statusEl) statusEl.textContent = '';
+      return;
+    }
+
+    _feDocs.push({ nom: data.nom, url: data.path, type: 'facture' });
+    feRenderDocs(_feDocs);
+    notify('✅ Facture déposée !');
+    if(statusEl) statusEl.textContent = 'Dernier dépôt : ' + file.name;
+    fileInput.value = '';
+  }catch(e){
+    notify('❌ Erreur réseau lors du dépôt', 'err');
+    if(statusEl) statusEl.textContent = '';
+  }
+}
 
 function fmtEntrants(list){
   if(!Array.isArray(list) || !list.length) return '\u2014';
