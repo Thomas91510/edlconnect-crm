@@ -129,6 +129,10 @@ export default async function handler(req) {
         const doc = linkedMission.id ? docsParMission[linkedMission.id] : null;
         if (doc) rapportUrl = doc.url;
       }
+      // L'avenant est un champ direct sur la mission (m-avenant-url côté
+      // CRM), pas un document rattaché — indépendant de docsParMission qui
+      // ne gère qu'un seul document (le rapport) par mission.
+      const avenantUrl = (linkedMission && linkedMission.avenantUrl) || '';
 
       return {
         id: r.id,
@@ -142,6 +146,7 @@ export default async function handler(req) {
         proprietaire: r.data?.proprietaire || '',
         statut,
         rapportUrl,
+        avenantUrl,
         dateSouhaitee: r.data?.dateSouhaitee || '',
         heure: r.data?.heure || '',
         locataireNom: r.data?.locataireNom || (r.data?.locataire?.nom) || '',

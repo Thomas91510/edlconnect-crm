@@ -78,6 +78,11 @@ function openFiche(id){
   document.getElementById('fe-tel').value=c.tel||'';
   document.getElementById('fe-notes').value=c.notes||'';
   feRenderDocs(c.documents || []);
+  const msgBadge=document.getElementById('ftab-messages-count');
+  if(msgBadge){
+    const nonLus=(Array.isArray(c.messages)?c.messages:[]).filter(m=>m.sender==='client'&&!m.lu).length;
+    msgBadge.textContent=nonLus>0?nonLus:'';
+  }
   document.getElementById('fe-statut').value=c.statut||'Cible potentielle';
   document.getElementById('fe-type-client').value=c.typeClient||'Professionnel';
   document.getElementById('fe-source').value=c.source||'Démarchage';
@@ -88,7 +93,7 @@ function openFiche(id){
   openModal('modal-fiche');
 }
 function ficheTab(tab,btn){
-  ['infos','commandes','taches','emails','edit'].forEach(t=>{
+  ['infos','commandes','taches','emails','messages','edit'].forEach(t=>{
     const el=document.getElementById('fiche-'+t);
     if(el)el.style.display='none';
   });
@@ -97,6 +102,65 @@ function ficheTab(tab,btn){
   if(el)el.style.display='block';
   if(btn)btn.classList.add('active');
   if(tab==='taches') renderContactTasks();
+  if(tab==='messages') renderContactMessages();
+}
+
+// ─── MESSAGERIE CLIENT ↔ EXPERT ────────────────────────────
+// Stockée dans contacts.data.messages (même schéma que "documents"), lue
+// et écrite par le même mécanisme de synchronisation Supabase que le
+// reste de la fiche contact — pas d'API dédiée côté CRM.
+function contactMessagesCount(c){
+  return Array.isArray(c?.messages) ? c.messages : [];
+}
+
+function renderContactMessages(){
+  const c = DB.contacts.find(x=>x.id===currentFicheId);
+  const wrap = document.getElementById('fiche-messages-thread');
+  if(!c || !wrap) return;
+  const msgs = contactMessagesCount(c).slice().sort((a,b)=> new Date(a.createdAt) - new Date(b.createdAt));
+  wrap.innerHTML = msgs.length ? msgs.map(m=>{
+    const moi = m.sender === 'expert';
+    return `<div style="align-self:${moi?'flex-end':'flex-start'};max-width:78%">
+      <div style="padding:9px 13px;border-radius:14px;font-size:12.5px;line-height:1.4;${moi?'background:var(--blue);color:#fff;border-bottom-right-radius:4px':'background:var(--bg2);border:1px solid var(--border);border-bottom-left-radius:4px'}">${esc(m.body||'')}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px;padding:0 4px;text-align:${moi?'right':'left'}">${moi?'Vous':'Client'} · ${fmtDT ? fmtDT(m.createdAt) : new Date(m.createdAt).toLocaleString('fr-FR')}</div>
+    </div>`;
+  }).join('') : '<div style="font-size:11px;color:var(--text3);text-align:center;padding:20px 0">Aucun message pour l\'instant.</div>';
+  wrap.scrollTop = wrap.scrollHeight;
+
+  // Marquer les messages du client comme lus (badge de l'onglet).
+  const aMarquer = contactMessagesCount(c).some(m=>m.sender==='client' && !m.lu);
+  if(aMarquer){
+    c.messages = contactMessagesCount(c).map(m=> m.sender==='client' ? {...m, lu:true} : m);
+    saveToStorage();
+    if(typeof pushToSupabase === 'function') pushToSupabase('contacts', c);
+    renderContactsMessagesBadges();
+  }
+}
+
+function sendContactMessage(){
+  const c = DB.contacts.find(x=>x.id===currentFicheId);
+  const input = document.getElementById('fiche-message-input');
+  if(!c || !input) return;
+  const texte = input.value.trim();
+  if(!texte) return;
+  if(!Array.isArray(c.messages)) c.messages = [];
+  c.messages.push({ sender:'expert', body:texte, createdAt:new Date().toISOString(), lu:false });
+  input.value = '';
+  saveToStorage();
+  if(typeof pushToSupabase === 'function') pushToSupabase('contacts', c);
+  renderContactMessages();
+}
+
+// Compte total des messages client non lus, tous contacts confondus —
+// affiché en badge sur l'onglet "Messages" de la fiche déjà ouverte, et
+// peut servir à un badge global (ex: dans la nav Contacts).
+function renderContactsMessagesBadges(){
+  const c = DB.contacts.find(x=>x.id===currentFicheId);
+  const badge = document.getElementById('ftab-messages-count');
+  if(badge && c){
+    const nonLus = contactMessagesCount(c).filter(m=>m.sender==='client' && !m.lu).length;
+    badge.textContent = nonLus > 0 ? nonLus : '';
+  }
 }
 
 function addContactTask(){

@@ -96,7 +96,7 @@ export default async function handler(req) {
       const docs = row.data?.documents || [];
       docs.forEach(d => {
         if (d.url && d.nom && !documents.find(x => x.url === d.url)) {
-          documents.push({ nom: d.nom, url: d.url });
+          documents.push({ nom: d.nom, url: d.url, type: d.type || 'document' });
         }
       });
     });
