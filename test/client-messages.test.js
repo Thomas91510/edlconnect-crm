@@ -67,7 +67,7 @@ test('client-messages : send ajoute le message et notifie Slack', async () => {
   let slacked = null;
   mockFetch({
     callerEmail: CLIENT_EMAIL,
-    contactRows: [{ id: 'c1', data: { email: CLIENT_EMAIL, messages: [] } }],
+    contactRows: [{ id: 'c1', data: { email: CLIENT_EMAIL, entreprise: 'Century 21 Évry', messages: [] } }],
     patchSpy: (b) => { patched = b; },
     slackSpy: (b) => { slacked = b; },
   });
@@ -77,6 +77,20 @@ test('client-messages : send ajoute le message et notifie Slack', async () => {
   assert.equal(patched.data.messages.length, 1);
   assert.equal(patched.data.messages[0].sender, 'client');
   assert.equal(patched.data.messages[0].lu, false);
+  assert.ok(slacked && slacked.text.includes(CLIENT_EMAIL));
+  assert.ok(slacked.text.includes('Century 21 Évry'), 'le nom de l\'agence doit aider à identifier l\'expéditeur dans le canal partagé');
+});
+
+test('client-messages : send notifie Slack avec l\'email seul si l\'agence n\'est pas renseignée', async () => {
+  process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.test/xyz';
+  let slacked = null;
+  mockFetch({
+    callerEmail: CLIENT_EMAIL,
+    contactRows: [{ id: 'c1', data: { email: CLIENT_EMAIL, messages: [] } }],
+    patchSpy: () => {},
+    slackSpy: (b) => { slacked = b; },
+  });
+  await handler(requete(CLIENT_EMAIL, { action: 'send', body: 'Bonjour' }));
   assert.ok(slacked && slacked.text.includes(CLIENT_EMAIL));
 });
 

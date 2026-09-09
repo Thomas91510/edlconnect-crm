@@ -124,14 +124,19 @@ export default async function handler(req) {
       }
 
       // Notification Slack best-effort — ne doit jamais faire échouer l'envoi.
+      // Un seul canal Slack partagé, tous clients confondus (comme pour les
+      // réservations) : le nom de l'agence n'apporte aucune séparation ni
+      // confidentialité, seulement un repère visuel pour trier plus vite.
       try {
         const slackUrl = process.env.SLACK_WEBHOOK_URL;
         if (slackUrl) {
+          const agence = (rows[0]?.data?.entreprise || rows[0]?.data?.contact || '').trim();
+          const expediteur = agence ? `${agence} (${email})` : email;
           await fetch(slackUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              text: '💬 *Nouveau message extranet*\n👤 ' + email + '\n' + texte
+              text: '💬 *Nouveau message extranet*\n👤 ' + expediteur + '\n' + texte
             })
           });
         }
