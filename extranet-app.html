@@ -444,6 +444,10 @@
       </div>
       <div class="form-label">Notes</div>
       <textarea id="f-notes" placeholder="Informations complémentaires…"></textarea>
+      <div class="form-label" style="margin-top:14px">Pièces jointes (optionnel)</div>
+      <input type="file" id="attachments-input" multiple onchange="onAttachmentsSelected(this)">
+      <div style="font-size:10.5px;color:#6b6b6b;margin-top:4px">Tous formats acceptés · 25 Mo max par fichier · 10 fichiers max</div>
+      <div id="attachments-list" style="margin-top:10px"></div>
     </div>
     <div id="form-error" style="display:none;background:#FCEBEB;color:#A32D2D;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:10px"></div>
     <button class="btn-primary" id="form-submit-btn" onclick="submitOrder()"><i class="ti ti-send"></i> Envoyer ma demande</button>
@@ -487,6 +491,65 @@ function urlSure(u) {
   } catch (e) { return ''; }
 }
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+// ─── Pièces jointes (tout format accepté, dépôt immédiat à la sélection) ──
+// Même mécanisme que le formulaire public /booking (api/upload-booking-attachment.js) :
+// un jeton unique regroupe les fichiers d'une même soumission avant même que
+// la réservation n'existe (elle n'est créée qu'à l'envoi final).
+let _attachToken = '';
+let _attachments = [];
+const MAX_PIECES_JOINTES = 10;
+
+async function onAttachmentsSelected(input){
+  const fichiers = Array.from(input.files || []);
+  input.value = '';
+  if(!_attachToken) _attachToken = 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  for(const f of fichiers){
+    if(_attachments.length >= MAX_PIECES_JOINTES){ alert('Maximum ' + MAX_PIECES_JOINTES + ' fichiers.'); break; }
+    const entree = { nom: f.name, path: '', status: 'uploading' };
+    _attachments.push(entree);
+    renderAttachments();
+    try{
+      const form = new FormData();
+      form.append('file', f);
+      form.append('token', _attachToken);
+      const resp = await fetch('/api/upload-booking-attachment', { method: 'POST', body: form });
+      const data = await resp.json().catch(() => ({}));
+      if(resp.ok && data.success){
+        entree.path = data.path;
+        entree.status = 'ok';
+      } else {
+        entree.status = 'error';
+        entree.error = data.error || 'Échec du dépôt';
+      }
+    }catch(e){
+      entree.status = 'error';
+      entree.error = 'Erreur réseau';
+    }
+    renderAttachments();
+  }
+}
+
+function removeAttachment(i){ _attachments.splice(i, 1); renderAttachments(); }
+
+function renderAttachments(){
+  const wrap = document.getElementById('attachments-list');
+  if(!wrap) return;
+  wrap.innerHTML = _attachments.map((a, i) => {
+    const icon = a.status === 'uploading' ? '⏳' : a.status === 'error' ? '⚠️' : '📎';
+    const label = a.status === 'error' ? (a.nom + ' — ' + (a.error || 'échec')) : a.nom;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #e5e5e2;border-radius:8px;margin-bottom:6px;font-size:12px">'
+      + '<span>' + icon + '</span>'
+      + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(label) + '</span>'
+      + '<span onclick="removeAttachment(' + i + ')" style="cursor:pointer;color:#999">✕</span></div>';
+  }).join('');
+}
+
+function resetAttachments(){
+  _attachToken = '';
+  _attachments = [];
+  renderAttachments();
+}
 
 // Affiche le commit réellement déployé, indépendamment de la connexion —
 // utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
@@ -1003,6 +1066,9 @@ function showOrderForm() {
   document.getElementById('app-shell').classList.remove('shown');
   document.getElementById('order-form').style.display='block';
   if (!loadDraft()) { _selectedType=''; document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected')}); }
+  // Les fichiers eux-mêmes ne survivent jamais à un rechargement de page
+  // (contrairement au reste du brouillon) : repartir toujours d'une liste vide.
+  resetAttachments();
   remplirBiensConnus();
   saveDraft(true);
 }
@@ -1273,15 +1339,17 @@ async function submitOrder() {
       if(!e.tel){ errEl.textContent='Le mobile est requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
     }
   }
+  if(_attachments.some(a => a.status === 'uploading')){ errEl.textContent="Patientez, l'envoi des pièces jointes est en cours…"; errEl.style.display='block'; return; }
   errEl.style.display='none';
   const btn = document.getElementById('form-submit-btn');
   btn.disabled=true; btn.innerHTML='<i class="ti ti-loader"></i> Envoi…';
   const locataire = {nom:locNom,tel:locTel,email:document.getElementById('f-loc-email').value.trim()};
-  const payload = {agencyId:'',agence:_userEmail,contact:_userEmail,email:_userEmail,tel:'',typeEdl:_selectedType,adresse,bienType:document.getElementById('f-bien').value,bienTypo:document.getElementById('f-typo').value,meuble:document.getElementById('f-meuble').value,superficie:document.getElementById('f-superficie').value||'',dateEntree:document.getElementById('f-date-entree').value||'',acces:document.getElementById('f-acces').value.trim(),proprietaire:document.getElementById('f-proprietaire').value.trim(),dateSouhaitee:date,heure:document.getElementById('f-heure').value,notes:document.getElementById('f-notes').value.trim(),locataire,locataires:[locataire],locatairesEntrants,source:'extranet'};
+  const pieceJointes = _attachments.filter(a => a.status === 'ok').map(a => ({ nom: a.nom, path: a.path }));
+  const payload = {agencyId:'',agence:_userEmail,contact:_userEmail,email:_userEmail,tel:'',typeEdl:_selectedType,adresse,bienType:document.getElementById('f-bien').value,bienTypo:document.getElementById('f-typo').value,meuble:document.getElementById('f-meuble').value,superficie:document.getElementById('f-superficie').value||'',dateEntree:document.getElementById('f-date-entree').value||'',acces:document.getElementById('f-acces').value.trim(),proprietaire:document.getElementById('f-proprietaire').value.trim(),dateSouhaitee:date,heure:document.getElementById('f-heure').value,notes:document.getElementById('f-notes').value.trim(),locataire,locataires:[locataire],locatairesEntrants,pieceJointes,source:'extranet'};
   try {
     const resp = await fetch('/api/booking-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const r = await resp.json();
-    if(r.success||resp.ok){clearDraft();document.getElementById('form-success').style.display='block';btn.style.display='none';setTimeout(()=>{hideOrderForm();loadOrders();},2500);}
+    if(r.success||resp.ok){clearDraft();resetAttachments();document.getElementById('form-success').style.display='block';btn.style.display='none';setTimeout(()=>{hideOrderForm();loadOrders();},2500);}
     else throw new Error(r.error||'Erreur');
   } catch(e){errEl.textContent='Erreur : '+(e.message||'réessayez.');errEl.style.display='block';btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Envoyer ma demande';}
 }
