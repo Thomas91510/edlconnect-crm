@@ -35,6 +35,7 @@
     { "source": "/api/upload-facture", "destination": "/api/upload-facture.js" },
     { "source": "/api/facture-download", "destination": "/api/facture-download.js" },
     { "source": "/api/client-messages", "destination": "/api/client-messages.js" },
+    { "source": "/api/version", "destination": "/api/version.js" },
     { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/extranet-app", "destination": "/extranet-app.html" },
     { "source": "/((?!extranet-app$|js/).*)", "destination": "/index.html" }

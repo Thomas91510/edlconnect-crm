@@ -461,6 +461,10 @@
   </div>
 </div>
 
+<!-- Reflète automatiquement le commit réellement déployé (api/version.js
+     lit VERCEL_GIT_COMMIT_SHA) — aucune mise à jour manuelle nécessaire. -->
+<div id="app-version" style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#bbb;z-index:5;pointer-events:none"></div>
+
 <script>
 const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
@@ -483,6 +487,17 @@ function urlSure(u) {
   } catch (e) { return ''; }
 }
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+// Affiche le commit réellement déployé, indépendamment de la connexion —
+// utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
+(async function afficherVersion(){
+  try {
+    const resp = await fetch('/api/version');
+    const data = await resp.json();
+    const el = document.getElementById('app-version');
+    if(el && data.sha) el.textContent = (data.env === 'production' ? '' : data.env + ' · ') + data.sha;
+  } catch(e) {}
+})();
 
 // ═══════════════════════════════════════════════════════════
 // ─── NAVIGATION SIDEBAR / PAGES ─────────────────────────────
