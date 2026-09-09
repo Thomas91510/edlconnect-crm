@@ -2,6 +2,47 @@
 // Missions et moteur de facturation
 // Genere depuis index.html — NE PAS reordonner les fichiers dans index.html
 
+// ─── SYNC EDOUARD À LA DEMANDE ─────────────────────────────
+// La récupération automatique des rapports Edouard tourne une fois par jour
+// (cron reminder-rdv, en fin de journée) : ce bouton permet de forcer une
+// vérification immédiate sans attendre, réservé côté serveur aux comptes
+// admin (api/edouard-cron.js, déclencheur "manuel").
+async function syncEdouardMaintenant(){
+  const btn = document.getElementById('edouard-sync-btn');
+  const status = document.getElementById('edouard-sync-status');
+  if(btn) btn.disabled = true;
+  if(status) status.textContent = 'Synchronisation en cours…';
+  try{
+    const resp = await fetch('/api/edouard-cron', { headers: await _authHeaders() });
+    const data = await resp.json();
+    if(!resp.ok || !data.success){
+      const msg = (data && data.error) || ('HTTP ' + resp.status);
+      if(status) status.textContent = '';
+      notify('⚠️ Sync Edouard : ' + msg, 'warn');
+      return;
+    }
+    const j = data.journal || {};
+    if(status) status.textContent = '';
+    if(j.rapportsRecuperes > 0){
+      notify(`✅ ${j.rapportsRecuperes} nouveau${j.rapportsRecuperes>1?'x':''} rapport${j.rapportsRecuperes>1?'s':''} récupéré${j.rapportsRecuperes>1?'s':''} !`);
+      // edouard-cron.js écrit directement dans Supabase (missions + contacts) :
+      // recharger depuis le cloud, pas depuis localStorage qui n'a pas bougé.
+      await loadFromSupabase();
+      renderMissions();
+    } else {
+      notify('Aucun nouveau rapport disponible pour le moment.');
+    }
+    if(j.erreurs && j.erreurs.length){
+      console.warn('Sync Edouard — erreurs :', j.erreurs);
+    }
+  }catch(e){
+    if(status) status.textContent = '';
+    notify('⚠️ Sync Edouard impossible (connexion)', 'warn');
+  } finally {
+    if(btn) btn.disabled = false;
+  }
+}
+
 // ─── Repliage des groupes mensuels ────────────────────────────────────
 // Avec plusieurs dizaines de missions par mois, la liste devient longue a
 // parcourir. Chaque en-tete de mois est donc cliquable. Les mois revolus

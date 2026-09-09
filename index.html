@@ -817,7 +817,9 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <div class="view" id="view-missions">
       <div class="page-header">
         <div class="page-title">Missions EDL</div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="edouard-sync-status" style="font-size:11px;color:var(--text2)"></span>
+          <button class="btn btn-sm" id="edouard-sync-btn" onclick="syncEdouardMaintenant()" title="Va chercher immédiatement les rapports d'état des lieux terminés dans Edouard, sans attendre la synchro automatique du soir"><i class="ti ti-refresh"></i>Sync Edouard</button>
           <button class="btn btn-primary" onclick="openNewMissionModal()"><i class="ti ti-plus"></i>Nouvelle mission</button>
         </div>
       </div>
