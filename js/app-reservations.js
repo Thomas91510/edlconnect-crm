@@ -146,7 +146,7 @@ function renderReservations(list){
   document.getElementById('resa-count').textContent = list.length + ' réservation' + (list.length > 1 ? 's' : '');
 
   if(!list.length){
-    document.getElementById('resa-tbody').innerHTML = '<tr><td colspan="9" class="empty">Aucune réservation trouvée</td></tr>';
+    document.getElementById('resa-tbody').innerHTML = '<tr><td colspan="10" class="empty">Aucune réservation trouvée</td></tr>';
     return;
   }
 
@@ -157,6 +157,10 @@ function renderReservations(list){
     const statut = r.rdvConfirme
       ? '<span class="badge b-green">✅ Confirmé</span>'
       : '<span class="badge b-amber">⏳ En attente</span>';
+    const pieces = Array.isArray(r.piecesJointes) ? r.piecesJointes : [];
+    const piecesHtml = pieces.length
+      ? pieces.map(p => `<a href="#" onclick="event.preventDefault();telechargerPieceJointeReservation('${esc(p.path)}',this)" style="display:block;font-size:10.5px;color:var(--blue);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px" title="${esc(p.nom)}">📎 ${esc(p.nom)}</a>`).join('')
+      : '<span style="color:var(--text3,#c8c8c8)">—</span>';
 
     return `<tr>
       <td data-label="Date demande" style="font-size:11px">${dateDemande}</td>
@@ -167,6 +171,7 @@ function renderReservations(list){
       <td data-label="Locataire" style="font-size:11px">${locataire}</td>
       <td data-label="Propriétaire" style="font-size:11px">${r.proprietaire ? esc(r.proprietaire) : '<span style="color:var(--text3,#c8c8c8)">—</span>'}</td>
       <td data-label="Statut">${statut}</td>
+      <td data-label="Pièces jointes">${piecesHtml}</td>
       <td class="tbl-cards-actions" style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="confirmRdvFromReservation('${esc(r.id || r._supaId)}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
           <i class="ti ti-calendar-check" style="font-size:11px"></i> Confirmer & Créer
@@ -174,6 +179,25 @@ function renderReservations(list){
       </td>
     </tr>`;
   }).join('');
+}
+
+async function telechargerPieceJointeReservation(chemin, el){
+  const texteInitial = el.textContent;
+  el.textContent = '⏳ …';
+  try{
+    const resp = await fetch('/api/reservation-attachment-download', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ path: chemin })
+    });
+    const data = await resp.json();
+    if(!resp.ok || !data.url) throw new Error(data.error || 'Échec');
+    window.open(data.url, '_blank', 'noopener');
+  }catch(e){
+    notify('❌ Impossible de télécharger cette pièce jointe', 'err');
+  }finally{
+    el.textContent = texteInitial;
+  }
 }
 
 // ─── CHOIX DES DESTINATAIRES DE LA CONFIRMATION ────────────
