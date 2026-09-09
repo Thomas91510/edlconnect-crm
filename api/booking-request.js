@@ -323,7 +323,8 @@ export default async function handler(req) {
           '📋 Type: ' + typeEdl + '\n' +
           '📍 Adresse: ' + adresse + '\n' +
           '🗓️ Date souhaitée: ' + dateFormatted + (heure ? ' · ' + heure : ' · Flexible') + '\n' +
-          '👤 Locataire: ' + ((locataire && locataire.nom) || '—') + entrantsTxt + alerteTxt;
+          '👤 Locataire: ' + ((locataire && locataire.nom) || '—') + '\n' +
+          '📱 Téléphone: ' + ((locataire && locataire.tel) || '—') + entrantsTxt + alerteTxt;
         await fetch(slackUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
