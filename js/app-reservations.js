@@ -322,6 +322,7 @@ function confirmRdvFromReservation(id){
   const civEl = document.getElementById('confirm-rdv-civilite');
   if(civEl) civEl.value = tempMission.locataireCivilite || '';
   document.getElementById('confirm-rdv-message').value = '';
+  document.getElementById('confirm-rdv-proprietaire').value = tempMission.proprietaire || '';
   populateExpertDropdown(tempMission.expertId || '');
 
   const btn = document.getElementById('confirm-rdv-btn');
@@ -509,6 +510,7 @@ function openConfirmRdvModal(missionId){
   const civEl = document.getElementById('confirm-rdv-civilite');
   if(civEl) civEl.value = m.locataireCivilite || '';
   document.getElementById('confirm-rdv-message').value = '';
+  document.getElementById('confirm-rdv-proprietaire').value = m.proprietaire || '';
   populateExpertDropdown(m.expertId || '');
 
   const btn = document.getElementById('confirm-rdv-btn');
@@ -598,6 +600,13 @@ async function sendConfirmRdv(){
   if(_locNomModal) m.locataireNom = _locNomModal;
   if(_locEmailModal) m.locataireEmail = _locEmailModal;
   if(_locCivModal) m.locataireCivilite = _locCivModal;
+  // Propriétaire du bien : saisi ici faute d'un autre endroit dans le CRM
+  // pour le renseigner — nécessaire pour que pushMissionToEdouard() le
+  // transmette à Edouard (jusqu'ici jamais rempli pour une mission créée
+  // manuellement, seulement si le formulaire public de réservation l'avait
+  // déjà renseigné).
+  const _proprioModal = document.getElementById('confirm-rdv-proprietaire').value.trim();
+  if(_proprioModal) m.proprietaire = _proprioModal;
   if(!m.locataires || m.locataires.length === 0){
     if(_locNomModal || _locEmailModal){
       m.locataires = [{ civilite: _locCivModal, nom: _locNomModal, tel: m.locataireTel || '', email: _locEmailModal }];
@@ -682,7 +691,10 @@ async function sendConfirmRdv(){
             superficie: r.superficie || '',
             dateEntree: r.dateEntree || '',
             acces: r.acces || '',
-            proprietaire: r.proprietaire || '',
+            // m.proprietaire porte la valeur éventuellement saisie/corrigée
+            // dans la modale de confirmation (voir sendConfirmRdv) ; r est la
+            // réservation d'origine, seulement en repli si rien n'a été saisi.
+            proprietaire: m.proprietaire || r.proprietaire || '',
             type: r.typeEdl || r.type || 'EDL entrant',
             date: rdvDatetime,
             dureeEstimee: dureeEstimee,
