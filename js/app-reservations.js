@@ -304,6 +304,18 @@ function confirmRdvFromReservation(id){
     document.getElementById('confirm-rdv-date').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   }
   document.getElementById('confirm-rdv-heure').value = r.heure || '';
+  // Prérempli avec la durée type de la typologie/meublé du bien (celle
+  // configurée sur l'événement Cal.com correspondant) — reste modifiable.
+  // Même logique que openConfirmRdvModal() : oubliée ici jusqu'ici, la
+  // confirmation directe depuis une réservation ne calculait jamais la
+  // durée automatiquement.
+  const dureeSelectResa = document.getElementById('confirm-rdv-duree');
+  if(dureeSelectResa){
+    const dureeMinResa = dureeSuggereeMinutes(tempMission.bienTypo, tempMission.bienMeuble);
+    const optResa = dureeMinResa ? minutesVersOptionDuree(dureeMinResa) : '1h';
+    const valeursResa = [...dureeSelectResa.options].map(o => o.value);
+    dureeSelectResa.value = valeursResa.includes(optResa) ? optResa : '1h';
+  }
   document.getElementById('confirm-rdv-agent-email').value = r.email || '';
   document.getElementById('confirm-rdv-loc-email').value = tempMission.locataireEmail;
   document.getElementById('confirm-rdv-loc-nom').value = tempMission.locataireNom;
