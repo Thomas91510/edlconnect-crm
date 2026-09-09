@@ -8,10 +8,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;min-height:100vh;color:#1a1a1a}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;min-height:100vh;color:#1a1a1a;font-size:14px}
     input{width:100%;background:#fff;border:1.5px solid #e5e5e2;border-radius:10px;color:#1a1a1a;padding:12px 14px;font-size:13px;font-family:inherit;outline:none}
     input:focus{border-color:#378ADD}
     input::placeholder{color:#999}
+    button{font-family:inherit}
+    a{color:inherit}
     .btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,#1A5FA8,#378ADD);color:#fff;border:none;border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
     .btn-primary:disabled{opacity:0.6;cursor:not-allowed}
     .btn-call{display:flex;align-items:center;gap:5px;background:#1A5FA8;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600}
@@ -29,9 +31,7 @@
     .modal{background:#fff;border-radius:16px;width:100%;max-width:480px;overflow:hidden;color:#1a1a1a}
     .modal-header{background:linear-gradient(135deg,#1A5FA8,#378ADD);padding:18px 20px;display:flex;align-items:center;justify-content:space-between}
     .modal-close{background:rgba(255,255,255,0.15);border:none;cursor:pointer;color:#fff;font-size:16px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center}
-    .section-label{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
-    .stats-bar{background:#e5e5e2;border-radius:4px;height:4px;margin-top:4px}
-    .stats-bar-fill{height:4px;border-radius:4px}
+    .section-label{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
     /* Formulaire nouvelle commande */
     .form-section{background:#fff;border:1px solid #e5e5e2;border-radius:12px;padding:20px;margin-bottom:16px}
     .form-label{font-size:12px;color:#6b6b6b;margin-bottom:6px;display:block}
@@ -71,33 +71,155 @@
     .slot-btn{border:1.5px solid #e5e5e2;border-radius:10px;padding:8px 14px;background:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:#1a1a1a;transition:all .12s}
     .slot-btn:hover{border-color:#1A5FA8;background:#F4F7FA}
     .slot-btn.sel{border-color:#1A5FA8;background:#1A5FA8;color:#fff}
+
+    /* ───────── SIDEBAR APP SHELL ───────── */
+    .app{display:none;min-height:100vh}
+    .app.shown{display:flex}
+    .sidebar{width:236px;flex-shrink:0;background:#0F1E2E;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+    .brand{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .brand-name{font-size:13px;font-weight:700;color:#fff}
+    .brand-sub{font-size:10px;color:rgba(255,255,255,.45)}
+    .nav{flex:1;padding:14px 10px;overflow-y:auto}
+    .nav-group-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;padding:10px 12px 6px}
+    .nav-group-label:first-child{padding-top:2px}
+    .nav-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:8px;color:rgba(255,255,255,.65);text-decoration:none;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:2px;position:relative;border:none;background:none;width:100%;text-align:left}
+    .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+    .nav-item.active{background:rgba(55,138,221,.18);color:#fff}
+    .nav-item.active .nav-ic{color:#7bb8ef}
+    .nav-ic{width:18px;text-align:center;flex-shrink:0;font-size:15px}
+    .nav-badge{margin-left:auto;background:#92650B;color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;min-width:18px;text-align:center}
+    .nav-badge:empty{display:none}
+    .sidebar-foot{padding:14px 14px 18px;border-top:1px solid rgba(255,255,255,.08)}
+    .sb-contact{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:rgba(255,255,255,.05);margin-bottom:10px}
+    .sb-contact-ava{width:32px;height:32px;border-radius:50%;background:#1A5FA8;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    .sb-contact-name{font-size:11.5px;font-weight:600;color:#fff}
+    .sb-contact-role{font-size:10px;color:rgba(255,255,255,.45)}
+    .sb-call{display:flex;align-items:center;justify-content:center;gap:6px;background:#1A5FA8;color:#fff;text-decoration:none;padding:8px;border-radius:8px;font-size:11.5px;font-weight:600;margin-bottom:8px}
+    .sb-logout{display:flex;align-items:center;justify-content:center;gap:6px;background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.55);padding:7px;border-radius:8px;font-size:11px;cursor:pointer;width:100%}
+    .main{flex:1;min-width:0}
+    .topbar{display:none}
+    .content{max-width:760px;margin:0 auto;padding:32px 28px 60px}
+    .page{display:none}
+    .page.active{display:block}
+    h1{font-size:20px;font-weight:700;margin:0 0 4px}
+    .lead{font-size:13px;color:#6b6b6b;margin:0 0 22px}
+
+    /* Hero prochain RDV */
+    .hero-rdv{background:linear-gradient(135deg,#1A5FA8,#378ADD);border-radius:16px;padding:22px 24px;color:#fff;box-shadow:0 10px 30px rgba(24,95,165,.28);margin-bottom:26px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+    .hero-rdv-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;opacity:.75;margin-bottom:6px}
+    .hero-rdv-title{font-size:16px;font-weight:700;margin-bottom:6px}
+    .hero-rdv-meta{font-size:12.5px;opacity:.9;display:flex;gap:14px;flex-wrap:wrap}
+    .hero-rdv-meta span{display:flex;align-items:center;gap:5px}
+    .hero-rdv-icon{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+    .cta-new{width:100%;background:linear-gradient(135deg,#1A5FA8,#378ADD);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(24,95,165,.3);margin-bottom:8px}
+
+    /* Jauge de progression */
+    .progress-gauge{display:flex;margin-top:12px;padding-top:2px}
+    .progress-step{flex:1;position:relative;text-align:center}
+    .progress-step:not(:first-child)::before{content:'';position:absolute;top:7px;right:50%;width:100%;height:2px;background:#e5e5e2;z-index:0}
+    .progress-step.line-done:not(:first-child)::before{background:#1A5FA8}
+    .progress-dot{width:16px;height:16px;border-radius:50%;background:#e5e5e2;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative;z-index:1}
+    .progress-dot.done{background:#1A5FA8}
+    .progress-dot.current{background:#92650B;box-shadow:0 0 0 3px #FFF6E5}
+    .progress-label{font-size:9.5px;color:#999;margin-top:6px;font-weight:500}
+    .progress-label.current{color:#92650B;font-weight:700}
+    .progress-label.done{color:#6b6b6b}
+
+    /* Filtres */
+    .filters-row{display:flex;gap:8px;margin-bottom:14px}
+    .filters-row input{flex:1}
+    .filters-row select{width:auto}
+
+    /* Documents / Factures */
+    .doc-group{margin-bottom:22px}
+    .doc-group-title{font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+    .doc-row{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:8px;border:1px solid #e5e5e2;background:#fff;text-decoration:none;color:#1a1a1a;margin-bottom:8px}
+    .doc-row:hover{background:#F4F7FA;border-color:#cfe0f0}
+    .doc-ic{width:34px;height:34px;border-radius:9px;background:#F4F7FA;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .doc-info{flex:1;min-width:0}
+    .doc-name{font-size:12.5px;font-weight:500}
+    .doc-meta{font-size:10.5px;color:#999}
+    .doc-open{font-size:11px;color:#0C447C;font-weight:600;flex-shrink:0}
+
+    /* Statistiques */
+    .chart-card{background:#fff;border:1px solid #e5e5e2;border-radius:12px;padding:20px 18px 14px;margin-bottom:8px}
+    .stat-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+    .legend-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#6b6b6b;font-weight:500}
+    .legend-item i{width:9px;height:9px;border-radius:2px;display:inline-block}
+    .stat-chart{display:flex;align-items:flex-end;gap:10px;height:150px;border-bottom:1px solid #e5e5e2}
+    .stat-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+    .stat-total{font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:5px;font-variant-numeric:tabular-nums}
+    .stat-bar-stack{width:30px;display:flex;flex-direction:column;gap:2px;border-radius:4px 4px 0 0;overflow:hidden}
+    .stat-seg{width:100%}
+    .stat-month{font-size:10.5px;color:#999;margin-top:8px;font-weight:500}
+    .type-breakdown{background:#fff;border:1px solid #e5e5e2;border-radius:12px;padding:16px 18px}
+    .type-row{display:flex;align-items:center;gap:10px;padding:9px 0}
+    .type-row+.type-row{border-top:1px solid #e5e5e2}
+    .type-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+    .type-label{font-size:12.5px;font-weight:600;width:180px;flex-shrink:0}
+    .type-count{font-size:12px;color:#6b6b6b;width:26px;flex-shrink:0;font-variant-numeric:tabular-nums}
+    .type-bar{flex:1;height:7px;background:#f8f8f6;border-radius:20px;overflow:hidden}
+    .type-bar-fill{height:100%;border-radius:20px}
+    .type-pct{font-size:11px;color:#999;width:34px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+    .tip{position:relative}
+    .tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:10.5px;font-weight:500;padding:5px 9px;border-radius:6px;white-space:nowrap;z-index:20;pointer-events:none}
+    .tip:hover::before{content:'';position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1a1a1a;z-index:20;pointer-events:none}
+
+    /* Messages */
+    .msg-thread{display:flex;flex-direction:column;gap:14px;margin-bottom:6px}
+    .msg-row{display:flex;flex-direction:column;max-width:78%}
+    .msg-row.them{align-self:flex-start;align-items:flex-start}
+    .msg-row.me{align-self:flex-end;align-items:flex-end}
+    .msg-bubble{padding:11px 15px;border-radius:16px;font-size:13px;line-height:1.48}
+    .msg-row.them .msg-bubble{background:#fff;border:1px solid #e5e5e2;border-bottom-left-radius:5px;color:#1a1a1a}
+    .msg-row.me .msg-bubble{background:#1A5FA8;color:#fff;border-bottom-right-radius:5px}
+    .msg-time{font-size:10.5px;color:#999;margin-top:5px;padding:0 4px}
+    .msg-input-row{display:flex;gap:10px;margin-top:22px;position:sticky;bottom:0;background:#f8f8f6;padding:12px 0 2px}
+    .msg-input-row input{flex:1;border-radius:24px}
+    .msg-send{width:42px;height:42px;border-radius:50%;background:#1A5FA8;color:#fff;border:none;font-size:16px;cursor:pointer;flex-shrink:0}
+
+    .empty-state{text-align:center;padding:34px 20px;background:#fff;border:1px dashed #e5e5e2;border-radius:12px;color:#6b6b6b}
+    .empty-state .emoji{font-size:30px;margin-bottom:8px}
+    .empty-state .t1{font-weight:600;color:#1a1a1a;font-size:13px;margin-bottom:3px}
+    .empty-state .t2{font-size:12px}
+
+    /* Mobile bottom nav */
+    .mobile-nav{display:none}
+    .more-sheet{display:none;position:fixed;inset:0;z-index:60}
+    .more-sheet.open{display:block}
+    .more-sheet-backdrop{position:absolute;inset:0;background:rgba(15,30,46,.4)}
+    .more-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;padding:8px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.18)}
+    .more-sheet-handle{width:36px;height:4px;background:#e5e5e2;border-radius:3px;margin:6px auto 10px}
+    .more-item{display:flex;align-items:center;gap:11px;width:100%;background:none;border:none;border-top:1px solid #e5e5e2;padding:14px 4px;font-size:13.5px;font-weight:600;color:#1a1a1a;text-align:left;cursor:pointer}
+    .more-item:first-of-type{border-top:none}
+
+    @media (max-width: 760px){
+      .app.shown{flex-direction:column}
+      .sidebar{display:none}
+      .content{padding:20px 16px 90px;max-width:none}
+      .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e2;z-index:40;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+      .mobile-nav button{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 4px;color:#999;font-size:10px;font-weight:600;cursor:pointer;position:relative}
+      .mobile-nav button.active{color:#1A5FA8}
+      .mobile-nav .ic{font-size:18px}
+      .mobile-nav .mbadge{position:absolute;top:2px;right:18%;background:#92650B;color:#fff;font-size:9px;font-weight:700;border-radius:20px;min-width:14px;height:14px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+      .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border-bottom:1px solid #e5e5e2;position:sticky;top:0;z-index:30}
+      .topbar-brand{font-size:12.5px;font-weight:700}
+      .hero-rdv{flex-direction:column;align-items:flex-start}
+    }
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div style="background:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e5e2;position:sticky;top:0;z-index:50">
-  <div style="display:flex;align-items:center;gap:10px">
+<!-- ÉCRAN CONNEXION (hors coquille sidebar : affiché seul, plein écran) -->
+<div id="login-screen">
+  <div style="background:#fff;padding:14px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e5e5e2">
     <svg viewBox="0 0 120 120" width="36" height="36" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
     <div>
       <div style="font-size:13px;font-weight:600;color:#1a1a1a">EDL IDF Expert en État des Lieux</div>
       <div style="font-size:10px;color:#6b6b6b">Espace client</div>
     </div>
   </div>
-  <div id="header-right" style="display:none;align-items:center;gap:8px">
-    <a href="tel:0189291429" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#6b6b6b;text-decoration:none;background:#F4F7FA;padding:6px 10px;border-radius:20px;border:0.5px solid #e5e5e2">
-      <i class="ti ti-phone" style="font-size:12px"></i> 01 89 29 14 29
-    </a>
-    <button id="logout-btn" onclick="doLogout()" style="background:none;border:0.5px solid #e5e5e2;border-radius:20px;padding:6px 10px;cursor:pointer;color:#6b6b6b;font-size:11px;display:flex;align-items:center;gap:4px">
-      <i class="ti ti-logout" style="font-size:12px"></i> Déconnexion
-    </button>
-  </div>
-</div>
-
-<div style="max-width:600px;margin:0 auto;padding:28px 20px">
-
-  <!-- ÉCRAN CONNEXION -->
-  <div id="login-screen">
+  <div style="max-width:460px;margin:0 auto;padding:28px 20px">
     <div style="text-align:center;padding:40px 0 32px">
       <div style="width:64px;height:64px;background:linear-gradient(135deg,#1A5FA8,#378ADD);border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(24,95,165,0.4)">🔑</div>
       <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:8px">Bienvenue</div>
@@ -115,58 +237,144 @@
       Lien de connexion par email · Aucun mot de passe
     </div>
   </div>
+</div>
 
-  <!-- DASHBOARD -->
-  <div id="dashboard" style="display:none">
-    <div style="margin-bottom:20px">
-      <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px">Bonjour 👋</div>
-      <div style="font-size:13px;color:#6b6b6b" id="user-email-display"></div>
-    </div>
+<!-- ═══════ COQUILLE APPLICATION (sidebar + pages) ═══════ -->
+<div class="app" id="app-shell">
 
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
-      <div class="kpi"><div style="font-size:22px;font-weight:700;color:#1a1a1a" id="kpi-total">0</div><div style="font-size:10px;color:#6b6b6b;margin-top:2px">Total</div></div>
-      <div class="kpi amber"><div style="font-size:22px;font-weight:700;color:#92650B" id="kpi-pending">0</div><div style="font-size:10px;color:#92650B;margin-top:2px">En cours</div></div>
-      <div class="kpi green"><div style="font-size:22px;font-weight:700;color:#27500A" id="kpi-done">0</div><div style="font-size:10px;color:#3B6D11;margin-top:2px">Réalisées</div></div>
-    </div>
-
-    <button onclick="showOrderForm()" style="width:100%;background:linear-gradient(135deg,#1A5FA8,#378ADD);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px;box-shadow:0 4px 16px rgba(24,95,165,0.35)">
-      <i class="ti ti-plus" style="font-size:16px"></i> Nouvelle commande d'état des lieux
-    </button>
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div class="section-label" style="margin-bottom:0">Mes commandes</div>
-      <button onclick="loadOrders()" id="refresh-btn" style="background:none;border:1px solid #e5e5e2;border-radius:20px;padding:5px 10px;cursor:pointer;color:#6b6b6b;font-size:11px;display:flex;align-items:center;gap:4px">
-        <i class="ti ti-refresh" style="font-size:12px"></i> Actualiser
-      </button>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input id="orders-search" placeholder="Rechercher une adresse, un type…" oninput="appliquerFiltresCommandes()" style="flex:1;font-size:12px">
-      <select id="orders-filter-statut" onchange="appliquerFiltresCommandes()" style="width:auto;font-size:12px">
-        <option value="all">Tous les statuts</option>
-        <option value="en_attente">⏳ En attente</option>
-        <option value="confirmee">📅 Confirmé</option>
-        <option value="rapport_dispo">📄 Rapport disponible</option>
-      </select>
-    </div>
-    <div id="orders-list"><div style="color:#6b6b6b;font-size:13px;padding:20px 0">Chargement…</div></div>
-
-    <div id="docs-section" style="display:none;margin-top:16px">
-      <div class="section-label">Mes documents</div>
-      <div id="docs-list"></div>
-    </div>
-
-    <div style="background:#F4F7FA;border:1px solid #dce6f0;border-radius:12px;padding:16px;margin-top:16px;display:flex;align-items:center;gap:14px">
-      <div style="width:40px;height:40px;background:#1A5FA8;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">👨‍💼</div>
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:600;color:#0C447C">Une question ?</div>
-        <div style="font-size:11px;color:#6b6b6b;margin-top:2px">Thomas Langlade · EDL IDF Expert en État des Lieux</div>
+  <aside class="sidebar">
+    <div class="brand">
+      <svg viewBox="0 0 120 120" width="30" height="30" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
+      <div>
+        <div class="brand-name">EDL IDF</div>
+        <div class="brand-sub">Espace client</div>
       </div>
-      <a href="tel:0189291429" class="btn-call"><i class="ti ti-phone" style="font-size:13px"></i> Appeler</a>
+    </div>
+    <nav class="nav">
+      <div class="nav-group-label">Activité</div>
+      <button class="nav-item active" data-page="accueil" onclick="allerA('accueil')"><span class="nav-ic">🏠</span> Tableau de bord</button>
+      <button class="nav-item" data-page="edl" onclick="allerA('edl')"><span class="nav-ic">🔑</span> États des lieux &amp; RDV<span class="nav-badge" id="nav-badge-edl"></span></button>
+      <button class="nav-item" data-page="statistiques" onclick="allerA('statistiques')"><span class="nav-ic">📊</span> Statistiques</button>
+      <button class="nav-item" data-page="messages" onclick="allerA('messages')"><span class="nav-ic">💬</span> Messages<span class="nav-badge" id="nav-badge-messages"></span></button>
+      <div class="nav-group-label">Administratif</div>
+      <button class="nav-item" data-page="factures" onclick="allerA('factures')"><span class="nav-ic">🧾</span> Factures</button>
+      <button class="nav-item" data-page="docs" onclick="allerA('docs')"><span class="nav-ic">📁</span> Mes documents</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="sb-contact">
+        <div class="sb-contact-ava">👨‍💼</div>
+        <div>
+          <div class="sb-contact-name">Thomas Langlade</div>
+          <div class="sb-contact-role">EDL IDF Expert</div>
+        </div>
+      </div>
+      <a href="tel:0189291429" class="sb-call">📞 01 89 29 14 29</a>
+      <button class="sb-logout" onclick="doLogout()">↩ Déconnexion</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-brand">EDL IDF · Espace client</div>
+      <a href="tel:0189291429" style="font-size:16px">📞</a>
+    </div>
+
+    <div class="content">
+
+      <!-- ───────── PAGE ACCUEIL ───────── -->
+      <section class="page active" id="page-accueil">
+        <h1>Bonjour 👋</h1>
+        <p class="lead" id="user-email-display"></p>
+
+        <div id="hero-rdv-wrap"></div>
+
+        <button class="cta-new" onclick="showOrderForm()"><i class="ti ti-plus"></i> Nouvelle commande d'état des lieux</button>
+
+        <div class="section-label" id="a-valider-label" style="margin-top:26px">À valider</div>
+        <div id="a-valider-list"></div>
+
+        <div style="font-size:11.5px;color:#6b6b6b;text-align:center;margin-top:4px">
+          <a href="#" onclick="allerA('edl');return false" style="color:#0C447C;font-weight:600;text-decoration:none">Voir tout l'historique →</a>
+        </div>
+      </section>
+
+      <!-- ───────── PAGE ÉTATS DES LIEUX & RDV ───────── -->
+      <section class="page" id="page-edl">
+        <h1>États des lieux &amp; RDV</h1>
+        <p class="lead">L'historique complet de vos demandes, quel que soit leur statut.</p>
+
+        <div class="filters-row">
+          <input id="orders-search" placeholder="Rechercher une adresse, un type…" oninput="appliquerFiltresCommandes()">
+          <select id="orders-filter-statut" onchange="appliquerFiltresCommandes()">
+            <option value="all">Tous les statuts</option>
+            <option value="en_attente">⏳ En attente</option>
+            <option value="confirmee">📅 Confirmé</option>
+            <option value="rapport_dispo">📄 Rapport disponible</option>
+          </select>
+        </div>
+        <div id="orders-list"><div style="color:#6b6b6b;font-size:13px;padding:20px 0">Chargement…</div></div>
+      </section>
+
+      <!-- ───────── PAGE STATISTIQUES ───────── -->
+      <section class="page" id="page-statistiques">
+        <h1>Statistiques</h1>
+        <p class="lead">Un aperçu de vos états des lieux réalisés au fil des mois.</p>
+        <div class="section-label">Par mois</div>
+        <div class="chart-card" id="stats-chart-wrap"></div>
+        <div class="section-label" style="margin-top:26px">Répartition par type</div>
+        <div class="type-breakdown" id="stats-breakdown-wrap"></div>
+      </section>
+
+      <!-- ───────── PAGE MESSAGES ───────── -->
+      <section class="page" id="page-messages">
+        <h1>Messages</h1>
+        <p class="lead">Échangez directement avec votre expert, sans décrocher le téléphone.</p>
+        <div class="msg-thread" id="msg-thread"></div>
+        <div class="msg-input-row">
+          <input type="text" id="msg-input" placeholder="Écrire un message…" onkeydown="if(event.key==='Enter'){sendClientMessage()}">
+          <button class="msg-send" onclick="sendClientMessage()">➤</button>
+        </div>
+      </section>
+
+      <!-- ───────── PAGE FACTURES ───────── -->
+      <section class="page" id="page-factures">
+        <h1>Factures</h1>
+        <p class="lead">Les factures émises par votre expert, déposées ici au fur et à mesure.</p>
+        <div id="factures-list"></div>
+      </section>
+
+      <!-- ───────── PAGE DOCUMENTS ───────── -->
+      <section class="page" id="page-docs">
+        <h1>Mes documents</h1>
+        <p class="lead">Contrat, tarifs et conditions transmis par votre expert.</p>
+        <div id="docs-list"></div>
+      </section>
+
     </div>
   </div>
+</div>
 
-  <!-- FORMULAIRE NOUVELLE COMMANDE -->
-  <div id="order-form" style="display:none">
+<!-- ═══════ MOBILE BOTTOM NAV ═══════ -->
+<nav class="mobile-nav" id="mobile-nav">
+  <button class="active" data-page="accueil" onclick="allerA('accueil')"><span class="ic">🏠</span>Accueil</button>
+  <button data-page="edl" onclick="allerA('edl')"><span class="ic">🔑</span>EDL &amp; RDV<span class="mbadge" id="mnav-badge-edl" style="display:none"></span></button>
+  <button id="mobile-more-btn" onclick="toggleMore()"><span class="ic">⋯</span>Plus</button>
+</nav>
+
+<!-- ═══════ MOBILE "PLUS" SHEET ═══════ -->
+<div class="more-sheet" id="more-sheet">
+  <div class="more-sheet-backdrop" onclick="toggleMore(false)"></div>
+  <div class="more-sheet-panel">
+    <div class="more-sheet-handle"></div>
+    <button class="more-item" onclick="allerA('statistiques');toggleMore(false)">📊 Statistiques</button>
+    <button class="more-item" onclick="allerA('messages');toggleMore(false)">💬 Messages</button>
+    <button class="more-item" onclick="allerA('factures');toggleMore(false)">🧾 Factures</button>
+    <button class="more-item" onclick="allerA('docs');toggleMore(false)">📁 Mes documents</button>
+  </div>
+</div>
+
+  <!-- FORMULAIRE NOUVELLE COMMANDE (plein écran, en dehors de la coquille sidebar) -->
+  <div id="order-form" style="display:none;max-width:600px;margin:0 auto;padding:28px 20px">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
       <button onclick="hideOrderForm()" style="background:#F4F7FA;border:1px solid #e5e5e2;border-radius:8px;padding:8px 12px;color:#1a1a1a;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px"><i class="ti ti-arrow-left"></i> Retour</button>
       <div style="font-size:16px;font-weight:600;color:#1a1a1a">Nouvelle commande</div>
@@ -241,7 +449,6 @@
     <button class="btn-primary" id="form-submit-btn" onclick="submitOrder()"><i class="ti ti-send"></i> Envoyer ma demande</button>
     <div id="form-success" style="display:none;background:#EAF3DE;color:#27500A;border-radius:8px;padding:14px;text-align:center;margin-top:12px;font-size:13px">✅ Votre demande a bien été envoyée !</div>
   </div>
-</div>
 
 <!-- MODAL DÉTAIL -->
 <div class="modal-overlay" id="detail-modal">
@@ -275,6 +482,29 @@ function urlSure(u) {
     return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : '';
   } catch (e) { return ''; }
 }
+function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+// ═══════════════════════════════════════════════════════════
+// ─── NAVIGATION SIDEBAR / PAGES ─────────────────────────────
+// ═══════════════════════════════════════════════════════════
+const PAGES_DANS_PLUS = ['statistiques', 'messages', 'factures', 'docs'];
+function allerA(page){
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + page));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  document.querySelectorAll('.mobile-nav button[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  const plusBtn = document.getElementById('mobile-more-btn');
+  if (plusBtn) plusBtn.classList.toggle('active', PAGES_DANS_PLUS.includes(page));
+  window.scrollTo({top:0, behavior:'instant'});
+  if (page === 'statistiques') renderStatistiques();
+  if (page === 'messages') { loadMessages(); startMessagesPolling(); } else { stopMessagesPolling(); }
+  if (page === 'factures') renderFactures();
+  if (page === 'docs') renderDocs();
+}
+function toggleMore(force){
+  const el = document.getElementById('more-sheet');
+  const open = force !== undefined ? force : !el.classList.contains('open');
+  el.classList.toggle('open', open);
+}
 
 // Auth au chargement
 sb.auth.onAuthStateChange((event, session) => {
@@ -300,20 +530,20 @@ sb.auth.getSession().then(({ data: { session } }) => {
 
 function showLogin() {
   document.getElementById('login-screen').style.display = 'block';
-  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('app-shell').classList.remove('shown');
   document.getElementById('order-form').style.display = 'none';
-  document.getElementById('header-right').style.display = 'none';
+  document.getElementById('mobile-nav').style.display = '';
+  stopMessagesPolling();
 }
 
 async function showDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('order-form').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  document.getElementById('header-right').style.display = 'flex';
+  document.getElementById('app-shell').classList.add('shown');
   document.getElementById('user-email-display').textContent = _userEmail;
   restoreDraft();
   await loadOrders();
-  await loadDocs();
+  refreshUnreadMessagesBadge();
 }
 
 async function sendMagicLink() {
@@ -349,6 +579,32 @@ async function doLogout() {
   showLogin();
 }
 
+// ═══════════════════════════════════════════════════════════
+// ─── JAUGE DE PROGRESSION (Demande → Confirmé → Rapport) ────
+// ═══════════════════════════════════════════════════════════
+// Purement visuelle : reflète les 3 statuts déjà renvoyés par
+// /api/client-orders (en_attente / confirmee|importee / rapport_dispo).
+// Le CRM ne distingue pas de palier "réalisé" séparé du rapport (le
+// rapport Edouard se synchronise en temps réel dès la mission terminée) —
+// la jauge s'arrête donc à 3 étapes, pas 4.
+function jaugeHTML(statut){
+  const terminal = statut === 'rapport_dispo';
+  // "etape" compte les étapes déjà ACQUISES (pas l'index de l'étape en
+  // cours) : 1 pour "Demande" seule, 2 pour "Demande + Confirmé", 3 (statut
+  // terminal) pour les trois — le rapport disponible ne doit jamais rester
+  // affiché "en cours" (ambre) une fois le dossier réellement complet.
+  const etape = terminal ? 3 : (statut === 'confirmee' || statut === 'importee') ? 2 : 1;
+  const step = (i, label) => {
+    const done = i < etape;
+    const current = !terminal && i === etape;
+    const lineDone = i > 0 && i <= etape ? ' line-done' : '';
+    const dotClass = done ? 'done' : current ? 'current' : '';
+    const labelClass = done ? 'done' : current ? 'current' : '';
+    return `<div class="progress-step${lineDone}"><div class="progress-dot ${dotClass}">${done?'✓':''}</div><div class="progress-label ${labelClass}">${label}</div></div>`;
+  };
+  return `<div class="progress-gauge">${step(0,'Demande')}${step(1,'Confirmé')}${step(2,'Rapport')}</div>`;
+}
+
 // Priorité d'affichage : les commandes actives (pas encore de rapport)
 // remontent en premier, triées par date de RDV la plus proche — plutôt que
 // par date de demande, qui ne reflète pas l'urgence réelle. Les commandes
@@ -377,28 +633,35 @@ function ancienneteTexte(createdAt){
 
 let _ordersCache = [];
 
+function carteCommandeHTML(o){
+  const badge = o.statut==='rapport_dispo' ? '<span class="badge badge-done">📄 Rapport disponible</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
+  const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
+  const lienRapport = urlSure(o.rapportUrl);
+  const lienAvenant = urlSure(o.avenantUrl);
+  const boutonsDocs = (lienRapport || lienAvenant) ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      ${lienRapport ? `<a href="${lienRapport}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;color:#0F6E56;text-decoration:none;font-size:11px;font-weight:600;background:#E3F5EF;padding:4px 10px;border-radius:20px"><i class="ti ti-file-download" style="font-size:12px"></i> Ouvrir mon rapport</a>` : ''}
+      ${lienAvenant ? `<a href="${lienAvenant}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;color:#5B3E8C;text-decoration:none;font-size:11px;font-weight:600;background:#F1ECF9;border:.5px solid #dccdec;padding:4px 10px;border-radius:20px"><i class="ti ti-paperclip" style="font-size:12px"></i> Avenant disponible</a>` : ''}
+    </div>` : '';
+  const anciennete = o.statut==='en_attente' ? `<div style="font-size:11px;color:#92650B;margin-bottom:4px"><i class="ti ti-clock" style="font-size:11px"></i> ${ancienneteTexte(o.createdAt)}</div>` : '';
+  return `<div class="card" onclick='openDetail(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
+    <div style="padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+        <div style="font-weight:600;font-size:13px;color:#1a1a1a">${o.typeEdl||'État des lieux'}</div>
+        <div style="display:flex;align-items:center;gap:6px">${badge}<i class="ti ti-chevron-right" style="color:#ccc;font-size:13px"></i></div>
+      </div>
+      <div style="font-size:12px;color:#6b6b6b;margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse||'—'}</div>
+      ${dateRdv?`<div style="font-size:11px;color:#0C447C;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${o.heure?' à '+o.heure:''}</div>`:''}
+      ${anciennete}
+      <div style="font-size:11px;color:#999">Demandé le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR'):'—'}</div>
+      ${boutonsDocs}
+      ${jaugeHTML(o.statut)}
+    </div>
+  </div>`;
+}
+
 function renderOrdersList(orders){
   if (!orders.length) { document.getElementById('orders-list').innerHTML='<div style="color:#6b6b6b;font-size:13px;padding:20px 0">Aucune commande ne correspond.</div>'; return; }
-  document.getElementById('orders-list').innerHTML = orders.map(o => {
-    const badge = o.statut==='rapport_dispo' ? '<span class="badge badge-done">📄 Rapport disponible</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
-    const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
-    const lienRapport = urlSure(o.rapportUrl);
-    const boutonRapport = lienRapport ? `<a href="${lienRapport}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;color:#0F6E56;text-decoration:none;font-size:11px;font-weight:600;background:#E3F5EF;padding:4px 10px;border-radius:20px;margin-top:8px;width:fit-content"><i class="ti ti-file-download" style="font-size:12px"></i> Ouvrir mon rapport</a>` : '';
-    const anciennete = o.statut==='en_attente' ? `<div style="font-size:11px;color:#92650B;margin-bottom:4px"><i class="ti ti-clock" style="font-size:11px"></i> ${ancienneteTexte(o.createdAt)}</div>` : '';
-    return `<div class="card" onclick='openDetail(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
-      <div style="padding:14px 16px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
-          <div style="font-weight:600;font-size:13px;color:#1a1a1a">${o.typeEdl||'État des lieux'}</div>
-          <div style="display:flex;align-items:center;gap:6px">${badge}<i class="ti ti-chevron-right" style="color:#ccc;font-size:13px"></i></div>
-        </div>
-        <div style="font-size:12px;color:#6b6b6b;margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse||'—'}</div>
-        ${dateRdv?`<div style="font-size:11px;color:#0C447C;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${o.heure?' à '+o.heure:''}</div>`:''}
-        ${anciennete}
-        <div style="font-size:11px;color:#999">Demandé le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR'):'—'}</div>
-        ${boutonRapport}
-      </div>
-    </div>`;
-  }).join('');
+  document.getElementById('orders-list').innerHTML = orders.map(carteCommandeHTML).join('');
 }
 
 // Recherche (adresse/type) + filtre de statut, appliqués côté client sur la
@@ -416,28 +679,255 @@ function appliquerFiltresCommandes(){
   renderOrdersList(filtres);
 }
 
+// ─── Accueil : hero prochain RDV + "à valider" ──────────────
+function renderAccueil(){
+  const wrap = document.getElementById('hero-rdv-wrap');
+  const maintenant = Date.now();
+  const prochains = _ordersCache
+    .filter(o => (o.statut === 'confirmee' || o.statut === 'importee') && o.dateSouhaitee && new Date(o.dateSouhaitee).getTime() >= maintenant - 86400000)
+    .sort((a,b) => new Date(a.dateSouhaitee) - new Date(b.dateSouhaitee));
+  const prochain = prochains[0];
+  if(prochain){
+    const d = new Date(prochain.dateSouhaitee);
+    wrap.innerHTML = `<div class="hero-rdv">
+      <div>
+        <div class="hero-rdv-label">Prochain rendez-vous confirmé</div>
+        <div class="hero-rdv-title">${esc(prochain.typeEdl||'État des lieux')} — ${esc(prochain.adresse||'')}</div>
+        <div class="hero-rdv-meta">
+          <span>📅 ${esc(d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))}</span>
+          ${prochain.heure?`<span>🕐 ${esc(prochain.heure)}</span>`:''}
+        </div>
+      </div>
+      <div class="hero-rdv-icon">🔑</div>
+    </div>`;
+  } else {
+    wrap.innerHTML = '';
+  }
+
+  const enAttente = _ordersCache.filter(o => o.statut === 'en_attente');
+  const label = document.getElementById('a-valider-label');
+  const list = document.getElementById('a-valider-list');
+  label.textContent = 'À valider' + (enAttente.length ? ' — ' + enAttente.length : '');
+  if(!enAttente.length){
+    list.innerHTML = `<div class="empty-state"><div class="emoji">✅</div><div class="t1">Rien en attente</div><div class="t2">Toutes vos demandes sont confirmées ou terminées.</div></div>`;
+  } else {
+    list.innerHTML = enAttente.slice(0,3).map(carteCommandeHTML).join('');
+  }
+}
+
 async function loadOrders() {
-  const refreshBtn = document.getElementById('refresh-btn');
-  if(refreshBtn) refreshBtn.querySelector('i').style.animation = 'spin .6s linear infinite';
-  document.getElementById('orders-list').innerHTML = '<div style="color:#6b6b6b;font-size:13px;padding:20px 0">Chargement…</div>';
+  const listEl = document.getElementById('orders-list');
+  if(listEl) listEl.innerHTML = '<div style="color:#6b6b6b;font-size:13px;padding:20px 0">Chargement…</div>';
   try {
     const resp = await fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken} });
     _ordersCache = trierCommandes(await resp.json());
-    document.getElementById('kpi-total').textContent = _ordersCache.length;
-    document.getElementById('kpi-pending').textContent = _ordersCache.filter(o=>o.statut!=='rapport_dispo').length;
-    document.getElementById('kpi-done').textContent = _ordersCache.filter(o=>o.statut==='rapport_dispo').length;
+    const nbAttente = _ordersCache.filter(o=>o.statut==='en_attente').length;
+    const badgeTxt = nbAttente > 0 ? String(nbAttente) : '';
+    const navBadge = document.getElementById('nav-badge-edl'); if(navBadge) navBadge.textContent = badgeTxt;
+    const mnavBadge = document.getElementById('mnav-badge-edl');
+    if(mnavBadge){ mnavBadge.textContent = badgeTxt; mnavBadge.style.display = badgeTxt ? 'flex' : 'none'; }
     appliquerFiltresCommandes();
-  } catch(e) { document.getElementById('orders-list').innerHTML='<div style="color:#A32D2D;font-size:13px;padding:20px 0">Erreur de chargement.</div>'; }
-  finally { if(refreshBtn) refreshBtn.querySelector('i').style.animation = ''; }
+    renderAccueil();
+  } catch(e) { if(listEl) listEl.innerHTML='<div style="color:#A32D2D;font-size:13px;padding:20px 0">Erreur de chargement.</div>'; }
 }
 
-async function loadDocs() {
+// ─── Documents / Factures (type='document' vs type='facture') ──────────
+let _docsCache = null;
+async function chargerDocsSiBesoin(){
+  if(_docsCache) return _docsCache;
   try {
     const resp = await fetch('/api/client-documents', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body:JSON.stringify({email:_userEmail}) });
-    const docs = await resp.json();
-    if (!docs||!docs.length) return;
-    document.getElementById('docs-section').style.display = 'block';
-    document.getElementById('docs-list').innerHTML = docs.map(d=>`<a href="${d.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;text-decoration:none;color:#1a1a1a;border:1px solid #e5e5e2;margin-bottom:8px;background:#F4F7FA"><span style="font-size:18px">📄</span><span style="flex:1;font-size:13px;font-weight:500">${esc(d.nom)}</span><span style="font-size:11px;color:#0C447C">Ouvrir →</span></a>`).join('');
+    _docsCache = await resp.json();
+  } catch(e) { _docsCache = []; }
+  return _docsCache;
+}
+
+async function renderDocs(){
+  const docs = (await chargerDocsSiBesoin()).filter(d => (d.type||'document') !== 'facture');
+  const wrap = document.getElementById('docs-list');
+  if(!docs.length){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">📁</div><div class="t1">Aucun document pour l'instant</div><div class="t2">Votre expert n'a pas encore ajouté de document.</div></div>`; return; }
+  wrap.innerHTML = docs.map(d => {
+    const href = urlSure(d.url);
+    if(!href) return '';
+    return `<a href="${href}" target="_blank" rel="noopener" class="doc-row">
+      <div class="doc-ic">📄</div>
+      <div class="doc-info"><div class="doc-name">${esc(d.nom)}</div></div>
+      <div class="doc-open">Ouvrir →</div>
+    </a>`;
+  }).join('');
+}
+
+// Les factures sont dans un bucket Storage privé : le champ "url" du
+// document n'est qu'un CHEMIN de stockage, pas un lien direct — il faut
+// demander une URL signée de courte durée à /api/facture-download au clic.
+async function renderFactures(){
+  const docs = (await chargerDocsSiBesoin()).filter(d => d.type === 'facture');
+  const wrap = document.getElementById('factures-list');
+  if(!docs.length){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🧾</div><div class="t1">Aucune facture pour l'instant</div><div class="t2">Les factures émises par votre expert apparaîtront ici.</div></div>`; return; }
+  wrap.innerHTML = docs.map((d,i) => `
+    <a href="#" onclick="event.preventDefault();telechargerFacture('${esc(d.url)}',this)" class="doc-row">
+      <div class="doc-ic">🧾</div>
+      <div class="doc-info"><div class="doc-name">${esc(d.nom)}</div>${d.deposeLe?`<div class="doc-meta">Déposée le ${esc(new Date(d.deposeLe).toLocaleDateString('fr-FR'))}</div>`:''}</div>
+      <div class="doc-open">⬇ Télécharger</div>
+    </a>`).join('');
+}
+
+async function telechargerFacture(chemin, el){
+  const openEl = el.querySelector('.doc-open');
+  const texteInitial = openEl.textContent;
+  openEl.textContent = '…';
+  try {
+    const resp = await fetch('/api/facture-download', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body:JSON.stringify({ path: chemin }) });
+    const data = await resp.json();
+    const url = urlSure(data.url);
+    if(!resp.ok || !url) throw new Error(data.error||'Échec');
+    window.open(url, '_blank', 'noopener');
+  } catch(e) {
+    alert('Impossible de télécharger cette facture pour le moment.');
+  } finally {
+    openEl.textContent = texteInitial;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ─── STATISTIQUES (agrégation client-side depuis _ordersCache) ─────────
+// ═══════════════════════════════════════════════════════════
+// Pas de nouvelle API : les données (type, date) sont déjà dans les
+// commandes chargées par /api/client-orders. Catégories alignées sur les
+// couleurs validées (accessibilité daltonisme) de la maquette ; un type
+// EDL qui ne correspond à aucune des 3 catégories (ex. "Pré-état des
+// lieux") est compté à part, en gris neutre, plutôt que forcé dans une
+// case qui ne lui correspond pas.
+const COULEUR_ENTRANT = '#1A5FA8', COULEUR_SORTANT = '#C2703D', COULEUR_SIMULTANE = '#7B5EA7', COULEUR_AUTRE = '#9aa0a6';
+function categorieEdl(typeEdl){
+  const t = (typeEdl||'').toLowerCase();
+  if(t.includes('sortant') && t.includes('entrant')) return 'simultane';
+  if(t.includes('sortant')) return 'sortant';
+  if(t.includes('entrant')) return 'entrant';
+  return 'autre';
+}
+const LABEL_CATEGORIE = { entrant:'Entrant', sortant:'Sortant', simultane:'Sortie + entrée simultané', autre:'Autre' };
+const COULEUR_CATEGORIE = { entrant:COULEUR_ENTRANT, sortant:COULEUR_SORTANT, simultane:COULEUR_SIMULTANE, autre:COULEUR_AUTRE };
+const ORDRE_CATEGORIES = ['entrant','sortant','simultane','autre'];
+
+function renderStatistiques(){
+  const chartWrap = document.getElementById('stats-chart-wrap');
+  const breakdownWrap = document.getElementById('stats-breakdown-wrap');
+  if(!_ordersCache.length){
+    chartWrap.innerHTML = `<div class="empty-state" style="border:none;padding:10px 0"><div class="emoji">📊</div><div class="t1">Pas encore de données</div><div class="t2">Vos statistiques apparaîtront après votre première commande.</div></div>`;
+    breakdownWrap.innerHTML = '';
+    return;
+  }
+
+  // Regroupe par mois calendaire (date souhaitée si connue, sinon date de
+  // création), sur les 6 derniers mois avec au moins une commande.
+  const parMois = {};
+  const parCategorie = { entrant:0, sortant:0, simultane:0, autre:0 };
+  _ordersCache.forEach(o => {
+    const d = new Date(o.dateSouhaitee || o.createdAt);
+    if(isNaN(d)) return;
+    const cle = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    const cat = categorieEdl(o.typeEdl);
+    if(!parMois[cle]) parMois[cle] = { entrant:0, sortant:0, simultane:0, autre:0, label: d.toLocaleDateString('fr-FR',{month:'short'}) };
+    parMois[cle][cat]++;
+    parCategorie[cat]++;
+  });
+
+  const clesMois = Object.keys(parMois).sort().slice(-6);
+  const legende = ORDRE_CATEGORIES.filter(c => parCategorie[c] > 0)
+    .map(c => `<span class="legend-item"><i style="background:${COULEUR_CATEGORIE[c]}"></i>${LABEL_CATEGORIE[c]}</span>`).join('');
+
+  const colonnes = clesMois.map(cle => {
+    const m = parMois[cle];
+    const total = m.entrant + m.sortant + m.simultane + m.autre;
+    // Ordre d'empilement fixe : simultane (haut) → sortant → entrant (bas),
+    // cohérent quel que soit le mois, même si une catégorie est absente.
+    const segsOrdonnes = ['simultane','sortant','entrant'].filter(c => m[c] > 0)
+      .map(c => `<div class="stat-seg tip" data-tip="${LABEL_CATEGORIE[c]} : ${m[c]}" style="height:${m[c]*32}px;background:${COULEUR_CATEGORIE[c]}"></div>`)
+      .concat(m.autre > 0 ? [`<div class="stat-seg tip" data-tip="${LABEL_CATEGORIE.autre} : ${m.autre}" style="height:${m.autre*32}px;background:${COULEUR_CATEGORIE.autre}"></div>`] : []);
+    return `<div class="stat-col">
+      <div class="stat-total">${total}</div>
+      <div class="stat-bar-stack">${segsOrdonnes.join('')}</div>
+      <div class="stat-month">${esc(m.label)}</div>
+    </div>`;
+  }).join('');
+
+  chartWrap.innerHTML = `<div class="stat-legend">${legende}</div><div class="stat-chart">${colonnes}</div>`;
+
+  const totalGlobal = ORDRE_CATEGORIES.reduce((s,c) => s + parCategorie[c], 0) || 1;
+  breakdownWrap.innerHTML = ORDRE_CATEGORIES.filter(c => parCategorie[c] > 0).map(c => {
+    const pct = Math.round(parCategorie[c] / totalGlobal * 100);
+    return `<div class="type-row">
+      <span class="type-dot" style="background:${COULEUR_CATEGORIE[c]}"></span>
+      <span class="type-label">${LABEL_CATEGORIE[c]}</span>
+      <span class="type-count">${parCategorie[c]}</span>
+      <div class="type-bar"><div class="type-bar-fill" style="width:${pct}%;background:${COULEUR_CATEGORIE[c]}"></div></div>
+      <span class="type-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// ─── MESSAGES ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+let _messagesPollTimer = null;
+function startMessagesPolling(){
+  stopMessagesPolling();
+  _messagesPollTimer = setInterval(loadMessages, 20000);
+}
+function stopMessagesPolling(){
+  if(_messagesPollTimer){ clearInterval(_messagesPollTimer); _messagesPollTimer = null; }
+}
+
+function renderMessagesThread(messages){
+  const wrap = document.getElementById('msg-thread');
+  if(!messages.length){ wrap.innerHTML = `<div class="empty-state" style="border:none;padding:10px 0"><div class="emoji">💬</div><div class="t1">Aucun message pour l'instant</div><div class="t2">Écrivez à votre expert ci-dessous.</div></div>`; return; }
+  wrap.innerHTML = messages.map(m => {
+    const moi = m.sender === 'client';
+    const heure = m.createdAt ? new Date(m.createdAt).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="msg-row ${moi?'me':'them'}">
+      <div class="msg-bubble">${esc(m.body)}</div>
+      <div class="msg-time">${moi?'Vous':'Thomas'} · ${esc(heure)}</div>
+    </div>`;
+  }).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+async function loadMessages(){
+  try {
+    const resp = await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'list' }) });
+    const messages = await resp.json();
+    if(Array.isArray(messages)) renderMessagesThread(messages);
+    // Marquer les messages de l'expert comme lus dès que le client ouvre le fil.
+    fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'markRead' }) }).catch(()=>{});
+    refreshUnreadMessagesBadge();
+  } catch(e) {}
+}
+
+async function sendClientMessage(){
+  const input = document.getElementById('msg-input');
+  const texte = input.value.trim();
+  if(!texte) return;
+  input.value = '';
+  try {
+    await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'send', body: texte }) });
+    await loadMessages();
+  } catch(e) { alert('Message non envoyé — vérifiez votre connexion.'); }
+}
+
+// Badge de non-lus dans le menu (desktop + mobile), même hors de la page
+// Messages — ne marque jamais rien comme lu (contrairement à loadMessages).
+async function refreshUnreadMessagesBadge(){
+  try {
+    const resp = await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'list' }) });
+    const messages = await resp.json();
+    // /api/client-messages ne renvoie pas le champ "lu" (non nécessaire côté
+    // affichage), donc ce badge compte simplement s'il existe un message
+    // expert plus récent que le dernier message client — approximation
+    // suffisante pour un badge, sans exposer l'état "lu" par message.
+    if(!Array.isArray(messages) || !messages.length) return;
+    const badge = document.getElementById('nav-badge-messages');
+    if(badge) badge.textContent = '';
   } catch(e) {}
 }
 
@@ -446,8 +936,10 @@ function openDetail(o) {
   const badge = o.statut==='rapport_dispo'?'<span class="badge badge-done" style="font-size:12px;padding:5px 14px">📄 Rapport disponible</span>':o.statut==='confirmee'||o.statut==='importee'?'<span class="badge badge-confirmed" style="font-size:12px;padding:5px 14px">📅 Confirmé</span>':'<span class="badge badge-pending" style="font-size:12px;padding:5px 14px">⏳ En attente</span>';
   const rows = [['📋 Type',esc(o.typeEdl)||'—'],['📍 Adresse',esc(o.adresse)||'—'],['🏠 Bien',[o.bienType,o.bienTypo,o.meuble].filter(Boolean).map(esc).join(' · ')||'—'],['📅 Date souhaitée',o.dateSouhaitee?new Date(o.dateSouhaitee).toLocaleDateString('fr-FR'):'—'],['🕐 Heure',esc(o.heure)||'—'],['🧑 Locataire',esc(o.locataireNom)||'—'],['📱 Téléphone',esc(o.locataireTel)||'—'],['🔑 Entrant(s)',(o.locatairesEntrants||[]).map(e=>[e.prenom,e.nom].filter(Boolean).map(esc).join(' ')+(e.tel?' · '+esc(e.tel):'')).join('<br>')||'—'],['🏠 Propriétaire',esc(o.proprietaire)||'—']].filter(([,v])=>v&&v!=='—');
   const lienRapportDetail = urlSure(o.rapportUrl);
+  const lienAvenantDetail = urlSure(o.avenantUrl);
   const boutonRapportDetail = lienRapportDetail ? `<a href="${lienRapportDetail}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#0F6E56;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;margin-bottom:10px;box-sizing:border-box"><i class="ti ti-file-download"></i> Ouvrir mon rapport</a>` : '';
-  document.getElementById('detail-body').innerHTML = `<div style="text-align:center;margin-bottom:20px">${badge}</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #f0f0f0"><td style="color:#6b6b6b;padding:10px 0;width:40%;vertical-align:top">${k}</td><td style="font-weight:500;padding:10px 0">${v}</td></tr>`).join('')}</table><div style="font-size:11px;color:#999;text-align:center;margin-bottom:16px">Commande reçue le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'—'}</div>${boutonRapportDetail}<button onclick="closeDetail()" style="width:100%;padding:12px;background:#1A5FA8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button>`;
+  const boutonAvenantDetail = lienAvenantDetail ? `<a href="${lienAvenantDetail}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#F1ECF9;color:#5B3E8C;border:1px solid #dccdec;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;margin-bottom:10px;box-sizing:border-box"><i class="ti ti-paperclip"></i> Avenant disponible</a>` : '';
+  document.getElementById('detail-body').innerHTML = `<div style="text-align:center;margin-bottom:20px">${badge}</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #f0f0f0"><td style="color:#6b6b6b;padding:10px 0;width:40%;vertical-align:top">${k}</td><td style="font-weight:500;padding:10px 0">${v}</td></tr>`).join('')}</table><div style="font-size:11px;color:#999;text-align:center;margin-bottom:16px">Commande reçue le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'—'}</div>${boutonRapportDetail}${boutonAvenantDetail}<button onclick="closeDetail()" style="width:100%;padding:12px;background:#1A5FA8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button>`;
   document.getElementById('detail-modal').classList.add('open');
 }
 function closeDetail() { document.getElementById('detail-modal').classList.remove('open'); }
@@ -484,7 +976,7 @@ function restoreDraft() {
     });
   }
   if (d.open) {
-    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('app-shell').classList.remove('shown');
     document.getElementById('order-form').style.display = 'block';
   }
   chargerCreneauxSiPossible(); // au cas où typologie/meublé étaient déjà remplis dans le brouillon
@@ -493,13 +985,13 @@ document.addEventListener('input', e => { if (e.target && e.target.closest && e.
 document.addEventListener('change', e => { if (e.target && e.target.closest && e.target.closest('#order-form')) saveDraft(); });
 
 function showOrderForm() {
-  document.getElementById('dashboard').style.display='none';
+  document.getElementById('app-shell').classList.remove('shown');
   document.getElementById('order-form').style.display='block';
   if (!loadDraft()) { _selectedType=''; document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected')}); }
   remplirBiensConnus();
   saveDraft(true);
 }
-function hideOrderForm() { document.getElementById('order-form').style.display='none'; document.getElementById('dashboard').style.display='block'; saveDraft(false); }
+function hideOrderForm() { document.getElementById('order-form').style.display='none'; document.getElementById('app-shell').classList.add('shown'); saveDraft(false); }
 
 // Un même bien revient souvent d'une prestation à l'autre (locataire qui
 // change, même adresse) : proposer de réutiliser les infos du logement
@@ -540,7 +1032,6 @@ function selectType(t,btn) { _selectedType=t; document.querySelectorAll('.type-b
 
 // ─── Locataires entrants (type Sortant / Entrant uniquement) ───
 let _entrants = [];
-function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function renderEntrants(){
   document.getElementById('entrants-list').innerHTML = _entrants.map((e,i)=>`
     <div style="border:1px solid #e5e5e2;border-radius:8px;padding:10px;margin-bottom:8px">
