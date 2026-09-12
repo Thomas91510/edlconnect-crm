@@ -114,15 +114,17 @@ export default async function handler(req) {
     } catch(_){}
 
     const orders = (rows || []).map(r => {
-      // Une mission liée est-elle réellement effectuée ? "terminée" et
-      // "facturée" sont les statuts que le CRM écrit vraiment (le statut
-      // "réalisée" n'existe dans aucun formulaire et ne se produit jamais).
-      // Le rapport EDL (Edouard) se synchronise en temps réel avec les
-      // locataires : pas de palier intermédiaire "réalisé sans rapport" à
-      // afficher, on passe directement à "rapport disponible".
+      // Une mission liée est-elle réellement effectuée ? "terminée" est
+      // désormais le seul statut que le CRM écrit pour une mission achevée
+      // ("facturée" a disparu avec la génération de factures dans le CRM ;
+      // "réalisée" n'est plus écrit par la synchro Edouard depuis le 12/09,
+      // mais reste accepté ici pour les missions déjà marquées ainsi avant
+      // ce correctif). Le rapport EDL (Edouard) se synchronise en temps réel
+      // avec les locataires : pas de palier intermédiaire "réalisé sans
+      // rapport" à afficher, on passe directement à "rapport disponible".
       const linkedMission = missionMap[r.data?.missionId] || null;
       const missionAnnulee = linkedMission && linkedMission.statut === 'annulée';
-      const missionEffectuee = linkedMission && ['terminée', 'facturée', 'réalisée'].includes(linkedMission.statut);
+      const missionEffectuee = linkedMission && ['terminée', 'réalisée'].includes(linkedMission.statut);
       let statut = r.data?.statut || 'en_attente';
       let rapportUrl = '';
       // Le statut de la reservation elle-meme (r.data.statut, ecrit une

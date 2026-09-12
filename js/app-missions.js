@@ -131,7 +131,7 @@ function renderMissions(){
       <td data-label="TTC" style="font-weight:600;color:var(--green)">${fmtTTC(m.montant)}</td>
       <td data-label="Statut">${statusBadge(m.statut)}</td>
       <td><select style="font-size:10px;padding:3px 5px;width:auto" onchange="updateMissionStatus(${realIdx},this.value)">
-        ${['planifiée','en cours','terminée'].map(s=>`<option${s===m.statut?' selected':''}>${s}</option>`).join('')}
+        ${['planifiée','en cours','terminée','annulée'].map(s=>`<option${s===m.statut?' selected':''}>${s}</option>`).join('')}
       </select></td>
       <td class="tbl-cards-actions" style="display:flex;gap:4px">
         <button class="btn btn-sm" onclick="openConfirmRdvModal('${m.id}')" title="Confirmer le RDV et envoyer les convocations" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue)"><i class="ti ti-calendar-check" style="font-size:12px"></i></button>
@@ -148,7 +148,21 @@ function filterMissions(f,btn){
   if(btn)btn.classList.add('active');
   renderMissions();
 }
-function updateMissionStatus(i,v){DB.missions[i].statut=v;saveToStorage();notify('✅ Statut mis à jour');renderMissions();notifierChangementStatutCommande(DB.missions[i]);}
+function updateMissionStatus(i,v){
+  const m=DB.missions[i];
+  if(!m)return;
+  // Même garde-fou que dans saveEditMission() : ce sélecteur rapide dans la
+  // liste est un 2e chemin pour passer une mission en "annulée", tout aussi
+  // utilisé que la modale d'édition — sans ça, une annulation faite ici
+  // n'aurait jamais prévenu l'agence ni le locataire.
+  const statutAvant=m.statut;
+  m.statut=v;
+  saveToStorage();
+  notify('✅ Statut mis à jour');
+  renderMissions();
+  notifierChangementStatutCommande(m);
+  if(v==='annulée' && statutAvant!=='annulée' && m.rdvConfirme) notifierAnnulationMission(m);
+}
 function deleteMission(i){
   const m=DB.missions[i];
   if(!m)return;

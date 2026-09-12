@@ -297,7 +297,7 @@ function renderFicheCommandes(c){
   updateFicheTachesCount();
 
   // CA total ce contact
-  const caTotal=missions.filter(m=>m.statut==='facturée'||m.statut==='terminée').reduce((s,m)=>s+(m.montant||0),0);
+  const caTotal=missions.filter(m=>m.statut==='terminée').reduce((s,m)=>s+(m.montant||0),0);
 
   if(!missions.length){
     document.getElementById('fiche-commandes-list').innerHTML=`
@@ -346,8 +346,8 @@ function renderFicheCommandes(c){
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.03em">📅 ${group.label} — ${totalHT.toLocaleString('fr-FR')} € HT</div>
       ${group.items.map(m=>`
       <div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
-        <div style="width:36px;height:36px;border-radius:50%;background:${m.statut==='facturée'?'var(--green-bg)':m.statut==='terminée'?'var(--blue-bg)':m.statut==='en cours'?'var(--amber-bg)':'var(--bg2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">
-          ${m.statut==='facturée'?'✅':m.statut==='terminée'?'🏁':m.statut==='en cours'?'⏳':'📅'}
+        <div style="width:36px;height:36px;border-radius:50%;background:${m.statut==='annulée'?'var(--red-bg)':m.statut==='terminée'?'var(--blue-bg)':m.statut==='en cours'?'var(--amber-bg)':'var(--bg2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">
+          ${m.statut==='annulée'?'❌':m.statut==='terminée'?'🏁':m.statut==='en cours'?'⏳':'📅'}
         </div>
         <div style="flex:1">
           <div style="font-size:12px;font-weight:600;margin-bottom:2px">${m.type||'EDL'}</div>
