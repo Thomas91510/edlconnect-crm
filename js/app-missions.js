@@ -213,6 +213,8 @@ function saveEditMission(){
   const m = DB.missions[_editMissionIdx];
   if(!m) return;
 
+  const statutAvant = m.statut;
+
   m.agence      = document.getElementById('m-agence').value.trim();
   m.emailClient = document.getElementById('m-email').value.trim();
   m.adresse     = document.getElementById('m-adresse').value.trim();
@@ -226,6 +228,12 @@ function saveEditMission(){
   m.statut      = document.getElementById('m-statut').value;
   m.date        = document.getElementById('m-date').value;
   m.avenantUrl  = (document.getElementById('m-avenant-url')?.value || '').trim();
+
+  // Une mission qui vient de passer à "annulée" alors que ses convocations
+  // étaient déjà parties (rdvConfirme) doit prévenir l'agence et le(s)
+  // locataire(s) — jusqu'ici seule la suppression pure existait pour
+  // annuler, sans jamais avertir personne (voir audit du 12/09).
+  const vientDetreAnnulee = m.statut === 'annulée' && statutAvant !== 'annulée' && m.rdvConfirme;
 
   saveToStorage();
   if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
@@ -242,6 +250,51 @@ function saveEditMission(){
 
   renderMissions();
   renderDashboard();
+
+  if(vientDetreAnnulee) notifierAnnulationMission(m);
+}
+
+// Prévient par email l'agence et le(s) locataire(s) déjà convoqués qu'un
+// RDV est annulé — sans ça, seule une suppression silencieuse de la
+// mission existait, laissant les parties convoquées sans nouvelles et la
+// jauge de progression extranet figée sur "Confirmé".
+async function notifierAnnulationMission(m){
+  const destinataires = new Set();
+  if(m.emailClient) destinataires.add(m.emailClient.trim());
+  if(m.locataireEmail) destinataires.add(m.locataireEmail.trim());
+  (m.locataires || []).forEach(l => { if(l && l.email) destinataires.add(l.email.trim()); });
+  (m.locatairesEntrants || []).forEach(e => { if(e && e.email) destinataires.add(e.email.trim()); });
+  destinataires.delete('');
+  if(destinataires.size === 0) return;
+
+  const dateStr = m.date ? new Date(m.date).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) : '';
+  const heureStr = m.date ? new Date(m.date).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : '';
+  const quand = dateStr ? ` prévu le ${dateStr}${heureStr ? ' à ' + heureStr : ''}` : '';
+  const sujet = `RDV annulé${m.adresse ? ' — ' + m.adresse : ''}`;
+  const corps = `Le rendez-vous d'état des lieux${m.adresse ? ' au ' + m.adresse : ''}${quand} a été annulé.\n\nPour toute question, contactez-nous directement.`;
+
+  try {
+    const tk = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    let nbOk = 0;
+    for(const dest of destinataires){
+      const resp = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
+        body: JSON.stringify({
+          sender: { name: 'EDL IDF', email: 'contact@edl-idf.com' },
+          to: [{ email: dest }],
+          subject: sujet,
+          htmlContent: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${corps.replace(/\n/g,'<br>')}</div>`,
+          textContent: corps
+        })
+      });
+      if(resp.ok) nbOk++;
+    }
+    if(nbOk > 0) notify(`📧 Annulation notifiée à ${nbOk} destinataire${nbOk>1?'s':''}.`);
+    if(nbOk < destinataires.size) notify('⚠️ Certaines notifications d\'annulation n\'ont pas pu être envoyées.', 'warn');
+  } catch(e) {
+    notify('⚠️ Mission annulée, mais la notification par email a échoué — préviens l\'agence et le locataire directement.', 'warn');
+  }
 }
 
 // ─── STATISTIQUES EDL DU TABLEAU DE BORD ──────────────────────────────

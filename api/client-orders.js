@@ -121,10 +121,18 @@ export default async function handler(req) {
       // locataires : pas de palier intermédiaire "réalisé sans rapport" à
       // afficher, on passe directement à "rapport disponible".
       const linkedMission = missionMap[r.data?.missionId] || null;
+      const missionAnnulee = linkedMission && linkedMission.statut === 'annulée';
       const missionEffectuee = linkedMission && ['terminée', 'facturée', 'réalisée'].includes(linkedMission.statut);
       let statut = r.data?.statut || 'en_attente';
       let rapportUrl = '';
-      if (missionEffectuee) {
+      // Le statut de la reservation elle-meme (r.data.statut, ecrit une
+      // seule fois a la confirmation) ne se met jamais a jour tout seul si
+      // la mission liee change ensuite — on le derive donc en direct du
+      // statut ACTUEL de la mission des qu'il devient terminal (annulee ou
+      // rapport disponible), plutot que de se fier a la valeur figee.
+      if (missionAnnulee) {
+        statut = 'annulee';
+      } else if (missionEffectuee) {
         statut = 'rapport_dispo';
         const doc = linkedMission.id ? docsParMission[linkedMission.id] : null;
         if (doc) rapportUrl = doc.url;
