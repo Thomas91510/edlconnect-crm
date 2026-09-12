@@ -3,22 +3,26 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
+import { identiteAbonne } from './_lib/identite.js';
 
 // ── Vérifie que l'utilisateur est admin ou sur un plan payant actif. ──
+// Fail-closed : une panne de la vérification refuse l'envoi plutôt que de
+// l'autoriser (aligné sur confirm-rdv.js — voir audit du 12/09, qui notait
+// une incohérence entre les endpoints d'envoi sur ce point).
 async function planAutorise(userId, email) {
   if (email && ADMIN_EMAILS.includes(email)) return true;
   try {
     const key = process.env.SUPABASE_SERVICE_KEY;
-    if (!key || !userId) return true;
+    if (!key || !userId) return false;
     const r = await fetch(SUPABASE_URL + '/rest/v1/user_plans?select=plan,status&user_id=eq.' + encodeURIComponent(userId), {
       headers: { apikey: key, Authorization: 'Bearer ' + key }
     });
-    if (!r.ok) return true;
+    if (!r.ok) return false;
     const rows = await r.json();
     const p = rows && rows[0];
     if (!p) return false;
     return (p.plan === 'starter' || p.plan === 'pro') && p.status === 'active';
-  } catch (e) { return true; }
+  } catch (e) { return false; }
 }
 
 export default async function handler(req) {
@@ -106,6 +110,17 @@ export default async function handler(req) {
       });
     }
 
+    // Verrouille l'expéditeur sur l'identité vérifiée de l'abonné : le champ
+    // sender envoyé par le client n'est JAMAIS utilisé tel quel, sinon
+    // n'importe quel abonné payant pourrait usurper un nom/domaine
+    // d'expéditeur arbitraire via le compte Brevo partagé de la plateforme
+    // (risque de phishing sous un nom de confiance, et de blacklistage du
+    // domaine partagé). identiteAbonne() renvoie soit l'adresse du domaine
+    // vérifié de l'abonné, soit un expéditeur neutre avec reply-to vers lui.
+    const IDENT = await identiteAbonne(SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, _user.id);
+    const sender = { name: IDENT.nom, email: IDENT.email };
+    const replyTo = IDENT.replyTo ? { email: IDENT.replyTo } : body.replyTo;
+
     // Marquer l'email avec l'identifiant de l'abonné expéditeur : le compte
     // Brevo est partagé par toute la plateforme, donc sans ce tag l'endpoint
     // /api/brevo-tracking (qui interroge les statistiques Brevo) ne peut pas
@@ -113,6 +128,8 @@ export default async function handler(req) {
     // brevo-tracking.js qui filtre ses requêtes sur ce même tag.
     const bodyTague = {
       ...body,
+      sender,
+      replyTo,
       tags: [...(Array.isArray(body.tags) ? body.tags : []), 'sub_' + _user.id]
     };
 
