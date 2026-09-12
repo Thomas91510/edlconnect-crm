@@ -700,10 +700,23 @@ async function sendConfirmRdv(){
   };
 
   try {
+    // Reservation liee (cas confirmation directe depuis la liste) : si les
+    // convocations sont deja parties lors d'une tentative precedente (le
+    // plus souvent suivie d'un echec de synchro de la mission, qui laisse
+    // la reservation visible "en attente"), on ne les renvoie jamais sur un
+    // nouveau clic — on ne retente que la creation de la mission plus bas.
+    let _resaLiee = null;
+    if(_confirmRdvMissionId && _confirmRdvMissionId.startsWith('__resa__')){
+      _resaLiee = _allReservations.find(x => (x.id || x._supaId) === window._tempResaId);
+    }
+    const _dejaConfirmee = !!(_resaLiee && _resaLiee.confirmationEnvoyee);
+
     // Si aucun destinataire n'est retenu, on enregistre le RDV sans appeler
     // l'API d'envoi : le rendez-vous est planifie, personne n'est notifie.
     let resp;
     if(!_envAgence && !_envLocataires){
+      resp = { ok: true };
+    } else if(_dejaConfirmee){
       resp = { ok: true };
     } else {
       resp = await fetch('/api/confirm-rdv', {
@@ -711,6 +724,24 @@ async function sendConfirmRdv(){
         headers: await _authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
+      if(resp.ok && _resaLiee){
+        // Marque immediatement l'envoi effectue, avant meme de tenter la
+        // creation de la mission ci-dessous : un echec de synchro qui suit
+        // ne doit jamais faire renvoyer les convocations. La persistance
+        // Supabase de ce marqueur est best-effort et ne doit JAMAIS faire
+        // echouer la suite (creation de mission) si elle-meme echoue —
+        // les emails sont deja partis a ce stade, ce n'est pas le moment
+        // de basculer sur "Connexion impossible".
+        _resaLiee.confirmationEnvoyee = true;
+        try {
+          if(_supaReady && supabaseClient){
+            supabaseClient.from('bookings').update({
+              data: { ..._resaLiee, confirmationEnvoyee: true },
+              updated_at: new Date().toISOString()
+            }).eq('id', _resaLiee._supaId || _resaLiee.id).then(()=>{});
+          }
+        } catch(e) { /* silencieux — best-effort, voir commentaire ci-dessus */ }
+      }
     }
 
     if(resp.ok){
@@ -723,9 +754,17 @@ async function sendConfirmRdv(){
         const resaId = window._tempResaId;
         const r = _allReservations.find(x => (x.id || x._supaId) === resaId);
         if(r && _supaReady) {
+          // Reprendre la mission déjà créée localement lors d'une tentative
+          // précédente pour cette même réservation (échec de synchro suivi
+          // d'un reclic) plutôt que d'en recréer une deuxième — sans ce
+          // garde-fou, chaque reclic sur une réservation restée "en attente"
+          // duplique la mission (double RDV Google Agenda / Edouard).
+          let mission = DB.missions.find(x => x.source === 'booking' && x.resaId === resaId);
+          if(!mission) {
           // Créer automatiquement la mission dans le CRM
-          const mission = {
+          mission = {
             id: 'm_booking_' + Date.now(),
+            resaId: resaId,
             agence: r.agence || '',
             emailClient: r.email || '',
             contact: r.contact || '',
@@ -762,6 +801,7 @@ async function sendConfirmRdv(){
           };
           DB.missions.push(mission);
           saveToStorage();
+          }
           // Enregistrement immediat dans Supabase : saveToStorage() ne pousse
           // qu'apres 1,5 s (syncDirtyToSupabase), alors que la reservation est
           // marquee "importee" juste apres. Sans ce push direct, une fermeture
