@@ -249,8 +249,15 @@ function syncDirtyToSupabase(){
   _supaDebounceTimer = setTimeout(async () => {
     if(_supaSyncing) return;
     _supaSyncing = true;
-    try{
-      for(const dbKey of Object.keys(SUPA_TABLES)){
+    // Un echec sur une table ne doit ni bloquer les suivantes (chaque table
+    // a son propre try/catch), ni rester invisible (setSyncStatus('error')
+    // en fin de cycle — jusqu'ici seul console.warn signalait un probleme,
+    // le point "Synchronise" restait affiche a tort). Les items en echec ne
+    // sont PAS marques comme pousses dans le cache : ils seront retentes au
+    // prochain cycle plutot que silencieusement abandonnes.
+    let uneErreur = false;
+    for(const dbKey of Object.keys(SUPA_TABLES)){
+      try{
         const items = DB[dbKey] || [];
         if(!items.length) continue;
         const table = SUPA_TABLES[dbKey];
@@ -277,14 +284,20 @@ function syncDirtyToSupabase(){
           updated_at: new Date().toISOString(),
           user_id: userId
         }));
-        await supabaseClient.from(table).upsert(rows, { onConflict: 'id' });
+        const { error } = await supabaseClient.from(table).upsert(rows, { onConflict: 'id' });
+        if(error){
+          uneErreur = true;
+          console.warn(`Erreur sync cloud (${dbKey}):`, error);
+          continue;
+        }
         toPush.forEach(({id, json}) => { cache[id] = json; });
+      }catch(e){
+        uneErreur = true;
+        console.warn(`Erreur sync cloud (${dbKey}):`, e);
       }
-    }catch(e){
-      console.warn('Erreur sync cloud:', e);
-    }finally{
-      _supaSyncing = false;
     }
+    _supaSyncing = false;
+    setSyncStatus(uneErreur ? 'error' : 'ok');
   }, 1500); // attend 1.5s après la dernière modif avant de pousser
 }
 
