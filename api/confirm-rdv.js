@@ -86,6 +86,32 @@ export default async function handler(req) {
   try {
     const { mission, agentEmail, agentNom, locataireEmail, locataireNom, locataireCivilite, locataires, expertNom, expertTel, message, envoyerAgence, envoyerLocataires } = await req.json();
 
+    // Verification d'appartenance : si l'id fourni correspond a une mission
+    // EXISTANTE en base, elle doit appartenir a l'appelant — sans ca, un
+    // abonne payant pourrait forger l'id d'une mission d'un autre abonne
+    // pour envoyer un email de "confirmation" a son insu. Un id qui ne
+    // correspond a aucune mission existante est laisse passer : c'est le cas
+    // normal d'une confirmation directe depuis une reservation, ou la
+    // mission n'est creee cote CRM qu'APRES le succes de cet appel (voir
+    // sendConfirmRdv/confirmRdvFromReservation dans app-reservations.js).
+    if (mission && mission.id) {
+      try {
+        const _checkResp = await fetch(
+          `${SUPABASE_URL}/rest/v1/missions?select=id,user_id&id=eq.${encodeURIComponent(mission.id)}`,
+          { headers: { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_KEY } }
+        );
+        if (_checkResp.ok) {
+          const _rows = await _checkResp.json();
+          if (_rows.length > 0 && _rows[0].user_id !== _user.id) {
+            return new Response(JSON.stringify({ error: 'Cette mission ne vous appartient pas.' }), {
+              status: 403,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
+            });
+          }
+        }
+      } catch (e) { /* verification best-effort : une panne ici ne doit pas bloquer une confirmation legitime */ }
+    }
+
     // Destinataires : par defaut on envoie a tout le monde, pour rester
     // compatible avec les appels qui ne precisent rien. Le CRM transmet
     // explicitement false quand une case a ete decochee dans la modal.

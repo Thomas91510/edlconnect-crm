@@ -114,7 +114,6 @@ export default async function handler(req) {
       const m = r.data;
       if(!m.date) return false;
       if(!m.locataireEmail) return false;
-      if(m.statut === 'facturée') return false;
       const mDate = m.date.split('T')[0];
       if(mDate !== tomorrowStr) return false;
       const agenceNorm = (m.agence || '').trim().toLowerCase();

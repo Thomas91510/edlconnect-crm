@@ -325,9 +325,15 @@ export default async function handler(req) {
 
         if (nouveauxPourCetteMission === 0) continue;
 
-        // Mettre a jour la mission
+        // Mettre a jour la mission. Le statut se cale sur "termin\u00e9e" (la
+        // seule valeur que le CRM sait vraiment filtrer/compter) plut\u00f4t
+        // que sur "r\u00e9alis\u00e9e", qui n'existe dans aucun menu ni bouton
+        // de filtre du CRM et y rendait la mission invisible malgr\u00e9 son
+        // rapport disponible. Une mission d\u00e9j\u00e0 marqu\u00e9e "annul\u00e9e"
+        // le reste : une synchro automatique ne doit jamais annuler une
+        // annulation d\u00e9cid\u00e9e c\u00f4t\u00e9 CRM.
         const newData = Object.assign({}, m, {
-          statut: 'r\u00e9alis\u00e9e',
+          statut: m.statut === 'annul\u00e9e' ? m.statut : 'termin\u00e9e',
           edouardSituationsTraitees: dejaFaits,
           edouardReportDone: true,
           rapports: rapportsMission,

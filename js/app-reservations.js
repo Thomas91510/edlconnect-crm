@@ -317,6 +317,7 @@ function confirmRdvFromReservation(id){
       <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${esc(tempMission.adresse)||'—'}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${esc(bien)}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date souhaitée</td><td style="font-weight:600">${dateStr}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">🕐 Heure souhaitée</td><td style="font-weight:600">${r.heure ? esc(r.heure) : 'Flexible (non précisée par l\'agence)'}</td></tr>
       ${(((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
       ${tempMission.locatairesEntrants && tempMission.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${tempMission.locatairesEntrants.map(e => [esc(e.prenom),esc(e.nom)].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
     </table>`;
@@ -327,7 +328,17 @@ function confirmRdvFromReservation(id){
     const pad = n => String(n).padStart(2,'0');
     document.getElementById('confirm-rdv-date').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   }
-  document.getElementById('confirm-rdv-heure').value = r.heure || '';
+  const heureSelectResa = document.getElementById('confirm-rdv-heure');
+  if(heureSelectResa){
+    if(r.heure && ![...heureSelectResa.options].some(o => o.value === r.heure)){
+      // Le créneau demandé ne tombe pas sur une option prédéfinie (ex. horaire
+      // non standard) : on l'ajoute plutôt que de laisser le menu vide.
+      const opt = document.createElement('option');
+      opt.value = r.heure; opt.textContent = r.heure;
+      heureSelectResa.appendChild(opt);
+    }
+    heureSelectResa.value = r.heure || '';
+  }
   // Prérempli avec la durée type de la typologie/meublé du bien (celle
   // configurée sur l'événement Cal.com correspondant) — reste modifiable.
   // Même logique que openConfirmRdvModal() : oubliée ici jusqu'ici, la
@@ -511,12 +522,23 @@ function openConfirmRdvModal(missionId){
       const d = new Date(m.date);
       const pad = n => String(n).padStart(2,'0');
       document.getElementById('confirm-rdv-date').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-      const h = pad(d.getHours())+'h'+pad(d.getMinutes());
       const heureEl = document.getElementById('confirm-rdv-heure');
-      // Chercher l'option la plus proche
-      const opts = [...heureEl.options].map(o => o.value);
-      if(opts.includes(h)) heureEl.value = h;
-      else heureEl.value = '';
+      // m.date sans composante horaire (juste "YYYY-MM-DD") : pas de créneau
+      // précis à préremplir, on laisse le menu vide plutôt que d'afficher
+      // l'heure locale du minuit UTC (ex. "02h00").
+      if(/^\d{4}-\d{2}-\d{2}$/.test(String(m.date))){
+        heureEl.value = '';
+      } else {
+        const h = pad(d.getHours())+'h'+pad(d.getMinutes());
+        if(![...heureEl.options].some(o => o.value === h)){
+          // Créneau réel mais horaire non standard (pas sur un pas de 30 min) :
+          // on ajoute l'option plutôt que de la perdre.
+          const opt = document.createElement('option');
+          opt.value = h; opt.textContent = h;
+          heureEl.appendChild(opt);
+        }
+        heureEl.value = h;
+      }
     }catch(e){}
   }
   // Prérempli avec la durée type de la typologie/meublé du bien (celle
@@ -678,10 +700,23 @@ async function sendConfirmRdv(){
   };
 
   try {
+    // Reservation liee (cas confirmation directe depuis la liste) : si les
+    // convocations sont deja parties lors d'une tentative precedente (le
+    // plus souvent suivie d'un echec de synchro de la mission, qui laisse
+    // la reservation visible "en attente"), on ne les renvoie jamais sur un
+    // nouveau clic — on ne retente que la creation de la mission plus bas.
+    let _resaLiee = null;
+    if(_confirmRdvMissionId && _confirmRdvMissionId.startsWith('__resa__')){
+      _resaLiee = _allReservations.find(x => (x.id || x._supaId) === window._tempResaId);
+    }
+    const _dejaConfirmee = !!(_resaLiee && _resaLiee.confirmationEnvoyee);
+
     // Si aucun destinataire n'est retenu, on enregistre le RDV sans appeler
     // l'API d'envoi : le rendez-vous est planifie, personne n'est notifie.
     let resp;
     if(!_envAgence && !_envLocataires){
+      resp = { ok: true };
+    } else if(_dejaConfirmee){
       resp = { ok: true };
     } else {
       resp = await fetch('/api/confirm-rdv', {
@@ -689,6 +724,24 @@ async function sendConfirmRdv(){
         headers: await _authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
+      if(resp.ok && _resaLiee){
+        // Marque immediatement l'envoi effectue, avant meme de tenter la
+        // creation de la mission ci-dessous : un echec de synchro qui suit
+        // ne doit jamais faire renvoyer les convocations. La persistance
+        // Supabase de ce marqueur est best-effort et ne doit JAMAIS faire
+        // echouer la suite (creation de mission) si elle-meme echoue —
+        // les emails sont deja partis a ce stade, ce n'est pas le moment
+        // de basculer sur "Connexion impossible".
+        _resaLiee.confirmationEnvoyee = true;
+        try {
+          if(_supaReady && supabaseClient){
+            supabaseClient.from('bookings').update({
+              data: { ..._resaLiee, confirmationEnvoyee: true },
+              updated_at: new Date().toISOString()
+            }).eq('id', _resaLiee._supaId || _resaLiee.id).then(()=>{});
+          }
+        } catch(e) { /* silencieux — best-effort, voir commentaire ci-dessus */ }
+      }
     }
 
     if(resp.ok){
@@ -701,9 +754,17 @@ async function sendConfirmRdv(){
         const resaId = window._tempResaId;
         const r = _allReservations.find(x => (x.id || x._supaId) === resaId);
         if(r && _supaReady) {
+          // Reprendre la mission déjà créée localement lors d'une tentative
+          // précédente pour cette même réservation (échec de synchro suivi
+          // d'un reclic) plutôt que d'en recréer une deuxième — sans ce
+          // garde-fou, chaque reclic sur une réservation restée "en attente"
+          // duplique la mission (double RDV Google Agenda / Edouard).
+          let mission = DB.missions.find(x => x.source === 'booking' && x.resaId === resaId);
+          if(!mission) {
           // Créer automatiquement la mission dans le CRM
-          const mission = {
+          mission = {
             id: 'm_booking_' + Date.now(),
+            resaId: resaId,
             agence: r.agence || '',
             emailClient: r.email || '',
             contact: r.contact || '',
@@ -740,6 +801,7 @@ async function sendConfirmRdv(){
           };
           DB.missions.push(mission);
           saveToStorage();
+          }
           // Enregistrement immediat dans Supabase : saveToStorage() ne pousse
           // qu'apres 1,5 s (syncDirtyToSupabase), alors que la reservation est
           // marquee "importee" juste apres. Sans ce push direct, une fermeture

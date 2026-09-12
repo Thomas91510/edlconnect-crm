@@ -1,9 +1,21 @@
 export const config = { runtime: 'edge' };
 import { escapeIlike } from './_lib/ilike.js';
 
+// Echappement HTML pour toute valeur interpolee dans le document genere
+// server-side ci-dessous (agencyName notamment, saisi librement par l'agence
+// via son nom d'entreprise) — sans ca, une valeur comme
+// `x"><script>...` casse hors de son attribut/balise (XSS reflechie).
+function escHtml(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 export default async function handler(req) {
   const url = new URL(req.url);
-  const agencyId = url.searchParams.get('agency') || '';
+  // agencyId n'est qu'un slug (genere par copyBookingLink : a-z0-9-), jamais
+  // du texte libre — on le restreint au meme jeu de caracteres que contactId
+  // pour qu'il ne puisse jamais casser hors de son littéral JS (ligne AGENCY_ID
+  // plus bas) ni du HTML.
+  const agencyId = (url.searchParams.get('agency') || '').replace(/[^a-zA-Z0-9_-]/g, '');
   const agencyName = url.searchParams.get('name') || '';
   const contactId = (url.searchParams.get('c') || '').replace(/[^a-zA-Z0-9_-]/g, '');
 
@@ -149,7 +161,7 @@ textarea{min-height:75px;resize:vertical}
 
   <div class="hero">
     <div style="font-size:11px;opacity:.75;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em" id="hero-label">${agencyName ? 'Portail exclusif' : 'Portail agence'}</div>
-    <div style="font-size:20px;font-weight:700;margin-bottom:6px">${agencyName ? agencyName : 'Demande d\'état des lieux'}</div>
+    <div style="font-size:20px;font-weight:700;margin-bottom:6px">${agencyName ? escHtml(agencyName) : 'Demande d\'état des lieux'}</div>
     <div style="font-size:12px;opacity:.85;line-height:1.6">Remplissez ce formulaire pour soumettre votre demande. Nous vous confirmons la prise en charge sous 2h et vous contactons pour planifier l'intervention.</div>
   </div>
 
@@ -170,7 +182,7 @@ textarea{min-height:75px;resize:vertical}
       <div class="card-head"><i class="ti ti-building-store"></i>Votre agence</div>
       <div class="card-body">
         <div class="form-row">
-          <div><label>Nom de l'agence <span class="req">*</span></label><input type="text" id="agence" placeholder="Orpi Évry" value="${agencyName}" ${agencyName ? 'readonly' : ''}></div>
+          <div><label>Nom de l'agence <span class="req">*</span></label><input type="text" id="agence" placeholder="Orpi Évry" value="${escHtml(agencyName)}" ${agencyName ? 'readonly' : ''}></div>
           <div><label>Votre nom <span class="req">*</span></label><input type="text" id="contact" placeholder="Marie Dupont"></div>
         </div>
         <div class="form-row">

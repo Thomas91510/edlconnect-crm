@@ -59,7 +59,7 @@ function ajustementsPourMois(mois){
 // (changement de statut, génération de facture).
 async function notifierChangementStatutCommande(mission){
   if(!mission || !mission.emailClient) return;
-  if(!['terminée','facturée'].includes(mission.statut)) return;
+  if(mission.statut !== 'terminée') return;
   try{
     if(typeof _authHeaders !== 'function' || !_supaReady) return;
     await fetch('/api/notify-order-status', {
@@ -113,7 +113,7 @@ function initials(n){const w=(n||'?').trim().split(' ');return((w[0]||'?')[0]+((
 // locataires, réservations issues des formulaires publics).
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function statusBadge(s){
-  const m={'Client actif':'b-green','Client signé ✅':'b-green','Cible potentielle':'b-blue','Partenaire':'b-teal','Inactif':'b-gray','planifiée':'b-blue','en cours':'b-amber','terminée':'b-teal','facturée':'b-green','Gagné':'b-green','Négociation':'b-amber','Proposé':'b-blue','Qualifié':'b-teal','Prospect':'b-gray','Terminée':'b-gray','Active':'b-green','subscribed':'b-green','unsubscribed':'b-amber','bounced':'b-red','blocked':'b-red'};
+  const m={'Client actif':'b-green','Client signé ✅':'b-green','Cible potentielle':'b-blue','Partenaire':'b-teal','Inactif':'b-gray','planifiée':'b-blue','en cours':'b-amber','terminée':'b-teal','annulée':'b-red','Gagné':'b-green','Négociation':'b-amber','Proposé':'b-blue','Qualifié':'b-teal','Prospect':'b-gray','Terminée':'b-gray','Active':'b-green','subscribed':'b-green','unsubscribed':'b-amber','bounced':'b-red','blocked':'b-red'};
   return `<span class="badge badge-status ${m[s]||'b-gray'}">${esc(s)||'—'}</span>`;
 }
 function presenceBadge(p){
@@ -249,8 +249,15 @@ function syncDirtyToSupabase(){
   _supaDebounceTimer = setTimeout(async () => {
     if(_supaSyncing) return;
     _supaSyncing = true;
-    try{
-      for(const dbKey of Object.keys(SUPA_TABLES)){
+    // Un echec sur une table ne doit ni bloquer les suivantes (chaque table
+    // a son propre try/catch), ni rester invisible (setSyncStatus('error')
+    // en fin de cycle — jusqu'ici seul console.warn signalait un probleme,
+    // le point "Synchronise" restait affiche a tort). Les items en echec ne
+    // sont PAS marques comme pousses dans le cache : ils seront retentes au
+    // prochain cycle plutot que silencieusement abandonnes.
+    let uneErreur = false;
+    for(const dbKey of Object.keys(SUPA_TABLES)){
+      try{
         const items = DB[dbKey] || [];
         if(!items.length) continue;
         const table = SUPA_TABLES[dbKey];
@@ -277,14 +284,20 @@ function syncDirtyToSupabase(){
           updated_at: new Date().toISOString(),
           user_id: userId
         }));
-        await supabaseClient.from(table).upsert(rows, { onConflict: 'id' });
+        const { error } = await supabaseClient.from(table).upsert(rows, { onConflict: 'id' });
+        if(error){
+          uneErreur = true;
+          console.warn(`Erreur sync cloud (${dbKey}):`, error);
+          continue;
+        }
         toPush.forEach(({id, json}) => { cache[id] = json; });
+      }catch(e){
+        uneErreur = true;
+        console.warn(`Erreur sync cloud (${dbKey}):`, e);
       }
-    }catch(e){
-      console.warn('Erreur sync cloud:', e);
-    }finally{
-      _supaSyncing = false;
     }
+    _supaSyncing = false;
+    setSyncStatus(uneErreur ? 'error' : 'ok');
   }, 1500); // attend 1.5s après la dernière modif avant de pousser
 }
 
@@ -520,15 +533,14 @@ function renderAujourdhui(){
     return d >= debutAuj && d < finDemain;
   });
 
-  // Mission passee sans rapport recupere (ni par Edouard, ni saisi a la main)
-  // et pas deja facturee : signale un dossier qui reste a cloturer. Comparaison
-  // au debut du jour (comme avisAttente ci-dessous), pas a l'instant present :
+  // Mission passee sans rapport recupere (ni par Edouard, ni saisi a la main) :
+  // signale un dossier qui reste a cloturer. Comparaison au debut du jour
+  // (comme avisAttente ci-dessous), pas a l'instant present :
   // une mission prevue plus tot dans la journee ne doit pas etre signalee
   // avant meme que la journee soit terminee.
   const rapportsAttente = missions.filter(m=>{
     if(!m.date || estAnnulee(m)) return false;
     if(m.rapportUrl) return false;
-    if((m.statut||'').toLowerCase()==='facturée') return false;
     return new Date(m.date) < debutAuj;
   });
 

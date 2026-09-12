@@ -26,6 +26,7 @@
     .badge-pending{background:#FFF3CD;color:#8a5a00;border:0.5px solid #F0D9A0}
     .badge-confirmed{background:#F4F7FA;color:#0C447C;border:0.5px solid #cfe0f0}
     .badge-done{background:#EAF3DE;color:#27500A;border:0.5px solid #cfe3ba}
+    .badge-cancelled{background:#FBE9E7;color:#8a2c22;border:0.5px solid #f0c9c2}
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center;padding:16px}
     .modal-overlay.open{display:flex}
     .modal{background:#fff;border-radius:16px;width:100%;max-width:480px;overflow:hidden;color:#1a1a1a}
@@ -115,6 +116,7 @@
 
     /* Jauge de progression */
     .progress-gauge{display:flex;margin-top:12px;padding-top:2px}
+    .progress-gauge-cancelled{display:block;font-size:12px;font-weight:600;color:#8a2c22;background:#FBE9E7;border:0.5px solid #f0c9c2;border-radius:8px;padding:8px 10px}
     .progress-step{flex:1;position:relative;text-align:center}
     .progress-step:not(:first-child)::before{content:'';position:absolute;top:7px;right:50%;width:100%;height:2px;background:#e5e5e2;z-index:0}
     .progress-step.line-done:not(:first-child)::before{background:#1A5FA8}
@@ -310,6 +312,7 @@
             <option value="en_attente">⏳ En attente</option>
             <option value="confirmee">📅 Confirmé</option>
             <option value="rapport_dispo">📄 Rapport disponible</option>
+            <option value="annulee">❌ Annulé</option>
           </select>
         </div>
         <div id="orders-list"><div style="color:#6b6b6b;font-size:13px;padding:20px 0">Chargement…</div></div>
@@ -666,6 +669,12 @@ async function doLogout() {
 // rapport Edouard se synchronise en temps réel dès la mission terminée) —
 // la jauge s'arrête donc à 3 étapes, pas 4.
 function jaugeHTML(statut){
+  if(statut === 'annulee'){
+    // Un dossier annulé n'a plus de "progression" à afficher — la jauge en
+    // 3 étapes induirait en erreur (elle laisserait croire qu'il avance
+    // encore). Un message dédié remplace la jauge dans ce cas.
+    return `<div class="progress-gauge progress-gauge-cancelled"><span>❌</span> Ce rendez-vous a été annulé.</div>`;
+  }
   const terminal = statut === 'rapport_dispo';
   // "etape" compte les étapes déjà ACQUISES (pas l'index de l'étape en
   // cours) : 1 pour "Demande" seule, 2 pour "Demande + Confirmé", 3 (statut
@@ -688,7 +697,7 @@ function jaugeHTML(statut){
 // par date de demande, qui ne reflète pas l'urgence réelle. Les commandes
 // terminées passent en dernier, les plus récentes en tête.
 function trierCommandes(orders){
-  const rang = o => o.statut === 'rapport_dispo' ? 1 : 0;
+  const rang = o => (o.statut === 'rapport_dispo' || o.statut === 'annulee') ? 1 : 0;
   return [...orders].sort((a, b) => {
     const ra = rang(a), rb = rang(b);
     if(ra !== rb) return ra - rb;
@@ -712,7 +721,7 @@ function ancienneteTexte(createdAt){
 let _ordersCache = [];
 
 function carteCommandeHTML(o){
-  const badge = o.statut==='rapport_dispo' ? '<span class="badge badge-done">📄 Rapport disponible</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
+  const badge = o.statut==='rapport_dispo' ? '<span class="badge badge-done">📄 Rapport disponible</span>' : o.statut==='annulee' ? '<span class="badge badge-cancelled">❌ Annulé</span>' : o.statut==='confirmee'||o.statut==='importee' ? '<span class="badge badge-confirmed">📅 Confirmé</span>' : '<span class="badge badge-pending">⏳ En attente</span>';
   const dateRdv = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) : '';
   const lienRapport = urlSure(o.rapportUrl);
   const lienAvenant = urlSure(o.avenantUrl);
@@ -1011,7 +1020,7 @@ async function refreshUnreadMessagesBadge(){
 
 function openDetail(o) {
   document.getElementById('detail-title').textContent = o.typeEdl||'État des lieux';
-  const badge = o.statut==='rapport_dispo'?'<span class="badge badge-done" style="font-size:12px;padding:5px 14px">📄 Rapport disponible</span>':o.statut==='confirmee'||o.statut==='importee'?'<span class="badge badge-confirmed" style="font-size:12px;padding:5px 14px">📅 Confirmé</span>':'<span class="badge badge-pending" style="font-size:12px;padding:5px 14px">⏳ En attente</span>';
+  const badge = o.statut==='rapport_dispo'?'<span class="badge badge-done" style="font-size:12px;padding:5px 14px">📄 Rapport disponible</span>':o.statut==='annulee'?'<span class="badge badge-cancelled" style="font-size:12px;padding:5px 14px">❌ Annulé</span>':o.statut==='confirmee'||o.statut==='importee'?'<span class="badge badge-confirmed" style="font-size:12px;padding:5px 14px">📅 Confirmé</span>':'<span class="badge badge-pending" style="font-size:12px;padding:5px 14px">⏳ En attente</span>';
   const rows = [['📋 Type',esc(o.typeEdl)||'—'],['📍 Adresse',esc(o.adresse)||'—'],['🏠 Bien',[o.bienType,o.bienTypo,o.meuble].filter(Boolean).map(esc).join(' · ')||'—'],['📅 Date souhaitée',o.dateSouhaitee?new Date(o.dateSouhaitee).toLocaleDateString('fr-FR'):'—'],['🕐 Heure',esc(o.heure)||'—'],['🧑 Locataire',esc(o.locataireNom)||'—'],['📱 Téléphone',esc(o.locataireTel)||'—'],['🔑 Entrant(s)',(o.locatairesEntrants||[]).map(e=>[e.prenom,e.nom].filter(Boolean).map(esc).join(' ')+(e.tel?' · '+esc(e.tel):'')).join('<br>')||'—'],['🏠 Propriétaire',esc(o.proprietaire)||'—']].filter(([,v])=>v&&v!=='—');
   const lienRapportDetail = urlSure(o.rapportUrl);
   const lienAvenantDetail = urlSure(o.avenantUrl);
