@@ -317,6 +317,7 @@ function confirmRdvFromReservation(id){
       <tr><td style="color:var(--blue-dark);width:35%;padding:2px 0">📍 Adresse</td><td style="font-weight:600">${esc(tempMission.adresse)||'—'}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">🏠 Bien</td><td>${esc(bien)}</td></tr>
       <tr><td style="color:var(--blue-dark);padding:2px 0">📅 Date souhaitée</td><td style="font-weight:600">${dateStr}</td></tr>
+      <tr><td style="color:var(--blue-dark);padding:2px 0">🕐 Heure souhaitée</td><td style="font-weight:600">${r.heure ? esc(r.heure) : 'Flexible (non précisée par l\'agence)'}</td></tr>
       ${(((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)) > 1 ? `<tr><td style="color:var(--blue-dark);padding:2px 0">👥 Convocations</td><td>${((tempMission.locataires||[]).length) + ((tempMission.locatairesEntrants||[]).length)} convocations seront envoyées</td></tr>` : ''}
       ${tempMission.locatairesEntrants && tempMission.locatairesEntrants.length ? `<tr><td style="color:var(--blue-dark);padding:2px 0">🔑 Entrant(s)</td><td>${tempMission.locatairesEntrants.map(e => [esc(e.prenom),esc(e.nom)].filter(Boolean).join(' ')).join(', ')}</td></tr>` : ''}
     </table>`;
@@ -327,7 +328,17 @@ function confirmRdvFromReservation(id){
     const pad = n => String(n).padStart(2,'0');
     document.getElementById('confirm-rdv-date').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   }
-  document.getElementById('confirm-rdv-heure').value = r.heure || '';
+  const heureSelectResa = document.getElementById('confirm-rdv-heure');
+  if(heureSelectResa){
+    if(r.heure && ![...heureSelectResa.options].some(o => o.value === r.heure)){
+      // Le créneau demandé ne tombe pas sur une option prédéfinie (ex. horaire
+      // non standard) : on l'ajoute plutôt que de laisser le menu vide.
+      const opt = document.createElement('option');
+      opt.value = r.heure; opt.textContent = r.heure;
+      heureSelectResa.appendChild(opt);
+    }
+    heureSelectResa.value = r.heure || '';
+  }
   // Prérempli avec la durée type de la typologie/meublé du bien (celle
   // configurée sur l'événement Cal.com correspondant) — reste modifiable.
   // Même logique que openConfirmRdvModal() : oubliée ici jusqu'ici, la
@@ -511,12 +522,23 @@ function openConfirmRdvModal(missionId){
       const d = new Date(m.date);
       const pad = n => String(n).padStart(2,'0');
       document.getElementById('confirm-rdv-date').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-      const h = pad(d.getHours())+'h'+pad(d.getMinutes());
       const heureEl = document.getElementById('confirm-rdv-heure');
-      // Chercher l'option la plus proche
-      const opts = [...heureEl.options].map(o => o.value);
-      if(opts.includes(h)) heureEl.value = h;
-      else heureEl.value = '';
+      // m.date sans composante horaire (juste "YYYY-MM-DD") : pas de créneau
+      // précis à préremplir, on laisse le menu vide plutôt que d'afficher
+      // l'heure locale du minuit UTC (ex. "02h00").
+      if(/^\d{4}-\d{2}-\d{2}$/.test(String(m.date))){
+        heureEl.value = '';
+      } else {
+        const h = pad(d.getHours())+'h'+pad(d.getMinutes());
+        if(![...heureEl.options].some(o => o.value === h)){
+          // Créneau réel mais horaire non standard (pas sur un pas de 30 min) :
+          // on ajoute l'option plutôt que de la perdre.
+          const opt = document.createElement('option');
+          opt.value = h; opt.textContent = h;
+          heureEl.appendChild(opt);
+        }
+        heureEl.value = h;
+      }
     }catch(e){}
   }
   // Prérempli avec la durée type de la typologie/meublé du bien (celle
