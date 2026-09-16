@@ -176,6 +176,9 @@ function renderReservations(list){
         <button class="btn btn-sm" onclick="confirmRdvFromReservation('${esc(r.id || r._supaId)}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
           <i class="ti ti-calendar-check" style="font-size:11px"></i> Confirmer & Créer
         </button>
+        <button class="btn btn-sm" onclick="supprimerReservation('${esc(r.id || r._supaId)}')" title="Supprimer cette réservation" style="padding:3px 7px;background:var(--red-bg);color:var(--red-text);border-color:var(--red);font-size:10px">
+          <i class="ti ti-trash" style="font-size:11px"></i>
+        </button>
       </td>
     </tr>`;
   }).join('');
@@ -437,6 +440,33 @@ function createMissionFromReservation(id){
       setTimeout(() => openConfirmRdvModal(mission.id), 500);
     }
   }, 500);
+}
+
+async function supprimerReservation(id){
+  const r = _allReservations.find(x => (x.id || x._supaId) === id);
+  if(!r){ notify('Réservation introuvable', 'warn'); return; }
+  if(!confirm(`Supprimer cette réservation ?\n\n"${r.agence || '—'}"\n${r.adresse || ''}\n\nCette action est irréversible.`)) return;
+
+  const supaId = r._supaId || r.id;
+
+  try {
+    const _tk = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const resp = await fetch('/api/delete-reservation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _tk },
+      body: JSON.stringify({ id: supaId })
+    });
+    if(!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || 'Erreur suppression');
+    }
+    _allReservations = _allReservations.filter(x => (x.id || x._supaId) !== id);
+    updateReservationsKPIs();
+    filterReservations();
+    notify('🗑️ Réservation supprimée');
+  } catch(e) {
+    notify('❌ Erreur : ' + e.message, 'warn');
+  }
 }
 
 // ─── CONFIRMATION RDV ──────────────────────────────────────
