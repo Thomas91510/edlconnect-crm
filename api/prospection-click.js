@@ -1,0 +1,74 @@
+export const config = { runtime: 'edge' };
+
+// Webhook Brevo (événement "click") pour la séquence de prospection EDL IDF.
+// Remplace le scénario Make "Séquence prospection — Capture clics" — même
+// logique minimale (marquer clickedAt sur le contact), mais persistée dans
+// la table Supabase "prospection" plutôt que le data store Make, pour rester
+// cohérent avec prospection-cron.js qui lit cet état.
+//
+// Ce endpoint n'est pas encore branché : Brevo continue d'appeler le webhook
+// Make tant que ce dernier n'a pas été repointé manuellement (côté Brevo,
+// Settings → Webhooks) vers cette URL.
+
+const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+const TABLE = 'prospection';
+
+export default async function handler(req) {
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+  if (!SUPABASE_SERVICE_KEY) {
+    return new Response(JSON.stringify({ error: 'Variables manquantes' }), { status: 500 });
+  }
+
+  let body;
+  try { body = await req.json(); } catch (e) { body = {}; }
+  const email = body && body.email;
+
+  if (!email) {
+    // Pas d'email exploitable dans l'événement : on répond 200 quand même
+    // (Brevo retente sinon), simplement rien à enregistrer.
+    return new Response(JSON.stringify({ ok: true, ignore: true }), {
+      status: 200, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    // Lit l'enregistrement existant pour fusionner (un PATCH/upsert brut
+    // remplacerait tout le contenu de "data", effaçant stage/sentAt1...).
+    const getResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/${TABLE}?select=id,data&id=eq.${encodeURIComponent(email)}`,
+      { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    );
+    if (!getResp.ok) throw new Error('Erreur lecture Supabase');
+    const existant = await getResp.json();
+    const donneesExistantes = (existant && existant[0] && existant[0].data) || { email };
+
+    const upsertResp = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=id`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify([{
+        id: email,
+        data: { ...donneesExistantes, clickedAt: new Date().toISOString() },
+        updated_at: new Date().toISOString()
+      }])
+    });
+    if (!upsertResp.ok) {
+      const err = await upsertResp.text();
+      return new Response(JSON.stringify({ error: 'Supabase: ' + err }), { status: 500 });
+    }
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200, headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}
