@@ -23,7 +23,7 @@ import { minuitParisEnUTC, moisActuelParis } from './_lib/fuseau-paris.js';
 // sont pas toutes les trois configurées, cet endpoint répond "aucun
 // créneau" et le formulaire public bascule sur la saisie de date libre
 // existante — comportement inchangé jusqu'à activation volontaire.
-const FREEBUSY_URL = 'https://www.googleapis.com/calendar/v3/freebusy';
+const FREEBUSY_URL = 'https://www.googleapis.com/calendar/v3/freeBusy';
 // Même règle métier que l'ancien chemin Cal.com (cal-availability.js) : une
 // demande déposée l'après-midi ne doit pas aboutir à un rendez-vous le jour
 // même ou le lendemain matin.

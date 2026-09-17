@@ -41,7 +41,7 @@ function fabriquerFetchMock({ busy = {}, freebusyOk = true } = {}) {
     if (String(url).includes('oauth2.googleapis.com/token')) {
       return { ok: true, json: async () => ({ access_token: 'jeton-test' }) };
     }
-    if (String(url).includes('/calendar/v3/freebusy')) {
+    if (String(url).includes('/calendar/v3/freeBusy')) {
       appels.freebusy = { url, opts, corps: JSON.parse(opts.body) };
       if (!freebusyOk) return { ok: false, status: 500, text: async () => 'panne' };
       const calendars = {};
@@ -90,6 +90,19 @@ for (const { bienTypo, meuble, attendu } of TOUTES_COMBOS) {
     assert.deepEqual(appels.freebusy.corps.items.map(i => i.id), ['a@exemple.fr', 'b@exemple.fr']);
   });
 }
+
+// Régression cible : l'URL Google Calendar freebusy.query est sensible à la
+// casse ("freeBusy", B majuscule) — une première version en minuscules a
+// donné une 404 HTML générique en conditions réelles (repli silencieux côté
+// endpoint, donc invisible sans ce test explicite sur l'URL appelée).
+test('URL freebusy.query correctement casée (/calendar/v3/freeBusy)', async () => {
+  const { fn, appels } = fabriquerFetchMock();
+  global.fetch = fn;
+
+  await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+
+  assert.equal(appels.freebusy.url, 'https://www.googleapis.com/calendar/v3/freeBusy');
+});
 
 test('un collaborateur occupé, un autre libre : des créneaux restent disponibles (union)', async () => {
   const { fn } = fabriquerFetchMock({
