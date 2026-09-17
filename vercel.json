@@ -7,7 +7,8 @@
     { "path": "/api/prospection-cron", "schedule": "0 6 * * *" }
   ],
   "redirects": [
-    { "source": "/extranet", "destination": "/extranet-app", "permanent": false }
+    { "source": "/extranet", "destination": "/extranet-app", "permanent": false },
+    { "source": "/agent", "destination": "/agent-app", "permanent": false }
   ],
   "rewrites": [
     { "source": "/api/brevo-contacts", "destination": "/api/brevo-contacts.js" },
@@ -43,6 +44,7 @@
     { "source": "/api/prospection-click", "destination": "/api/prospection-click.js" },
     { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/extranet-app", "destination": "/extranet-app.html" },
-    { "source": "/((?!extranet-app$|js/).*)", "destination": "/index.html" }
+    { "source": "/agent-app", "destination": "/agent-app.html" },
+    { "source": "/((?!extranet-app$|agent-app$|js/).*)", "destination": "/index.html" }
   ]
 }

@@ -214,6 +214,8 @@ function populateExpertDropdown(selectedId){
 }
 
 // ─── AGENTS EDL ────────────────────────────────────────────
+let _editingAgentId = null;
+
 function renderAgentsSettings(){
   const wrap = document.getElementById('agents-list');
   if(!wrap) return;
@@ -222,29 +224,123 @@ function renderAgentsSettings(){
     return;
   }
   wrap.innerHTML = DB.agents.map(a => `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px">
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:600">${a.nom}</div>
-        <div style="font-size:11px;color:var(--text2)">📱 ${a.tel || '—'}</div>
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;flex-wrap:wrap">
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:12px;font-weight:600">${esc(a.nom)}</div>
+        <div style="font-size:11px;color:var(--text2)">📱 ${esc(a.tel) || '—'}${a.email ? ' · 📅 ' + esc(a.email) : ''}${a.secteurs ? ' · 📍 ' + esc(a.secteurs) : ''}</div>
       </div>
+      <label class="btn btn-sm" style="cursor:pointer" title="${a.contratPath ? 'Remplacer le contrat déposé' : 'Déposer le contrat signé (PDF)'}">
+        <i class="ti ${a.contratPath ? 'ti-file-check' : 'ti-file-upload'}"></i> Contrat
+        <input type="file" accept="application/pdf" style="display:none" onchange="televerserDocumentAgent('${a.id}','contrat',this)">
+      </label>
+      <label class="btn btn-sm" style="cursor:pointer" title="${a.avenantPath ? 'Remplacer l\'avenant déposé' : 'Déposer un avenant (PDF)'}">
+        <i class="ti ${a.avenantPath ? 'ti-file-check' : 'ti-file-upload'}"></i> Avenant
+        <input type="file" accept="application/pdf" style="display:none" onchange="televerserDocumentAgent('${a.id}','avenant',this)">
+      </label>
+      <button class="btn btn-sm" onclick="editerAgent('${a.id}')"><i class="ti ti-pencil"></i></button>
       <button class="btn btn-sm" onclick="removeAgent('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
     </div>`).join('');
+}
+
+// Dépôt du contrat signé / d'un avenant pour un agent (PDF, réservé à
+// l'agence) — voir api/upload-agent-document.js. Met à jour DB.agents
+// localement à partir de la réponse plutôt que de recharger tous les
+// settings, pour que l'icône passe immédiatement à "déposé".
+async function televerserDocumentAgent(agentId, type, inputEl){
+  const fichier = inputEl.files && inputEl.files[0];
+  inputEl.value = '';
+  if(!fichier) return;
+  if(fichier.type && fichier.type !== 'application/pdf'){ notify('⚠️ Le fichier doit être un PDF', 'warn'); return; }
+
+  notify('⏳ Envoi du document…');
+  try{
+    const form = new FormData();
+    form.append('file', fichier);
+    form.append('agentId', agentId);
+    form.append('type', type);
+    const authHeaders = await _authHeaders();
+    delete authHeaders['Content-Type']; // laisser le navigateur fixer le boundary multipart
+    const resp = await fetch('/api/upload-agent-document', { method: 'POST', headers: authHeaders, body: form });
+    const data = await resp.json().catch(() => ({}));
+    if(!resp.ok || !data.success){ notify('❌ ' + (data.error || 'Échec du dépôt'), 'err'); return; }
+
+    const agent = (DB.agents || []).find(a => a.id === agentId);
+    if(agent) agent[type + 'Path'] = data.path;
+    renderAgentsSettings();
+    notify('✅ Document déposé');
+  }catch(e){ notify('❌ Erreur réseau lors du dépôt', 'err'); }
+}
+
+function editerAgent(id){
+  const agent = (DB.agents || []).find(a => a.id === id);
+  if(!agent) return;
+  _editingAgentId = id;
+  document.getElementById('new-agent-nom').value = agent.nom || '';
+  document.getElementById('new-agent-tel').value = agent.tel || '';
+  const emailEl = document.getElementById('new-agent-email');
+  const secteursEl = document.getElementById('new-agent-secteurs');
+  if(emailEl) emailEl.value = agent.email || '';
+  if(secteursEl) secteursEl.value = agent.secteurs || '';
+  const submitBtn = document.getElementById('agent-submit-btn');
+  if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-check"></i> Enregistrer les modifications';
+  const cancelBtn = document.getElementById('agent-cancel-btn');
+  if(cancelBtn) cancelBtn.style.display = '';
+  document.getElementById('new-agent-nom').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function annulerEditionAgent(){
+  _editingAgentId = null;
+  document.getElementById('new-agent-nom').value = '';
+  document.getElementById('new-agent-tel').value = '';
+  const emailEl = document.getElementById('new-agent-email');
+  const secteursEl = document.getElementById('new-agent-secteurs');
+  if(emailEl) emailEl.value = '';
+  if(secteursEl) secteursEl.value = '';
+  const submitBtn = document.getElementById('agent-submit-btn');
+  if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-user-plus"></i> Ajouter cet agent';
+  const cancelBtn = document.getElementById('agent-cancel-btn');
+  if(cancelBtn) cancelBtn.style.display = 'none';
 }
 
 function addAgent(){
   const nomEl = document.getElementById('new-agent-nom');
   const telEl = document.getElementById('new-agent-tel');
+  const emailEl = document.getElementById('new-agent-email');
+  const secteursEl = document.getElementById('new-agent-secteurs');
   const nom = nomEl.value.trim();
   const tel = telEl.value.trim();
+  const email = (emailEl ? emailEl.value : '').trim();
+  const secteurs = (secteursEl ? secteursEl.value : '').trim();
   if(!nom){ notify('⚠️ Le nom de l\'agent est requis', 'warn'); return; }
   if(!DB.agents) DB.agents = [];
-  DB.agents.push({ id: 'agent_' + Date.now(), nom, tel });
+
+  const estUneCreation = !_editingAgentId;
+  if(_editingAgentId){
+    const agent = DB.agents.find(a => a.id === _editingAgentId);
+    if(agent){ Object.assign(agent, { nom, tel, email, secteurs }); }
+    _editingAgentId = null;
+  } else {
+    DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, secteurs });
+  }
+
   saveToStorage();
   persistAgents();
-  nomEl.value = '';
-  telEl.value = '';
+  annulerEditionAgent();
   renderAgentsSettings();
-  notify('✅ Agent ajouté');
+  notify('✅ Agent enregistré');
+
+  // Envoie automatiquement le lien de l'espace agent à la création (jamais
+  // lors d'une simple modification, pour ne pas renvoyer l'email à chaque
+  // correction de coordonnées). Best-effort : un échec d'envoi ne doit
+  // jamais bloquer ni annuler la création de l'agent elle-même.
+  if(estUneCreation && email) envoyerBienvenueAgent(email, nom);
+}
+
+async function envoyerBienvenueAgent(email, nom){
+  try{
+    const headers = await _authHeaders({ 'Content-Type': 'application/json' });
+    await fetch('/api/send-welcome-agent', { method: 'POST', headers, body: JSON.stringify({ email, nom }) });
+  }catch(e){ console.warn('envoyerBienvenueAgent:', e); }
 }
 
 // Sauvegarde ciblée des agents dans Supabase (settings), sans lire le
@@ -266,6 +362,7 @@ function removeAgent(id){
   DB.agents = DB.agents.filter(a => a.id !== id);
   saveToStorage();
   persistAgents();
+  if(_editingAgentId === id) annulerEditionAgent();
   renderAgentsSettings();
 }
 
