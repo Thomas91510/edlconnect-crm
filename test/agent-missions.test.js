@@ -102,6 +102,20 @@ test('exclut les champs financiers/internes non listés (contrôle par liste bla
   assert.ok(!champs.includes('emailClient'));
 });
 
+test('expose le lien du rapport EDL (rapportUrl) quand il existe — "mes documents"', async () => {
+  const missionsRows = [
+    { id: 'm1', data: { expertId: 'agent-1', type: 'EDL entrant', rapportUrl: 'https://exemple.supabase.co/storage/v1/object/sign/rapport.pdf' } },
+    { id: 'm2', data: { expertId: 'agent-1', type: 'EDL sortant' } }, // pas encore de rapport
+  ];
+  global.fetch = fabriquerFetchMock({ settingsRows: AGENTS_OWNER1, missionsRows });
+
+  const resp = await handler(requete('jeton-valide'));
+  const body = await resp.json();
+
+  assert.equal(body.missions.find(m => m.id === 'm1').rapportUrl, 'https://exemple.supabase.co/storage/v1/object/sign/rapport.pdf');
+  assert.equal(body.missions.find(m => m.id === 'm2').rapportUrl, '');
+});
+
 test('panne réseau sur les missions : 500 propre (pas de fuite d\'exception)', async () => {
   global.fetch = async (url) => {
     if (String(url).includes('/auth/v1/user')) return { ok: true, json: async () => ({ email: 'jean@exemple.fr' }) };

@@ -18,6 +18,16 @@ const DOM_MINIMAL = `
   <div id="kpi-grid"></div>
   <div id="kpi-typologies"></div>
   <div id="missions-list"></div>
+  <div id="documents-list"></div>
+  <div id="historique-list"></div>
+  <div id="page-missions" class="page active"></div>
+  <div id="page-documents" class="page"></div>
+  <div id="page-historique" class="page"></div>
+  <div id="page-aide" class="page"></div>
+  <button class="nav-btn active" data-page="missions"></button>
+  <button class="nav-btn" data-page="documents"></button>
+  <button class="nav-btn" data-page="historique"></button>
+  <button class="nav-btn" data-page="aide"></button>
 `;
 
 function chargerAgentApp() {
@@ -108,4 +118,73 @@ test('renderMissions : affiche les infos utiles (adresse, type, locataire, accè
   assert.ok(html.includes('Jean Dupont'));
   assert.ok(html.includes('0612345678'));
   assert.ok(html.includes('Code 1234'));
+});
+
+// ─── Navigation (menu de droite) ───────────────────────────────────
+test('allerAgentPage : bascule la page et le bouton actifs', () => {
+  const w = chargerAgentApp();
+  w.allerAgentPage('documents');
+
+  assert.ok(w.document.getElementById('page-documents').classList.contains('active'));
+  assert.ok(!w.document.getElementById('page-missions').classList.contains('active'));
+  assert.ok(w.document.querySelector('.nav-btn[data-page="documents"]').classList.contains('active'));
+  assert.ok(!w.document.querySelector('.nav-btn[data-page="missions"]').classList.contains('active'));
+});
+
+// ─── Mes documents (rapport EDL) ────────────────────────────────────
+test('renderDocuments : liste vide si aucune mission n\'a de rapport', () => {
+  const w = chargerAgentApp();
+  w.renderDocuments([{ id: 'm1', adresse: 'x' }, { id: 'm2', rapportUrl: '' }]);
+  assert.ok(w.document.getElementById('documents-list').textContent.includes('Aucun document'));
+});
+
+test('renderDocuments : n\'affiche que les missions avec un rapportUrl, avec un lien de téléchargement', () => {
+  const w = chargerAgentApp();
+  w.renderDocuments([
+    { id: 'm1', adresse: '12 rue de la Paix', date: '2026-09-10T10:00:00', rapportUrl: 'https://exemple.fr/rapport.pdf' },
+    { id: 'm2', adresse: '5 rue de Rivoli', rapportUrl: '' },
+  ]);
+  const html = w.document.getElementById('documents-list').innerHTML;
+  assert.ok(html.includes('12 rue de la Paix'));
+  assert.ok(!html.includes('5 rue de Rivoli'));
+  assert.ok(html.includes('href="https://exemple.fr/rapport.pdf"'));
+});
+
+test('renderDocuments : échappe une adresse malveillante dans le lien affiché (anti-XSS)', () => {
+  const w = chargerAgentApp();
+  w.renderDocuments([{ id: 'm1', adresse: '<img src=x onerror=alert(1)>', rapportUrl: 'https://exemple.fr/r.pdf' }]);
+  const html = w.document.getElementById('documents-list').innerHTML;
+  assert.ok(!html.includes('<img src=x onerror=alert(1)>'));
+});
+
+// ─── Historique par mois ─────────────────────────────────────────
+test('renderHistorique : ne retient que les missions "terminée"', () => {
+  const w = chargerAgentApp();
+  w.renderHistorique([
+    { id: 'm1', statut: 'terminée', date: '2026-09-10T10:00:00' },
+    { id: 'm2', statut: 'planifiée', date: '2026-09-15T10:00:00' },
+  ]);
+  const html = w.document.getElementById('historique-list').innerHTML;
+  assert.equal((html.match(/class="mission"/g) || []).length, 1);
+});
+
+test('renderHistorique : regroupe par mois, le plus récent en premier', () => {
+  const w = chargerAgentApp();
+  w.renderHistorique([
+    { id: 'm-juillet', statut: 'terminée', date: '2026-07-05T10:00:00', adresse: 'Juillet' },
+    { id: 'm-sept-1', statut: 'terminée', date: '2026-09-10T10:00:00', adresse: 'Sept 1' },
+    { id: 'm-sept-2', statut: 'terminée', date: '2026-09-20T10:00:00', adresse: 'Sept 2' },
+  ]);
+  const html = w.document.getElementById('historique-list').innerHTML;
+  const posSept = html.indexOf('septembre');
+  const posJuillet = html.indexOf('juillet');
+  assert.ok(posSept >= 0 && posJuillet >= 0);
+  assert.ok(posSept < posJuillet, 'septembre (plus récent) doit apparaître avant juillet');
+  assert.ok(html.includes('2 missions'));
+});
+
+test('renderHistorique : aucune mission terminée → message vide, pas d\'erreur', () => {
+  const w = chargerAgentApp();
+  w.renderHistorique([{ id: 'm1', statut: 'planifiée' }]);
+  assert.ok(w.document.getElementById('historique-list').textContent.includes('Aucune mission terminée'));
 });
