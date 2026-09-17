@@ -386,8 +386,8 @@ function selType(t, btn){
   if(isSE && document.querySelectorAll('.entrant-block').length === 0) addEntrant();
 }
 
-// ─── Créneaux Cal.com (optionnel — dégrade silencieusement) ────────────
-// N'affiche des créneaux que si /api/cal-availability répond des disponibilités
+// ─── Créneaux agenda (optionnel — dégrade silencieusement) ─────────────
+// N'affiche des créneaux que si /api/agenda-disponibilites répond des disponibilités
 // réelles. Tant que la fonctionnalité n'est pas activée côté serveur (ou en
 // cas de souci), le formulaire se comporte exactement comme avant : simple
 // champ date libre, aucune régression possible.
@@ -417,7 +417,7 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
   loading.style.display = 'block';
   try{
     const moisParam = _creneauxMoisAffiche.annee + '-' + String(_creneauxMoisAffiche.mois).padStart(2,'0');
-    const resp = await fetch('/api/cal-availability?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam);
+    const resp = await fetch('/api/agenda-disponibilites?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam);
     if(requeteId !== _creneauxRequeteEnCours) return; // une sélection plus récente a déjà relancé une requête
     loading.style.display = 'none';
     if(!resp.ok){ return; }
@@ -448,7 +448,7 @@ function changerPeriodeCreneaux(direction){
   chargerCreneauxSiPossible(false);
 }
 
-// Regroupement par jour LOCAL (pas le jour UTC de l'ISO) : Cal.com renvoie
+// Regroupement par jour LOCAL (pas le jour UTC de l'ISO) : l'API renvoie
 // des horodatages UTC, et un créneau tard le soir peut correspondre au
 // lendemain en UTC tout en restant le même jour dans le fuseau horaire de
 // l'agence — cohérent avec choisirCreneau() qui utilise aussi les

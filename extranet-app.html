@@ -45,7 +45,7 @@
     .msg-success{color:#1f7a4c;font-size:12px;text-align:center;margin-top:10px}
     .msg-error{color:#A32D2D;font-size:12px;text-align:center;margin-top:10px}
     @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-    /* Calendrier de créneaux Cal.com (mêmes fonctions et mêmes couleurs que le
+    /* Calendrier de créneaux (mêmes fonctions et mêmes couleurs que le
        formulaire public /booking) */
     .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
     .cal-nav-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid #e5e5e2;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6b6b6b;transition:all .15s;flex-shrink:0}
@@ -1148,13 +1148,14 @@ function toggleEntrants(){
   if(show && _entrants.length === 0) addEntrant();
 }
 
-// ─── Créneaux Cal.com (optionnel — dégrade silencieusement) ────────────
+// ─── Créneaux agenda (optionnel — dégrade silencieusement) ─────────────
 // Même logique et même endpoint que le formulaire public /booking (voir
 // api/booking-page.js) : navigation par mois calendaire complet, sans limite
 // dans le temps vers l'avenir, jamais avant le mois courant vers le passé.
-// Tant que /api/cal-availability ne répond pas de disponibilités réelles
-// (fonctionnalité non configurée, ou typologie non reconnue), la saisie de
-// date/heure libre en dessous reste utilisable sans aucune régression.
+// Tant que /api/agenda-disponibilites ne répond pas de disponibilités
+// réelles (fonctionnalité non configurée, ou typologie non reconnue), la
+// saisie de date/heure libre en dessous reste utilisable sans aucune
+// régression.
 let _creneauxRequeteEnCours = 0;
 let _creneauxMoisAffiche = null; // { annee, mois } — mois 1-12
 let _creneauxMoisInitial = null;
@@ -1176,7 +1177,7 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
   loading.style.display = 'block';
   try{
     const moisParam = _creneauxMoisAffiche.annee + '-' + String(_creneauxMoisAffiche.mois).padStart(2,'0');
-    const resp = await fetch('/api/cal-availability?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam);
+    const resp = await fetch('/api/agenda-disponibilites?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam);
     if(requeteId !== _creneauxRequeteEnCours) return;
     loading.style.display = 'none';
     if(!resp.ok){ return; }
