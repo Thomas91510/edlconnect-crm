@@ -29,6 +29,10 @@ function chargerAgentsEDL() {
   const codeSetup = `
     window._EXTRANET_MODE = true;
     window.__getDB = function(){ return DB; };
+    // _authHeaders (app-cloud.js) appelle le vrai supabaseClient (null ici,
+    // pas de SDK Supabase chargé) : on le remplace par un stub pour tester
+    // envoyerBienvenueAgent() sans dépendre de toute la chaîne d'auth.
+    window._authHeaders = async function(){ return { 'Content-Type': 'application/json', 'Authorization': 'Bearer tok-test' }; };
     // jsdom n'implémente pas scrollIntoView (pas de mise en page réelle) —
     // sans stub, editerAgent() (qui l'appelle pour amener le formulaire à
     // l'écran) lèverait une TypeError ici, alors qu'un vrai navigateur
@@ -165,4 +169,51 @@ test('renderAgentsSettings : échappe les champs affichés (protection XSS)', ()
   assert.ok(!html.includes('<script>alert(1)</script>'), 'le nom ne doit jamais apparaître en clair');
   assert.ok(html.includes('&lt;script&gt;'), 'doit apparaître échappé');
   assert.ok(!html.includes('<b>75018</b>'), 'le secteur ne doit jamais apparaître en clair');
+});
+
+// ─── Envoi automatique du lien "espace agent" à la création ───────────
+test('addAgent : un nouvel agent avec email déclenche l\'envoi automatique du lien espace agent', async () => {
+  const window = chargerAgentsEDL();
+  let appelFetch = null;
+  window.fetch = async (url, opts) => { appelFetch = { url, opts }; return { ok: true, json: async () => ({ success: true }) }; };
+
+  remplirFormulaire(window, { nom: 'Jean Dupont', email: 'jean@exemple.fr' });
+  window.addAgent();
+  await new Promise(r => setTimeout(r, 0)); // envoyerBienvenueAgent() est asynchrone, non attendu par addAgent()
+
+  assert.ok(appelFetch, 'fetch aurait dû être appelé');
+  assert.equal(appelFetch.url, '/api/send-welcome-agent');
+  assert.deepEqual(JSON.parse(appelFetch.opts.body), { email: 'jean@exemple.fr', nom: 'Jean Dupont' });
+  assert.equal(appelFetch.opts.headers.Authorization, 'Bearer tok-test');
+});
+
+test('addAgent : un nouvel agent SANS email ne déclenche aucun envoi', async () => {
+  const window = chargerAgentsEDL();
+  let appele = false;
+  window.fetch = async () => { appele = true; return { ok: true, json: async () => ({}) }; };
+
+  remplirFormulaire(window, { nom: 'Jean Dupont' }); // pas d'email
+  window.addAgent();
+  await new Promise(r => setTimeout(r, 0));
+
+  assert.equal(appele, false);
+});
+
+test('addAgent en mode édition : aucun renvoi de l\'email de bienvenue (déjà envoyé à la création)', async () => {
+  const window = chargerAgentsEDL();
+  let nbAppels = 0;
+  window.fetch = async () => { nbAppels++; return { ok: true, json: async () => ({}) }; };
+
+  remplirFormulaire(window, { nom: 'Jean Dupont', email: 'jean@exemple.fr' });
+  window.addAgent();
+  await new Promise(r => setTimeout(r, 0));
+  assert.equal(nbAppels, 1, 'un seul envoi, à la création');
+
+  const id = window.__getDB().agents[0].id;
+  window.editerAgent(id);
+  remplirFormulaire(window, { nom: 'Jean Dupont', email: 'jean@exemple.fr', secteurs: '75018' });
+  window.addAgent();
+  await new Promise(r => setTimeout(r, 0));
+
+  assert.equal(nbAppels, 1, 'la modification ne doit pas redéclencher un envoi');
 });

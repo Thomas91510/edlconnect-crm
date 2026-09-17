@@ -277,6 +277,7 @@ function addAgent(){
   if(!nom){ notify('⚠️ Le nom de l\'agent est requis', 'warn'); return; }
   if(!DB.agents) DB.agents = [];
 
+  const estUneCreation = !_editingAgentId;
   if(_editingAgentId){
     const agent = DB.agents.find(a => a.id === _editingAgentId);
     if(agent){ Object.assign(agent, { nom, tel, email, secteurs }); }
@@ -290,6 +291,19 @@ function addAgent(){
   annulerEditionAgent();
   renderAgentsSettings();
   notify('✅ Agent enregistré');
+
+  // Envoie automatiquement le lien de l'espace agent à la création (jamais
+  // lors d'une simple modification, pour ne pas renvoyer l'email à chaque
+  // correction de coordonnées). Best-effort : un échec d'envoi ne doit
+  // jamais bloquer ni annuler la création de l'agent elle-même.
+  if(estUneCreation && email) envoyerBienvenueAgent(email, nom);
+}
+
+async function envoyerBienvenueAgent(email, nom){
+  try{
+    const headers = await _authHeaders({ 'Content-Type': 'application/json' });
+    await fetch('/api/send-welcome-agent', { method: 'POST', headers, body: JSON.stringify({ email, nom }) });
+  }catch(e){ console.warn('envoyerBienvenueAgent:', e); }
 }
 
 // Sauvegarde ciblée des agents dans Supabase (settings), sans lire le

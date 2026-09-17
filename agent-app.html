@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace agent — EDL IDF Expert en État des Lieux</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#1A5FA8;--blue-light:#F4F7FA;--blue-dark:#0C447C;
+  --green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;
+  --amber:#854F0B;--amber-bg:#FCF3E3;
+  --text:#1a1a1a;--text2:#6b6b6b;--text3:#999;
+  --border:#e5e5e2;--bg:#f8f8f6;--white:#fff;
+  --radius:10px;--radius-lg:16px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg);min-height:100vh}
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:10}
+.logo-box{display:flex;align-items:center;gap:10px}
+.logo-icon{background:var(--blue-light);width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:var(--blue);letter-spacing:-1px}
+.container{max-width:640px;margin:0 auto;padding:24px 16px 60px}
+.card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);margin-bottom:14px;overflow:hidden}
+.card-head{padding:12px 16px;font-size:12px;font-weight:600;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;color:var(--blue)}
+.card-body{padding:16px}
+input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-size:13px;background:var(--white);color:var(--text);font-family:inherit;outline:none;transition:border-color .15s}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--blue);color:#fff;border:none;border-radius:var(--radius);padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:14px}
+.btn-primary:hover{background:var(--blue-dark)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-sm{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);font-family:inherit}
+.btn-sm:hover{border-color:var(--blue);color:var(--blue)}
+.msg-success{color:var(--green-text);font-size:12px;text-align:center;margin-top:10px}
+.msg-error{color:#A32D2D;font-size:12px;text-align:center;margin-top:10px}
+#login-screen{max-width:400px;margin:60px auto;padding:0 16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.kpi-tile{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.kpi-tile .n{font-size:22px;font-weight:700;color:var(--blue-dark)}
+.kpi-tile .l{font-size:11px;color:var(--text2);margin-top:2px}
+.typo-chips{display:flex;flex-wrap:wrap;gap:6px}
+.typo-chip{background:var(--blue-light);color:var(--blue-dark);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px}
+.mission{border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px}
+.mission-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.mission-adresse{font-size:13px;font-weight:600}
+.mission-date{font-size:12px;color:var(--blue-dark);font-weight:600;white-space:nowrap}
+.mission-meta{font-size:11px;color:var(--text2);line-height:1.7}
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;margin-right:4px}
+.badge-entrant{background:var(--green-bg);color:var(--green-text)}
+.badge-sortant{background:var(--amber-bg);color:var(--amber)}
+.badge-simultane{background:var(--blue-light);color:var(--blue-dark)}
+.badge-autre{background:var(--bg);color:var(--text2)}
+.empty{text-align:center;color:var(--text3);font-size:12px;padding:30px 0}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="card">
+    <div class="card-head"><i class="ti ti-user-circle"></i>Espace agent</div>
+    <div class="card-body">
+      <label>Ton adresse email</label>
+      <input type="email" id="login-email" placeholder="jean.dupont@gmail.com" autocomplete="email">
+      <button class="btn-primary" id="login-btn" onclick="sendMagicLink()"><i class="ti ti-mail"></i> Recevoir mon lien de connexion</button>
+      <div id="login-msg"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app-shell" style="display:none">
+  <div class="header">
+    <div class="logo-box">
+      <div class="logo-icon">EDL</div>
+      <div>
+        <div style="font-size:13px;font-weight:700" id="agent-nom-display">Mon espace</div>
+        <div style="font-size:10px;color:var(--text2)" id="agent-email-display"></div>
+      </div>
+    </div>
+    <button class="btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Déconnexion</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-head"><i class="ti ti-chart-bar"></i>Mes statistiques</div>
+      <div class="card-body">
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <div id="kpi-typologies" class="typo-chips"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><i class="ti ti-calendar-event"></i>Mes missions</div>
+      <div class="card-body" id="missions-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let _accessToken = '';
+
+function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+const LABEL_CATEGORIE = { entrant:'Entrant', sortant:'Sortant', simultane:'Sortant + Entrant', autre:'Autre' };
+const LABEL_STATUT = { 'planifiée':'Planifiée', 'en cours':'En cours', 'terminée':'Terminée', 'annulée':'Annulée' };
+
+sb.auth.onAuthStateChange((event, session) => {
+  if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+    _accessToken = session.access_token;
+    showDashboard(session.user.email);
+  }
+  if (event === 'SIGNED_OUT') showLogin();
+});
+
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session?.user) { _accessToken = session.access_token; showDashboard(session.user.email); }
+  else showLogin();
+});
+
+function showLogin(){
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('app-shell').style.display = 'none';
+}
+
+async function showDashboard(email){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+  document.getElementById('agent-email-display').textContent = email;
+  await chargerMesMissions();
+}
+
+async function sendMagicLink(){
+  const email = document.getElementById('login-email').value.trim();
+  const msgEl = document.getElementById('login-msg');
+  if (!email || !email.includes('@')) { msgEl.className='msg-error'; msgEl.textContent='⚠️ Email invalide.'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Envoi…';
+  try {
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + '/agent' } });
+    if (error) throw new Error(error.message);
+    msgEl.className='msg-success'; msgEl.textContent='✅ Lien envoyé ! Vérifiez votre boîte mail.';
+    btn.style.display='none'; document.getElementById('login-email').disabled=true;
+  } catch(e) {
+    msgEl.className='msg-error'; msgEl.textContent='❌ Erreur : '+(e.message||'réessayez.');
+    btn.disabled=false; btn.innerHTML='<i class="ti ti-mail"></i> Recevoir mon lien de connexion';
+  }
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-email').disabled = false;
+  document.getElementById('login-btn').style.display = '';
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-btn').innerHTML = '<i class="ti ti-mail"></i> Recevoir mon lien de connexion';
+  document.getElementById('login-msg').textContent = '';
+}
+
+function fmtDateHeure(iso){
+  if (!iso) return 'Date à confirmer';
+  try {
+    const d = new Date(iso);
+    const date = d.toLocaleDateString('fr-FR', { weekday:'short', day:'2-digit', month:'short' });
+    const heure = d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    return date + ' à ' + heure;
+  } catch(e) { return iso; }
+}
+
+function categorieEdl(type){
+  const t = (type||'').toLowerCase();
+  if (t.includes('sortant') && t.includes('entrant')) return 'simultane';
+  if (t.includes('sortant')) return 'sortant';
+  if (t.includes('entrant')) return 'entrant';
+  return 'autre';
+}
+
+async function chargerMesMissions(){
+  const listEl = document.getElementById('missions-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const resp = await fetch('/api/agent-missions', { headers: { 'Authorization': 'Bearer ' + _accessToken } });
+    const data = await resp.json();
+    if (!resp.ok) { listEl.innerHTML = '<div class="empty">' + esc(data.error || 'Erreur de chargement') + '</div>'; return; }
+
+    document.getElementById('agent-nom-display').textContent = data.agent?.nom || 'Mon espace';
+    renderKpi(data.kpi);
+    renderMissions(data.missions || []);
+  } catch(e) {
+    listEl.innerHTML = '<div class="empty">Erreur de chargement.</div>';
+  }
+}
+
+function renderKpi(kpi){
+  const grid = document.getElementById('kpi-grid');
+  if (!kpi) { grid.innerHTML = ''; return; }
+  const tuiles = [
+    { n: kpi.total, l: 'Missions au total' },
+    { n: kpi.parCategorie.entrant, l: 'EDL Entrant' },
+    { n: kpi.parCategorie.sortant, l: 'EDL Sortant' },
+    { n: kpi.parCategorie.simultane, l: 'Sortant + Entrant' },
+    { n: kpi.meuble, l: 'Meublé' },
+    { n: kpi.nu, l: 'Nu' },
+  ];
+  grid.innerHTML = tuiles.map(t => `<div class="kpi-tile"><div class="n">${t.n}</div><div class="l">${esc(t.l)}</div></div>`).join('');
+
+  const typoWrap = document.getElementById('kpi-typologies');
+  const entrees = Object.entries(kpi.parTypologie || {}).filter(([, n]) => n > 0);
+  typoWrap.innerHTML = entrees.length
+    ? entrees.map(([typo, n]) => `<span class="typo-chip">${esc(typo)} · ${n}</span>`).join('')
+    : '';
+}
+
+function renderMissions(missions){
+  const listEl = document.getElementById('missions-list');
+  if (!missions.length) { listEl.innerHTML = '<div class="empty">Aucune mission assignée pour l\'instant.</div>'; return; }
+  listEl.innerHTML = missions.map(m => {
+    const cat = categorieEdl(m.type);
+    return `<div class="mission">
+      <div class="mission-top">
+        <div class="mission-adresse">${esc(m.adresse) || '—'}</div>
+        <div class="mission-date">${esc(fmtDateHeure(m.date))}</div>
+      </div>
+      <div style="margin-bottom:6px">
+        <span class="badge badge-${cat}">${esc(LABEL_CATEGORIE[cat] || m.type)}</span>
+        <span class="badge badge-autre">${esc(LABEL_STATUT[m.statut] || m.statut || 'Planifiée')}</span>
+      </div>
+      <div class="mission-meta">
+        ${[m.bienType, m.bienTypo, m.bienMeuble].filter(Boolean).map(esc).join(' · ') || '—'}${m.superficie ? ' · ' + esc(m.superficie) + ' m²' : ''}<br>
+        ${m.locataireNom ? '👤 ' + esc(m.locataireNom) + (m.locataireTel ? ' · ' + esc(m.locataireTel) : '') + '<br>' : ''}
+        ${m.acces ? '🔑 ' + esc(m.acces) + '<br>' : ''}
+        ${m.dureeEstimee ? '⏱️ Durée estimée : ' + esc(m.dureeEstimee) : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
