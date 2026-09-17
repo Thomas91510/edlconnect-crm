@@ -225,7 +225,7 @@ function renderAgentsSettings(){
     <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px">
       <div style="flex:1">
         <div style="font-size:12px;font-weight:600">${a.nom}</div>
-        <div style="font-size:11px;color:var(--text2)">📱 ${a.tel || '—'}${a.email ? ' · 📅 ' + a.email : ''}</div>
+        <div style="font-size:11px;color:var(--text2)">📱 ${a.tel || '—'}${a.email ? ' · 📅 ' + a.email : ''}${a.secteurs ? ' · 📍 ' + a.secteurs : ''}</div>
       </div>
       <button class="btn btn-sm" onclick="removeAgent('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
     </div>`).join('');
@@ -235,17 +235,20 @@ function addAgent(){
   const nomEl = document.getElementById('new-agent-nom');
   const telEl = document.getElementById('new-agent-tel');
   const emailEl = document.getElementById('new-agent-email');
+  const secteursEl = document.getElementById('new-agent-secteurs');
   const nom = nomEl.value.trim();
   const tel = telEl.value.trim();
   const email = (emailEl ? emailEl.value : '').trim();
+  const secteurs = (secteursEl ? secteursEl.value : '').trim();
   if(!nom){ notify('⚠️ Le nom de l\'agent est requis', 'warn'); return; }
   if(!DB.agents) DB.agents = [];
-  DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email });
+  DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, secteurs });
   saveToStorage();
   persistAgents();
   nomEl.value = '';
   telEl.value = '';
   if(emailEl) emailEl.value = '';
+  if(secteursEl) secteursEl.value = '';
   renderAgentsSettings();
   notify('✅ Agent ajouté');
 }

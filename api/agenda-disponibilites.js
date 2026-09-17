@@ -78,9 +78,14 @@ export default async function handler(req) {
       return repli({ debug: 'Type de bien non reconnu', bienTypo, meuble });
     }
 
-    const calendriers = await recupererCalendriersAgents(process.env.DEFAULT_OWNER_ID, process.env.SUPABASE_SERVICE_KEY);
+    // Code postal du bien (extrait côté formulaire depuis l'adresse en texte
+    // libre) — sectorise les agents interrogés quand il est exploitable,
+    // sinon aucun filtrage (cf. agentCouvreSecteur dans agents-calendriers.js).
+    const codePostal = (url.searchParams.get('cp') || '').replace(/\D/g, '').slice(0, 5);
+
+    const calendriers = await recupererCalendriersAgents(process.env.DEFAULT_OWNER_ID, process.env.SUPABASE_SERVICE_KEY, codePostal);
     if (calendriers.length === 0) {
-      return repli({ debug: 'Aucun agent avec un email renseigné dans le CRM (Paramètres → Agents EDL)' });
+      return repli({ debug: 'Aucun agent disponible pour ce secteur ou avec un email renseigné dans le CRM (Paramètres → Agents EDL)' });
     }
 
     // Mois calendaire affiché, même logique que cal-availability.js :
@@ -157,7 +162,7 @@ export default async function handler(req) {
       fenetreDebut: debutMois.toISOString(),
       fenetreFin: finMois.toISOString(),
     };
-    if (debug) { body.debug = 'OK'; body.calendriers = calendriers; body.calendriersEnErreur = calendriersEnErreur; body.fbDataBrut = fbData; }
+    if (debug) { body.debug = 'OK'; body.codePostal = codePostal; body.calendriers = calendriers; body.calendriersEnErreur = calendriersEnErreur; body.fbDataBrut = fbData; }
     return new Response(JSON.stringify(body), { status: 200, headers });
   } catch (e) {
     return repli({ debug: 'Exception : ' + e.message });

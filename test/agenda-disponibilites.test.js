@@ -121,6 +121,34 @@ test('la liste des agendas vient des agents du CRM (Supabase), pas d\'une variab
   assert.deepEqual(appels.freebusy.corps.items.map(i => i.id), ['jean@exemple.fr', 'marie@exemple.fr']);
 });
 
+test('paramètre cp : ne retient que les agents dont le secteur couvre ce code postal', async () => {
+  const { fn, appels } = fabriquerFetchMock({
+    agents: [
+      { nom: 'Nord', email: 'nord@exemple.fr', secteurs: '75018,75019' },
+      { nom: 'Sud', email: 'sud@exemple.fr', secteurs: '75013,75014' },
+    ],
+  });
+  global.fetch = fn;
+
+  await handler(requete({ bienTypo: 'T1', meuble: 'Nu', cp: '75018' }));
+
+  assert.deepEqual(appels.freebusy.corps.items.map(i => i.id), ['nord@exemple.fr']);
+});
+
+test('sans paramètre cp : tous les agents avec email sont retenus, secteurs ignorés', async () => {
+  const { fn, appels } = fabriquerFetchMock({
+    agents: [
+      { nom: 'Nord', email: 'nord@exemple.fr', secteurs: '75018' },
+      { nom: 'Sud', email: 'sud@exemple.fr', secteurs: '75013' },
+    ],
+  });
+  global.fetch = fn;
+
+  await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+
+  assert.deepEqual(appels.freebusy.corps.items.map(i => i.id), ['nord@exemple.fr', 'sud@exemple.fr']);
+});
+
 test('agents du CRM sans aucun email renseigné : repli sans appeler Google', async () => {
   const { fn } = fabriquerFetchMock({ agents: [{ nom: 'Jean', email: '' }] });
   let appeleFreebusy = false;

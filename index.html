@@ -1368,12 +1368,13 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       </div>
       <div class="settings-section">
         <div class="settings-title"><i class="ti ti-users" style="font-size:18px"></i>Agents EDL</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Les agents ajoutés ici apparaissent dans le menu déroulant "Agent qui se déplace" lors de la confirmation d'un RDV, et leurs coordonnées sont insérées automatiquement dans la convocation envoyée au locataire. L'email (optionnel) sert à proposer ses vrais créneaux libres sur le formulaire de réservation en ligne — après qu'il ait partagé son agenda Google en "Voir uniquement le libre/occupé" avec le compte de service de l'agence.</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Les agents ajoutés ici apparaissent dans le menu déroulant "Agent qui se déplace" lors de la confirmation d'un RDV, et leurs coordonnées sont insérées automatiquement dans la convocation envoyée au locataire. L'email (optionnel) sert à proposer ses vrais créneaux libres sur le formulaire de réservation en ligne — après qu'il ait partagé son agenda Google en "Voir uniquement le libre/occupé" avec le compte de service de l'agence. Les secteurs (optionnel) limitent les créneaux proposés aux biens dont le code postal commence par l'un des préfixes indiqués — laisser vide pour un agent disponible partout.</div>
         <div id="agents-list" style="margin-bottom:12px"></div>
         <div class="form-grid">
           <div><label>Nom complet</label><input id="new-agent-nom" placeholder="Jean Dupont"></div>
           <div><label>Mobile</label><input id="new-agent-tel" placeholder="06 12 34 56 78"></div>
           <div><label>Email agenda Google</label><input id="new-agent-email" type="email" placeholder="jean.dupont@gmail.com"></div>
+          <div><label>Secteurs (codes postaux, optionnel)</label><input id="new-agent-secteurs" placeholder="75018,75019,92 — vide = partout"></div>
         </div>
         <button class="btn btn-sm" onclick="addAgent()" style="margin-top:8px"><i class="ti ti-user-plus"></i> Ajouter cet agent</button>
       </div>

@@ -3,7 +3,7 @@
 // à fusionner — sans réseau réel (fetch mocké).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { recupererCalendriersAgents } from '../api/_lib/agents-calendriers.js';
+import { recupererCalendriersAgents, agentCouvreSecteur } from '../api/_lib/agents-calendriers.js';
 
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });
@@ -50,4 +50,49 @@ test('ownerId ou clé de service absents : liste vide sans appeler le réseau', 
   assert.deepEqual(await recupererCalendriersAgents('', 'cle-test'), []);
   assert.deepEqual(await recupererCalendriersAgents('owner-1', ''), []);
   assert.equal(appele, false);
+});
+
+// ─── agentCouvreSecteur ─────────────────────────────────────────────
+test('agent sans secteur configuré : couvre partout, quel que soit le code postal', () => {
+  assert.equal(agentCouvreSecteur({ secteurs: '' }, '75018'), true);
+  assert.equal(agentCouvreSecteur({}, '92100'), true);
+});
+
+test('aucun code postal exploitable : aucun filtrage, même avec des secteurs configurés', () => {
+  assert.equal(agentCouvreSecteur({ secteurs: '75018,75019' }, ''), true);
+});
+
+test('agent avec secteurs : ne couvre que les préfixes indiqués', () => {
+  const agent = { secteurs: '75018,75019,92' };
+  assert.equal(agentCouvreSecteur(agent, '75018'), true);
+  assert.equal(agentCouvreSecteur(agent, '75019'), true);
+  assert.equal(agentCouvreSecteur(agent, '92100'), true); // préfixe court "92" matche tout le département
+  assert.equal(agentCouvreSecteur(agent, '75017'), false);
+  assert.equal(agentCouvreSecteur(agent, '91000'), false);
+});
+
+test('secteurs avec espaces autour des virgules : nettoyés (trim)', () => {
+  assert.equal(agentCouvreSecteur({ secteurs: ' 75018 , 75019 ' }, '75019'), true);
+});
+
+// ─── recupererCalendriersAgents + filtrage par secteur ─────────────
+test('recupererCalendriersAgents filtre par secteur quand un code postal est fourni', async () => {
+  global.fetch = async () => ({ ok: true, json: async () => [{ data: { agents: [
+    { nom: 'Nord', email: 'nord@exemple.fr', secteurs: '75018,75019' },
+    { nom: 'Partout', email: 'partout@exemple.fr', secteurs: '' },
+    { nom: 'Sud', email: 'sud@exemple.fr', secteurs: '75013,75014' },
+  ] } }] });
+
+  const emails = await recupererCalendriersAgents('owner-1', 'cle-test', '75018');
+  assert.deepEqual(emails, ['nord@exemple.fr', 'partout@exemple.fr']);
+});
+
+test('recupererCalendriersAgents sans code postal : aucun filtrage par secteur', async () => {
+  global.fetch = async () => ({ ok: true, json: async () => [{ data: { agents: [
+    { nom: 'Nord', email: 'nord@exemple.fr', secteurs: '75018' },
+    { nom: 'Sud', email: 'sud@exemple.fr', secteurs: '75013' },
+  ] } }] });
+
+  const emails = await recupererCalendriersAgents('owner-1', 'cle-test', '');
+  assert.deepEqual(emails, ['nord@exemple.fr', 'sud@exemple.fr']);
 });

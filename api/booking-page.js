@@ -400,6 +400,16 @@ let _creneauxRequeteEnCours = 0;
 let _creneauxMoisAffiche = null; // { annee, mois } — mois 1-12
 let _creneauxMoisInitial = null; // mois courant au premier chargement, pour désactiver "précédent"
 
+// Extrait un code postal français (5 chiffres) depuis l'adresse en texte
+// libre saisie par le client — utilisé pour ne proposer que les agents
+// couvrant ce secteur (voir agents-calendriers.js côté serveur). Sans code
+// postal reconnaissable, aucun filtrage n'est appliqué côté serveur : ça ne
+// bloque jamais la prise de créneau.
+function extraireCodePostal(adresse){
+  const m = String(adresse || '').match(/\b\d{5}\b/);
+  return m ? m[0] : '';
+}
+
 async function chargerCreneauxSiPossible(reinitialiserPeriode){
   const btypo = document.getElementById('btypo').value;
   const meubleVal = document.getElementById('meuble').value;
@@ -417,7 +427,9 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
   loading.style.display = 'block';
   try{
     const moisParam = _creneauxMoisAffiche.annee + '-' + String(_creneauxMoisAffiche.mois).padStart(2,'0');
-    const resp = await fetch('/api/agenda-disponibilites?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam);
+    const adresseEl = document.getElementById('adresse');
+    const cp = extraireCodePostal(adresseEl ? adresseEl.value : '');
+    const resp = await fetch('/api/agenda-disponibilites?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam + (cp ? '&cp=' + encodeURIComponent(cp) : ''));
     if(requeteId !== _creneauxRequeteEnCours) return; // une sélection plus récente a déjà relancé une requête
     loading.style.display = 'none';
     if(!resp.ok){ return; }
