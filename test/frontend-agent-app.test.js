@@ -131,30 +131,33 @@ test('allerAgentPage : bascule la page et le bouton actifs', () => {
   assert.ok(!w.document.querySelector('.nav-btn[data-page="missions"]').classList.contains('active'));
 });
 
-// ─── Mes documents (rapport EDL) ────────────────────────────────────
-test('renderDocuments : liste vide si aucune mission n\'a de rapport', () => {
+// ─── Mes documents (contrat / avenant déposés par l'agence) ──────────
+test('renderDocuments : liste vide si ni contrat ni avenant', () => {
   const w = chargerAgentApp();
-  w.renderDocuments([{ id: 'm1', adresse: 'x' }, { id: 'm2', rapportUrl: '' }]);
+  w.renderDocuments({ contrat: false, avenant: false });
   assert.ok(w.document.getElementById('documents-list').textContent.includes('Aucun document'));
 });
 
-test('renderDocuments : n\'affiche que les missions avec un rapportUrl, avec un lien de téléchargement', () => {
+test('renderDocuments : n\'affiche que les documents réellement déposés', () => {
   const w = chargerAgentApp();
-  w.renderDocuments([
-    { id: 'm1', adresse: '12 rue de la Paix', date: '2026-09-10T10:00:00', rapportUrl: 'https://exemple.fr/rapport.pdf' },
-    { id: 'm2', adresse: '5 rue de Rivoli', rapportUrl: '' },
-  ]);
+  w.renderDocuments({ contrat: true, avenant: false });
   const html = w.document.getElementById('documents-list').innerHTML;
-  assert.ok(html.includes('12 rue de la Paix'));
-  assert.ok(!html.includes('5 rue de Rivoli'));
-  assert.ok(html.includes('href="https://exemple.fr/rapport.pdf"'));
+  assert.ok(html.includes('Contrat signé'));
+  assert.ok(!html.includes('Avenant'));
 });
 
-test('renderDocuments : échappe une adresse malveillante dans le lien affiché (anti-XSS)', () => {
+test('renderDocuments : ne fait jamais référence aux états des lieux (rapports EDL)', () => {
   const w = chargerAgentApp();
-  w.renderDocuments([{ id: 'm1', adresse: '<img src=x onerror=alert(1)>', rapportUrl: 'https://exemple.fr/r.pdf' }]);
-  const html = w.document.getElementById('documents-list').innerHTML;
-  assert.ok(!html.includes('<img src=x onerror=alert(1)>'));
+  w.renderDocuments({ contrat: true, avenant: true });
+  const html = w.document.getElementById('documents-list').innerHTML.toLowerCase();
+  assert.ok(!html.includes('état des lieux'));
+  assert.ok(!html.includes('rapport'));
+});
+
+test('renderDocuments : tolère documents absent/undefined sans erreur', () => {
+  const w = chargerAgentApp();
+  assert.doesNotThrow(() => w.renderDocuments(undefined));
+  assert.ok(w.document.getElementById('documents-list').textContent.includes('Aucun document'));
 });
 
 // ─── Historique par mois ─────────────────────────────────────────
@@ -187,4 +190,35 @@ test('renderHistorique : aucune mission terminée → message vide, pas d\'erreu
   const w = chargerAgentApp();
   w.renderHistorique([{ id: 'm1', statut: 'planifiée' }]);
   assert.ok(w.document.getElementById('historique-list').textContent.includes('Aucune mission terminée'));
+});
+
+// ─── Téléchargement à la demande (jamais de lien permanent stocké) ────
+test('telechargerDocument : appelle agent-document-download avec le type, ouvre l\'URL signée reçue', async () => {
+  const w = chargerAgentApp();
+  let appelFetch = null;
+  let appelOpen = null;
+  w.fetch = async (url, opts) => { appelFetch = { url, corps: JSON.parse(opts.body) }; return { ok: true, json: async () => ({ url: 'https://exemple.fr/signe?token=abc' }) }; };
+  w.open = (u) => { appelOpen = u; };
+
+  const btn = w.document.createElement('button');
+  btn.innerHTML = '<i class="ti ti-download"></i> Télécharger';
+  await w.telechargerDocument('contrat', btn);
+
+  assert.equal(appelFetch.url, '/api/agent-document-download');
+  assert.deepEqual(appelFetch.corps, { type: 'contrat' });
+  assert.equal(appelOpen, 'https://exemple.fr/signe?token=abc');
+  assert.equal(btn.disabled, false, 'le bouton doit être réactivé après le téléchargement');
+});
+
+test('telechargerDocument : document indisponible → alerte, pas d\'ouverture d\'URL', async () => {
+  const w = chargerAgentApp();
+  let appelOpen = null;
+  w.fetch = async () => ({ ok: false, json: async () => ({ error: 'Document non disponible pour l\'instant' }) });
+  w.open = (u) => { appelOpen = u; };
+  w.alert = () => {};
+
+  const btn = w.document.createElement('button');
+  await w.telechargerDocument('avenant', btn);
+
+  assert.equal(appelOpen, null);
 });

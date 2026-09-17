@@ -154,7 +154,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
               <ol>
                 <li>Connecte-toi avec ton email — tu reçois un lien à usage unique, aucun mot de passe à retenir.</li>
                 <li><strong>Mes missions</strong> : tes états des lieux à venir, avec adresse, horaire, coordonnées du locataire et code d'accès.</li>
-                <li><strong>Mes documents</strong> : le rapport PDF de chaque état des lieux terminé, dès qu'il est disponible.</li>
+                <li><strong>Mes documents</strong> : ton contrat signé et un éventuel avenant, déposés par l'agence.</li>
                 <li><strong>Historique</strong> : tes missions déjà réalisées, regroupées mois par mois.</li>
               </ol>
             </div>
@@ -163,7 +163,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
         <div class="card">
           <div class="card-head"><i class="ti ti-device-mobile"></i>L'application Edouard</div>
           <div class="card-body aide-section">
-            <p>Edouard est l'application que tu utilises <strong>sur place</strong> pour réaliser l'état des lieux (pièces, relevés, photos, signatures). Une fois l'état des lieux finalisé dans Edouard, le rapport PDF remonte automatiquement dans ton espace, sous <strong>Mes documents</strong> — aucune action supplémentaire de ta part.</p>
+            <p>Edouard est l'application que tu utilises <strong>sur place</strong> pour réaliser l'état des lieux (pièces, relevés, photos, signatures).</p>
             <p style="margin-top:10px">Besoin de tes identifiants Edouard ou d'aide pour l'application ? Contacte l'agence directement.</p>
           </div>
         </div>
@@ -285,7 +285,7 @@ async function chargerMesMissions(){
     _missionsCache = data.missions || [];
     renderKpi(data.kpi);
     renderMissions(_missionsCache);
-    renderDocuments(_missionsCache);
+    renderDocuments(data.agent?.documents);
     renderHistorique(_missionsCache);
   } catch(e) {
     listEl.innerHTML = '<div class="empty">Erreur de chargement.</div>';
@@ -338,21 +338,42 @@ function renderMissions(missions){
   listEl.innerHTML = missions.map(carteMission).join('');
 }
 
-// ─── Mes documents : le rapport EDL (PDF) de chaque mission qui en a un,
-// synchronisé automatiquement depuis Edouard une fois l'état des lieux
-// finalisé (voir api/edouard-cron.js côté serveur — rapportUrl).
-function renderDocuments(missions){
+// ─── Mes documents : le contrat signé et l'avenant déposés par l'agence
+// (Paramètres → Agents EDL côté CRM) — jamais les rapports d'état des
+// lieux. Le lien de téléchargement n'est jamais stocké : on en redemande
+// un, valable 60s, à chaque clic (voir api/agent-document-download.js).
+const LABEL_DOCUMENT = { contrat: 'Contrat signé', avenant: 'Avenant' };
+
+function renderDocuments(documents){
   const listEl = document.getElementById('documents-list');
-  const avecRapport = missions.filter(m => m.rapportUrl);
-  if (!avecRapport.length) { listEl.innerHTML = '<div class="empty">Aucun document disponible pour l\'instant. Le rapport d\'une mission apparaît ici une fois l\'état des lieux finalisé dans Edouard.</div>'; return; }
-  listEl.innerHTML = avecRapport.map(m => `
+  const disponibles = Object.keys(LABEL_DOCUMENT).filter(type => documents && documents[type]);
+  if (!disponibles.length) { listEl.innerHTML = '<div class="empty">Aucun document disponible pour l\'instant. Ton contrat et un éventuel avenant apparaissent ici une fois déposés par l\'agence.</div>'; return; }
+  listEl.innerHTML = disponibles.map(type => `
     <div class="doc-row">
       <div class="doc-info">
-        <div class="doc-adresse">${esc(m.adresse) || 'Rapport état des lieux'}</div>
-        <div class="doc-date">${esc(fmtDateHeure(m.date))}</div>
+        <div class="doc-adresse">${esc(LABEL_DOCUMENT[type])}</div>
       </div>
-      <a class="btn-sm" href="${esc(m.rapportUrl)}" target="_blank" rel="noopener"><i class="ti ti-download"></i> Télécharger</a>
+      <button class="btn-sm" onclick="telechargerDocument('${type}', this)"><i class="ti ti-download"></i> Télécharger</button>
     </div>`).join('');
+}
+
+async function telechargerDocument(type, btn){
+  const libelleOriginal = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> …';
+  try {
+    const resp = await fetch('/api/agent-document-download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _accessToken },
+      body: JSON.stringify({ type }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.url) { alert(data.error || 'Document indisponible pour le moment.'); return; }
+    window.open(data.url, '_blank', 'noopener');
+  } catch(e) {
+    alert('Erreur réseau, réessaie.');
+  } finally {
+    btn.disabled = false; btn.innerHTML = libelleOriginal;
+  }
 }
 
 // ─── Historique : missions au statut "terminée", regroupées par mois

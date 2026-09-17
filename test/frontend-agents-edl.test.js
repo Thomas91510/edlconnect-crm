@@ -217,3 +217,69 @@ test('addAgent en mode édition : aucun renvoi de l\'email de bienvenue (déjà 
 
   assert.equal(nbAppels, 1, 'la modification ne doit pas redéclencher un envoi');
 });
+
+// ─── Dépôt du contrat / avenant (upload-agent-document) ────────────
+test('televerserDocumentAgent : envoie le PDF en multipart et marque l\'agent comme déposé', async () => {
+  const window = chargerAgentsEDL();
+  remplirFormulaire(window, { nom: 'Jean Dupont' });
+  window.addAgent();
+  const id = window.__getDB().agents[0].id;
+
+  let appelFetch = null;
+  window.fetch = async (url, opts) => {
+    appelFetch = { url, opts };
+    return { ok: true, json: async () => ({ success: true, path: id + '/contrat-123.pdf' }) };
+  };
+
+  const fichier = new window.File(['%PDF-1.4'], 'contrat.pdf', { type: 'application/pdf' });
+  const inputEl = window.document.createElement('input');
+  inputEl.type = 'file';
+  Object.defineProperty(inputEl, 'files', { value: [fichier] });
+
+  await window.televerserDocumentAgent(id, 'contrat', inputEl);
+
+  assert.equal(appelFetch.url, '/api/upload-agent-document');
+  assert.equal(appelFetch.opts.headers.Authorization, 'Bearer tok-test');
+  assert.ok(!('Content-Type' in appelFetch.opts.headers), 'le Content-Type multipart doit être laissé au navigateur');
+  assert.equal(appelFetch.opts.body.get('agentId'), id);
+  assert.equal(appelFetch.opts.body.get('type'), 'contrat');
+
+  assert.equal(window.__getDB().agents[0].contratPath, id + '/contrat-123.pdf');
+  assert.ok(window.document.getElementById('agents-list').innerHTML.includes('ti-file-check'), 'l\'icône doit refléter le dépôt sans recharger la page');
+});
+
+test('televerserDocumentAgent : fichier non-PDF refusé côté client, aucun appel réseau', async () => {
+  const window = chargerAgentsEDL();
+  remplirFormulaire(window, { nom: 'Jean Dupont' });
+  window.addAgent();
+  const id = window.__getDB().agents[0].id;
+
+  let appele = false;
+  window.fetch = async () => { appele = true; };
+
+  const fichier = new window.File(['texte'], 'contrat.txt', { type: 'text/plain' });
+  const inputEl = window.document.createElement('input');
+  Object.defineProperty(inputEl, 'files', { value: [fichier] });
+
+  await window.televerserDocumentAgent(id, 'contrat', inputEl);
+
+  assert.equal(appele, false);
+  assert.equal(window.__getDB().agents[0].contratPath, undefined);
+});
+
+test('televerserDocumentAgent : échec serveur affiche une erreur sans modifier l\'agent', async () => {
+  const window = chargerAgentsEDL();
+  remplirFormulaire(window, { nom: 'Jean Dupont' });
+  window.addAgent();
+  const id = window.__getDB().agents[0].id;
+
+  window.fetch = async () => ({ ok: false, json: async () => ({ error: 'Échec du téléversement' }) });
+
+  const fichier = new window.File(['%PDF-1.4'], 'contrat.pdf', { type: 'application/pdf' });
+  const inputEl = window.document.createElement('input');
+  Object.defineProperty(inputEl, 'files', { value: [fichier] });
+
+  await window.televerserDocumentAgent(id, 'contrat', inputEl);
+
+  assert.equal(window.__getDB().agents[0].contratPath, undefined);
+});

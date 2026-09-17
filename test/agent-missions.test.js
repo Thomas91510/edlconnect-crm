@@ -102,18 +102,29 @@ test('exclut les champs financiers/internes non listés (contrôle par liste bla
   assert.ok(!champs.includes('emailClient'));
 });
 
-test('expose le lien du rapport EDL (rapportUrl) quand il existe — "mes documents"', async () => {
+test('missions : n\'expose jamais rapportUrl (les documents agent sont contrat/avenant, pas les EDL)', async () => {
   const missionsRows = [
-    { id: 'm1', data: { expertId: 'agent-1', type: 'EDL entrant', rapportUrl: 'https://exemple.supabase.co/storage/v1/object/sign/rapport.pdf' } },
-    { id: 'm2', data: { expertId: 'agent-1', type: 'EDL sortant' } }, // pas encore de rapport
+    { id: 'm1', data: { expertId: 'agent-1', type: 'EDL entrant', rapportUrl: 'https://exemple.supabase.co/rapport.pdf' } },
   ];
   global.fetch = fabriquerFetchMock({ settingsRows: AGENTS_OWNER1, missionsRows });
 
   const resp = await handler(requete('jeton-valide'));
   const body = await resp.json();
 
-  assert.equal(body.missions.find(m => m.id === 'm1').rapportUrl, 'https://exemple.supabase.co/storage/v1/object/sign/rapport.pdf');
-  assert.equal(body.missions.find(m => m.id === 'm2').rapportUrl, '');
+  assert.ok(!Object.keys(body.missions[0]).includes('rapportUrl'));
+});
+
+test('agent.documents indique la présence du contrat/avenant sans exposer le chemin de stockage', async () => {
+  const agentsAvecDocs = [{ user_id: 'owner-1', data: { agents: [
+    { id: 'agent-1', nom: 'Jean Dupont', email: 'jean@exemple.fr', contratPath: 'agent-1/contrat-123.pdf' },
+  ] } }];
+  global.fetch = fabriquerFetchMock({ settingsRows: agentsAvecDocs, missionsRows: [] });
+
+  const resp = await handler(requete('jeton-valide'));
+  const body = await resp.json();
+
+  assert.deepEqual(body.agent.documents, { contrat: true, avenant: false });
+  assert.ok(!JSON.stringify(body).includes('agent-1/contrat-123.pdf'), 'le chemin de stockage ne doit jamais être renvoyé au client');
 });
 
 test('panne réseau sur les missions : 500 propre (pas de fuite d\'exception)', async () => {

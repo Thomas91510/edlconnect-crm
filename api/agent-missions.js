@@ -79,11 +79,13 @@ export default async function handler(req) {
     acces: m.acces || '',
     locataireNom: m.locataireNom || '',
     locataireTel: m.locataireTel || '',
-    rapportUrl: m.rapportUrl || '',
   })).sort((a, b) => String(a.date).localeCompare(String(b.date)));
 
   const body = {
-    agent: { nom: agent.nom || '' },
+    agent: {
+      nom: agent.nom || '',
+      documents: { contrat: !!agent.contratPath, avenant: !!agent.avenantPath },
+    },
     missions: missionsPubliques,
     kpi: calculerKpiAgent(missions),
   };
