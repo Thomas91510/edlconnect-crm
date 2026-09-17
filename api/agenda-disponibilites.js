@@ -118,10 +118,19 @@ export default async function handler(req) {
     }
     const fbData = await fbResp.json();
 
+    // Un agenda en erreur (accès révoqué, partage non finalisé, email
+    // invalide...) est exclu plutôt que traité comme "toujours libre" — sans
+    // ça, un partage cassé rendrait silencieusement ce collaborateur
+    // disponible en permanence et risquerait un double rendez-vous.
     const occupePar = {};
+    const calendriersEnErreur = [];
     for (const id of calendriers) {
       const entree = fbData.calendars && fbData.calendars[id];
-      const busy = (entree && Array.isArray(entree.busy)) ? entree.busy : [];
+      if (!entree || (Array.isArray(entree.errors) && entree.errors.length > 0)) {
+        calendriersEnErreur.push(id);
+        continue;
+      }
+      const busy = Array.isArray(entree.busy) ? entree.busy : [];
       occupePar[id] = busy.map(b => ({ start: new Date(b.start), end: new Date(b.end) }));
     }
 
@@ -148,7 +157,7 @@ export default async function handler(req) {
       fenetreDebut: debutMois.toISOString(),
       fenetreFin: finMois.toISOString(),
     };
-    if (debug) { body.debug = 'OK'; body.calendriers = calendriers; body.fbDataBrut = fbData; }
+    if (debug) { body.debug = 'OK'; body.calendriers = calendriers; body.calendriersEnErreur = calendriersEnErreur; body.fbDataBrut = fbData; }
     return new Response(JSON.stringify(body), { status: 200, headers });
   } catch (e) {
     return repli({ debug: 'Exception : ' + e.message });

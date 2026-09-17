@@ -37,7 +37,7 @@ function requete(params) {
 // agents (Supabase "settings"), le jeton OAuth2 (oauth2.googleapis.com/token)
 // puis freebusy.query — capture la requête freebusy pour inspection, et
 // permet d'injecter un "busy" par calendrier ainsi que la liste d'agents.
-function fabriquerFetchMock({ busy = {}, freebusyOk = true, agents = [{ email: 'a@exemple.fr' }, { email: 'b@exemple.fr' }] } = {}) {
+function fabriquerFetchMock({ busy = {}, freebusyOk = true, erreurs = {}, agents = [{ email: 'a@exemple.fr' }, { email: 'b@exemple.fr' }] } = {}) {
   const appels = { freebusy: null };
   const fn = async (url, opts) => {
     if (String(url).includes('/rest/v1/settings')) {
@@ -51,7 +51,7 @@ function fabriquerFetchMock({ busy = {}, freebusyOk = true, agents = [{ email: '
       if (!freebusyOk) return { ok: false, status: 500, text: async () => 'panne' };
       const calendars = {};
       for (const id of appels.freebusy.corps.items.map(i => i.id)) {
-        calendars[id] = { busy: busy[id] || [] };
+        calendars[id] = erreurs[id] ? { errors: erreurs[id], busy: [] } : { busy: busy[id] || [] };
       }
       return { ok: true, json: async () => ({ calendars }) };
     }
@@ -254,4 +254,41 @@ test('panne Google freebusy : dégrade proprement (jamais de 500 sur le formulai
 
   assert.equal(resp.status, 200);
   assert.equal(body.configured, false);
+});
+
+// Régression cible : un agenda dont le partage n'a pas abouti (email erroné,
+// partage révoqué...) renvoie {errors:[...], busy:[]} côté Google — un bug
+// initial traitait ça comme "aucune info = toujours libre", proposant des
+// créneaux sur un collaborateur en réalité inaccessible (risque de double
+// réservation). Ce collaborateur doit être totalement exclu du calcul.
+test('agenda en erreur (notFound) : exclu du calcul, pas traité comme "toujours libre"', async () => {
+  const { fn, appels } = fabriquerFetchMock({
+    erreurs: { 'a@exemple.fr': [{ domain: 'global', reason: 'notFound' }] },
+    busy: { 'b@exemple.fr': [{ start: '2026-01-01T00:00:00Z', end: '2027-01-01T00:00:00Z' }] },
+  });
+  global.fetch = fn;
+
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const body = await resp.json();
+
+  // 'a' est en erreur (ignoré) et 'b' est occupé toute la période testée :
+  // aucun collaborateur valide et libre ne reste.
+  assert.equal(body.available, false);
+  assert.deepEqual(body.slots, []);
+  assert.deepEqual(body.calendriersEnErreur, ['a@exemple.fr']);
+  assert.ok(appels.freebusy); // la requête a bien été envoyée avec les 2 calendriers
+});
+
+test('un agenda en erreur, l\'autre réellement libre : les créneaux restent proposés', async () => {
+  const { fn } = fabriquerFetchMock({
+    erreurs: { 'a@exemple.fr': [{ domain: 'global', reason: 'notFound' }] },
+    busy: { 'b@exemple.fr': [] },
+  });
+  global.fetch = fn;
+
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const body = await resp.json();
+
+  assert.equal(body.available, true);
+  assert.ok(body.slots.length > 0);
 });
