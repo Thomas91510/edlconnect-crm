@@ -12,6 +12,12 @@
     input{width:100%;background:#fff;border:1.5px solid #e5e5e2;border-radius:10px;color:#1a1a1a;padding:12px 14px;font-size:13px;font-family:inherit;outline:none}
     input:focus{border-color:#378ADD}
     input::placeholder{color:#999}
+    .adresse-wrap{position:relative}
+    .adresse-suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid #e5e5e2;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:20;max-height:220px;overflow-y:auto;display:none}
+    .adresse-suggestions.show{display:block}
+    .adresse-suggestion{padding:9px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid #e5e5e2}
+    .adresse-suggestion:last-child{border-bottom:none}
+    .adresse-suggestion:hover{background:#F4F7FA;color:#0C447C}
     button{font-family:inherit}
     a{color:inherit}
     .btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,#1A5FA8,#378ADD);color:#fff;border:none;border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -397,7 +403,10 @@
         </select>
       </div>
       <div class="form-label">Adresse du bien *</div>
-      <input id="f-adresse" placeholder="12 rue de la Paix, 91000 Évry" style="margin-bottom:10px">
+      <div class="adresse-wrap" style="margin-bottom:10px">
+        <input id="f-adresse" placeholder="12 rue de la Paix, 91000 Évry" oninput="onSaisieAdresse()" autocomplete="off">
+        <div id="f-adresse-suggestions" class="adresse-suggestions"></div>
+      </div>
       <div class="form-grid" style="margin-bottom:10px">
         <div><div class="form-label">Type de bien</div><select id="f-bien"><option>Appartement</option><option>Maison</option><option>Studio</option><option>Local commercial</option><option>Parking</option><option>Autre</option></select></div>
         <div><div class="form-label">Typologie *</div><select id="f-typo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
@@ -1148,6 +1157,74 @@ function toggleEntrants(){
   if(show && _entrants.length === 0) addEntrant();
 }
 
+// ─── Autocomplétion d'adresse (API Adresse gratuite, data.gouv.fr) ─────
+// Même logique que le formulaire public /booking (voir api/booking-page.js) :
+// suggestions d'adresses françaises pendant la saisie, sans clé API ni
+// facturation — dégrade silencieusement en cas de panne/lenteur, le champ
+// reste une saisie libre normale dans tous les cas. Le code postal confirmé
+// par une suggestion sélectionnée prime sur l'extraction par motif
+// (extraireCodePostal) tant que l'adresse n'est pas modifiée après coup.
+let _adresseDebounce = null;
+let _adresseRequeteEnCours = 0;
+let _adresseCodePostalConfirme = '';
+
+function onSaisieAdresse(){
+  _adresseCodePostalConfirme = ''; // toute frappe invalide la confirmation précédente
+  const champ = document.getElementById('f-adresse');
+  const requete = champ.value.trim();
+  clearTimeout(_adresseDebounce);
+  if(requete.length < 3){ masquerSuggestionsAdresse(); return; }
+  _adresseDebounce = setTimeout(() => rechercherAdresses(requete), 300);
+}
+
+async function rechercherAdresses(requete){
+  const requeteId = ++_adresseRequeteEnCours;
+  try{
+    const resp = await fetch('https://api-adresse.data.gouv.fr/search/?limit=5&autocomplete=1&q=' + encodeURIComponent(requete));
+    if(requeteId !== _adresseRequeteEnCours) return; // une frappe plus récente a déjà relancé une recherche
+    if(!resp.ok){ masquerSuggestionsAdresse(); return; }
+    const data = await resp.json();
+    afficherSuggestionsAdresse((data && data.features) || []);
+  }catch(e){
+    masquerSuggestionsAdresse(); // silencieux : la saisie libre reste utilisable
+  }
+}
+
+function afficherSuggestionsAdresse(features){
+  const wrap = document.getElementById('f-adresse-suggestions');
+  if(!wrap) return;
+  if(!features.length){ masquerSuggestionsAdresse(); return; }
+  wrap.innerHTML = '';
+  features.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'adresse-suggestion';
+    item.textContent = (f.properties && f.properties.label) || '';
+    item.onclick = () => choisirSuggestionAdresse(f);
+    wrap.appendChild(item);
+  });
+  wrap.classList.add('show');
+}
+
+function masquerSuggestionsAdresse(){
+  const wrap = document.getElementById('f-adresse-suggestions');
+  if(wrap){ wrap.classList.remove('show'); wrap.innerHTML = ''; }
+}
+
+function choisirSuggestionAdresse(feature){
+  const champ = document.getElementById('f-adresse');
+  champ.value = (feature.properties && feature.properties.label) || champ.value;
+  _adresseCodePostalConfirme = (feature.properties && feature.properties.postcode) || '';
+  masquerSuggestionsAdresse();
+  chargerCreneauxSiPossible(false); // le secteur (code postal) a pu changer
+}
+
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('f-adresse-suggestions');
+  const champ = document.getElementById('f-adresse');
+  if(!wrap || !champ) return;
+  if(e.target !== champ && !wrap.contains(e.target)) masquerSuggestionsAdresse();
+});
+
 // ─── Créneaux agenda (optionnel — dégrade silencieusement) ─────────────
 // Même logique et même endpoint que le formulaire public /booking (voir
 // api/booking-page.js) : navigation par mois calendaire complet, sans limite
@@ -1187,7 +1264,7 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
   try{
     const moisParam = _creneauxMoisAffiche.annee + '-' + String(_creneauxMoisAffiche.mois).padStart(2,'0');
     const adresseEl = document.getElementById('f-adresse');
-    const cp = extraireCodePostal(adresseEl ? adresseEl.value : '');
+    const cp = _adresseCodePostalConfirme || extraireCodePostal(adresseEl ? adresseEl.value : '');
     const resp = await fetch('/api/agenda-disponibilites?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam + (cp ? '&cp=' + encodeURIComponent(cp) : ''));
     if(requeteId !== _creneauxRequeteEnCours) return;
     loading.style.display = 'none';

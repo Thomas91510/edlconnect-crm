@@ -106,6 +106,12 @@ textarea{min-height:75px;resize:vertical}
 .error{display:none;background:#FCEBEB;color:#A32D2D;border-radius:var(--radius);padding:10px 14px;font-size:12px;margin-bottom:14px}
 .error.show{display:block}
 .hint{font-size:10px;color:var(--text2);margin-top:4px}
+.adresse-wrap{position:relative}
+.adresse-suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:20;max-height:220px;overflow-y:auto;display:none}
+.adresse-suggestions.show{display:block}
+.adresse-suggestion{padding:9px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.adresse-suggestion:last-child{border-bottom:none}
+.adresse-suggestion:hover{background:var(--blue-light);color:var(--blue-dark)}
 .info-box{background:var(--blue-light);border-radius:var(--radius);padding:12px 14px;font-size:11px;color:var(--blue-dark);margin-bottom:16px;line-height:1.7}
 .success{display:none;text-align:center;padding:56px 24px}
 .success-icon{width:70px;height:70px;background:var(--green-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:30px}
@@ -211,7 +217,10 @@ textarea{min-height:75px;resize:vertical}
       <div class="card-head"><i class="ti ti-home"></i>Adresse du bien</div>
       <div class="card-body">
         <label>Adresse complète <span class="req">*</span></label>
-        <input type="text" id="adresse" placeholder="12 rue de la Paix, 91000 Évry">
+        <div class="adresse-wrap">
+          <input type="text" id="adresse" placeholder="12 rue de la Paix, 91000 Évry" oninput="onSaisieAdresse()" autocomplete="off">
+          <div id="adresse-suggestions" class="adresse-suggestions"></div>
+        </div>
         <div class="form-row">
           <div><label>Type de bien</label><select id="btype"><option value="">— Choisir —</option><option>Appartement</option><option>Maison</option></select></div>
           <div><label>Typologie</label><select id="btypo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
@@ -386,6 +395,74 @@ function selType(t, btn){
   if(isSE && document.querySelectorAll('.entrant-block').length === 0) addEntrant();
 }
 
+// ─── Autocomplétion d'adresse (API Adresse gratuite, data.gouv.fr) ─────
+// Suggestions d'adresses françaises pendant la saisie, sans clé API ni
+// facturation (contrairement à Google Places) — dégrade silencieusement en
+// cas de panne/lenteur du service : le champ reste une saisie libre normale
+// dans tous les cas. Le code postal confirmé par une suggestion sélectionnée
+// prime sur l'extraction par motif (extraireCodePostal) tant que l'adresse
+// n'est pas modifiée après coup.
+let _adresseDebounce = null;
+let _adresseRequeteEnCours = 0;
+let _adresseCodePostalConfirme = '';
+
+function onSaisieAdresse(){
+  _adresseCodePostalConfirme = ''; // toute frappe invalide la confirmation précédente
+  const champ = document.getElementById('adresse');
+  const requete = champ.value.trim();
+  clearTimeout(_adresseDebounce);
+  if(requete.length < 3){ masquerSuggestionsAdresse(); return; }
+  _adresseDebounce = setTimeout(() => rechercherAdresses(requete), 300);
+}
+
+async function rechercherAdresses(requete){
+  const requeteId = ++_adresseRequeteEnCours;
+  try{
+    const resp = await fetch('https://api-adresse.data.gouv.fr/search/?limit=5&autocomplete=1&q=' + encodeURIComponent(requete));
+    if(requeteId !== _adresseRequeteEnCours) return; // une frappe plus récente a déjà relancé une recherche
+    if(!resp.ok){ masquerSuggestionsAdresse(); return; }
+    const data = await resp.json();
+    afficherSuggestionsAdresse((data && data.features) || []);
+  }catch(e){
+    masquerSuggestionsAdresse(); // silencieux : la saisie libre reste utilisable
+  }
+}
+
+function afficherSuggestionsAdresse(features){
+  const wrap = document.getElementById('adresse-suggestions');
+  if(!wrap) return;
+  if(!features.length){ masquerSuggestionsAdresse(); return; }
+  wrap.innerHTML = '';
+  features.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'adresse-suggestion';
+    item.textContent = (f.properties && f.properties.label) || '';
+    item.onclick = () => choisirSuggestionAdresse(f);
+    wrap.appendChild(item);
+  });
+  wrap.classList.add('show');
+}
+
+function masquerSuggestionsAdresse(){
+  const wrap = document.getElementById('adresse-suggestions');
+  if(wrap){ wrap.classList.remove('show'); wrap.innerHTML = ''; }
+}
+
+function choisirSuggestionAdresse(feature){
+  const champ = document.getElementById('adresse');
+  champ.value = (feature.properties && feature.properties.label) || champ.value;
+  _adresseCodePostalConfirme = (feature.properties && feature.properties.postcode) || '';
+  masquerSuggestionsAdresse();
+  chargerCreneauxSiPossible(false); // le secteur (code postal) a pu changer
+}
+
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('adresse-suggestions');
+  const champ = document.getElementById('adresse');
+  if(!wrap || !champ) return;
+  if(e.target !== champ && !wrap.contains(e.target)) masquerSuggestionsAdresse();
+});
+
 // ─── Créneaux agenda (optionnel — dégrade silencieusement) ─────────────
 // N'affiche des créneaux que si /api/agenda-disponibilites répond des disponibilités
 // réelles. Tant que la fonctionnalité n'est pas activée côté serveur (ou en
@@ -428,7 +505,7 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
   try{
     const moisParam = _creneauxMoisAffiche.annee + '-' + String(_creneauxMoisAffiche.mois).padStart(2,'0');
     const adresseEl = document.getElementById('adresse');
-    const cp = extraireCodePostal(adresseEl ? adresseEl.value : '');
+    const cp = _adresseCodePostalConfirme || extraireCodePostal(adresseEl ? adresseEl.value : '');
     const resp = await fetch('/api/agenda-disponibilites?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam + (cp ? '&cp=' + encodeURIComponent(cp) : ''));
     if(requeteId !== _creneauxRequeteEnCours) return; // une sélection plus récente a déjà relancé une requête
     loading.style.display = 'none';
