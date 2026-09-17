@@ -28,13 +28,19 @@ function chevauche(debutA, finA, debutB, finB) {
 // - heureOuverture/heureFermeture : heures locales Paris (ex. 9 → 9h00)
 // - joursOuvres : jours de la semaine autorisés, 0=dimanche..6=samedi
 // - pasMinutes : granularité des heures de départ proposées
+// - tamponMinutes : marge à respecter avant/après chaque rendez-vous déjà
+//   posé (temps de trajet/installation entre deux missions) — un créneau
+//   trop proche d'un rendez-vous existant du même collaborateur est exclu,
+//   même si les deux ne se chevauchent pas au sens strict
 //
 // Retourne une liste d'horodatages ISO (instants UTC de début de créneau),
 // triée chronologiquement.
 export function creneauxLibres({
   fenetreDebut, fenetreFin, occupePar, dureeMinutes, seuilMs,
   heureOuverture = 9, heureFermeture = 19, joursOuvres = [1, 2, 3, 4, 5, 6], pasMinutes = 30,
+  tamponMinutes = 0,
 }) {
+  const tamponMs = tamponMinutes * 60000;
   const collaborateurs = Object.keys(occupePar || {});
   if (collaborateurs.length === 0) return [];
 
@@ -53,7 +59,7 @@ export function creneauxLibres({
 
         const auMoinsUnLibre = collaborateurs.some(id => {
           const occupations = occupePar[id] || [];
-          return !occupations.some(o => chevauche(debutCreneau.getTime(), finCreneau.getTime(), o.start.getTime(), o.end.getTime()));
+          return !occupations.some(o => chevauche(debutCreneau.getTime(), finCreneau.getTime(), o.start.getTime() - tamponMs, o.end.getTime() + tamponMs));
         });
         if (auMoinsUnLibre) resultat.push(debutCreneau.toISOString());
       }

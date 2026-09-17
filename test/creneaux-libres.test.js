@@ -78,6 +78,30 @@ test('délai minimum (seuilMs) : aucun créneau avant le seuil, même en pleine 
   assert.ok(slots.includes(creneau(12, 0)));
 });
 
+test('tampon de 30 min : un créneau trop proche d\'un rendez-vous existant (même sans chevauchement) est exclu', () => {
+  const occupePar = {
+    'a@exemple.fr': [{ start: parisEnUTC(2026, 9, 7, 12), end: parisEnUTC(2026, 9, 7, 13) }],
+  };
+  const slots = creneauxLibres({ ...FENETRE_LUNDI_SEUL, occupePar, dureeMinutes: 60, tamponMinutes: 30 });
+  // 11h-12h ne chevauche pas 12h-13h, mais finit pile au début : exclu par le tampon (marge 11h30-13h30).
+  assert.ok(!slots.includes(creneau(11, 0)));
+  // 13h-14h ne chevauche pas non plus, mais commence pile à la fin de la marge : exclu.
+  assert.ok(!slots.includes(creneau(13, 0)));
+  // 10h30-11h30 laisse pile 30 min avant 12h : accepté (limite exacte du tampon).
+  assert.ok(slots.includes(creneau(10, 30)));
+  // 13h30-14h30 laisse pile 30 min après 13h : accepté (limite exacte du tampon).
+  assert.ok(slots.includes(creneau(13, 30)));
+});
+
+test('tampon à 0 (défaut) : comportement inchangé, seul le chevauchement strict exclut', () => {
+  const occupePar = {
+    'a@exemple.fr': [{ start: parisEnUTC(2026, 9, 7, 10), end: parisEnUTC(2026, 9, 7, 11) }],
+  };
+  const slots = creneauxLibres({ ...FENETRE_LUNDI_SEUL, occupePar, dureeMinutes: 60 });
+  assert.ok(slots.includes(creneau(9, 0)));
+  assert.ok(slots.includes(creneau(11, 0)));
+});
+
 test('aucun collaborateur fourni : aucune disponibilité (pas de division par zéro / boucle infinie)', () => {
   const slots = creneauxLibres({ ...FENETRE_LUNDI_SEUL, occupePar: {}, dureeMinutes: 60 });
   assert.deepEqual(slots, []);

@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { resolveCalEvent } from './_lib/cal-mapping.js';
 import { obtenirJetonAccesGoogle } from './_lib/google-service-account.js';
 import { creneauxLibres } from './_lib/creneaux-libres.js';
+import { recupererCalendriersAgents } from './_lib/agents-calendriers.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { minuitParisEnUTC, moisActuelParis } from './_lib/fuseau-paris.js';
 
@@ -12,15 +13,20 @@ import { minuitParisEnUTC, moisActuelParis } from './_lib/fuseau-paris.js';
 // disponibles — sans Cal.com : un compte de service Google gratuit lit le
 // libre/occupé de chaque agenda partagé avec lui ("Voir uniquement le
 // libre/occupé"), aucune installation côté collaborateur. Réutilise les
-// durées par typologie déjà définies dans cal-mapping.js.
+// durées par typologie déjà définies dans cal-mapping.js. La liste des
+// agendas à interroger vient du CRM (Paramètres → Agents EDL → email) via
+// recupererCalendriersAgents — ajouter/retirer un collaborateur se fait
+// entièrement depuis le CRM, sans toucher à la configuration Vercel.
 //
 // Règle retenue : un créneau est proposé dès qu'AU MOINS UN collaborateur
 // est libre sur toute sa durée (union des disponibilités) — pas besoin que
-// toute l'équipe le soit, pour répartir librement les missions.
+// toute l'équipe le soit, pour répartir librement les missions. Un tampon
+// de 30 min est respecté avant/après chaque rendez-vous existant (temps de
+// trajet entre deux missions).
 //
-// Fonctionnalité désactivée par défaut : tant que
-// GOOGLE_FREEBUSY_SERVICE_ACCOUNT_EMAIL / _KEY / GOOGLE_FREEBUSY_CALENDARS ne
-// sont pas toutes les trois configurées, cet endpoint répond "aucun
+// Fonctionnalité désactivée par défaut : tant que le compte de service
+// (GOOGLE_FREEBUSY_SERVICE_ACCOUNT_EMAIL / _KEY) n'est pas configuré, ou
+// qu'aucun agent du CRM n'a d'email renseigné, cet endpoint répond "aucun
 // créneau" et le formulaire public bascule sur la saisie de date libre
 // existante — comportement inchangé jusqu'à activation volontaire.
 const FREEBUSY_URL = 'https://www.googleapis.com/calendar/v3/freeBusy';
@@ -32,6 +38,7 @@ const HEURE_OUVERTURE = 9;
 const HEURE_FERMETURE = 19;
 const JOURS_OUVRES = [1, 2, 3, 4, 5, 6]; // lundi à samedi
 const PAS_MINUTES = 30;
+const TAMPON_MINUTES = 30;
 
 export default async function handler(req) {
   const headers = {
@@ -54,9 +61,8 @@ export default async function handler(req) {
 
   const email = process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_EMAIL;
   const cleBrute = process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_KEY;
-  const calendriers = (process.env.GOOGLE_FREEBUSY_CALENDARS || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (!email || !cleBrute || calendriers.length === 0) {
-    return repli({ debug: 'Compte de service ou liste de calendriers absents des variables d\'environnement' });
+  if (!email || !cleBrute) {
+    return repli({ debug: 'Compte de service absent des variables d\'environnement' });
   }
   // Vercel n'accepte pas toujours les retours à la ligne littéraux dans une
   // variable d'environnement : la clé peut y être collée avec des "\n"
@@ -70,6 +76,11 @@ export default async function handler(req) {
     const evt = resolveCalEvent(bienTypo, meuble);
     if (!evt) {
       return repli({ debug: 'Type de bien non reconnu', bienTypo, meuble });
+    }
+
+    const calendriers = await recupererCalendriersAgents(process.env.DEFAULT_OWNER_ID, process.env.SUPABASE_SERVICE_KEY);
+    if (calendriers.length === 0) {
+      return repli({ debug: 'Aucun agent avec un email renseigné dans le CRM (Paramètres → Agents EDL)' });
     }
 
     // Mois calendaire affiché, même logique que cal-availability.js :
@@ -125,6 +136,7 @@ export default async function handler(req) {
       heureFermeture: HEURE_FERMETURE,
       joursOuvres: JOURS_OUVRES,
       pasMinutes: PAS_MINUTES,
+      tamponMinutes: TAMPON_MINUTES,
     });
 
     const body = {

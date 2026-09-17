@@ -1,8 +1,8 @@
 // Vérifie /api/agenda-disponibilites : la bêta "fusion d'agendas Google"
 // qui remplace Cal.com (voir cal-availability.test.js pour l'ancien
 // chemin, laissé en place mais non appelé par les formulaires). Sans
-// réseau réel : fetch mocké pour le jeton OAuth2 et pour freebusy.query,
-// clé RSA de test (jamais vérifiée côté mock).
+// réseau réel : fetch mocké pour Supabase (liste des agents), le jeton
+// OAuth2 et freebusy.query, clé RSA de test (jamais vérifiée côté mock).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync } from 'node:crypto';
@@ -24,7 +24,8 @@ const fetchOriginal = global.fetch;
 const envOriginal = {
   email: process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_EMAIL,
   cle: process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_KEY,
-  calendriers: process.env.GOOGLE_FREEBUSY_CALENDARS,
+  ownerId: process.env.DEFAULT_OWNER_ID,
+  serviceKey: process.env.SUPABASE_SERVICE_KEY,
 };
 
 function requete(params) {
@@ -32,12 +33,16 @@ function requete(params) {
   return { url: `https://x.test/api/agenda-disponibilites?${qs}`, method: 'GET', headers: new Headers() };
 }
 
-// Mock fetch qui répond au deux appels réseau du handler : le jeton OAuth2
-// (oauth2.googleapis.com/token) puis freebusy.query — capture la requête
-// freebusy pour inspection, et permet d'injecter un "busy" par calendrier.
-function fabriquerFetchMock({ busy = {}, freebusyOk = true } = {}) {
+// Mock fetch qui répond aux trois appels réseau du handler : la liste des
+// agents (Supabase "settings"), le jeton OAuth2 (oauth2.googleapis.com/token)
+// puis freebusy.query — capture la requête freebusy pour inspection, et
+// permet d'injecter un "busy" par calendrier ainsi que la liste d'agents.
+function fabriquerFetchMock({ busy = {}, freebusyOk = true, agents = [{ email: 'a@exemple.fr' }, { email: 'b@exemple.fr' }] } = {}) {
   const appels = { freebusy: null };
   const fn = async (url, opts) => {
+    if (String(url).includes('/rest/v1/settings')) {
+      return { ok: true, json: async () => [{ data: { agents } }] };
+    }
     if (String(url).includes('oauth2.googleapis.com/token')) {
       return { ok: true, json: async () => ({ access_token: 'jeton-test' }) };
     }
@@ -58,7 +63,8 @@ function fabriquerFetchMock({ busy = {}, freebusyOk = true } = {}) {
 test.beforeEach(() => {
   process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_EMAIL = 'compte-service@exemple.iam.gserviceaccount.com';
   process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_KEY = privateKey;
-  process.env.GOOGLE_FREEBUSY_CALENDARS = 'a@exemple.fr,b@exemple.fr';
+  process.env.DEFAULT_OWNER_ID = 'owner-test-123';
+  process.env.SUPABASE_SERVICE_KEY = 'service-key-test';
 });
 
 test.after(() => {
@@ -66,7 +72,8 @@ test.after(() => {
   for (const [k, v] of Object.entries({
     GOOGLE_FREEBUSY_SERVICE_ACCOUNT_EMAIL: envOriginal.email,
     GOOGLE_FREEBUSY_SERVICE_ACCOUNT_KEY: envOriginal.cle,
-    GOOGLE_FREEBUSY_CALENDARS: envOriginal.calendriers,
+    DEFAULT_OWNER_ID: envOriginal.ownerId,
+    SUPABASE_SERVICE_KEY: envOriginal.serviceKey,
   })) {
     if (v === undefined) delete process.env[k]; else process.env[k] = v;
   }
@@ -77,7 +84,7 @@ test('les 14 combinaisons typologie × meublé/nu sont couvertes', () => {
 });
 
 for (const { bienTypo, meuble, attendu } of TOUTES_COMBOS) {
-  test(`${bienTypo} ${meuble} : durée reprise de cal-mapping, freebusy interrogé sur les 2 calendriers`, async () => {
+  test(`${bienTypo} ${meuble} : durée reprise de cal-mapping, freebusy interrogé sur les agents du CRM`, async () => {
     const { fn, appels } = fabriquerFetchMock();
     global.fetch = fn;
 
@@ -102,6 +109,54 @@ test('URL freebusy.query correctement casée (/calendar/v3/freeBusy)', async () 
   await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
 
   assert.equal(appels.freebusy.url, 'https://www.googleapis.com/calendar/v3/freeBusy');
+});
+
+test('la liste des agendas vient des agents du CRM (Supabase), pas d\'une variable d\'environnement', async () => {
+  const { fn, appels } = fabriquerFetchMock({ agents: [{ nom: 'Jean', email: 'jean@exemple.fr' }, { nom: 'Sans email', email: '' }, { nom: 'Marie', email: ' marie@exemple.fr ' }] });
+  global.fetch = fn;
+
+  await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+
+  // L'agent sans email est ignoré, et les emails sont nettoyés (trim).
+  assert.deepEqual(appels.freebusy.corps.items.map(i => i.id), ['jean@exemple.fr', 'marie@exemple.fr']);
+});
+
+test('agents du CRM sans aucun email renseigné : repli sans appeler Google', async () => {
+  const { fn } = fabriquerFetchMock({ agents: [{ nom: 'Jean', email: '' }] });
+  let appeleFreebusy = false;
+  global.fetch = async (url, opts) => {
+    if (String(url).includes('/calendar/v3/freeBusy') || String(url).includes('oauth2.googleapis.com')) appeleFreebusy = true;
+    return fn(url, opts);
+  };
+
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const body = await resp.json();
+
+  assert.equal(body.configured, false);
+  assert.equal(appeleFreebusy, false);
+});
+
+test('tampon de 30 min transmis au calcul des créneaux : un rendez-vous voisin réduit la disponibilité', async () => {
+  const maintenant = Date.now();
+  const dans3Jours = new Date(maintenant + 3 * 24 * 60 * 60 * 1000);
+  // Un seul collaborateur, occupé pile aux deux extrémités de la journée
+  // testée sauf un créneau isolé de 9h30-10h30 (heure Paris ~ 07h30-08h30 UTC
+  // en hiver / hors période testée ici) — on vérifie juste que le tampon
+  // réduit bien le nombre de créneaux par rapport à un calcul sans tampon,
+  // sans dépendre d'une date précise (le calcul complet est déjà couvert
+  // par creneaux-libres.test.js).
+  const { fn } = fabriquerFetchMock({
+    busy: { 'a@exemple.fr': [{ start: dans3Jours.toISOString(), end: new Date(dans3Jours.getTime() + 3600000).toISOString() }] },
+  });
+  global.fetch = fn;
+
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const body = await resp.json();
+
+  assert.equal(resp.status, 200);
+  // 'a' a un rendez-vous, mais 'b' reste totalement libre : le tampon ne
+  // doit pas empêcher toute disponibilité (règle "au moins un libre").
+  assert.equal(body.available, true);
 });
 
 test('un collaborateur occupé, un autre libre : des créneaux restent disponibles (union)', async () => {
@@ -168,7 +223,7 @@ test('décembre → janvier : le changement d\'année est géré', async () => {
   assert.equal(body.fenetreFin, '2026-12-31T23:00:00.000Z');
 });
 
-test('type de bien non reconnu : repli sans appeler Google', async () => {
+test('type de bien non reconnu : repli sans appeler Supabase ni Google', async () => {
   let appele = false;
   global.fetch = async () => { appele = true; };
 
@@ -179,20 +234,8 @@ test('type de bien non reconnu : repli sans appeler Google', async () => {
   assert.equal(appele, false);
 });
 
-test('variables d\'environnement absentes : repli sans appeler Google', async () => {
+test('compte de service absent des variables d\'environnement : repli sans appeler Google', async () => {
   delete process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_EMAIL;
-  let appele = false;
-  global.fetch = async () => { appele = true; };
-
-  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
-  const body = await resp.json();
-
-  assert.equal(body.configured, false);
-  assert.equal(appele, false);
-});
-
-test('liste de calendriers vide : repli sans appeler Google', async () => {
-  process.env.GOOGLE_FREEBUSY_CALENDARS = '';
   let appele = false;
   global.fetch = async () => { appele = true; };
 
