@@ -214,6 +214,8 @@ function populateExpertDropdown(selectedId){
 }
 
 // ─── AGENTS EDL ────────────────────────────────────────────
+let _editingAgentId = null;
+
 function renderAgentsSettings(){
   const wrap = document.getElementById('agents-list');
   if(!wrap) return;
@@ -224,11 +226,43 @@ function renderAgentsSettings(){
   wrap.innerHTML = DB.agents.map(a => `
     <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px">
       <div style="flex:1">
-        <div style="font-size:12px;font-weight:600">${a.nom}</div>
-        <div style="font-size:11px;color:var(--text2)">📱 ${a.tel || '—'}${a.email ? ' · 📅 ' + a.email : ''}${a.secteurs ? ' · 📍 ' + a.secteurs : ''}</div>
+        <div style="font-size:12px;font-weight:600">${esc(a.nom)}</div>
+        <div style="font-size:11px;color:var(--text2)">📱 ${esc(a.tel) || '—'}${a.email ? ' · 📅 ' + esc(a.email) : ''}${a.secteurs ? ' · 📍 ' + esc(a.secteurs) : ''}</div>
       </div>
+      <button class="btn btn-sm" onclick="editerAgent('${a.id}')"><i class="ti ti-pencil"></i></button>
       <button class="btn btn-sm" onclick="removeAgent('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
     </div>`).join('');
+}
+
+function editerAgent(id){
+  const agent = (DB.agents || []).find(a => a.id === id);
+  if(!agent) return;
+  _editingAgentId = id;
+  document.getElementById('new-agent-nom').value = agent.nom || '';
+  document.getElementById('new-agent-tel').value = agent.tel || '';
+  const emailEl = document.getElementById('new-agent-email');
+  const secteursEl = document.getElementById('new-agent-secteurs');
+  if(emailEl) emailEl.value = agent.email || '';
+  if(secteursEl) secteursEl.value = agent.secteurs || '';
+  const submitBtn = document.getElementById('agent-submit-btn');
+  if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-check"></i> Enregistrer les modifications';
+  const cancelBtn = document.getElementById('agent-cancel-btn');
+  if(cancelBtn) cancelBtn.style.display = '';
+  document.getElementById('new-agent-nom').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function annulerEditionAgent(){
+  _editingAgentId = null;
+  document.getElementById('new-agent-nom').value = '';
+  document.getElementById('new-agent-tel').value = '';
+  const emailEl = document.getElementById('new-agent-email');
+  const secteursEl = document.getElementById('new-agent-secteurs');
+  if(emailEl) emailEl.value = '';
+  if(secteursEl) secteursEl.value = '';
+  const submitBtn = document.getElementById('agent-submit-btn');
+  if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-user-plus"></i> Ajouter cet agent';
+  const cancelBtn = document.getElementById('agent-cancel-btn');
+  if(cancelBtn) cancelBtn.style.display = 'none';
 }
 
 function addAgent(){
@@ -242,15 +276,20 @@ function addAgent(){
   const secteurs = (secteursEl ? secteursEl.value : '').trim();
   if(!nom){ notify('⚠️ Le nom de l\'agent est requis', 'warn'); return; }
   if(!DB.agents) DB.agents = [];
-  DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, secteurs });
+
+  if(_editingAgentId){
+    const agent = DB.agents.find(a => a.id === _editingAgentId);
+    if(agent){ Object.assign(agent, { nom, tel, email, secteurs }); }
+    _editingAgentId = null;
+  } else {
+    DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, secteurs });
+  }
+
   saveToStorage();
   persistAgents();
-  nomEl.value = '';
-  telEl.value = '';
-  if(emailEl) emailEl.value = '';
-  if(secteursEl) secteursEl.value = '';
+  annulerEditionAgent();
   renderAgentsSettings();
-  notify('✅ Agent ajouté');
+  notify('✅ Agent enregistré');
 }
 
 // Sauvegarde ciblée des agents dans Supabase (settings), sans lire le
@@ -272,6 +311,7 @@ function removeAgent(id){
   DB.agents = DB.agents.filter(a => a.id !== id);
   saveToStorage();
   persistAgents();
+  if(_editingAgentId === id) annulerEditionAgent();
   renderAgentsSettings();
 }
 
