@@ -228,6 +228,7 @@ function saveEditMission(){
   if(!m) return;
 
   const statutAvant = m.statut;
+  const dateAvant = m.date;
 
   m.agence      = document.getElementById('m-agence').value.trim();
   m.emailClient = document.getElementById('m-email').value.trim();
@@ -248,6 +249,11 @@ function saveEditMission(){
   // locataire(s) — jusqu'ici seule la suppression pure existait pour
   // annuler, sans jamais avertir personne (voir audit du 12/09).
   const vientDetreAnnulee = m.statut === 'annulée' && statutAvant !== 'annulée' && m.rdvConfirme;
+  // Idem pour un simple changement de date/heure depuis cette modale : sans
+  // ça, un locataire déjà convoqué (confirmation envoyée) ne sait jamais
+  // qu'on a bougé son créneau tant qu'il n'a pas relu le rappel J-1 (voire
+  // pas du tout s'il ne l'ouvre pas) — cf. cas réel du 19/09 (12h -> 11h).
+  const dateAChange = m.date !== dateAvant && m.rdvConfirme && !vientDetreAnnulee;
 
   saveToStorage();
   if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
@@ -266,6 +272,60 @@ function saveEditMission(){
   renderDashboard();
 
   if(vientDetreAnnulee) notifierAnnulationMission(m);
+  else if(dateAChange) notifierChangementHoraireMission(m, dateAvant);
+}
+
+// Prévient par email l'agence et le(s) locataire(s) déjà convoqués qu'un
+// RDV confirmé change de date/heure — même déclencheur que
+// notifierAnnulationMission (convocations déjà parties), pour la même
+// raison : sans ça le changement passe inaperçu tant que le rappel J-1
+// n'a pas été relu.
+async function notifierChangementHoraireMission(m, ancienneDateIso){
+  const destinataires = new Set();
+  if(m.emailClient) destinataires.add(m.emailClient.trim());
+  if(m.locataireEmail) destinataires.add(m.locataireEmail.trim());
+  (m.locataires || []).forEach(l => { if(l && l.email) destinataires.add(l.email.trim()); });
+  (m.locatairesEntrants || []).forEach(e => { if(e && e.email) destinataires.add(e.email.trim()); });
+  destinataires.delete('');
+  if(destinataires.size === 0) return;
+
+  const fmt = (iso) => {
+    if(!iso) return '';
+    const d = new Date(iso);
+    const dateStr = d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const heureStr = d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    return `${dateStr} à ${heureStr}`;
+  };
+  const avant = fmt(ancienneDateIso);
+  const apres = fmt(m.date);
+  const sujet = `RDV déplacé${m.adresse ? ' — ' + m.adresse : ''}`;
+  const corps = `Le rendez-vous d'état des lieux${m.adresse ? ' au ' + m.adresse : ''} a été déplacé.`
+    + (avant ? `\n\nAncien horaire : ${avant}` : '')
+    + `\nNouvel horaire : ${apres}`
+    + `\n\nPour toute question, contactez-nous directement.`;
+
+  try {
+    const tk = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    let nbOk = 0;
+    for(const dest of destinataires){
+      const resp = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
+        body: JSON.stringify({
+          sender: { name: 'EDL IDF', email: 'contact@edl-idf.com' },
+          to: [{ email: dest }],
+          subject: sujet,
+          htmlContent: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${corps.replace(/\n/g,'<br>')}</div>`,
+          textContent: corps
+        })
+      });
+      if(resp.ok) nbOk++;
+    }
+    if(nbOk > 0) notify(`📧 Changement d'horaire notifié à ${nbOk} destinataire${nbOk>1?'s':''}.`);
+    if(nbOk < destinataires.size) notify('⚠️ Certaines notifications de changement d\'horaire n\'ont pas pu être envoyées.', 'warn');
+  } catch(e) {
+    notify('⚠️ Horaire modifié, mais la notification par email a échoué — préviens l\'agence et le locataire directement.', 'warn');
+  }
 }
 
 // Prévient par email l'agence et le(s) locataire(s) déjà convoqués qu'un
