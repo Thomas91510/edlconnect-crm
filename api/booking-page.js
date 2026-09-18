@@ -87,6 +87,10 @@ label:first-child{margin-top:0}
 label .req{color:#e53e3e}
 input,select,textarea{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-size:13px;background:var(--white);color:var(--text);font-family:inherit;outline:none;transition:border-color .15s}
 input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.adresse-suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.08);max-height:220px;overflow-y:auto}
+.adresse-suggestion{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)}
+.adresse-suggestion:last-child{border-bottom:none}
+.adresse-suggestion:hover,.adresse-suggestion.actif{background:var(--blue-light);color:var(--blue-dark)}
 textarea{min-height:75px;resize:vertical}
 .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .type-btn{border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;background:#fff;text-align:left;transition:all .15s;font-family:inherit;width:100%}
@@ -211,7 +215,10 @@ textarea{min-height:75px;resize:vertical}
       <div class="card-head"><i class="ti ti-home"></i>Adresse du bien</div>
       <div class="card-body">
         <label>Adresse complète <span class="req">*</span></label>
-        <input type="text" id="adresse" placeholder="12 rue de la Paix, 91000 Évry">
+        <div style="position:relative">
+          <input type="text" id="adresse" placeholder="12 rue de la Paix, 91000 Évry" autocomplete="off">
+          <div id="adresse-suggestions" class="adresse-suggestions" style="display:none"></div>
+        </div>
         <div class="form-row">
           <div><label>Type de bien</label><select id="btype"><option value="">— Choisir —</option><option>Appartement</option><option>Maison</option></select></div>
           <div><label>Typologie</label><select id="btypo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
@@ -372,6 +379,56 @@ let type = '';
 // Date min = demain
 const tom = new Date(); tom.setDate(tom.getDate()+1);
 document.getElementById('date').min = tom.toISOString().split('T')[0];
+
+// ─── Autocomplétion adresse (API Adresse — adresse.data.gouv.fr) ───────
+// Base Adresse Nationale officielle : évite les erreurs de code postal/ville
+// en proposant l'adresse exacte plutôt que de laisser une saisie 100% libre.
+// API publique, sans clé, dégrade silencieusement vers la saisie libre
+// existante si elle est indisponible (aucune régression possible).
+let _adresseRequeteEnCours = 0;
+let _adresseTimer = null;
+const _adresseInput = document.getElementById('adresse');
+const _adresseSuggestions = document.getElementById('adresse-suggestions');
+
+_adresseInput.addEventListener('input', () => {
+  clearTimeout(_adresseTimer);
+  const q = _adresseInput.value.trim();
+  if(q.length < 3){ _adresseSuggestions.style.display = 'none'; return; }
+  _adresseTimer = setTimeout(() => rechercherAdresse(q), 300);
+});
+
+document.addEventListener('click', (e) => {
+  if(e.target !== _adresseInput && !_adresseSuggestions.contains(e.target)) {
+    _adresseSuggestions.style.display = 'none';
+  }
+});
+
+async function rechercherAdresse(q){
+  const requeteId = ++_adresseRequeteEnCours;
+  try {
+    const resp = await fetch('https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(q) + '&limit=5');
+    if(requeteId !== _adresseRequeteEnCours) return; // saisie plus récente entre-temps : réponse obsolète
+    if(!resp.ok){ _adresseSuggestions.style.display = 'none'; return; }
+    const data = await resp.json();
+    const features = (data && data.features) || [];
+    _adresseSuggestions.innerHTML = '';
+    features.forEach(f => {
+      const label = (f.properties && f.properties.label) || '';
+      if(!label) return;
+      const item = document.createElement('div');
+      item.className = 'adresse-suggestion';
+      item.textContent = label;
+      item.onclick = () => {
+        _adresseInput.value = label;
+        _adresseSuggestions.style.display = 'none';
+      };
+      _adresseSuggestions.appendChild(item);
+    });
+    _adresseSuggestions.style.display = _adresseSuggestions.children.length ? 'block' : 'none';
+  } catch(e) {
+    _adresseSuggestions.style.display = 'none'; // dégradation silencieuse, saisie libre conservée
+  }
+}
 
 function selType(t, btn){
   type = t;
