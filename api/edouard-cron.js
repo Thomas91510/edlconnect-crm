@@ -20,6 +20,21 @@ async function identiteAbonne(supaUrl, supaKey, userId) {
 // Correspondance des types d'etat des lieux chez Edouard
 const LIBELLE_TYPE = { 1: "d'entree", 2: 'de sortie' }; // limite de missions traitées par exécution
 
+// Un meme logement Edouard accumule les EDL de tous les locataires successifs
+// (entree du precedent, sortie du precedent, entree du suivant, ...). Sans ce
+// garde-fou, la premiere synchro d'une mission nouvellement creee sur un bien
+// deja connu d'Edouard rapatrie n'importe quel EDL "non encore traite pour
+// CETTE mission" - y compris un rapport vieux de plusieurs mois qui concerne
+// un tout autre locataire - et marque la mission comme terminee a tort.
+const FENETRE_JOURS_EDL = 5;
+
+function typeEdouardAttendu(missionType) {
+  const t = String(missionType || '').toLowerCase();
+  if (t.includes('sortant')) return 2;
+  if (t.includes('entrant')) return 1;
+  return null; // type non reconnu (ex. pre-etat des lieux) : pas de filtre par type
+}
+
 // Normalise une adresse pour une comparaison tolerante
 function normAdr(s) {
   return String(s || '')
@@ -187,10 +202,23 @@ export default async function handler(req) {
       const dejaFaits = Array.isArray(md.edouardSituationsTraitees) ? md.edouardSituationsTraitees.slice() : [];
       // Compatibilite : rapports recuperes avant la gestion multi-EDL
       if (md.edouardSituationId && dejaFaits.indexOf(md.edouardSituationId) === -1) dejaFaits.push(md.edouardSituationId);
+      const typeAttendu = typeEdouardAttendu(md.type);
+      const dateMission = md.date ? new Date(md.date) : null;
       const aFaire = toutesSituations.filter(function (s) {
         const aid = s && (s.accommodationID || s.accommodationId);
         if (!aid || idsAcceptes.indexOf(aid) === -1) return false;
-        return s.id && dejaFaits.indexOf(s.id) === -1;
+        if (!s.id || dejaFaits.indexOf(s.id) !== -1) return false;
+        // Entree vs sortie : ne jamais rapatrier le rapport d'un autre type
+        // d'EDL que celui prevu pour cette mission.
+        if (typeAttendu != null && s.type != null && s.type !== typeAttendu) return false;
+        // Le logement peut avoir accueilli d'autres EDL, pour d'autres
+        // locataires, a une toute autre periode : n'accepter que celui proche
+        // de la date planifiee de CETTE mission.
+        if (dateMission && s.date) {
+          const ecartJours = Math.abs(new Date(s.date) - dateMission) / 86400000;
+          if (ecartJours > FENETRE_JOURS_EDL) return false;
+        }
+        return true;
       });
       aFaire.sort(function (a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
       if (aFaire.length > 0) travail.push({ row: row, situations: aFaire });
