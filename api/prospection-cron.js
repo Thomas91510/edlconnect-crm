@@ -14,13 +14,24 @@ export const config = { runtime: 'edge' };
 //
 // Contrairement au scénario Make (5 opérations Make par contact : recherche,
 // lecture quota, envoi, 2 mises à jour), tout l'état est lu UNE fois en
-// début de run et écrit UNE fois en fin de run (upsert group), ce qui évite
-// à la fois l'explosion de coût et la course "clé en double" déjà rencontrée
-// avec Make sur un envoi concurrent.
+// début de run ; en revanche chaque envoi réussi est aussitôt persisté (voir
+// `persister` plus bas), au lieu d'accumuler les écritures pour un unique
+// upsert final. Un run du 14/09 avait migré 250 contacts avec le même
+// horodatage `sentAt1` à la minute près : arrivés tous en même temps au
+// seuil J+4, ils ont fait dépasser le temps d'exécution de la fonction les
+// 19 et 20/09 (~200 envois séquentiels d'un coup) et le run a été interrompu
+// avant d'avoir rien écrit — silence total, aucune erreur, et un risque de
+// double envoi si les mêmes contacts étaient retentés au run suivant sans
+// que leur envoi précédent soit su. Écrire immédiatement après chaque envoi,
+// plus un plafond `MAX_ENVOIS_PAR_RUN` bornant la durée du run (cf.
+// `MAX_PAR_RUN` dans edouard-cron.js), rend chaque envoi définitif dès qu'il
+// a lieu et étale un gros arriéré sur plusieurs jours plutôt que de risquer
+// de tout reperdre d'un coup.
 
 const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 const TABLE = 'prospection';
 const QUOTA_JOUR = 250;
+const MAX_ENVOIS_PAR_RUN = 60;
 
 // Templates Brevo (créés le 12/09, mêmes IDs que dans le scénario Make) :
 // stage 1 = premier email (nouveaux prospects), stage 2 = relance J+4,
@@ -54,6 +65,23 @@ async function listerContactsBrevo(BREVO_KEY, listId) {
   if (!resp.ok) return [];
   const body = await resp.json();
   return (body.contacts || []).map(c => c.email).filter(Boolean);
+}
+
+// Upsert immédiat (contact + compteur du jour) après CHAQUE envoi réussi,
+// plutôt qu'un batch accumulé écrit une seule fois en fin de run : voir la
+// note en tête de fichier sur l'incident du 19-20/09.
+async function persister(SUPABASE_URL, SUPABASE_SERVICE_KEY, lignes) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=id`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(lignes.map(l => ({ id: l.id, data: l.data, updated_at: new Date().toISOString() })))
+  });
+  return resp.ok;
 }
 
 export default async function handler(req) {
@@ -90,13 +118,14 @@ export default async function handler(req) {
     const etat = new Map(rows.map(r => [r.id, r.data || {}]));
     let quotaCount = (etat.get(`quota:${aujourdHui}`) || {}).quotaCount || 0;
 
-    const ecritures = []; // upserts à appliquer en fin de run
     let envoyes1 = 0, envoyes2 = 0, envoyes3 = 0;
+    let envoyesCeRun = 0;
     const erreurs = [];
+    const ligneQuota = () => ({ id: `quota:${aujourdHui}`, data: { quotaDate: aujourdHui, quotaCount } });
 
     // ── Route 1 : relance J+4 (stage 1 → 2) ──
     for (const [id, d] of etat) {
-      if (quotaCount >= QUOTA_JOUR) break;
+      if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
       if (!d || d.stage !== 1 || d.clickedAt) continue;
       if (!d.sentAt1 || new Date(d.sentAt1) > seuilStage1) continue;
       try {
@@ -104,7 +133,11 @@ export default async function handler(req) {
         if (ok) {
           quotaCount++;
           envoyes2++;
-          ecritures.push({ id, data: { ...d, stage: 2, sentAt2: new Date().toISOString() } });
+          envoyesCeRun++;
+          const nouvelleDonnee = { ...d, stage: 2, sentAt2: new Date().toISOString() };
+          etat.set(id, nouvelleDonnee);
+          const ecrit = await persister(SUPABASE_URL, SUPABASE_SERVICE_KEY, [{ id, data: nouvelleDonnee }, ligneQuota()]);
+          if (!ecrit) erreurs.push({ email: d.email || id, etape: 'ecriture-etat-relance-j4' });
         } else {
           erreurs.push({ email: d.email || id, etape: 'relance-j4' });
         }
@@ -113,7 +146,7 @@ export default async function handler(req) {
 
     // ── Route 2 : relance J+6 (stage 2 → 3) ──
     for (const [id, d] of etat) {
-      if (quotaCount >= QUOTA_JOUR) break;
+      if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
       if (!d || d.stage !== 2 || d.clickedAt) continue;
       if (!d.sentAt2 || new Date(d.sentAt2) > seuilStage2) continue;
       try {
@@ -121,7 +154,11 @@ export default async function handler(req) {
         if (ok) {
           quotaCount++;
           envoyes3++;
-          ecritures.push({ id, data: { ...d, stage: 3 } });
+          envoyesCeRun++;
+          const nouvelleDonnee = { ...d, stage: 3 };
+          etat.set(id, nouvelleDonnee);
+          const ecrit = await persister(SUPABASE_URL, SUPABASE_SERVICE_KEY, [{ id, data: nouvelleDonnee }, ligneQuota()]);
+          if (!ecrit) erreurs.push({ email: d.email || id, etape: 'ecriture-etat-relance-j6' });
         } else {
           erreurs.push({ email: d.email || id, etape: 'relance-j6' });
         }
@@ -130,43 +167,25 @@ export default async function handler(req) {
 
     // ── Route 3 : nouveaux prospects (listes Brevo) ──
     for (const listId of LISTES_PROSPECTS) {
-      if (quotaCount >= QUOTA_JOUR) break;
+      if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
       const emails = await listerContactsBrevo(BREVO_KEY, listId);
       for (const email of emails) {
-        if (quotaCount >= QUOTA_JOUR) break;
+        if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
         if (etat.has(email)) continue; // déjà contacté (ou en cours dans ce run)
         try {
           const ok = await envoyerTemplate(BREVO_KEY, email, TEMPLATES[1]);
           if (ok) {
             quotaCount++;
             envoyes1++;
+            envoyesCeRun++;
             const donnees = { email, stage: 1, sentAt1: new Date().toISOString() };
             etat.set(email, donnees); // marque comme traité pour les listes suivantes
-            ecritures.push({ id: email, data: donnees });
+            const ecrit = await persister(SUPABASE_URL, SUPABASE_SERVICE_KEY, [{ id: email, data: donnees }, ligneQuota()]);
+            if (!ecrit) erreurs.push({ email, etape: 'ecriture-etat-nouveau-prospect' });
           } else {
             erreurs.push({ email, etape: 'nouveau-prospect' });
           }
         } catch (e) { erreurs.push({ email, etape: 'nouveau-prospect', message: e.message }); }
-      }
-    }
-
-    // Compteur du jour, écrit une seule fois à la fin.
-    ecritures.push({ id: `quota:${aujourdHui}`, data: { quotaDate: aujourdHui, quotaCount } });
-
-    if (ecritures.length) {
-      const upsertResp = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=id`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates,return=minimal'
-        },
-        body: JSON.stringify(ecritures.map(e => ({ id: e.id, data: e.data, updated_at: new Date().toISOString() })))
-      });
-      if (!upsertResp.ok) {
-        const err = await upsertResp.text();
-        erreurs.push({ etape: 'ecriture-etat', message: err });
       }
     }
 
