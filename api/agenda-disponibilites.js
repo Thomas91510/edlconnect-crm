@@ -6,6 +6,8 @@ import { creneauxLibres } from './_lib/creneaux-libres.js';
 import { recupererCalendriersAgents } from './_lib/agents-calendriers.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { minuitParisEnUTC, moisActuelParis } from './_lib/fuseau-paris.js';
+import { resoudreOwnerId } from './_lib/resoudre-owner.js';
+import { SUPABASE_URL } from './_lib/supabase.js';
 
 // Endpoint public (appelé depuis le formulaire de réservation en ligne, non
 // authentifié) qui fusionne les agendas Google ("libre/occupé" uniquement)
@@ -14,9 +16,13 @@ import { minuitParisEnUTC, moisActuelParis } from './_lib/fuseau-paris.js';
 // libre/occupé de chaque agenda partagé avec lui ("Voir uniquement le
 // libre/occupé"), aucune installation côté collaborateur. Réutilise les
 // durées par typologie déjà définies dans cal-mapping.js. La liste des
-// agendas à interroger vient du CRM (Paramètres → Agents EDL → email) via
-// recupererCalendriersAgents — ajouter/retirer un collaborateur se fait
-// entièrement depuis le CRM, sans toucher à la configuration Vercel.
+// agendas à interroger vient du CRM de l'AGENCE PROPRIÉTAIRE DE CE LIEN
+// (Paramètres → Agents EDL → email), l'agence étant résolue via
+// resoudreOwnerId (mêmes identifiants agencyId/contactId/email/agence que
+// booking-request.js) — jamais un compte fixe, pour que chaque abonné du
+// CRM ne voie et ne mélange que ses propres agendas. Ajouter/retirer un
+// collaborateur se fait entièrement depuis le CRM, sans toucher à la
+// configuration Vercel.
 //
 // Règle retenue : un créneau est proposé dès qu'AU MOINS UN collaborateur
 // est libre sur toute sa durée (union des disponibilités) — pas besoin que
@@ -83,7 +89,23 @@ export default async function handler(req) {
     // sinon aucun filtrage (cf. agentCouvreSecteur dans agents-calendriers.js).
     const codePostal = (url.searchParams.get('cp') || '').replace(/\D/g, '').slice(0, 5);
 
-    const calendriers = await recupererCalendriersAgents(process.env.DEFAULT_OWNER_ID, process.env.SUPABASE_SERVICE_KEY, codePostal);
+    // Résout l'agence propriétaire de ce lien (même identifiants que
+    // booking-request.js) plutôt qu'un compte fixe : sans ça, tous les
+    // abonnés du CRM verraient/partageraient les agendas d'un seul compte
+    // par défaut dès que cette fonctionnalité est activée pour plusieurs
+    // agences. DEFAULT_OWNER_ID reste le repli si aucun identifiant d'agence
+    // n'est fourni (compat extranet interne, ou lien sans ces paramètres).
+    const ownerId = await resoudreOwnerId({
+      supabaseUrl: SUPABASE_URL,
+      serviceKey: process.env.SUPABASE_SERVICE_KEY,
+      agencyId: url.searchParams.get('agencyId') || '',
+      contactId: url.searchParams.get('contactId') || '',
+      email: url.searchParams.get('email') || '',
+      agence: url.searchParams.get('agence') || '',
+      ownerParDefaut: process.env.DEFAULT_OWNER_ID,
+    });
+
+    const calendriers = await recupererCalendriersAgents(ownerId, process.env.SUPABASE_SERVICE_KEY, codePostal);
     if (calendriers.length === 0) {
       return repli({ debug: 'Aucun agent disponible pour ce secteur ou avec un email renseigné dans le CRM (Paramètres → Agents EDL)' });
     }
@@ -162,7 +184,7 @@ export default async function handler(req) {
       fenetreDebut: debutMois.toISOString(),
       fenetreFin: finMois.toISOString(),
     };
-    if (debug) { body.debug = 'OK'; body.codePostal = codePostal; body.calendriers = calendriers; body.calendriersEnErreur = calendriersEnErreur; body.fbDataBrut = fbData; }
+    if (debug) { body.debug = 'OK'; body.ownerId = ownerId; body.codePostal = codePostal; body.calendriers = calendriers; body.calendriersEnErreur = calendriersEnErreur; body.fbDataBrut = fbData; }
     return new Response(JSON.stringify(body), { status: 200, headers });
   } catch (e) {
     return repli({ debug: 'Exception : ' + e.message });

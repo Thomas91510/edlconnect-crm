@@ -506,7 +506,7 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
     const moisParam = _creneauxMoisAffiche.annee + '-' + String(_creneauxMoisAffiche.mois).padStart(2,'0');
     const adresseEl = document.getElementById('adresse');
     const cp = _adresseCodePostalConfirme || extraireCodePostal(adresseEl ? adresseEl.value : '');
-    const resp = await fetch('/api/agenda-disponibilites?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam + (cp ? '&cp=' + encodeURIComponent(cp) : ''));
+    const resp = await fetch('/api/agenda-disponibilites?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam + (cp ? '&cp=' + encodeURIComponent(cp) : '') + (AGENCY_ID ? '&agencyId=' + encodeURIComponent(AGENCY_ID) : '') + (CONTACT_ID ? '&contactId=' + encodeURIComponent(CONTACT_ID) : ''));
     if(requeteId !== _creneauxRequeteEnCours) return; // une sélection plus récente a déjà relancé une requête
     loading.style.display = 'none';
     if(!resp.ok){ return; }

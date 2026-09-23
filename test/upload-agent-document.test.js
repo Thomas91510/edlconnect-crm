@@ -1,6 +1,9 @@
-// Vérifie /api/upload-agent-document : réservé à l'administrateur (l'agent
-// ne dépose jamais lui-même son contrat), validations, et rattachement du
-// chemin de stockage à la bonne fiche agent — sans réseau réel.
+// Vérifie /api/upload-agent-document : réservé à l'agence authentifiée
+// agissant sur ses PROPRES agents (jamais l'agent lui-même, qui ne dépose
+// jamais son propre contrat) — pas à un unique admin Lokentia, pour que
+// chaque agence cliente du CRM puisse déposer les documents de ses agents.
+// Validations et rattachement du chemin de stockage à la bonne fiche agent
+// — sans réseau réel.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // SUPABASE_SERVICE_KEY est lue dans une constante au chargement du module
@@ -56,10 +59,12 @@ test('sans jeton : 401 sans appeler le réseau', async () => {
   assert.equal(appele, false);
 });
 
-test('réservé aux administrateurs : un compte non-admin authentifié reçoit 403', async () => {
-  global.fetch = fabriquerFetchMock({ email: 'autre@exemple.fr' }).fn;
+test('un compte authentifié quelconque (pas seulement l\'admin Lokentia) peut déposer un document pour SES agents', async () => {
+  const { fn, appels } = fabriquerFetchMock({ email: 'autre-agence@exemple.fr' });
+  global.fetch = fn;
   const resp = await handler(requete());
-  assert.equal(resp.status, 403);
+  assert.equal(resp.status, 200);
+  assert.ok(appels.upload, 'le fichier aurait dû être envoyé au bucket même pour un compte non-admin');
 });
 
 test('type invalide (autre que contrat/avenant) : 400', async () => {

@@ -2,7 +2,6 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
-import { ADMIN_EMAILS } from './_lib/admin.js';
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BUCKET = 'agent-documents';
@@ -11,11 +10,15 @@ const TYPES_AUTORISES = ['contrat', 'avenant'];
 
 // Dépôt du contrat signé ou d'un avenant pour un Agent EDL — réservé à
 // l'agence (jamais l'agent lui-même) : c'est elle qui dépose ces documents,
-// l'agent ne fait que les consulter (voir agent-document-download.js). Le
-// fichier va dans le bucket Storage privé "agent-documents" (à créer une
-// fois manuellement dans le tableau de bord Supabase, même principe que le
-// bucket "factures") ; seul le CHEMIN de stockage est conservé sur la fiche
-// agent (contratPath/avenantPath), jamais une URL directement exploitable.
+// l'agent ne fait que les consulter (voir agent-document-download.js).
+// "L'agence" = n'importe quel compte CRM authentifié agissant sur ses
+// PROPRES agents (scellé par user.id ci-dessous, jamais un autre compte) —
+// pas un admin Lokentia unique : chaque agence cliente doit pouvoir déposer
+// les documents de ses propres agents. Le fichier va dans le bucket
+// Storage privé "agent-documents" (à créer une fois manuellement dans le
+// tableau de bord Supabase, même principe que le bucket "factures") ; seul
+// le CHEMIN de stockage est conservé sur la fiche agent
+// (contratPath/avenantPath), jamais une URL directement exploitable.
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -50,11 +53,6 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: cors });
     }
     const user = await userResp.json();
-    const callerEmail = (user?.email || '').toLowerCase().trim();
-
-    if (!ADMIN_EMAILS.includes(callerEmail)) {
-      return new Response(JSON.stringify({ error: 'Réservé aux administrateurs' }), { status: 403, headers: cors });
-    }
 
     let form;
     try {
