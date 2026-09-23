@@ -87,10 +87,6 @@ label:first-child{margin-top:0}
 label .req{color:#e53e3e}
 input,select,textarea{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-size:13px;background:var(--white);color:var(--text);font-family:inherit;outline:none;transition:border-color .15s}
 input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
-.adresse-suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.08);max-height:220px;overflow-y:auto}
-.adresse-suggestion{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)}
-.adresse-suggestion:last-child{border-bottom:none}
-.adresse-suggestion:hover,.adresse-suggestion.actif{background:var(--blue-light);color:var(--blue-dark)}
 textarea{min-height:75px;resize:vertical}
 .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .type-btn{border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;background:#fff;text-align:left;transition:all .15s;font-family:inherit;width:100%}
@@ -110,6 +106,12 @@ textarea{min-height:75px;resize:vertical}
 .error{display:none;background:#FCEBEB;color:#A32D2D;border-radius:var(--radius);padding:10px 14px;font-size:12px;margin-bottom:14px}
 .error.show{display:block}
 .hint{font-size:10px;color:var(--text2);margin-top:4px}
+.adresse-wrap{position:relative}
+.adresse-suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:20;max-height:220px;overflow-y:auto;display:none}
+.adresse-suggestions.show{display:block}
+.adresse-suggestion{padding:9px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.adresse-suggestion:last-child{border-bottom:none}
+.adresse-suggestion:hover{background:var(--blue-light);color:var(--blue-dark)}
 .info-box{background:var(--blue-light);border-radius:var(--radius);padding:12px 14px;font-size:11px;color:var(--blue-dark);margin-bottom:16px;line-height:1.7}
 .success{display:none;text-align:center;padding:56px 24px}
 .success-icon{width:70px;height:70px;background:var(--green-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:30px}
@@ -215,9 +217,9 @@ textarea{min-height:75px;resize:vertical}
       <div class="card-head"><i class="ti ti-home"></i>Adresse du bien</div>
       <div class="card-body">
         <label>Adresse complète <span class="req">*</span></label>
-        <div style="position:relative">
-          <input type="text" id="adresse" placeholder="12 rue de la Paix, 91000 Évry" autocomplete="off">
-          <div id="adresse-suggestions" class="adresse-suggestions" style="display:none"></div>
+        <div class="adresse-wrap">
+          <input type="text" id="adresse" placeholder="12 rue de la Paix, 91000 Évry" oninput="onSaisieAdresse()" autocomplete="off">
+          <div id="adresse-suggestions" class="adresse-suggestions"></div>
         </div>
         <div class="form-row">
           <div><label>Type de bien</label><select id="btype"><option value="">— Choisir —</option><option>Appartement</option><option>Maison</option></select></div>
@@ -380,56 +382,6 @@ let type = '';
 const tom = new Date(); tom.setDate(tom.getDate()+1);
 document.getElementById('date').min = tom.toISOString().split('T')[0];
 
-// ─── Autocomplétion adresse (API Adresse — adresse.data.gouv.fr) ───────
-// Base Adresse Nationale officielle : évite les erreurs de code postal/ville
-// en proposant l'adresse exacte plutôt que de laisser une saisie 100% libre.
-// API publique, sans clé, dégrade silencieusement vers la saisie libre
-// existante si elle est indisponible (aucune régression possible).
-let _adresseRequeteEnCours = 0;
-let _adresseTimer = null;
-const _adresseInput = document.getElementById('adresse');
-const _adresseSuggestions = document.getElementById('adresse-suggestions');
-
-_adresseInput.addEventListener('input', () => {
-  clearTimeout(_adresseTimer);
-  const q = _adresseInput.value.trim();
-  if(q.length < 3){ _adresseSuggestions.style.display = 'none'; return; }
-  _adresseTimer = setTimeout(() => rechercherAdresse(q), 300);
-});
-
-document.addEventListener('click', (e) => {
-  if(e.target !== _adresseInput && !_adresseSuggestions.contains(e.target)) {
-    _adresseSuggestions.style.display = 'none';
-  }
-});
-
-async function rechercherAdresse(q){
-  const requeteId = ++_adresseRequeteEnCours;
-  try {
-    const resp = await fetch('https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(q) + '&limit=5');
-    if(requeteId !== _adresseRequeteEnCours) return; // saisie plus récente entre-temps : réponse obsolète
-    if(!resp.ok){ _adresseSuggestions.style.display = 'none'; return; }
-    const data = await resp.json();
-    const features = (data && data.features) || [];
-    _adresseSuggestions.innerHTML = '';
-    features.forEach(f => {
-      const label = (f.properties && f.properties.label) || '';
-      if(!label) return;
-      const item = document.createElement('div');
-      item.className = 'adresse-suggestion';
-      item.textContent = label;
-      item.onclick = () => {
-        _adresseInput.value = label;
-        _adresseSuggestions.style.display = 'none';
-      };
-      _adresseSuggestions.appendChild(item);
-    });
-    _adresseSuggestions.style.display = _adresseSuggestions.children.length ? 'block' : 'none';
-  } catch(e) {
-    _adresseSuggestions.style.display = 'none'; // dégradation silencieuse, saisie libre conservée
-  }
-}
-
 function selType(t, btn){
   type = t;
   document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('sel'));
@@ -443,8 +395,76 @@ function selType(t, btn){
   if(isSE && document.querySelectorAll('.entrant-block').length === 0) addEntrant();
 }
 
-// ─── Créneaux Cal.com (optionnel — dégrade silencieusement) ────────────
-// N'affiche des créneaux que si /api/cal-availability répond des disponibilités
+// ─── Autocomplétion d'adresse (API Adresse gratuite, data.gouv.fr) ─────
+// Suggestions d'adresses françaises pendant la saisie, sans clé API ni
+// facturation (contrairement à Google Places) — dégrade silencieusement en
+// cas de panne/lenteur du service : le champ reste une saisie libre normale
+// dans tous les cas. Le code postal confirmé par une suggestion sélectionnée
+// prime sur l'extraction par motif (extraireCodePostal) tant que l'adresse
+// n'est pas modifiée après coup.
+let _adresseDebounce = null;
+let _adresseRequeteEnCours = 0;
+let _adresseCodePostalConfirme = '';
+
+function onSaisieAdresse(){
+  _adresseCodePostalConfirme = ''; // toute frappe invalide la confirmation précédente
+  const champ = document.getElementById('adresse');
+  const requete = champ.value.trim();
+  clearTimeout(_adresseDebounce);
+  if(requete.length < 3){ masquerSuggestionsAdresse(); return; }
+  _adresseDebounce = setTimeout(() => rechercherAdresses(requete), 300);
+}
+
+async function rechercherAdresses(requete){
+  const requeteId = ++_adresseRequeteEnCours;
+  try{
+    const resp = await fetch('https://api-adresse.data.gouv.fr/search/?limit=5&autocomplete=1&q=' + encodeURIComponent(requete));
+    if(requeteId !== _adresseRequeteEnCours) return; // une frappe plus récente a déjà relancé une recherche
+    if(!resp.ok){ masquerSuggestionsAdresse(); return; }
+    const data = await resp.json();
+    afficherSuggestionsAdresse((data && data.features) || []);
+  }catch(e){
+    masquerSuggestionsAdresse(); // silencieux : la saisie libre reste utilisable
+  }
+}
+
+function afficherSuggestionsAdresse(features){
+  const wrap = document.getElementById('adresse-suggestions');
+  if(!wrap) return;
+  if(!features.length){ masquerSuggestionsAdresse(); return; }
+  wrap.innerHTML = '';
+  features.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'adresse-suggestion';
+    item.textContent = (f.properties && f.properties.label) || '';
+    item.onclick = () => choisirSuggestionAdresse(f);
+    wrap.appendChild(item);
+  });
+  wrap.classList.add('show');
+}
+
+function masquerSuggestionsAdresse(){
+  const wrap = document.getElementById('adresse-suggestions');
+  if(wrap){ wrap.classList.remove('show'); wrap.innerHTML = ''; }
+}
+
+function choisirSuggestionAdresse(feature){
+  const champ = document.getElementById('adresse');
+  champ.value = (feature.properties && feature.properties.label) || champ.value;
+  _adresseCodePostalConfirme = (feature.properties && feature.properties.postcode) || '';
+  masquerSuggestionsAdresse();
+  chargerCreneauxSiPossible(false); // le secteur (code postal) a pu changer
+}
+
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('adresse-suggestions');
+  const champ = document.getElementById('adresse');
+  if(!wrap || !champ) return;
+  if(e.target !== champ && !wrap.contains(e.target)) masquerSuggestionsAdresse();
+});
+
+// ─── Créneaux agenda (optionnel — dégrade silencieusement) ─────────────
+// N'affiche des créneaux que si /api/agenda-disponibilites répond des disponibilités
 // réelles. Tant que la fonctionnalité n'est pas activée côté serveur (ou en
 // cas de souci), le formulaire se comporte exactement comme avant : simple
 // champ date libre, aucune régression possible.
@@ -456,6 +476,16 @@ function selType(t, btn){
 let _creneauxRequeteEnCours = 0;
 let _creneauxMoisAffiche = null; // { annee, mois } — mois 1-12
 let _creneauxMoisInitial = null; // mois courant au premier chargement, pour désactiver "précédent"
+
+// Extrait un code postal français (5 chiffres) depuis l'adresse en texte
+// libre saisie par le client — utilisé pour ne proposer que les agents
+// couvrant ce secteur (voir agents-calendriers.js côté serveur). Sans code
+// postal reconnaissable, aucun filtrage n'est appliqué côté serveur : ça ne
+// bloque jamais la prise de créneau.
+function extraireCodePostal(adresse){
+  const m = String(adresse || '').match(/\b\d{5}\b/);
+  return m ? m[0] : '';
+}
 
 async function chargerCreneauxSiPossible(reinitialiserPeriode){
   const btypo = document.getElementById('btypo').value;
@@ -474,7 +504,9 @@ async function chargerCreneauxSiPossible(reinitialiserPeriode){
   loading.style.display = 'block';
   try{
     const moisParam = _creneauxMoisAffiche.annee + '-' + String(_creneauxMoisAffiche.mois).padStart(2,'0');
-    const resp = await fetch('/api/cal-availability?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam);
+    const adresseEl = document.getElementById('adresse');
+    const cp = _adresseCodePostalConfirme || extraireCodePostal(adresseEl ? adresseEl.value : '');
+    const resp = await fetch('/api/agenda-disponibilites?bienTypo=' + encodeURIComponent(btypo) + '&meuble=' + encodeURIComponent(meubleVal) + '&mois=' + moisParam + (cp ? '&cp=' + encodeURIComponent(cp) : ''));
     if(requeteId !== _creneauxRequeteEnCours) return; // une sélection plus récente a déjà relancé une requête
     loading.style.display = 'none';
     if(!resp.ok){ return; }
@@ -505,7 +537,7 @@ function changerPeriodeCreneaux(direction){
   chargerCreneauxSiPossible(false);
 }
 
-// Regroupement par jour LOCAL (pas le jour UTC de l'ISO) : Cal.com renvoie
+// Regroupement par jour LOCAL (pas le jour UTC de l'ISO) : l'API renvoie
 // des horodatages UTC, et un créneau tard le soir peut correspondre au
 // lendemain en UTC tout en restant le même jour dans le fuseau horaire de
 // l'agence — cohérent avec choisirCreneau() qui utilise aussi les
