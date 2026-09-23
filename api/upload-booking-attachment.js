@@ -7,6 +7,12 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BUCKET = 'reservations';
 const TAILLE_MAX = 25 * 1024 * 1024; // 25 Mo par fichier
 const MAX_FICHIERS_PAR_DEMANDE = 10;
+// Garde-fou global (tous jetons confondus) : sans lui, un script peut créer
+// un nombre illimité de jetons pour contourner la limite par jetons
+// ci-dessus et gonfler le stockage sans jamais aboutir à une vraie
+// réservation. Généreux pour ne jamais gêner un usage légitime (bien plus
+// de 10 réservations/heure en conditions réelles).
+const MAX_UPLOADS_GLOBAL_PAR_HEURE = 200;
 
 // Dépôt de pièce jointe pour une demande de réservation publique
 // (api/booking-page.js) : endpoint PUBLIC, non authentifié — comme
@@ -52,6 +58,29 @@ export default async function handler(req) {
     }
 
     const supaHeaders = { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` };
+
+    // Garde-fou global : au-delà d'un certain volume d'uploads récents (tous
+    // jetons confondus), on refuse plutôt que de laisser le stockage
+    // grossir sans limite — la limite par jeton seule ne protège pas contre
+    // un script générant de nouveaux jetons en boucle. Échoue ouvert (le
+    // dépôt n'est jamais bloqué) si Storage ne répond pas normalement.
+    try {
+      const recentResp = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}`, {
+        method: 'POST',
+        headers: { ...supaHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: MAX_UPLOADS_GLOBAL_PAR_HEURE, sortBy: { column: 'created_at', order: 'desc' } })
+      });
+      if (recentResp.ok) {
+        const recents = await recentResp.json().catch(() => []);
+        if (Array.isArray(recents) && recents.length >= MAX_UPLOADS_GLOBAL_PAR_HEURE) {
+          const uneHeureAvant = Date.now() - 60 * 60 * 1000;
+          const dansLaDerniereHeure = recents.filter(o => o && o.created_at && new Date(o.created_at).getTime() > uneHeureAvant).length;
+          if (dansLaDerniereHeure >= MAX_UPLOADS_GLOBAL_PAR_HEURE) {
+            return new Response(JSON.stringify({ error: 'Trop de dépôts récents, réessayez plus tard.' }), { status: 429, headers: cors });
+          }
+        }
+      }
+    } catch (e) { /* la limite de débit ne doit jamais bloquer un dépôt légitime en cas d'erreur */ }
 
     // Garde-fou nombre de fichiers : compte ce qui existe déjà sous ce jeton
     // avant d'accepter un fichier de plus (endpoint public, sans compte).
