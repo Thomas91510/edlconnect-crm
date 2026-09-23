@@ -126,3 +126,17 @@ test('booking-page : contact trouvé mais sans ligne "settings" associée retomb
   const html = await res.text();
   assert.ok(html.includes('contact@lokentia.fr'));
 });
+
+// ─── L'agence du lien doit être transmise à /api/agenda-disponibilites ──
+// (sinon l'endpoint retombe sur DEFAULT_OWNER_ID et mélange les agendas
+// de toutes les agences — voir test/resoudre-owner.test.js et
+// test/agenda-disponibilites.test.js pour la résolution côté serveur).
+test('booking-page : le fetch des créneaux transmet AGENCY_ID et CONTACT_ID du lien', async () => {
+  delete process.env.SUPABASE_SERVICE_KEY;
+  const res = await handler(req('agency=agence-42&c=contact-7'));
+  const html = await res.text();
+  const ligne = html.split('\n').find(l => l.includes("fetch('/api/agenda-disponibilites"));
+  assert.ok(ligne, 'la ligne de fetch des créneaux doit exister');
+  assert.match(ligne, /agencyId=.*AGENCY_ID/);
+  assert.match(ligne, /contactId=.*CONTACT_ID/);
+});

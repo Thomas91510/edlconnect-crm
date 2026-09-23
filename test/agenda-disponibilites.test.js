@@ -320,3 +320,49 @@ test('un agenda en erreur, l\'autre réellement libre : les créneaux restent pr
   assert.equal(body.available, true);
   assert.ok(body.slots.length > 0);
 });
+
+// ─── Résolution multi-agence (jamais DEFAULT_OWNER_ID en dur) ───────────
+test('un lien portant agencyId interroge les agents de CETTE agence, pas ceux du compte par défaut', async () => {
+  const fn = async (url, opts) => {
+    if (String(url).includes('/rest/v1/contacts')) {
+      assert.ok(String(url).includes('id=eq.agence-B'));
+      return { ok: true, json: async () => [{ user_id: 'owner-B' }] };
+    }
+    if (String(url).includes('/rest/v1/settings')) {
+      // Le compte par défaut n'a que l'agent par défaut ; l'agence B a le sien.
+      if (String(url).includes('user_id=eq.owner-B')) {
+        return { ok: true, json: async () => [{ data: { agents: [{ email: 'agent-b@exemple.fr' }] } }] };
+      }
+      return { ok: true, json: async () => [{ data: { agents: [{ email: 'agent-defaut@exemple.fr' }] } }] };
+    }
+    if (String(url).includes('oauth2.googleapis.com/token')) {
+      return { ok: true, json: async () => ({ access_token: 'jeton-test' }) };
+    }
+    if (String(url).includes('/calendar/v3/freeBusy')) {
+      const corps = JSON.parse(opts.body);
+      const calendars = {};
+      for (const id of corps.items.map(i => i.id)) calendars[id] = { busy: [] };
+      return { ok: true, json: async () => ({ calendars }) };
+    }
+    throw new Error('URL inattendue : ' + url);
+  };
+  global.fetch = fn;
+
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu', agencyId: 'agence-B' }));
+  const body = await resp.json();
+
+  assert.equal(body.ownerId, 'owner-B');
+  assert.deepEqual(body.calendriers, ['agent-b@exemple.fr']);
+  assert.ok(!body.calendriers.includes('agent-defaut@exemple.fr'), 'ne doit jamais mélanger les agents d\'une autre agence');
+});
+
+test('aucun identifiant d\'agence fourni : repli sur DEFAULT_OWNER_ID (compatibilité extranet interne)', async () => {
+  const { fn } = fabriquerFetchMock({ agents: [{ email: 'agent-defaut@exemple.fr' }] });
+  global.fetch = fn;
+
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const body = await resp.json();
+
+  assert.equal(body.ownerId, 'owner-test-123');
+  assert.deepEqual(body.calendriers, ['agent-defaut@exemple.fr']);
+});
