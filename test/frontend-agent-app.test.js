@@ -28,9 +28,12 @@ const DOM_MINIMAL = `
   <button class="nav-btn" data-page="documents"></button>
   <button class="nav-btn" data-page="historique"></button>
   <button class="nav-btn" data-page="aide"></button>
+  <input type="email" id="login-email">
+  <button id="login-btn"></button>
+  <div id="login-msg"></div>
 `;
 
-function chargerAgentApp() {
+function chargerAgentApp({ signInWithOtp } = {}) {
   const html = fs.readFileSync(HTML_PATH, 'utf8');
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
   const inline = scripts.map(m => m[1]).find(s => s.includes('function renderMissions'));
@@ -38,10 +41,13 @@ function chargerAgentApp() {
 
   const dom = new JSDOM(`<!DOCTYPE html><html><body>${DOM_MINIMAL}</body></html>`, { runScripts: 'outside-only', url: 'https://app.lokentia.fr/' });
   const ctx = dom.getInternalVMContext();
+  dom.window.__signInWithOtp = signInWithOtp || (async () => ({ error: null }));
   new vm.Script(`
     window.supabase = { createClient: () => ({ auth: {
       onAuthStateChange(){ return { data: { subscription: { unsubscribe(){} } } }; },
-      getSession: () => new Promise(() => {})
+      getSession: () => new Promise(() => {}),
+      signInWithOtp: (...args) => window.__signInWithOtp(...args),
+      signOut: async () => {},
     } }) };
   `, { filename: 'stub-supabase.js' }).runInContext(ctx);
   new vm.Script(inline, { filename: 'inline.js' }).runInContext(ctx);
@@ -221,4 +227,53 @@ test('telechargerDocument : document indisponible → alerte, pas d\'ouverture d
   await w.telechargerDocument('avenant', btn);
 
   assert.equal(appelOpen, null);
+});
+
+// ─── Connexion : blocage du lien magique pour un email non enregistré ────
+test('sendMagicLink : email non enregistré → message de refus, aucun lien envoyé', async () => {
+  let otpAppele = false;
+  const w = chargerAgentApp({ signInWithOtp: async () => { otpAppele = true; return { error: null }; } });
+  w.document.getElementById('login-email').value = 'inconnu@exemple.fr';
+  w.fetch = async (url) => {
+    assert.equal(url, '/api/agent-check-email');
+    return { json: async () => ({ registered: false }) };
+  };
+
+  await w.sendMagicLink();
+
+  assert.equal(otpAppele, false, 'signInWithOtp ne doit jamais être appelé pour un email non enregistré');
+  const msg = w.document.getElementById('login-msg');
+  assert.ok(msg.textContent.includes('enregistré'));
+  assert.equal(w.document.getElementById('login-btn').disabled, false, 'le bouton doit être réactivé pour permettre un nouvel essai');
+});
+
+test('sendMagicLink : email enregistré → vérifie puis envoie le lien magique', async () => {
+  let otpAppele = null;
+  const w = chargerAgentApp({ signInWithOtp: async (args) => { otpAppele = args; return { error: null }; } });
+  w.document.getElementById('login-email').value = 'jean@exemple.fr';
+  let appelCheck = null;
+  w.fetch = async (url, opts) => {
+    appelCheck = { url, corps: JSON.parse(opts.body) };
+    return { json: async () => ({ registered: true }) };
+  };
+
+  await w.sendMagicLink();
+
+  assert.equal(appelCheck.url, '/api/agent-check-email');
+  assert.deepEqual(appelCheck.corps, { email: 'jean@exemple.fr' });
+  assert.ok(otpAppele, 'signInWithOtp doit être appelé pour un email enregistré');
+  assert.equal(otpAppele.email, 'jean@exemple.fr');
+  assert.ok(w.document.getElementById('login-msg').textContent.includes('envoyé'));
+});
+
+test('sendMagicLink : email invalide → refusé avant tout appel réseau', async () => {
+  let fetchAppele = false;
+  const w = chargerAgentApp();
+  w.document.getElementById('login-email').value = 'pas-un-email';
+  w.fetch = async () => { fetchAppele = true; return { json: async () => ({ registered: true }) }; };
+
+  await w.sendMagicLink();
+
+  assert.equal(fetchAppele, false);
+  assert.ok(w.document.getElementById('login-msg').textContent.includes('invalide'));
 });

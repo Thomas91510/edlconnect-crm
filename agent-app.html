@@ -216,8 +216,24 @@ async function sendMagicLink(){
   const msgEl = document.getElementById('login-msg');
   if (!email || !email.includes('@')) { msgEl.className='msg-error'; msgEl.textContent='⚠️ Email invalide.'; return; }
   const btn = document.getElementById('login-btn');
-  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Envoi…';
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Vérification…';
   try {
+    // Ne jamais envoyer de lien à un email qui n'est pas un Agent EDL
+    // enregistré — il n'obtiendrait de toute façon aucune donnée une fois
+    // connecté (voir api/agent-missions.js), autant ne pas lui envoyer
+    // d'email pour rien.
+    const checkResp = await fetch('/api/agent-check-email', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }),
+    });
+    const checkData = await checkResp.json();
+    if (!checkData.registered) {
+      msgEl.className = 'msg-error';
+      msgEl.textContent = '❌ Cet email n\'est pas enregistré comme agent. Contacte l\'agence.';
+      btn.disabled = false; btn.innerHTML = '<i class="ti ti-mail"></i> Recevoir mon lien de connexion';
+      return;
+    }
+
+    btn.innerHTML = '<i class="ti ti-loader"></i> Envoi…';
     const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + '/agent' } });
     if (error) throw new Error(error.message);
     msgEl.className='msg-success'; msgEl.textContent='✅ Lien envoyé ! Vérifiez votre boîte mail.';
