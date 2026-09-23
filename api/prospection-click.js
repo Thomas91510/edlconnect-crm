@@ -9,7 +9,12 @@ export const config = { runtime: 'edge' };
 // Ce endpoint n'est pas encore branché : Brevo continue d'appeler le webhook
 // Make tant que ce dernier n'a pas été repointé manuellement (côté Brevo,
 // Settings → Webhooks) vers cette URL.
-
+//
+// Protégé par un secret partagé dans l'URL du webhook (?secret=...) : sans
+// ça, n'importe qui pourrait POSTer un email arbitraire et polluer la table
+// de prospection (fausses dates de clic, désynchronisation de la séquence
+// d'emails). Quand tu repointes le webhook côté Brevo, configure l'URL avec
+// ?secret=<PROSPECTION_WEBHOOK_SECRET> (même valeur que la variable Vercel).
 const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 const TABLE = 'prospection';
 
@@ -21,6 +26,12 @@ export default async function handler(req) {
   const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
   if (!SUPABASE_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: 'Variables manquantes' }), { status: 500 });
+  }
+
+  const secretAttendu = process.env.PROSPECTION_WEBHOOK_SECRET;
+  const secretFourni = new URL(req.url).searchParams.get('secret') || '';
+  if (!secretAttendu || secretFourni !== secretAttendu) {
+    return new Response(JSON.stringify({ error: 'Non autorisé' }), { status: 401 });
   }
 
   let body;
