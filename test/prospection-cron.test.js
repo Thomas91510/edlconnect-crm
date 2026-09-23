@@ -22,17 +22,21 @@ function requete(secret) {
 function ilYA(jours) { const d = new Date(); d.setDate(d.getDate() - jours); return d.toISOString(); }
 
 // Construit un mock fetch complet : état "prospection" existant, listes
-// Brevo, capture des envois et de l'écriture finale de l'état.
+// Brevo, capture des envois et des écritures. Chaque envoi réussi déclenche
+// désormais son propre upsert immédiat (contact + compteur du jour) plutôt
+// qu'un unique upsert accumulé en fin de run (voir prospection-cron.js) :
+// `ecritures` empile donc les lignes de CHAQUE appel, et `derniereLigne`
+// retrouve l'état le plus à jour d'un id donné, comme le ferait Supabase.
 function mockComplet({ prospectionRows = [], listes = {}, brevoOk = true } = {}) {
   const envois = [];
-  let ecriture = null;
+  const ecritures = [];
   const fetchMock = async (url, opts) => {
     const u = String(url);
     if (u.includes('/rest/v1/prospection') && (!opts || opts.method !== 'POST')) {
       return { ok: true, json: async () => prospectionRows };
     }
     if (u.includes('/rest/v1/prospection') && opts && opts.method === 'POST') {
-      ecriture = JSON.parse(opts.body);
+      ecritures.push(...JSON.parse(opts.body));
       return { ok: true };
     }
     if (u.includes('/v3/contacts/lists/')) {
@@ -46,7 +50,12 @@ function mockComplet({ prospectionRows = [], listes = {}, brevoOk = true } = {})
     }
     return { ok: true, json: async () => [] };
   };
-  return { fetchMock, envois, get ecriture() { return ecriture; } };
+  return {
+    fetchMock,
+    envois,
+    ecritures,
+    derniereLigne(id) { return ecritures.filter(l => l.id === id).pop(); }
+  };
 }
 
 test('prospection-cron : refuse sans le bon secret', async () => {
@@ -75,7 +84,7 @@ test('prospection-cron : envoie le premier email aux nouveaux prospects des list
   assert.equal(mock.envois[0].templateId, 53);
   assert.equal(mock.envois[0].to[0].email, 'nouveau@agence.fr');
 
-  const ligneProspect = mock.ecriture.find(l => l.id === 'nouveau@agence.fr');
+  const ligneProspect = mock.derniereLigne('nouveau@agence.fr');
   assert.equal(ligneProspect.data.stage, 1);
   assert.ok(ligneProspect.data.sentAt1);
 });
@@ -106,7 +115,7 @@ test('prospection-cron : relance en J+4 un prospect stage 1 non cliqué, envoyé
 
   assert.equal(body.envoyes.relanceJ4, 1);
   assert.equal(mock.envois[0].templateId, 54);
-  const ligne = mock.ecriture.find(l => l.id === 'ancien@agence.fr');
+  const ligne = mock.derniereLigne('ancien@agence.fr');
   assert.equal(ligne.data.stage, 2);
   assert.ok(ligne.data.sentAt2);
 });
@@ -143,7 +152,7 @@ test('prospection-cron : relance en J+6 un prospect stage 2 non cliqué, envoyé
 
   assert.equal(body.envoyes.relanceJ6, 1);
   assert.equal(mock.envois[0].templateId, 55);
-  const ligne = mock.ecriture.find(l => l.id === 'stage2@agence.fr');
+  const ligne = mock.derniereLigne('stage2@agence.fr');
   assert.equal(ligne.data.stage, 3);
 });
 
@@ -160,8 +169,45 @@ test('prospection-cron : ne dépasse jamais le plafond de 250 envois/jour', asyn
 
   assert.equal(mock.envois.length, 2, 'seulement 2 envois pour atteindre le plafond de 250');
   assert.equal(body.quotaUtilise, 250);
-  const ligneQuota = mock.ecriture.find(l => l.id.startsWith('quota:'));
+  const ligneQuota = mock.derniereLigne(`quota:${new Date().toISOString().split('T')[0]}`);
   assert.equal(ligneQuota.data.quotaCount, 250);
+});
+
+test('prospection-cron : plafonne les envois par run pour ne jamais risquer un timeout sur un gros arriéré', async () => {
+  // Reproduit l'incident du 19-20/09 : ~200 contacts migrés le même jour
+  // franchissent tous le seuil J+4 en même temps. Sans plafond par run, la
+  // fonction tente ~200 envois séquentiels d'affilée et peut se faire tuer
+  // par le temps d'exécution avant d'avoir rien écrit.
+  const rows = Array.from({ length: 90 }, (_, i) => ({
+    id: `ancien${i}@agence.fr`,
+    data: { email: `ancien${i}@agence.fr`, stage: 1, sentAt1: ilYA(5) }
+  }));
+  const mock = mockComplet({ prospectionRows: rows });
+  global.fetch = mock.fetchMock;
+
+  const res = await handler(requete('test-cron-secret'));
+  const body = await res.json();
+
+  assert.equal(mock.envois.length, 60, 'un seul run ne traite jamais plus de 60 envois, quel que soit l\'arriéré');
+  assert.equal(body.envoyes.relanceJ4, 60);
+  assert.equal(body.quotaUtilise, 60, 'bien en dessous du plafond quotidien de 250 : c\'est le plafond par run qui a arrêté la boucle');
+});
+
+test('prospection-cron : chaque envoi réussi est persisté immédiatement (pas seulement à la fin du run)', async () => {
+  const mock = mockComplet({
+    prospectionRows: [],
+    listes: { '45': ['premier@agence.fr', 'second@agence.fr'] }
+  });
+  global.fetch = mock.fetchMock;
+
+  await handler(requete('test-cron-secret'));
+
+  // Une écriture Supabase par envoi (contact + compteur du jour à chaque
+  // fois), et non un unique upsert groupé écrit tout à la fin : si le run
+  // est interrompu juste après le premier envoi, celui-ci reste acquis.
+  const idsEcrits = mock.ecritures.map(l => l.id);
+  assert.equal(idsEcrits.filter(id => id === 'premier@agence.fr').length, 1);
+  assert.ok(idsEcrits.filter(id => id.startsWith('quota:')).length >= 2, 'le compteur du jour est réécrit à chaque envoi, pas une seule fois à la fin');
 });
 
 test('prospection-cron : un échec Brevo sur un envoi est rapporté sans bloquer les suivants', async () => {
