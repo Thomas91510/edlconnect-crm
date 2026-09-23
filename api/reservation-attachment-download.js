@@ -11,6 +11,12 @@ const BUCKET = 'reservations';
 // (contrairement aux factures) — seul un administrateur du CRM peut en
 // demander le téléchargement. Le bucket est privé : mint une URL signée de
 // très courte durée (60s), jamais stockée.
+//
+// Défense en profondeur : même réservé aux admins, le chemin ne doit jamais
+// être signé tel quel sans vérifier qu'il correspond à une pièce jointe
+// RÉELLEMENT rattachée à une réservation existante (piecesJointes[].path) —
+// même principe que facture-download.js, pour ne jamais transformer cet
+// endpoint en "signeur" de n'importe quel chemin du bucket.
 export default async function handler(req) {
   const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) };
   if (req.method === 'OPTIONS') {
@@ -49,6 +55,23 @@ export default async function handler(req) {
     }
 
     const supaHeaders = { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` };
+
+    // Le chemin doit correspondre à une pièce jointe réellement enregistrée
+    // sur une réservation — sinon on pourrait signer n'importe quel objet
+    // du bucket sur simple appel, sans lien avec une vraie réservation.
+    const filtreContient = 'cs.' + encodeURIComponent(JSON.stringify([{ path: chemin }]));
+    const checkResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/bookings?select=id&data->piecesJointes=${filtreContient}&limit=1`,
+      { headers: supaHeaders }
+    );
+    if (!checkResp.ok) {
+      return new Response(JSON.stringify({ error: 'Accès refusé' }), { status: 403, headers: cors });
+    }
+    const trouve = await checkResp.json();
+    if (!Array.isArray(trouve) || trouve.length === 0) {
+      return new Response(JSON.stringify({ error: 'Pièce jointe introuvable' }), { status: 404, headers: cors });
+    }
+
     const signResp = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${BUCKET}/${chemin}`, {
       method: 'POST',
       headers: { ...supaHeaders, 'Content-Type': 'application/json' },
