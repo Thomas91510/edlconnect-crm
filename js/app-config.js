@@ -101,7 +101,37 @@ function keyToEtape(key){
   return map[key]||'À contacter';
 }
 
+// Le kanban (9 étapes) est plus large que la plupart des écrans : on ne
+// peut pas le faire défiler en cliquant-glissant à la souris nativement
+// (contrairement au doigt sur mobile), donc on rejoue le même geste avec
+// mousedown/mousemove. Lié une seule fois (dataset.dragBound) car
+// renderProspection() ne fait que réécrire le innerHTML des colonnes, pas
+// #prosp-board lui-même : les listeners posés ici survivent aux rendus suivants.
+function initProspBoardDragScroll(board){
+  if(!board||board.dataset.dragBound)return;
+  board.dataset.dragBound='1';
+  let down=false,startX=0,startScroll=0,moved=false;
+  board.addEventListener('mousedown',e=>{
+    if(e.target.closest('button,a,input,select,textarea'))return;
+    down=true;moved=false;board.classList.add('dragging');
+    startX=e.clientX;startScroll=board.scrollLeft;
+  });
+  window.addEventListener('mouseup',()=>{down=false;board.classList.remove('dragging');});
+  window.addEventListener('mousemove',e=>{
+    if(!down)return;
+    const dx=e.clientX-startX;
+    if(Math.abs(dx)>5)moved=true;
+    board.scrollLeft=startScroll-dx;
+  });
+  // Empeche le clic d'ouvrir une carte quand le mousedown/mouseup a servi
+  // a glisser le kanban (capture : intercepte avant l'onclick de la carte).
+  board.addEventListener('click',e=>{
+    if(moved){e.preventDefault();e.stopPropagation();moved=false;}
+  },true);
+}
+
 function renderProspection(){
+  initProspBoardDragScroll(document.getElementById('prosp-board'));
   // Stats rapides
   const stats=document.getElementById('prosp-stats');
   const total=DB.prospects.length;
