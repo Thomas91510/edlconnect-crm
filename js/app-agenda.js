@@ -559,6 +559,7 @@ function saveMission(){
   };
   DB.missions.push(mission);
   if(typeof pushToSupabase === 'function') pushToSupabase('missions', mission);
+  if(typeof notifierPremiereMissionAgence === 'function') notifierPremiereMissionAgence(mission);
   // Rattachement automatique au contact
   const contact=DB.contacts.find(c=>
     (email&&(c.email||'').toLowerCase()===email.toLowerCase())||
