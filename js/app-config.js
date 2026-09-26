@@ -181,9 +181,12 @@ function renderProspection(){
     </div>`;
   }).join('');
 
-  // Badge nav
+  // Badge nav : nombre de prospects qui stagnent (alerte actionnable), pas le
+  // total des prospects actifs (devenu illisible et sans utilité depuis la
+  // fusion des pipelines, ex. "2563").
   const badge=document.getElementById('prosp-badge');
-  if(actifs>0){badge.style.display='inline';badge.textContent=actifs;}
+  const nbStagnants=prospectsStagnants().length;
+  if(nbStagnants>0){badge.style.display='inline';badge.textContent=nbStagnants;}
   else badge.style.display='none';
 }
 

@@ -29,15 +29,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .logo-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .logo-icon{width:32px;height:32px;background:#1A5FA8;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
 .logo-title{font-size:13px;font-weight:500;color:#ffffff}
-.logo-sub{font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px}
+.logo-sub{font-size:11px;color:rgba(255,255,255,0.55);margin-top:1px}
 .logo-badges{display:flex;gap:5px;margin-top:0}
 .lbadge{font-size:10px;padding:3px 10px;border-radius:20px;font-weight:500}
 .lbadge-green{background:rgba(24,95,165,0.2);color:#7bb8ef;border:0.5px solid rgba(55,138,221,0.3)}
 .lbadge-blue{background:rgba(55,138,221,0.12);color:#7bb8ef;border:0.5px solid rgba(55,138,221,0.2)}
 .lbadge-active-dot{display:inline-block;width:5px;height:5px;background:#378ADD;border-radius:50%;margin-right:4px;vertical-align:middle}
-.nav-section{font-size:9px;font-weight:500;color:rgba(255,255,255,0.22);padding:10px 12px 3px;text-transform:uppercase;letter-spacing:.09em}
-.nav-item{display:flex;align-items:center;gap:0;padding:0 10px;cursor:pointer;font-size:12.5px;color:rgba(255,255,255,0.45);border:none;background:none;width:100%;text-align:left;transition:background .12s;border-radius:8px;margin:1px 0;height:38px}
-.nav-item:hover{background:rgba(24,95,165,0.12);color:rgba(255,255,255,0.75)}
+.nav-section{font-size:9px;font-weight:500;color:rgba(255,255,255,0.65);padding:10px 12px 3px;text-transform:uppercase;letter-spacing:.09em}
+.nav-item{display:flex;align-items:center;gap:0;padding:0 10px;cursor:pointer;font-size:12.5px;color:rgba(255,255,255,0.85);border:none;background:none;width:100%;text-align:left;transition:background .12s;border-radius:8px;margin:1px 0;height:38px}
+.nav-item:hover{background:rgba(24,95,165,0.12);color:#fff}
 .nav-item.active{background:rgba(24,95,165,0.22);color:#7bb8ef;font-weight:500}
 .nav-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:10px;font-size:15px}
 .nav-item i{font-size:15px}
@@ -45,7 +45,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .nb-red{background:rgba(229,62,62,0.18);color:#fc8181;border:0.5px solid rgba(229,62,62,0.3)}
 .nb-amber{background:rgba(186,117,23,0.2);color:#f6c05e;border:0.5px solid rgba(186,117,23,0.3)}
 .sidebar-footer{margin-top:auto;padding:10px;border-top:1px solid rgba(24,95,165,0.2)}
-.sidebar-footer div{font-size:11px;color:rgba(255,255,255,0.25)}
+.sidebar-footer div{font-size:11px;color:rgba(255,255,255,0.55)}
 .sync-row{display:flex;align-items:center;gap:5px;margin-bottom:3px}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
 .sync-dot.loading{background:#EF9F27;animation:pulse 1s infinite}
@@ -516,15 +516,15 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
       <span class="nav-section">Outils</span>
       <button class="nav-item" onclick="nav('brevo')" title="Sync Brevo">
-        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-refresh" style="color:rgba(255,255,255,0.3)"></i></div>
+        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-refresh" style="color:rgba(255,255,255,0.72)"></i></div>
         <span class="nav-label">Sync Brevo</span>
       </button>
       <button class="nav-item" onclick="nav('settings')" title="Paramètres">
-        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-settings" style="color:rgba(255,255,255,0.3)"></i></div>
+        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-settings" style="color:rgba(255,255,255,0.72)"></i></div>
         <span class="nav-label">Paramètres</span>
       </button>
       <button class="nav-item" onclick="nav('help')" title="Guide & Aide">
-        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-help-circle" style="color:rgba(255,255,255,0.3)"></i></div>
+        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-help-circle" style="color:rgba(255,255,255,0.72)"></i></div>
         <span class="nav-label">Guide &amp; Aide</span>
       </button>
       <button class="nav-item" id="nav-admin" style="display:none" onclick="nav('admin')" title="Admin">
@@ -536,30 +536,30 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
     <div class="sidebar-footer" id="sidebar-footer-full">
       <div style="display:flex;gap:5px;margin-bottom:8px">
-        <button class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;background:rgba(24,95,165,0.15);border:0.5px solid rgba(55,138,221,0.25);color:rgba(255,255,255,0.5);border-radius:8px" onclick="saveBackup()" title="Sauvegarder">
+        <button class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;background:rgba(24,95,165,0.15);border:0.5px solid rgba(55,138,221,0.25);color:rgba(255,255,255,0.75);border-radius:8px" onclick="saveBackup()" title="Sauvegarder">
           <i class="ti ti-device-floppy"></i>Sauvegarder
         </button>
-        <label class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;cursor:pointer;margin:0;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.35);border-radius:8px" title="Restaurer">
+        <label class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;cursor:pointer;margin:0;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);border-radius:8px" title="Restaurer">
           <i class="ti ti-upload"></i>Restaurer
           <input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none">
         </label>
       </div>
-      <div id="last-backup-date" style="font-size:10px;color:rgba(255,255,255,0.22);margin-bottom:8px;padding:0 2px"></div>
+      <div id="last-backup-date" style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:8px;padding:0 2px"></div>
       <div style="display:flex;align-items:center;gap:8px;padding:6px 6px 2px">
         <div style="width:28px;height:28px;border-radius:50%;background:#1A5FA8;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600;flex-shrink:0" id="sidebar-avatar">TL</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:11px;color:rgba(255,255,255,0.65);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-name">Thomas Langlade</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-email"></div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.9);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-name">Thomas Langlade</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-email"></div>
         </div>
         <button onclick="supabaseClient&&supabaseClient.auth.signOut()" style="background:none;border:none;cursor:pointer;padding:4px" title="Déconnexion">
-          <i class="ti ti-logout" style="font-size:14px;color:rgba(255,255,255,0.2)"></i>
+          <i class="ti ti-logout" style="font-size:14px;color:rgba(255,255,255,0.55)"></i>
         </button>
       </div>
       <div class="sync-row" style="padding:4px 6px 0">
         <div class="sync-dot" id="sync-dot"></div>
-        <span id="sync-text" style="font-size:10px;color:rgba(255,255,255,0.25)">Synchronisé</span>
+        <span id="sync-text" style="font-size:10px;color:rgba(255,255,255,0.6)">Synchronisé</span>
       </div>
-      <div id="app-version" style="font-size:9.5px;color:rgba(255,255,255,0.18);padding:4px 6px 0"></div>
+      <div id="app-version" style="font-size:9.5px;color:rgba(255,255,255,0.35);padding:4px 6px 0"></div>
     </div>
   </div>
 
