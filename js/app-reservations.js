@@ -408,6 +408,7 @@ function createMissionFromReservation(id){
 
   DB.missions.push(mission);
   saveToStorage();
+  if(typeof notifierPremiereMissionAgence === 'function') notifierPremiereMissionAgence(mission);
   // Enregistrement immediat dans Supabase, pour la meme raison que ci-dessus :
   // ne pas dependre du delai de 1,5 s avant que la reservation soit marquee.
   if(typeof pushToSupabase === 'function') pushToSupabase('missions', mission);
@@ -831,6 +832,7 @@ async function sendConfirmRdv(){
           };
           DB.missions.push(mission);
           saveToStorage();
+          if(typeof notifierPremiereMissionAgence === 'function') notifierPremiereMissionAgence(mission);
           }
           // Enregistrement immediat dans Supabase : saveToStorage() ne pousse
           // qu'apres 1,5 s (syncDirtyToSupabase), alors que la reservation est

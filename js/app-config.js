@@ -304,6 +304,51 @@ function moveProspect(id,newEtape){
   renderDashboard();
 }
 
+// Une agence qui n'avait encore aucune mission vient d'en obtenir une : elle
+// vient de devenir cliente, sa carte passe automatiquement en "Gagné" (ou
+// est créée si elle n'existait pas encore dans le pipeline) — sans ressaisie
+// manuelle. Appelée juste après DB.missions.push(mission) aux 3 endroits qui
+// créent une mission (app-agenda.js, app-reservations.js x2).
+//
+// Ne reporte jamais le montant de CETTE mission (un tarif ponctuel d'EDL) sur
+// le CA mensuel estimé du prospect : ce sont deux grandeurs différentes (un
+// seul EDL n'est pas une récurrence mensuelle) — le champ "ca" reste à
+// renseigner à la main si besoin, via l'Analyse CA, comme pour un passage
+// manuel en "Gagné".
+function notifierPremiereMissionAgence(mission){
+  if(!mission || !mission.agence) return;
+  const agenceNorm=mission.agence.trim().toLowerCase();
+  if(!agenceNorm) return;
+  const missionsAgence=DB.missions.filter(m=>(m.agence||'').trim().toLowerCase()===agenceNorm);
+  if(missionsAgence.length>1) return; // pas la première mission de cette agence
+
+  const order=PROSP_STAGES.map(s=>s.key);
+  const rangGagne=order.indexOf('gagne');
+  const emailNorm=(mission.emailClient||'').trim().toLowerCase();
+  let prospect=emailNorm?DB.prospects.find(p=>(p.email||'').trim().toLowerCase()===emailNorm):null;
+  if(!prospect) prospect=DB.prospects.find(p=>(p.agence||'').trim().toLowerCase()===agenceNorm);
+
+  if(prospect){
+    if(order.indexOf(prospect.etape)>=rangGagne) return; // déjà Gagné, ou Perdu explicitement
+    prospect.etape='gagne';
+    prospect.lastAction=new Date().toISOString().split('T')[0];
+  } else {
+    prospect={
+      id:'p_'+Date.now(),
+      agence:mission.agence, contact:mission.contact||'', email:mission.emailClient||'',
+      tel:'', dept:'', etape:'gagne', ca:null,
+      notes:'Carte créée automatiquement à la première mission enregistrée',
+      source:'Première mission', createdAt:new Date().toISOString(),
+      lastAction:new Date().toISOString().split('T')[0]
+    };
+    DB.prospects.push(prospect);
+  }
+  saveToStorage();
+  if(typeof pushToSupabase==='function') pushToSupabase('prospects', prospect);
+  if(typeof renderProspection==='function') renderProspection();
+  notify(`🎉 "${mission.agence}" ajouté au pipeline commercial — Gagné`);
+}
+
 // Retrouve la fiche contact correspondant à un prospect (même email, en
 // priorité, sinon même nom d'agence) — les deux collections ne sont pas
 // reliées par un identifiant commun, seulement par ces champs en pratique.
@@ -448,7 +493,7 @@ async function syncFromBrevoSender(){
       // Mettre à jour le statut si progression
       const p = DB.prospects.find(x => (x.email||'').toLowerCase() === email);
       if (p) {
-        const order = ['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','negociation','gagne','perdu'];
+        const order = PROSP_STAGES.map(s => s.key);
         if (order.indexOf('email_envoye') > order.indexOf(p.etape)) {
           p.etape = 'email_envoye';
           p.lastAction = entry.date?.split('T')[0] || new Date().toISOString().split('T')[0];
@@ -505,7 +550,7 @@ function autoFillAllContacts(){
 
     // Déterminer l'étape selon l'historique
     let etape='a_contacter';
-    const order=['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','negociation','gagne','perdu'];
+    const order=PROSP_STAGES.map(s => s.key);
     const statMap={'Envoyé (Brevo)':'email_envoye','Envoyé':'email_envoye','Ouvert':'email_ouvert','Cliqué':'email_ouvert','Répondu':'reponse_recue','Sans suite':'a_contacter'};
     let lastAction=null;
 
@@ -565,7 +610,7 @@ function autoFillProspection(){
     const newEtape=statMap[t.statut]||'email_envoye';
     if(existing){
       // Faire progresser seulement vers l'avant
-      const order=['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','negociation','gagne','perdu'];
+      const order=PROSP_STAGES.map(s => s.key);
       if(order.indexOf(newEtape)>order.indexOf(existing.etape)){
         existing.etape=newEtape;existing.lastAction=t.date?.split('T')[0];updated++;
       }
@@ -591,7 +636,7 @@ function autoFillProspection(){
     if(!emailLow)return;
     const existing=DB.prospects.find(p=>(p.email||'').toLowerCase()===emailLow);
     // Trouver le meilleur statut dans l'historique
-    const order=['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','negociation','gagne','perdu'];
+    const order=PROSP_STAGES.map(s => s.key);
     const statMap={'Envoyé (Brevo)':'email_envoye','Envoyé':'email_envoye','Ouvert':'email_ouvert','Cliqué':'email_ouvert','Répondu':'reponse_recue','Sans suite':'a_contacter'};
     let bestEtape='email_envoye';
     let lastDate=null;
