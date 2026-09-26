@@ -212,61 +212,79 @@ function saveToStorage(){
 // Pousse uniquement les items modifiés récemment vers Supabase (debounced)
 let _supaDebounceTimer = null;
 let _lastPushedCache = {}; // dbKey -> { id: JSON string de la dernière version poussée }
+async function _pousserVersSupabase(){
+  if(_supaSyncing) return;
+  _supaSyncing = true;
+  // Un echec sur une table ne doit ni bloquer les suivantes (chaque table
+  // a son propre try/catch), ni rester invisible (setSyncStatus('error')
+  // en fin de cycle — jusqu'ici seul console.warn signalait un probleme,
+  // le point "Synchronise" restait affiche a tort). Les items en echec ne
+  // sont PAS marques comme pousses dans le cache : ils seront retentes au
+  // prochain cycle plutot que silencieusement abandonnes.
+  let uneErreur = false;
+  for(const dbKey of Object.keys(SUPA_TABLES)){
+    try{
+      const items = DB[dbKey] || [];
+      if(!items.length) continue;
+      const table = SUPA_TABLES[dbKey];
+      if(!_lastPushedCache[dbKey]) _lastPushedCache[dbKey] = {};
+      const cache = _lastPushedCache[dbKey];
+      // Dédoublonner par ID avant push
+      const seen = new Set();
+      const uniqueItems = [];
+      for(const item of items){
+        const id = String(item.id);
+        if(!seen.has(id)){ seen.add(id); uniqueItems.push(item); }
+      }
+      // Ne garder que les items dont le contenu a réellement changé depuis le dernier push
+      const toPush = [];
+      for(const item of uniqueItems){
+        const id = String(item.id);
+        const json = JSON.stringify(item);
+        if(cache[id] !== json){ toPush.push({item, id, json}); }
+      }
+      if(!toPush.length) continue;
+      const userId = _currentUser?.id || null;
+      const rows = toPush.map(({item, id}) => ({
+        id, data: item,
+        updated_at: new Date().toISOString(),
+        user_id: userId
+      }));
+      const { error } = await supabaseClient.from(table).upsert(rows, { onConflict: 'id' });
+      if(error){
+        uneErreur = true;
+        console.warn(`Erreur sync cloud (${dbKey}):`, error);
+        continue;
+      }
+      toPush.forEach(({id, json}) => { cache[id] = json; });
+    }catch(e){
+      uneErreur = true;
+      console.warn(`Erreur sync cloud (${dbKey}):`, e);
+    }
+  }
+  _supaSyncing = false;
+  setSyncStatus(uneErreur ? 'error' : 'ok');
+}
 function syncDirtyToSupabase(){
   clearTimeout(_supaDebounceTimer);
-  _supaDebounceTimer = setTimeout(async () => {
-    if(_supaSyncing) return;
-    _supaSyncing = true;
-    // Un echec sur une table ne doit ni bloquer les suivantes (chaque table
-    // a son propre try/catch), ni rester invisible (setSyncStatus('error')
-    // en fin de cycle — jusqu'ici seul console.warn signalait un probleme,
-    // le point "Synchronise" restait affiche a tort). Les items en echec ne
-    // sont PAS marques comme pousses dans le cache : ils seront retentes au
-    // prochain cycle plutot que silencieusement abandonnes.
-    let uneErreur = false;
-    for(const dbKey of Object.keys(SUPA_TABLES)){
-      try{
-        const items = DB[dbKey] || [];
-        if(!items.length) continue;
-        const table = SUPA_TABLES[dbKey];
-        if(!_lastPushedCache[dbKey]) _lastPushedCache[dbKey] = {};
-        const cache = _lastPushedCache[dbKey];
-        // Dédoublonner par ID avant push
-        const seen = new Set();
-        const uniqueItems = [];
-        for(const item of items){
-          const id = String(item.id);
-          if(!seen.has(id)){ seen.add(id); uniqueItems.push(item); }
-        }
-        // Ne garder que les items dont le contenu a réellement changé depuis le dernier push
-        const toPush = [];
-        for(const item of uniqueItems){
-          const id = String(item.id);
-          const json = JSON.stringify(item);
-          if(cache[id] !== json){ toPush.push({item, id, json}); }
-        }
-        if(!toPush.length) continue;
-        const userId = _currentUser?.id || null;
-        const rows = toPush.map(({item, id}) => ({
-          id, data: item,
-          updated_at: new Date().toISOString(),
-          user_id: userId
-        }));
-        const { error } = await supabaseClient.from(table).upsert(rows, { onConflict: 'id' });
-        if(error){
-          uneErreur = true;
-          console.warn(`Erreur sync cloud (${dbKey}):`, error);
-          continue;
-        }
-        toPush.forEach(({id, json}) => { cache[id] = json; });
-      }catch(e){
-        uneErreur = true;
-        console.warn(`Erreur sync cloud (${dbKey}):`, e);
-      }
+  _supaDebounceTimer = setTimeout(_pousserVersSupabase, 1500); // attend 1.5s après la dernière modif avant de pousser
+}
+// Une modification peut rester jusqu'à 1.5s non synchronisée (debounce
+// ci-dessus) : si l'onglet se recharge, se ferme ou passe en arrière-plan
+// pendant cette fenêtre, l'édition ne partait jamais vers Supabase et
+// disparaissait au rechargement suivant (qui relit l'ancien état depuis le
+// cloud). Avec la fiche contact désormais éditable en direct partout
+// (plus de bouton "Enregistrer" qui laissait naturellement le temps au
+// debounce de partir), ce risque est bien plus facile à déclencher en
+// pratique : on vide donc la file d'attente dès que l'onglet devient
+// invisible, sans attendre le debounce.
+if(typeof document !== 'undefined'){
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'hidden' && _supaReady && !_supaSyncing){
+      clearTimeout(_supaDebounceTimer);
+      _pousserVersSupabase();
     }
-    _supaSyncing = false;
-    setSyncStatus(uneErreur ? 'error' : 'ok');
-  }, 1500); // attend 1.5s après la dernière modif avant de pousser
+  });
 }
 
 function loadFromStorage(){
