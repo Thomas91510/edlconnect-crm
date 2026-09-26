@@ -487,7 +487,6 @@ function nav(v){
       renderProspection();
     }
   }
-  if(v==='pipeline')renderPipeline();
   if(v==='missions')renderMissions();
   if(v==='campaigns')renderCampaigns();
   if(v==='compose')renderTracking();
@@ -675,9 +674,9 @@ function renderDashboard(){
   document.getElementById('k-no-reply').textContent=noReply||'—';
   document.getElementById('k-no-reply-pct').textContent=noReply>0?`${Math.round(noReply/total*100)}% des envois`:'Aucun';
 
-  const stageCounts={};STAGES.forEach(s=>stageCounts[s]=DB.deals.filter(d=>d.etape===s).length);
+  const stageCounts={};PROSP_STAGES.forEach(s=>stageCounts[s.key]=DB.prospects.filter(p=>p.etape===s.key).length);
   const maxC=Math.max(...Object.values(stageCounts),1);
-  document.getElementById('dash-pipeline').innerHTML=STAGES.map(s=>`<div class="stat-row"><span style="font-size:11px;width:80px;color:var(--text2);flex-shrink:0">${s}</span><div class="progress-bar"><div class="progress-fill" style="width:${Math.round(stageCounts[s]/maxC*100)}%"></div></div><span style="font-size:11px;min-width:16px;text-align:right">${stageCounts[s]}</span></div>`).join('');
+  document.getElementById('dash-pipeline').innerHTML=PROSP_STAGES.map(s=>`<div class="stat-row"><span style="font-size:11px;width:80px;color:var(--text2);flex-shrink:0">${s.label}</span><div class="progress-bar"><div class="progress-fill" style="width:${Math.round(stageCounts[s.key]/maxC*100)}%;background:${s.color}"></div></div><span style="font-size:11px;min-width:16px;text-align:right">${stageCounts[s.key]}</span></div>`).join('');
 
   // Missions dans le tableau — filtrées
   document.getElementById('dash-missions').innerHTML=missions.slice(-5).reverse().map(m=>`<tr><td>${esc(m.agence)}</td><td style="font-size:10px">${esc(m.type)}</td><td>${m.montant} €</td><td>${statusBadge(m.statut)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Aucune</td></tr>';
@@ -917,64 +916,5 @@ async function chargerApercuExtranet(email){
   }
 }
 
-// ─── PIPELINE ─────────────────────────────────────────────
-function renderPipeline(){
-  const board=document.getElementById('pipeline-board');
-  if(DB.deals.length===0){
-    board.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
-      <div style="font-size:32px;margin-bottom:12px">📊</div>
-      <div style="font-size:14px;font-weight:500;margin-bottom:8px">Pipeline vide</div>
-      <div style="font-size:12px;margin-bottom:16px">Ajoute des opportunités commerciales manuellement</div>
-      <button class="btn btn-primary" onclick="openModal('modal-deal')"><i class="ti ti-plus"></i>Créer ma première opportunité</button>
-    </div>`;
-    return;
-  }
-  board.innerHTML=STAGES.map(stage=>{
-    const cards=DB.deals.filter(d=>d.etape===stage);
-    const _annuel=d=>(d.periode==='an'?(d.montant||0):(d.montant||0)*12);
-    const total=cards.reduce((s,d)=>s+_annuel(d),0);
-    return `<div class="pipe-col" ondragover="event.preventDefault();this.style.background='var(--blue-bg)'" ondragleave="this.style.background=''" ondrop="dropDeal(event,'${stage}');this.style.background=''">
-      <div class="pipe-col-title"><span>${stage}</span><span>${cards.length}</span></div>
-      ${cards.map(d=>{
-        return `<div class="pipe-card" draggable="true" ondragstart="dragDeal(event,'${d.id}')" style="cursor:grab">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
-            <div class="pipe-card-name" style="flex:1">${d.agence}</div>
-            <button onclick="deleteDeal('${d.id}')" title="Supprimer"
-              style="background:none;border:none;cursor:pointer;color:var(--red);font-size:13px;padding:0;line-height:1;flex-shrink:0;opacity:0.5"
-              onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">✕</button>
-          </div>
-          <div class="pipe-card-amount">${(d.montant||0).toLocaleString('fr-FR')} €/${d.periode==='an'?'an':'mois'}</div>
-          <div class="pipe-card-meta">${d.proba}% · ${d.notes||'—'}</div>
-        </div>`;
-      }).join('')}
-      ${total?`<div style="font-size:10px;color:var(--text2);text-align:right;margin-top:5px">${total.toLocaleString('fr-FR')} €/an</div>`:''}</div>`;
-  }).join('');
-}
-
-let _dragDealId = '';
-function dragDeal(event, id){ _dragDealId = id; event.dataTransfer.effectAllowed = 'move'; }
-function dropDeal(event, newStage){
-  event.preventDefault();
-  const d = DB.deals.find(x => String(x.id) === String(_dragDealId));
-  if(!d || d.etape === newStage) return;
-  d.etape = newStage;
-  saveToStorage();
-  renderPipeline();
-  renderDashboard();
-  notify(`✅ Déplacé → ${newStage}`);
-}
-
-function deleteDeal(id){
-  // Comparer en string pour gérer IDs numériques ET string
-  const d=DB.deals.find(x=>String(x.id)===String(id));
-  if(!d)return;
-  if(!confirm(`Supprimer cette opportunité ?\n\n"${d.agence}"\n${(d.montant||0).toLocaleString('fr-FR')} €/mois · ${d.etape}\n\nCette action est irréversible.`))return;
-  DB.deals=DB.deals.filter(x=>String(x.id)!==String(id));
-  saveToStorage();
-  deleteFromSupabase('deals', id);
-  notify('🗑️ Opportunité supprimée');
-  renderPipeline();
-  renderDashboard();
-}
 
 // ─── MISSIONS ─────────────────────────────────────────────

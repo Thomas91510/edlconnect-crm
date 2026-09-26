@@ -988,7 +988,6 @@ async function onAuthSuccess(user){
       renderCalendar();
       if(typeof renderProspection==='function') renderProspection();
       if(typeof renderMissions==='function') renderMissions();
-      if(typeof renderPipeline==='function') renderPipeline();
     } else {
       // Première connexion → pousser les données locales
       pushAllToSupabase();
@@ -1049,7 +1048,7 @@ async function doLogout(){
     aSupprimer.forEach(k=>localStorage.removeItem(k));
     // Réinitialiser les données en mémoire
     if(typeof DB==='object' && DB){
-      DB.contacts=[]; DB.deals=[]; DB.missions=[]; DB.campaigns=[];
+      DB.contacts=[]; DB.missions=[]; DB.campaigns=[];
       DB.rdvs=[]; DB.invoices=[]; DB.trackings=[]; DB.prospects=[];
       DB.dups=[]; DB.brevoContacts=[]; DB.agents=[];
     }

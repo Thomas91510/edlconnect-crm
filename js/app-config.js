@@ -64,17 +64,18 @@ const PROSP_STAGES=[
   {key:'reponse_recue',label:'Réponse reçue',color:'#639922',bg:'#EAF3DE'},
   {key:'rdv_planifie',label:'RDV planifié',color:'#854F0B',bg:'#FAEEDA'},
   {key:'devis_envoye',label:'Devis envoyé',color:'#5B3DA5',bg:'#EEEDFE'},
+  {key:'negociation',label:'Négociation',color:'#B45309',bg:'#FEF3E2'},
   {key:'gagne',label:'Gagné ✅',color:'#3B6D11',bg:'#D6EDCA'},
   {key:'perdu',label:'Perdu ❌',color:'#A32D2D',bg:'#FCEBEB'}
 ];
 
 // Correspondance label → key
 function etapeToKey(etape){
-  const map={'À contacter':'a_contacter','Email envoyé':'email_envoye','Email ouvert':'email_ouvert','Réponse reçue':'reponse_recue','RDV planifié':'rdv_planifie','Devis envoyé':'devis_envoye','Gagné':'gagne','Perdu':'perdu'};
+  const map={'À contacter':'a_contacter','Email envoyé':'email_envoye','Email ouvert':'email_ouvert','Réponse reçue':'reponse_recue','RDV planifié':'rdv_planifie','Devis envoyé':'devis_envoye','Négociation':'negociation','Gagné':'gagne','Perdu':'perdu'};
   return map[etape]||'a_contacter';
 }
 function keyToEtape(key){
-  const map={a_contacter:'À contacter',email_envoye:'Email envoyé',email_ouvert:'Email ouvert',reponse_recue:'Réponse reçue',rdv_planifie:'RDV planifié',devis_envoye:'Devis envoyé',gagne:'Gagné',perdu:'Perdu'};
+  const map={a_contacter:'À contacter',email_envoye:'Email envoyé',email_ouvert:'Email ouvert',reponse_recue:'Réponse reçue',rdv_planifie:'RDV planifié',devis_envoye:'Devis envoyé',negociation:'Négociation',gagne:'Gagné',perdu:'Perdu'};
   return map[key]||'À contacter';
 }
 
@@ -177,10 +178,6 @@ function saveProspect(){
     createdAt:new Date().toISOString(),
     lastAction:null
   });
-  // Si Gagné, ajouter au pipeline commercial
-  if(etape==='gagne'&&ca){
-    DB.deals.push({id:'d_'+Date.now(),agence,montant:ca,etape:'Gagné',proba:100,notes:'Ajouté depuis prospection'});
-  }
   saveToStorage();closeModal('modal-prosp');
   notify('✅ Prospect ajouté !');
   renderProspection();
@@ -192,6 +189,8 @@ function quickAddProspect(etapeKey){
   ['pp-agence','pp-contact','pp-email','pp-tel','pp-dept','pp-notes','pp-ca','pp-notes-short'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
+  const lienBox=document.getElementById('pp-lien-contact');
+  if(lienBox){ lienBox.style.display='none'; lienBox.innerHTML=''; }
   document.getElementById('pp-etape').value=keyToEtape(etapeKey);
   const btn=document.querySelector('#modal-prosp .btn-primary');
   btn.innerHTML='<i class="ti ti-check"></i>Enregistrer';
@@ -240,9 +239,6 @@ function editCA(id){
   const ca=prompt(`Modifier le CA mensuel pour "${p.agence}" :\n(actuel : ${p.ca?p.ca.toLocaleString('fr-FR')+' €/mois':'non renseigné'})`,p.ca||'');
   if(ca===null)return;
   p.ca=parseFloat(ca.replace(',','.'))||0;
-  // Mettre à jour aussi dans le pipeline commercial
-  const deal=DB.deals.find(d=>d.agence===p.agence);
-  if(deal&&p.ca)deal.montant=p.ca;
   saveToStorage();
   renderCAPanel();
   notify('✅ CA mis à jour !');
@@ -293,31 +289,54 @@ function moveProspect(id,newEtape){
     const ca=prompt(`🎉 Félicitations !\n\nQuel est le CA mensuel estimé pour "${p.agence}" ?\n(en €/mois — laisser vide si inconnu)`);
     if(ca&&!isNaN(parseFloat(ca.replace(',','.')))) {
       p.ca=parseFloat(ca.replace(',','.'));
-      // Créer automatiquement une opportunité dans le pipeline commercial
-      const existing=DB.deals.find(d=>d.agence===p.agence);
-      if(!existing){
-        DB.deals.push({
-          id:'d_'+Date.now(),
-          agence:p.agence,
-          montant:p.ca,
-          etape:'Gagné',
-          proba:100,
-          notes:`Converti depuis prospection le ${fmtDate(new Date().toISOString())}`
-        });
-        notify(`✅ "${p.agence}" ajouté au pipeline commercial — ${p.ca.toLocaleString('fr-FR')} €/mois`);
-      }
+      notify(`✅ "${p.agence}" marqué Gagné — ${p.ca.toLocaleString('fr-FR')} €/mois`);
     }
   }
+  // Si passage à Perdu → garder une trace du motif (au lieu de la suppression
+  // pure qui existait dans l'ancien pipeline "deals", sans aucun historique).
+  if(newEtape==='perdu'){
+    const motif=prompt(`Pourquoi "${p.agence}" est-il perdu ?\n(optionnel — laisser vide si inconnu)`);
+    if(motif) p.motifPerte=motif.trim();
+  }
   saveToStorage();
-  if(newEtape!=='gagne') notify(`✅ Déplacé vers "${keyToEtape(newEtape)}"`);
+  if(newEtape!=='gagne'&&newEtape!=='perdu') notify(`✅ Déplacé vers "${keyToEtape(newEtape)}"`);
   renderProspection();
   renderDashboard();
+}
+
+// Retrouve la fiche contact correspondant à un prospect (même email, en
+// priorité, sinon même nom d'agence) — les deux collections ne sont pas
+// reliées par un identifiant commun, seulement par ces champs en pratique.
+function _contactLiePourProspect(p){
+  if(p.email){
+    const parEmail=DB.contacts.find(c=>c.email&&c.email.toLowerCase()===p.email.toLowerCase());
+    if(parEmail)return parEmail;
+  }
+  if(p.agence){
+    return DB.contacts.find(c=>c.entreprise&&c.entreprise.toLowerCase()===p.agence.toLowerCase());
+  }
+  return null;
 }
 
 function openProspCard(id){
   const p=DB.prospects.find(x=>x.id===id);
   if(!p)return;
   const etape=keyToEtape(p.etape);
+
+  const lienBox=document.getElementById('pp-lien-contact');
+  const contactLie=_contactLiePourProspect(p);
+  if(lienBox){
+    if(contactLie){
+      lienBox.style.display='block';
+      lienBox.innerHTML=`<button type="button" class="btn btn-sm" onclick="closeModal('modal-prosp');openFiche('${contactLie.id}')" style="width:100%;justify-content:center">
+        <i class="ti ti-address-book"></i> Voir la fiche contact — ${esc(contactLie.entreprise||contactLie.contact||'')}
+      </button>`;
+    } else {
+      lienBox.style.display='none';
+      lienBox.innerHTML='';
+    }
+  }
+
   // Réutiliser modal-prosp en mode édition — remplir TOUS les champs
   document.getElementById('pp-agence').value      = p.agence        || '';
   document.getElementById('pp-contact').value     = p.contact       || '';
@@ -429,7 +448,7 @@ async function syncFromBrevoSender(){
       // Mettre à jour le statut si progression
       const p = DB.prospects.find(x => (x.email||'').toLowerCase() === email);
       if (p) {
-        const order = ['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','gagne','perdu'];
+        const order = ['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','negociation','gagne','perdu'];
         if (order.indexOf('email_envoye') > order.indexOf(p.etape)) {
           p.etape = 'email_envoye';
           p.lastAction = entry.date?.split('T')[0] || new Date().toISOString().split('T')[0];
@@ -486,7 +505,7 @@ function autoFillAllContacts(){
 
     // Déterminer l'étape selon l'historique
     let etape='a_contacter';
-    const order=['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','gagne','perdu'];
+    const order=['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','negociation','gagne','perdu'];
     const statMap={'Envoyé (Brevo)':'email_envoye','Envoyé':'email_envoye','Ouvert':'email_ouvert','Cliqué':'email_ouvert','Répondu':'reponse_recue','Sans suite':'a_contacter'};
     let lastAction=null;
 
@@ -546,7 +565,7 @@ function autoFillProspection(){
     const newEtape=statMap[t.statut]||'email_envoye';
     if(existing){
       // Faire progresser seulement vers l'avant
-      const order=['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','gagne','perdu'];
+      const order=['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','negociation','gagne','perdu'];
       if(order.indexOf(newEtape)>order.indexOf(existing.etape)){
         existing.etape=newEtape;existing.lastAction=t.date?.split('T')[0];updated++;
       }
@@ -572,7 +591,7 @@ function autoFillProspection(){
     if(!emailLow)return;
     const existing=DB.prospects.find(p=>(p.email||'').toLowerCase()===emailLow);
     // Trouver le meilleur statut dans l'historique
-    const order=['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','gagne','perdu'];
+    const order=['a_contacter','email_envoye','email_ouvert','reponse_recue','rdv_planifie','devis_envoye','negociation','gagne','perdu'];
     const statMap={'Envoyé (Brevo)':'email_envoye','Envoyé':'email_envoye','Ouvert':'email_ouvert','Cliqué':'email_ouvert','Répondu':'reponse_recue','Sans suite':'a_contacter'};
     let bestEtape='email_envoye';
     let lastDate=null;
@@ -610,7 +629,6 @@ function autoFillProspection(){
   notify(`✅ ${created} prospects créés, ${updated} mis à jour — pipeline synchronisé !`);
   renderProspection();
 }
-const STAGES=['Prospect','Qualifié','Proposé','Négociation','Gagné'];
 const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 

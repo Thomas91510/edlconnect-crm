@@ -4,9 +4,6 @@
 
 let DB={
   contacts:[],
-  deals:[
-    // Pas de données de démo — tes données viennent du localStorage
-  ],
   missions:[
     // Pas de données de démo — tes données viennent du localStorage
   ],
@@ -296,7 +293,6 @@ function saveBackup(){
     version:2,
     date:new Date().toISOString(),
     contacts:DB.contacts,
-    deals:DB.deals,
     missions:DB.missions,
     campaigns:DB.campaigns,
     rdvs:DB.rdvs,
@@ -327,7 +323,6 @@ function restoreBackup(input){
       const msg=`Restaurer la sauvegarde du ${fmtDate(data.date)} ?\n\n${data.contacts?.length||0} contacts · ${data.missions?.length||0} missions · ${data.trackings?.length||0} emails · ${data.prospects?.length||0} prospects\n\nCela remplacera toutes tes données actuelles.`;
       if(!confirm(msg)){input.value='';return;}
       if(data.contacts)DB.contacts=data.contacts;
-      if(data.deals)DB.deals=data.deals;
       if(data.missions)DB.missions=data.missions;
       if(data.campaigns)DB.campaigns=data.campaigns;
       if(data.rdvs)DB.rdvs=data.rdvs;
