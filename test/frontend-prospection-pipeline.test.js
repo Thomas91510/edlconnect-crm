@@ -1,8 +1,11 @@
 // Verrouille la fusion de l'ancien "Pipeline commercial" (DB.deals, retiré)
 // dans le pipeline de prospection (DB.prospects, js/app-config.js) : l'étape
 // "Négociation" ajoutée, le motif conservé en passant une carte en "Perdu"
-// (au lieu de la suppression pure d'avant), et le lien vers la fiche contact
-// quand une carte prospect correspond à un contact existant.
+// (au lieu de la suppression pure d'avant), le lien vers la fiche contact
+// quand une carte prospect correspond à un contact existant, et l'autocomplete
+// sur "Agence / Entreprise" à la saisie pour rattacher directement une
+// nouvelle carte à une agence déjà connue plutôt que de créer un doublon
+// non lié (même geste que l'autocomplete des missions, app-agenda.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { chargerScripts } from './_lib/frontend-env.js';
@@ -11,6 +14,7 @@ const HTML = `
   <div id="notif"></div>
   <div class="modal-bg" id="modal-prosp"><div class="modal">
     <div id="pp-lien-contact" style="display:none"></div>
+    <div id="pp-agence-suggest" style="display:none"></div>
     <input id="pp-agence"><input id="pp-contact"><input id="pp-email">
     <input id="pp-tel"><input id="pp-dept"><textarea id="pp-notes"></textarea>
     <select id="pp-etape">
@@ -106,4 +110,42 @@ test('moveProspect vers "gagne" : demande le CA et le mémorise sur le prospect 
   assert.equal(p.etape, 'gagne');
   assert.equal(p.ca, 350);
   assert.equal(w.__getDB().deals, undefined, 'DB.deals ne doit plus exister : un seul pipeline désormais');
+});
+
+test('autocompleteProspectAgence : suggère les agences existantes qui correspondent à la saisie', () => {
+  const w = setup({
+    contacts: [
+      { id: 'c1', entreprise: 'Century 21 Évry', email: 'contact@century21.fr', tel: '0102030405' },
+      { id: 'c2', entreprise: 'Terminus Immobilier', email: 'contact@terminus.fr' },
+      { id: 'c3', entreprise: 'Orpi Nation', email: 'contact@orpi.fr' }
+    ]
+  });
+  w.autocompleteProspectAgence('term');
+  const box = w.document.getElementById('pp-agence-suggest');
+  assert.equal(box.style.display, 'block');
+  assert.ok(box.innerHTML.includes('Terminus Immobilier'));
+  assert.ok(!box.innerHTML.includes('Century 21'), 'ne doit suggérer que les correspondances');
+});
+
+test('autocompleteProspectAgence : masque les suggestions si moins de 2 caractères ou aucune correspondance', () => {
+  const w = setup({ contacts: [{ id: 'c1', entreprise: 'Terminus Immobilier' }] });
+  w.autocompleteProspectAgence('t');
+  assert.equal(w.document.getElementById('pp-agence-suggest').style.display, 'none');
+  w.autocompleteProspectAgence('zzz');
+  assert.equal(w.document.getElementById('pp-agence-suggest').style.display, 'none');
+});
+
+test('selectProspectContact : pré-remplit agence/contact/email/tel et prévisualise le rattachement à la fiche', () => {
+  const w = setup({
+    contacts: [{ id: 'c1', entreprise: 'Terminus Immobilier', contact: 'Marie Dupont', email: 'contact@terminus.fr', tel: '0102030405' }]
+  });
+  w.selectProspectContact('c1');
+  assert.equal(w.document.getElementById('pp-agence').value, 'Terminus Immobilier');
+  assert.equal(w.document.getElementById('pp-contact').value, 'Marie Dupont');
+  assert.equal(w.document.getElementById('pp-email').value, 'contact@terminus.fr');
+  assert.equal(w.document.getElementById('pp-tel').value, '0102030405');
+  assert.equal(w.document.getElementById('pp-agence-suggest').style.display, 'none');
+  const lien = w.document.getElementById('pp-lien-contact');
+  assert.equal(lien.style.display, 'block');
+  assert.ok(lien.innerHTML.includes("openFiche('c1')"), 'doit permettre de rejoindre directement la fiche du contact choisi');
 });

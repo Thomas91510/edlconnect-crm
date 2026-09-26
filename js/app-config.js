@@ -221,6 +221,8 @@ function quickAddProspect(etapeKey){
   });
   const lienBox=document.getElementById('pp-lien-contact');
   if(lienBox){ lienBox.style.display='none'; lienBox.innerHTML=''; }
+  const suggestBox=document.getElementById('pp-agence-suggest');
+  if(suggestBox){ suggestBox.style.display='none'; }
   document.getElementById('pp-etape').value=keyToEtape(etapeKey);
   const btn=document.querySelector('#modal-prosp .btn-primary');
   btn.innerHTML='<i class="ti ti-check"></i>Enregistrer';
@@ -410,11 +412,45 @@ function _contactLiePourProspect(p){
   return null;
 }
 
+// Suggère les agences déjà connues (fiches contact existantes) pendant la
+// saisie d'un prospect, pour rattacher la carte à sa fiche au lieu de
+// créer un doublon non lié — même pattern que l'autocomplete des missions
+// (autocompleteMission, app-agenda.js).
+function autocompleteProspectAgence(val){
+  const box=document.getElementById('pp-agence-suggest');
+  if(!val||val.length<2){if(box)box.style.display='none';return;}
+  const q=val.toLowerCase();
+  const matches=DB.contacts.filter(c=>(c.entreprise||'').toLowerCase().includes(q)||(c.contact||'').toLowerCase().includes(q)).slice(0,6);
+  if(!matches.length){if(box)box.style.display='none';return;}
+  if(box){
+    box.style.display='block';
+    box.innerHTML=matches.map(c=>`<div onclick="selectProspectContact('${esc(c.id)}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(c.entreprise||c.contact)}</div><div style="color:var(--text2);font-size:10px">${esc(c.email||'')} ${c.tel?'· '+esc(c.tel):''}</div></div>`).join('');
+  }
+}
+function selectProspectContact(id){
+  const c=DB.contacts.find(x=>x.id===id);if(!c)return;
+  document.getElementById('pp-agence').value=c.entreprise||c.contact||'';
+  document.getElementById('pp-contact').value=c.contact||'';
+  document.getElementById('pp-email').value=c.email||'';
+  document.getElementById('pp-tel').value=c.tel||'';
+  const box=document.getElementById('pp-agence-suggest');if(box)box.style.display='none';
+  // Prévisualiser tout de suite le rattachement, comme dans openProspCard.
+  const lienBox=document.getElementById('pp-lien-contact');
+  if(lienBox){
+    lienBox.style.display='block';
+    lienBox.innerHTML=`<button type="button" class="btn btn-sm" onclick="closeModal('modal-prosp');openFiche('${c.id}')" style="width:100%;justify-content:center">
+      <i class="ti ti-address-book"></i> Voir la fiche contact — ${esc(c.entreprise||c.contact||'')}
+    </button>`;
+  }
+}
+
 function openProspCard(id){
   const p=DB.prospects.find(x=>x.id===id);
   if(!p)return;
   const etape=keyToEtape(p.etape);
 
+  const suggestBox=document.getElementById('pp-agence-suggest');
+  if(suggestBox){ suggestBox.style.display='none'; }
   const lienBox=document.getElementById('pp-lien-contact');
   const contactLie=_contactLiePourProspect(p);
   if(lienBox){
