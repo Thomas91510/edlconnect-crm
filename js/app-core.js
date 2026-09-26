@@ -48,35 +48,6 @@ function ajustementsPourMois(mois){
   }, { nb: 0, ca: 0 });
 }
 
-// Prévient par email le client (agence ou particulier) que son rapport
-// d'état des lieux est disponible dans l'extranet — sans quoi ce statut,
-// corrigé côté extranet, reste invisible tant que le client ne pense pas à
-// se reconnecter de lui-même. Attention : la récupération du rapport Edouard
-// n'est PAS instantanée (cron quotidien, ou bouton "Sync Edouard" dans
-// Missions pour forcer une vérification) — ce mail peut donc partir avant
-// que le rapport soit réellement rattaché à la mission côté extranet.
-// Best-effort : une erreur ici ne doit jamais bloquer le flux appelant
-// (changement de statut, génération de facture).
-async function notifierChangementStatutCommande(mission){
-  if(!mission || !mission.emailClient) return;
-  if(mission.statut !== 'terminée') return;
-  try{
-    if(typeof _authHeaders !== 'function' || !_supaReady) return;
-    await fetch('/api/notify-order-status', {
-      method: 'POST',
-      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        missionId: mission.id,
-        emailClient: mission.emailClient,
-        adresse: mission.adresse || '',
-        type: mission.type || '',
-        date: mission.date || '',
-        agence: mission.agence || ''
-      })
-    });
-  }catch(e){ console.warn('notifierChangementStatutCommande:', e); }
-}
-
 // Affiche le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement, aucune maintenance
 // manuelle) — utile pour vérifier en un coup d'œil qu'un déploiement a
@@ -533,17 +504,6 @@ function renderAujourdhui(){
     return d >= debutAuj && d < finDemain;
   });
 
-  // Mission passee sans rapport recupere (ni par Edouard, ni saisi a la main) :
-  // signale un dossier qui reste a cloturer. Comparaison au debut du jour
-  // (comme avisAttente ci-dessous), pas a l'instant present :
-  // une mission prevue plus tot dans la journee ne doit pas etre signalee
-  // avant meme que la journee soit terminee.
-  const rapportsAttente = missions.filter(m=>{
-    if(!m.date || estAnnulee(m)) return false;
-    if(m.rapportUrl) return false;
-    return new Date(m.date) < debutAuj;
-  });
-
   // Mission passee avec un locataire identifie, dont la premiere demande
   // d'avis (envoyee automatiquement par le cron J+1) n'est pas encore partie.
   const avisAttente = missions.filter(m=>{
@@ -554,7 +514,6 @@ function renderAujourdhui(){
 
   const items = [
     { label:"RDV aujourd'hui / demain", count: rdvProches.length, icone:'ti-calendar-event', couleur:'var(--blue)', action:"nav('missions')" },
-    { label:'Rapports en attente', count: rapportsAttente.length, icone:'ti-file-alert', couleur:'var(--amber, #B45309)', action:"nav('missions')" },
     { label:'Réservations non traitées', count:'—', id:'dash-today-resa', icone:'ti-inbox', couleur:'var(--red-text, #A32D2D)', action:"nav('reservations')" },
     { label:'Avis à relancer', count: avisAttente.length, icone:'ti-star', couleur:'var(--green)', action:"nav('missions')" }
   ];
