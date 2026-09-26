@@ -9,58 +9,72 @@ function openFiche(id){
   document.getElementById('fiche-avatar').textContent=initials(c.entreprise||c.contact||'?');
   document.getElementById('fiche-name').textContent=c.entreprise||c.contact||'—';
   document.getElementById('fiche-sub').textContent=[c.contact,c.source].filter(Boolean).join(' · ')||'';
-  // Onglet Informations — champs éditables inline
+  // Onglet Informations — tout éditable en direct, groupé par thème (plus
+  // d'onglet "Modifier" séparé qui rééditait presque les mêmes champs).
   document.getElementById('fiche-fields').innerHTML=`
-    <div class="fiche-field">
-      <div class="fiche-label">Email</div>
-      <div class="fiche-val">${c.email?`<a href="mailto:${c.email}" style="color:var(--blue)">${c.email}</a>`:'—'}</div>
+    <div class="fiche-section">
+      <div class="fiche-section-title">Coordonnées</div>
+      <div class="fiche-grid">
+        <div class="fiche-inline-field"><label>Entreprise</label>
+          <input value="${esc(c.entreprise||'')}" onchange="quickUpdateContact('${c.id}','entreprise',this.value)">
+        </div>
+        <div class="fiche-inline-field"><label>Contact</label>
+          <input value="${esc(c.contact||'')}" onchange="quickUpdateContact('${c.id}','contact',this.value)">
+        </div>
+        <div class="fiche-inline-field"><label>Email</label>
+          <input type="email" value="${esc(c.email||'')}" onchange="quickUpdateContact('${c.id}','email',this.value)">
+        </div>
+        <div class="fiche-inline-field"><label>Téléphone</label>
+          <input value="${esc(c.tel||'')}" onchange="quickUpdateContact('${c.id}','tel',this.value)">
+        </div>
+      </div>
     </div>
-    <div class="fiche-field">
-      <div class="fiche-label">Téléphone</div>
-      <div class="fiche-val">${c.tel?`<a href="tel:${c.tel}" style="color:var(--blue)">${c.tel}</a>`:'—'}</div>
+
+    <div class="fiche-section">
+      <div class="fiche-section-title">Suivi commercial</div>
+      <div class="fiche-grid">
+        <div class="fiche-inline-field"><label>Statut</label>
+          <select onchange="quickUpdateContact('${c.id}','statut',this.value)">
+            ${['Cible potentielle','Client actif','Client signé ✅','Partenaire','Inactif'].map(v=>`<option${v===(c.statut||'Cible potentielle')?' selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fiche-inline-field"><label>Type client</label>
+          <select onchange="quickUpdateContact('${c.id}','typeClient',this.value)">
+            ${['Professionnel','Particulier'].map(v=>`<option${v===(c.typeClient||'Professionnel')?' selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fiche-inline-field"><label>Source</label>
+          <select onchange="quickUpdateContact('${c.id}','source',this.value)">
+            ${['Démarchage','Recommandation','Relation','Site web','Brevo','Excel','Cal.com'].map(v=>`<option${v===(c.source||'Démarchage')?' selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fiche-inline-field"><label>Dernier contact</label>
+          <input type="date" value="${c.lastContact||''}" onchange="quickUpdateContact('${c.id}','lastContact',this.value)">
+        </div>
+        <div class="fiche-inline-field"><label>Moyen de contact</label>
+          <select onchange="quickUpdateContact('${c.id}','moyenContact',this.value)">
+            ${['— Non renseigné —','📧 Email','📞 Téléphone','💬 SMS','👤 Rendez-vous physique','💻 Visio','📱 WhatsApp','🔗 LinkedIn'].map(v=>`<option${v===(c.moyenContact||'')?' selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fiche-inline-field"><label>Présence</label>
+          <div style="padding-top:5px">${presenceBadge(c.presence||'notion')}</div>
+        </div>
+      </div>
     </div>
-    <div class="fiche-field">
-      <div class="fiche-label">Type client</div>
-      <select style="width:100%;font-size:12px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg)" onchange="quickUpdateContact('${c.id}','typeClient',this.value)">
-        ${['Professionnel','Particulier'].map(v=>`<option${v===(c.typeClient||'Professionnel')?' selected':''}>${v}</option>`).join('')}
-      </select>
+
+    <div class="fiche-section">
+      <div class="fiche-section-title">Tracking email</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="stat-pill pill-open"><i class="ti ti-eye" style="font-size:10px"></i>${c.opens||0} ouvertures</span>
+        <span class="stat-pill pill-click"><i class="ti ti-mouse" style="font-size:10px"></i>${c.clicks||0} clics</span>
+      </div>
     </div>
-    <div class="fiche-field">
-      <div class="fiche-label">Statut</div>
-      <select style="width:100%;font-size:12px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg)" onchange="quickUpdateContact('${c.id}','statut',this.value)">
-        ${['Cible potentielle','Client actif','Partenaire','Inactif'].map(v=>`<option${v===(c.statut||'Cible potentielle')?' selected':''}>${v}</option>`).join('')}
-      </select>
-    </div>
-    <div class="fiche-field">
-      <div class="fiche-label">Source</div>
-      <select style="width:100%;font-size:12px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg)" onchange="quickUpdateContact('${c.id}','source',this.value)">
-        ${['Démarchage','Recommandation','Relation','Site web','Brevo','Excel','Cal.com'].map(v=>`<option${v===(c.source||'Démarchage')?' selected':''}>${v}</option>`).join('')}
-      </select>
-    </div>
-    <div class="fiche-field">
-      <div class="fiche-label">Présence</div>
-      <div class="fiche-val">${presenceBadge(c.presence||'notion')}</div>
-    </div>
-    <div class="fiche-field">
-      <div class="fiche-label">Dernier contact</div>
-      <input type="date" value="${c.lastContact||''}" style="width:100%;font-size:12px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg)" onchange="quickUpdateContact('${c.id}','lastContact',this.value)">
-    </div>
-    <div class="fiche-field">
-      <div class="fiche-label">Moyen de contact</div>
-      <select style="width:100%;font-size:12px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg)" onchange="quickUpdateContact('${c.id}','moyenContact',this.value)">
-        ${['— Non renseigné —','📧 Email','📞 Téléphone','💬 SMS','👤 Rendez-vous physique','💻 Visio','📱 WhatsApp','🔗 LinkedIn'].map(v=>`<option${v===(c.moyenContact||'')?' selected':''}>${v}</option>`).join('')}
-      </select>
-    </div>
-    <div class="fiche-field">
-      <div class="fiche-label">Ouvertures Brevo</div>
-      <div class="fiche-val"><span class="stat-pill pill-open"><i class="ti ti-eye" style="font-size:10px"></i>${c.opens||0} ouvertures</span></div>
-    </div>
-    <div class="fiche-field">
-      <div class="fiche-label">Clics Brevo</div>
-      <div class="fiche-val"><span class="stat-pill pill-click"><i class="ti ti-mouse" style="font-size:10px"></i>${c.clicks||0} clics</span></div>
+
+    <div class="fiche-section">
+      <div class="fiche-section-title">Notes</div>
+      <textarea style="width:100%;min-height:60px;font-size:12.5px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);font-family:inherit" placeholder="Remarques, historique, infos importantes…" onchange="quickUpdateContact('${c.id}','notes',this.value)">${esc(c.notes||'')}</textarea>
     </div>
   `;
-  document.getElementById('fiche-notes-display').innerHTML=c.notes?`<div style="font-size:11px;color:var(--text2);margin-bottom:3px">Notes</div><div style="font-size:12px">${c.notes}</div>`:'<div style="font-size:11px;color:var(--text3)">Aucune note — clique sur Modifier pour en ajouter</div>';
   document.getElementById('fiche-email-btn').onclick=()=>{
     closeModal('modal-fiche');
     nav('compose');
@@ -72,28 +86,18 @@ function openFiche(id){
 
   // Rendu emails via fonction dédiée (inclut Gmail)
   renderFicheEmails(c);
-  document.getElementById('fe-ent').value=c.entreprise||'';
-  document.getElementById('fe-contact').value=c.contact||'';
-  document.getElementById('fe-email').value=c.email||'';
-  document.getElementById('fe-tel').value=c.tel||'';
-  document.getElementById('fe-notes').value=c.notes||'';
   feRenderDocs(c.documents || []);
   const msgBadge=document.getElementById('ftab-messages-count');
   if(msgBadge){
     const nonLus=(Array.isArray(c.messages)?c.messages:[]).filter(m=>m.sender==='client'&&!m.lu).length;
     msgBadge.textContent=nonLus>0?nonLus:'';
   }
-  document.getElementById('fe-statut').value=c.statut||'Cible potentielle';
-  document.getElementById('fe-type-client').value=c.typeClient||'Professionnel';
-  document.getElementById('fe-source').value=c.source||'Démarchage';
-  document.getElementById('fe-last-contact').value=c.lastContact||'';
-  document.getElementById('fe-moyen-contact').value=c.moyenContact||'';
   ficheTab('infos',document.getElementById('ftab-infos'));
   renderFicheCommandes(c);
   openModal('modal-fiche');
 }
 function ficheTab(tab,btn){
-  ['infos','commandes','taches','emails','messages','edit'].forEach(t=>{
+  ['infos','commandes','taches','emails','messages','docs'].forEach(t=>{
     const el=document.getElementById('fiche-'+t);
     if(el)el.style.display='none';
   });
@@ -259,6 +263,20 @@ async function quickUpdateContact(id,field,value){
   c[field]=value;
   saveToStorage();
   notify('✅ Mis à jour !');
+  // Entreprise/contact modifiés en direct : garder l'en-tête de la fiche à jour.
+  if((field==='entreprise'||field==='contact') && id===currentFicheId){
+    const nameEl=document.getElementById('fiche-name');
+    const subEl=document.getElementById('fiche-sub');
+    const avatarEl=document.getElementById('fiche-avatar');
+    if(nameEl)nameEl.textContent=c.entreprise||c.contact||'—';
+    if(subEl)subEl.textContent=[c.contact,c.source].filter(Boolean).join(' · ')||'';
+    if(avatarEl)avatarEl.textContent=initials(c.entreprise||c.contact||'?');
+  }
+  // Entreprise/email modifiés en direct : la détection de doublons doit se
+  // recalculer (avant, seul saveContactEdit() le faisait au moment du Save).
+  if((field==='entreprise'||field==='email') && typeof detectDuplicates==='function'){
+    detectDuplicates();
+  }
   // Déclencher email si passage à "Client signé"
   if(field === 'statut' && value === 'Client signé ✅' && prevValue !== 'Client signé ✅'){
     if(c.email && confirm('Envoyer l\'email de bienvenue EDL IDF à ' + (c.entreprise||c.contact) + ' ?')){
@@ -376,54 +394,6 @@ function addMissionToFiche(){
   },100);
 }
 
-async function onContactStatusChange(select){
-  const newStatus = select.value;
-  if(newStatus !== 'Client signé ✅') return;
-  // Récupérer les infos du contact courant
-  const c = DB.contacts.find(x => x.id === currentFicheId);
-  if(!c) return;
-  if(!c.email){ notify('⚠️ Email du contact requis pour envoyer le lien booking', 'warn'); return; }
-  // Confirmer l'envoi
-  if(!confirm(`Envoyer l'email de bienvenue EDL IDF à ${c.entreprise || c.contact} (${c.email}) avec son lien booking ?`)) {
-    select.value = c.statut || 'Cible potentielle';
-    return;
-  }
-  try {
-    const resp = await fetch('/api/send-welcome-agency', {
-      method: 'POST',
-      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        email: c.email,
-        companyName: c.entreprise || c.contact || '',
-        contactName: c.contact || ''
-      })
-    });
-    if(resp.ok){
-      notify('✅ Email de bienvenue envoyé à ' + c.email + ' !');
-    } else {
-      notify('⚠️ Erreur envoi email — statut mis à jour quand même', 'warn');
-    }
-  } catch(e) {
-    notify('⚠️ Erreur réseau : ' + e.message, 'warn');
-  }
-}
-
-function saveContactEdit(){
-  const c=DB.contacts.find(x=>x.id===currentFicheId);if(!c)return;
-  c.entreprise=document.getElementById('fe-ent').value;
-  c.contact=document.getElementById('fe-contact').value;
-  c.email=document.getElementById('fe-email').value;
-  c.tel=document.getElementById('fe-tel').value;
-  c.statut=document.getElementById('fe-statut').value;
-  c.typeClient=document.getElementById('fe-type-client').value;
-  c.source=document.getElementById('fe-source').value;
-  c.lastContact=document.getElementById('fe-last-contact').value;
-  c.moyenContact=document.getElementById('fe-moyen-contact').value;
-  c.notes=document.getElementById('fe-notes').value;
-  c.documents = feGetDocs();
-  detectDuplicates();saveToStorage();closeModal('modal-fiche');
-  notify('✅ Contact mis à jour !');renderContacts();renderDashboard();
-}
 function deleteContact(){
   if(!confirm('Supprimer ce contact ?'))return;
   const idToDelete=currentFicheId;
