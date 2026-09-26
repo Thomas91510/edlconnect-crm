@@ -107,6 +107,33 @@ test('prospection-click : crée un enregistrement minimal si le contact était i
   assert.ok(ecriture[0].data.clickedAt);
 });
 
+test('prospection-click : fait aussi avancer la carte du prospect dans le pipeline commercial', async () => {
+  let patchProspects = null;
+  global.fetch = async (url, opts) => {
+    const u = String(url);
+    if (u.includes('/rest/v1/prospection') && (!opts || opts.method !== 'POST')) {
+      return { ok: true, json: async () => [{ id: 'prospect@agence.fr', data: { email: 'prospect@agence.fr', stage: 1, sentAt1: '2026-09-10T10:00:00.000Z' } }] };
+    }
+    if (u.includes('/rest/v1/prospection') && opts && opts.method === 'POST') {
+      return { ok: true };
+    }
+    if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ user_id: 'u1' }] };
+    if (u.includes('/rest/v1/prospects') && (!opts || opts.method !== 'PATCH')) {
+      return { ok: true, json: async () => [{ id: 'p1', data: { agence: 'Agence Prospect', email: 'prospect@agence.fr', etape: 'email_envoye' } }] };
+    }
+    if (u.includes('/rest/v1/prospects') && opts && opts.method === 'PATCH') {
+      patchProspects = JSON.parse(opts.body);
+      return { ok: true };
+    }
+    return { ok: true, json: async () => [] };
+  };
+
+  const res = await handler(requete({ event: 'click', email: 'prospect@agence.fr' }));
+  assert.equal(res.status, 200);
+  assert.ok(patchProspects, 'la carte du pipeline doit être mise à jour');
+  assert.equal(patchProspects.data.etape, 'email_ouvert');
+});
+
 test('prospection-click : renvoie 500 si l\'écriture Supabase échoue', async () => {
   global.fetch = async (url, opts) => {
     const u = String(url);

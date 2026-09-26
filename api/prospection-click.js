@@ -1,14 +1,16 @@
 export const config = { runtime: 'edge' };
 
+import { resoudreAdminUserId, avancerEtapeProspect } from './_lib/prospects-sync.js';
+
 // Webhook Brevo (événement "click") pour la séquence de prospection EDL IDF.
 // Remplace le scénario Make "Séquence prospection — Capture clics" — même
 // logique minimale (marquer clickedAt sur le contact), mais persistée dans
 // la table Supabase "prospection" plutôt que le data store Make, pour rester
 // cohérent avec prospection-cron.js qui lit cet état.
 //
-// Ce endpoint n'est pas encore branché : Brevo continue d'appeler le webhook
-// Make tant que ce dernier n'a pas été repointé manuellement (côté Brevo,
-// Settings → Webhooks) vers cette URL.
+// Un clic fait aussi avancer la carte du prospect dans le pipeline commercial
+// (table "prospects") jusqu'à l'étape "Email ouvert" — voir
+// api/_lib/prospects-sync.js pour le détail (jamais en arrière, best-effort).
 //
 // Protégé par un secret partagé dans l'URL du webhook (?secret=...) : sans
 // ça, n'importe qui pourrait POSTer un email arbitraire et polluer la table
@@ -75,6 +77,9 @@ export default async function handler(req) {
       const err = await upsertResp.text();
       return new Response(JSON.stringify({ error: 'Supabase: ' + err }), { status: 500 });
     }
+
+    const adminUserId = await resoudreAdminUserId(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    await avancerEtapeProspect(SUPABASE_URL, SUPABASE_SERVICE_KEY, adminUserId, email, 'email_ouvert');
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200, headers: { 'Content-Type': 'application/json' }
