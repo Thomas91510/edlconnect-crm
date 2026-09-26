@@ -1643,7 +1643,11 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
   <div class="modal">
     <div class="modal-title">Ajouter un prospect <button class="modal-close" onclick="closeModal('modal-prosp')"><i class="ti ti-x"></i></button></div>
     <div id="pp-lien-contact" style="display:none;margin-bottom:10px"></div>
-    <label>Agence / Entreprise *</label><input id="pp-agence" placeholder="Century 21 Évry">
+    <label>Agence / Entreprise *</label>
+    <div style="position:relative">
+      <input id="pp-agence" placeholder="Century 21 Évry" autocomplete="off" oninput="debounceAC(autocompleteProspectAgence,this.value)">
+      <div id="pp-agence-suggest" style="display:none;position:absolute;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);z-index:50;max-height:160px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1);min-width:200px;width:100%"></div>
+    </div>
     <div class="form-grid">
       <div><label>Contact</label><input id="pp-contact" placeholder="Marie Dupont"></div>
       <div><label>Email</label><input type="email" id="pp-email" placeholder="m.dupont@century21.fr"></div>
