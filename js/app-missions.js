@@ -495,7 +495,10 @@ function renderStatsMissions(){
   const vue = document.getElementById('view-dashboard');
   if(!vue) return;
 
-  // Creer le conteneur au premier appel, juste avant le bloc "Pipeline commercial"
+  // Creer le conteneur au premier appel, juste après le bloc "Pipeline
+  // commercial" (widgets Pipeline/Missions/Contacts/RDV) : ces widgets
+  // donnent une vue d'ensemble à l'ouverture du dashboard, le détail
+  // Volume/répartition + Ajustement externe vient en complément en dessous.
   let bloc = document.getElementById('dash-stats-edl');
   if(!bloc){
     bloc = document.createElement('div');
@@ -504,7 +507,7 @@ function renderStatsMissions(){
     bloc.style.marginBottom = '14px';
     const pipeline = document.getElementById('dash-pipeline');
     const cible = pipeline ? pipeline.closest('#view-dashboard > div') : null;
-    if(cible) vue.insertBefore(bloc, cible);
+    if(cible) vue.insertBefore(bloc, cible.nextSibling);
     else vue.appendChild(bloc);
   }
 
