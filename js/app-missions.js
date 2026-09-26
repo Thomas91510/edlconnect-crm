@@ -469,6 +469,28 @@ function statGrouper(missions, classer){
   return Object.entries(acc).sort((a, b) => b[1].nb - a[1].nb);
 }
 
+// Construit la liste HTML des ajustements externes, éventuellement filtrée
+// sur un mois ('all' ou vide = tous) — partagée entre le rendu initial du
+// panneau (renderStatsMissions) et le filtre du menu déroulant
+// (filtrerAjustementsListe), pour ne jamais dupliquer le format d'affichage.
+function _ajustementsListeHtml(filtreMois){
+  const ajustements = Array.isArray(DB.ajustementsExternes) ? DB.ajustementsExternes : [];
+  const filtres = (filtreMois && filtreMois !== 'all') ? ajustements.filter(a => a.mois === filtreMois) : ajustements;
+  const tries = [...filtres].sort((a, b) => String(b.mois).localeCompare(String(a.mois)));
+  if(!tries.length) return '<div style="font-size:11px;color:var(--text3)">Aucun ajustement enregistré.</div>';
+  return tries.map(a => {
+    const [y, m] = String(a.mois || '').split('-');
+    const label = (y && m) ? new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : esc(a.mois || '—');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:12px">
+      <div style="flex:1">
+        <strong>${label}</strong> — ${Number(a.nbEdl) || 0} EDL · ${(Number(a.ca) || 0).toLocaleString('fr-FR')} € HT
+        ${a.note ? `<div style="color:var(--text3);font-size:11px">${esc(a.note)}</div>` : ''}
+      </div>
+      <button class="btn btn-sm" onclick="removeAjustementExterne('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
+    </div>`;
+  }).join('');
+}
+
 function renderStatsMissions(){
   const vue = document.getElementById('view-dashboard');
   if(!vue) return;
@@ -570,20 +592,28 @@ function renderStatsMissions(){
 
   const noteAjustement = (nb) => nb > 0 ? ` <span style="color:var(--text3)">(dont ${nb} hors CRM)</span>` : '';
 
-  const ajustementsTries = [...ajustements].sort((a, b) => String(b.mois).localeCompare(String(a.mois)));
-  const listeAjustementsHtml = ajustementsTries.length
-    ? ajustementsTries.map(a => {
-        const [y, m] = String(a.mois || '').split('-');
-        const label = (y && m) ? new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : esc(a.mois || '—');
-        return `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:12px">
-          <div style="flex:1">
-            <strong>${label}</strong> — ${Number(a.nbEdl) || 0} EDL · ${(Number(a.ca) || 0).toLocaleString('fr-FR')} € HT
-            ${a.note ? `<div style="color:var(--text3);font-size:11px">${esc(a.note)}</div>` : ''}
-          </div>
-          <button class="btn btn-sm" onclick="removeAjustementExterne('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
-        </div>`;
-      }).join('')
-    : '<div style="font-size:11px;color:var(--text3)">Aucun ajustement enregistré.</div>';
+  // Filtre par mois pour la liste des ajustements (menu déroulant) : la liste
+  // brute peut vite compter des dizaines de lignes (plusieurs partenaires
+  // par mois) et devenir difficile à parcourir. La sélection en cours est
+  // préservée à travers les reconstructions du bloc, comme le formulaire
+  // d'ajout ci-dessous (_ajSaisieEnCours).
+  const _ajFiltreMoisEnCours = document.getElementById('aj-filtre-mois')?.value || 'all';
+  const moisAjDisponibles = [...new Set(ajustements.map(a => a.mois).filter(Boolean))]
+    .sort((a, b) => String(b).localeCompare(String(a)));
+  const libelleMois = (mois) => {
+    const [y, m] = String(mois || '').split('-');
+    const l = (y && m) ? new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : esc(mois || '—');
+    return l.charAt(0).toUpperCase() + l.slice(1);
+  };
+  const optionsFiltreMois = moisAjDisponibles.map(mois => {
+    const n = ajustements.filter(a => a.mois === mois).length;
+    return `<option value="${esc(mois)}"${mois === _ajFiltreMoisEnCours ? ' selected' : ''}>${libelleMois(mois)} (${n})</option>`;
+  }).join('');
+  const selectFiltreMoisHtml = `<select id="aj-filtre-mois" onchange="filtrerAjustementsListe()" style="font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;min-width:200px;margin-bottom:10px">
+    <option value="all"${_ajFiltreMoisEnCours === 'all' ? ' selected' : ''}>Tous les mois (${ajustements.length})</option>
+    ${optionsFiltreMois}
+  </select>`;
+  const listeAjustementsHtml = _ajustementsListeHtml(_ajFiltreMoisEnCours);
 
   bloc.innerHTML = `
     <div class="card-head">
@@ -608,6 +638,7 @@ function renderStatsMissions(){
       <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Ajustement externe (clients hors CRM)</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Pour un partenaire dont les dossiers ne passent pas par une fiche mission : ajoutez ici un nombre d'EDL et un CA par mois, ils viennent s'ajouter aux totaux ci-dessus.</div>
+        ${moisAjDisponibles.length > 1 ? selectFiltreMoisHtml : ''}
         <div id="ajustements-liste" style="margin-bottom:12px">${listeAjustementsHtml}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
           <div><label style="font-size:10px;color:var(--text2);display:block;margin-bottom:3px">Mois</label>
@@ -673,6 +704,15 @@ function removeAjustementExterne(id){
   saveToStorage();
   persistAjustementsExternes();
   renderDashboard();
+}
+
+// Change le mois affiché dans la liste des ajustements sans reconstruire tout
+// le panneau de stats (évite d'interrompre une saisie en cours dans le
+// formulaire d'ajout juste en-dessous).
+function filtrerAjustementsListe(){
+  const sel = document.getElementById('aj-filtre-mois');
+  const liste = document.getElementById('ajustements-liste');
+  if(liste) liste.innerHTML = _ajustementsListeHtml(sel ? sel.value : 'all');
 }
 
 // ─── CAMPAIGNS ────────────────────────────────────────────
