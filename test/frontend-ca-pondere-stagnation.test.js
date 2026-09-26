@@ -99,3 +99,23 @@ test('renderProspection : aucun badge pour une carte active récente', () => {
   w.renderProspection();
   assert.equal(w.document.getElementById('prosp-board').innerHTML.includes('sans action'), false);
 });
+
+test('renderProspection : le badge de nav affiche le nombre de prospects qui stagnent, pas le total des actifs', () => {
+  const w = setup({
+    prospects: [
+      { id: 'p1', agence: 'Stagnante', etape: 'email_envoye', lastAction: ilYA(30) },
+      { id: 'p2', agence: 'Récente', etape: 'email_envoye', lastAction: ilYA(1) },
+      { id: 'p3', agence: 'Aussi récente', etape: 'a_contacter', lastAction: ilYA(2) }
+    ]
+  });
+  w.renderProspection();
+  const badge = w.document.getElementById('prosp-badge');
+  assert.equal(badge.textContent, '1', 'seule la carte stagnante doit compter, pas les 3 prospects actifs');
+  assert.equal(badge.style.display, 'inline');
+});
+
+test('renderProspection : masque le badge de nav quand aucun prospect ne stagne', () => {
+  const w = setup({ prospects: [{ id: 'p1', agence: 'Récente', etape: 'email_envoye', lastAction: ilYA(1) }] });
+  w.renderProspection();
+  assert.equal(w.document.getElementById('prosp-badge').style.display, 'none');
+});
