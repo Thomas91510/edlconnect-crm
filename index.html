@@ -704,6 +704,26 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
           </div>
         </div>
 
+        <!-- CA pondéré prévisionnel -->
+        <div class="card" style="padding:14px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">🔮 CA pondéré prévisionnel <span style="font-weight:400;text-transform:none">(prospects en cours, selon leur étape)</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div>
+              <div style="font-size:22px;font-weight:700;color:#B45309" id="ca-pondere-mensuel">—</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">€ / mois estimé</div>
+            </div>
+            <div>
+              <div style="font-size:22px;font-weight:700;color:#B45309" id="ca-pondere-trim">—</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">€ / trimestre estimé</div>
+            </div>
+            <div>
+              <div style="font-size:22px;font-weight:700;color:#B45309" id="ca-pondere-annuel">—</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">€ / an estimé</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text2);margin-top:10px" id="ca-pondere-note"></div>
+        </div>
+
         <!-- Détail par client gagné -->
         <div class="card">
           <div class="card-head">

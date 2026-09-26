@@ -507,10 +507,13 @@ function renderAujourdhui(){
     return new Date(m.date) < debutAuj;
   });
 
+  const stagnants = typeof prospectsStagnants === 'function' ? prospectsStagnants() : [];
+
   const items = [
     { label:"RDV aujourd'hui / demain", count: rdvProches.length, icone:'ti-calendar-event', couleur:'var(--blue)', action:"nav('missions')" },
     { label:'Réservations non traitées', count:'—', id:'dash-today-resa', icone:'ti-inbox', couleur:'var(--red-text, #A32D2D)', action:"nav('reservations')" },
-    { label:'Avis à relancer', count: avisAttente.length, icone:'ti-star', couleur:'var(--green)', action:"nav('missions')" }
+    { label:'Avis à relancer', count: avisAttente.length, icone:'ti-star', couleur:'var(--green)', action:"nav('missions')" },
+    { label:'Prospects qui stagnent', count: stagnants.length, icone:'ti-clock-pause', couleur:'var(--red-text, #A32D2D)', action:"nav('prospection')" }
   ];
 
   box.innerHTML = items.map(it=>`

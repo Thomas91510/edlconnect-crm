@@ -57,17 +57,39 @@ function toggleTaxMode(){
   notify(`Affichage en ${taxMode}`);
 }
 
+// proba : chance de signature estimée à ce stade du pipeline (%), utilisée
+// pour le CA pondéré (renderCAPanel). Valeurs par défaut raisonnables pour
+// une activité d'EDL — à ajuster ici si l'expérience terrain donne d'autres taux.
 const PROSP_STAGES=[
-  {key:'a_contacter',label:'À contacter',color:'#888780',bg:'#F1F0EC'},
-  {key:'email_envoye',label:'Email envoyé',color:'#1A5FA8',bg:'#F4F7FA'},
-  {key:'email_ouvert',label:'Email ouvert',color:'#378ADD',bg:'#EAF3FB'},
-  {key:'reponse_recue',label:'Réponse reçue',color:'#639922',bg:'#EAF3DE'},
-  {key:'rdv_planifie',label:'RDV planifié',color:'#854F0B',bg:'#FAEEDA'},
-  {key:'devis_envoye',label:'Devis envoyé',color:'#5B3DA5',bg:'#EEEDFE'},
-  {key:'negociation',label:'Négociation',color:'#B45309',bg:'#FEF3E2'},
-  {key:'gagne',label:'Gagné ✅',color:'#3B6D11',bg:'#D6EDCA'},
-  {key:'perdu',label:'Perdu ❌',color:'#A32D2D',bg:'#FCEBEB'}
+  {key:'a_contacter',label:'À contacter',color:'#888780',bg:'#F1F0EC',proba:5},
+  {key:'email_envoye',label:'Email envoyé',color:'#1A5FA8',bg:'#F4F7FA',proba:10},
+  {key:'email_ouvert',label:'Email ouvert',color:'#378ADD',bg:'#EAF3FB',proba:20},
+  {key:'reponse_recue',label:'Réponse reçue',color:'#639922',bg:'#EAF3DE',proba:35},
+  {key:'rdv_planifie',label:'RDV planifié',color:'#854F0B',bg:'#FAEEDA',proba:50},
+  {key:'devis_envoye',label:'Devis envoyé',color:'#5B3DA5',bg:'#EEEDFE',proba:65},
+  {key:'negociation',label:'Négociation',color:'#B45309',bg:'#FEF3E2',proba:80},
+  {key:'gagne',label:'Gagné ✅',color:'#3B6D11',bg:'#D6EDCA',proba:100},
+  {key:'perdu',label:'Perdu ❌',color:'#A32D2D',bg:'#FCEBEB',proba:0}
 ];
+
+// Nombre de jours sans action au-delà duquel une carte active (pas
+// Gagné/Perdu) est considérée comme stagnante (alerte dashboard + badge kanban).
+const STAGNATION_JOURS=14;
+
+function joursDepuis(dateISO){
+  if(!dateISO)return null;
+  const d=new Date(dateISO);
+  if(isNaN(d))return null;
+  return Math.floor((Date.now()-d.getTime())/(24*60*60*1000));
+}
+
+function prospectsStagnants(){
+  return DB.prospects.filter(p=>{
+    if(['gagne','perdu'].includes(p.etape))return false;
+    const j=joursDepuis(p.lastAction||p.createdAt);
+    return j!==null&&j>=STAGNATION_JOURS;
+  });
+}
 
 // Correspondance label → key
 function etapeToKey(etape){
@@ -123,7 +145,10 @@ function renderProspection(){
         <span>${stage.label}</span>
         <span style="background:${stage.bg};color:${stage.color};padding:1px 6px;border-radius:8px;font-size:10px">${cards.length}</span>
       </div>
-      ${cards.map(p=>`<div class="prosp-card" onclick="openProspCard('${p.id}')">
+      ${cards.map(p=>{
+        const jStagnation=['gagne','perdu'].includes(p.etape)?null:joursDepuis(p.lastAction||p.createdAt);
+        const stagnant=jStagnation!==null&&jStagnation>=STAGNATION_JOURS;
+        return `<div class="prosp-card" onclick="openProspCard('${p.id}')" style="${stagnant?'border:1px solid var(--red)':''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
           <div class="prosp-card-name" style="flex:1">${p.agence}</div>
           <button onclick="event.stopPropagation();deleteProspect('${p.id}')" title="Supprimer ce prospect"
@@ -133,6 +158,7 @@ function renderProspection(){
         ${p.contact?`<div style="font-size:10px;color:var(--text2)">${p.contact}</div>`:''}
         <div class="prosp-card-email">${p.email||p.tel||'—'}</div>
         ${p.ca?`<div style="font-size:11px;font-weight:600;color:#3B6D11;margin-top:2px">${p.ca.toLocaleString('fr-FR')} €/mois</div>`:''}
+        ${stagnant?`<div style="font-size:10px;font-weight:600;color:var(--red);margin-top:2px">⏱ ${jStagnation}j sans action</div>`:''}
         <div class="prosp-card-date">${p.lastAction?'Dernier : '+fmtDate(p.lastAction):'Aucun contact'}</div>
         <div style="display:flex;gap:3px;margin-top:5px;flex-wrap:wrap">
           ${PROSP_STAGES.filter(s=>s.key!==stage.key).slice(0,3).map(s=>`
@@ -141,12 +167,13 @@ function renderProspection(){
               style="font-size:9px;padding:2px 5px;border:0.5px solid ${s.color};background:${s.bg};color:${s.color};border-radius:3px;cursor:pointer;white-space:nowrap">
               → ${s.label.substring(0,10)}
             </button>`).join('')}
-          <button onclick="event.stopPropagation();emailProspect('${p.id}')" 
+          <button onclick="event.stopPropagation();emailProspect('${p.id}')"
             style="font-size:9px;padding:2px 5px;border:0.5px solid var(--blue);background:var(--blue-bg);color:var(--blue-text);border-radius:3px;cursor:pointer">
             ✉️ Email
           </button>
         </div>
-      </div>`).join('')}
+      </div>`;
+      }).join('')}
       <button onclick="quickAddProspect('${stage.key}')" 
         style="width:100%;font-size:10px;padding:5px;border:1px dashed var(--border2);background:none;border-radius:var(--radius);cursor:pointer;color:var(--text2);margin-top:2px">
         + Ajouter
@@ -217,6 +244,23 @@ function renderCAPanel(){
   document.getElementById('ca-nb-clients').textContent=gagnes.length+' client(s) avec CA renseigné';
   document.getElementById('ca-total-mensuel').textContent=`${caMensuelHT.toLocaleString('fr-FR')} € HT | ${fmtTTC(caMensuelHT)} TTC`;
   document.getElementById('ca-total-annuel').textContent=`${caAnnuelHT.toLocaleString('fr-FR')} € HT | ${fmtTTC(caAnnuelHT)} TTC`;
+
+  // CA pondéré : montant × probabilité de signature de l'étape actuelle,
+  // sur tous les prospects actifs (pas seulement Gagné) — donne une
+  // estimation de CA à venir, pas juste le CA déjà signé.
+  const actifsAvecCA=DB.prospects.filter(p=>!['gagne','perdu'].includes(p.etape)&&p.ca>0);
+  const actifsSansCA=DB.prospects.filter(p=>!['gagne','perdu'].includes(p.etape)&&!p.ca).length;
+  const probaEtape=key=>{const s=PROSP_STAGES.find(s=>s.key===key);return s?s.proba:0;};
+  const caPondereMensuel=actifsAvecCA.reduce((s,p)=>s+(p.ca||0)*probaEtape(p.etape)/100,0);
+  const elPM=document.getElementById('ca-pondere-mensuel');
+  if(elPM){
+    elPM.innerHTML=`${Math.round(caPondereMensuel).toLocaleString('fr-FR')} € <span style="font-size:12px;color:#888">HT</span>`;
+    document.getElementById('ca-pondere-trim').innerHTML=`${Math.round(caPondereMensuel*3).toLocaleString('fr-FR')} € <span style="font-size:12px;color:#888">HT</span>`;
+    document.getElementById('ca-pondere-annuel').innerHTML=`${Math.round(caPondereMensuel*12).toLocaleString('fr-FR')} € <span style="font-size:12px;color:#888">HT</span>`;
+    document.getElementById('ca-pondere-note').textContent=actifsSansCA>0
+      ? `Estimation sur ${actifsAvecCA.length} prospect(s) en cours avec CA renseigné — ${actifsSansCA} autre(s) sans CA renseigné, non comptabilisé(s)`
+      : `Estimation sur ${actifsAvecCA.length} prospect(s) en cours, pondérée par la probabilité de signature de chaque étape`;
+  }
 
   const sorted=gagnes.sort((a,b)=>(b.ca||0)-(a.ca||0));
   document.getElementById('ca-tbody').innerHTML=sorted.length?sorted.map(p=>`<tr>
