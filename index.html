@@ -103,14 +103,6 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-t
 .modal-title{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
 .modal-close{cursor:pointer;background:none;border:none;color:var(--text2);font-size:18px;padding:2px;line-height:1}
 /* PIPELINE */
-.pipe-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;min-height:260px}
-.pipe-col{background:var(--bg2);border-radius:var(--radius);padding:10px;border:1px solid var(--border)}
-.pipe-col-title{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;justify-content:space-between}
-.pipe-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:9px;margin-bottom:7px;cursor:pointer}
-.pipe-card:hover{border-color:var(--border2);box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.pipe-card-name{font-size:11px;font-weight:600;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pipe-card-amount{font-size:12px;font-weight:600;color:var(--blue)}
-.pipe-card-meta{font-size:10px;color:var(--text2);margin-top:3px}
 /* CALENDAR */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .cal-hdr{font-size:10px;font-weight:600;color:var(--text2);text-align:center;padding:4px}
@@ -271,19 +263,13 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-t
     grid-template-columns:1fr !important;
   }
 
-  /* Kanban Pipeline commercial (grid 5 colonnes) → scroll horizontal */
-  #pipeline-board.pipe-grid{
-    display:flex !important;
-    overflow-x:auto;-webkit-overflow-scrolling:touch;
-    scroll-snap-type:x proximity;gap:10px;padding-bottom:8px;
-  }
   /* Kanban Prospection (déjà en flex avec min-width inline) */
   #prosp-board{
     min-width:0 !important;
     overflow-x:auto;-webkit-overflow-scrolling:touch;
     scroll-snap-type:x proximity;
   }
-  .pipe-col, .prosp-col{
+  .prosp-col{
     min-width:78vw;scroll-snap-align:start;flex-shrink:0;
   }
 
@@ -356,7 +342,7 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-t
   .view{padding:10px}
   .page-title{font-size:16px}
   .kpi-val, [class*="kpi"] [style*="font-size:24px"]{font-size:20px !important}
-  .pipe-col, .prosp-col{min-width:85vw}
+  .prosp-col{min-width:85vw}
   .kpi-grid{grid-template-columns:1fr 1fr !important}
   .main{padding-bottom:70px} /* espace pour la nav bar mobile */
 }
@@ -506,10 +492,6 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         <div class="nav-icon" style="background:rgba(186,117,23,0.12)"><i class="ti ti-target" style="color:#f6c05e"></i></div>
         <span class="nav-label">Prospection</span>
         <span class="nav-badge nb-amber" id="prosp-badge" style="display:none"></span>
-      </button>
-      <button class="nav-item" onclick="nav('pipeline')" title="Pipeline">
-        <div class="nav-icon" style="background:rgba(55,138,221,0.1)"><i class="ti ti-chart-bar" style="color:#7bb8ef"></i></div>
-        <span class="nav-label">Pipeline</span>
       </button>
 
       <span class="nav-section">Communication</span>
@@ -695,7 +677,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         <div style="display:flex;gap:7px">
           <button class="btn btn-sm" onclick="toggleCAPanel()"><i class="ti ti-chart-bar"></i>Analyse CA</button>
           <button class="btn btn-sm" onclick="syncFromBrevoSender()"><i class="ti ti-wand"></i>Sync contacts</button>
-          <button class="btn btn-primary" onclick="openModal('modal-prosp')"><i class="ti ti-plus"></i>Ajouter un prospect</button>
+          <button class="btn btn-primary" onclick="quickAddProspect('a_contacter')"><i class="ti ti-plus"></i>Ajouter un prospect</button>
         </div>
       </div>
 
@@ -804,15 +786,6 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       <div style="overflow-x:hidden;padding-bottom:8px">
        <div style="display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;" id="prosp-board"></div>
       </div>
-    </div>
-
-    <!-- PIPELINE -->
-    <div class="view" id="view-pipeline">
-      <div class="page-header">
-        <div class="page-title">Pipeline commercial</div>
-        <button class="btn btn-primary" onclick="openModal('modal-deal')"><i class="ti ti-plus"></i>Nouvelle opportunité</button>
-      </div>
-      <div class="pipe-grid" id="pipeline-board"></div>
     </div>
 
     <div class="view" id="view-missions">
@@ -1058,7 +1031,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
   <div class="settings-section" id="h-prospection">
     <div class="settings-title">🎯 Pipeline de Prospection</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Suivez vos prospects à travers 8 étapes.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Le pipeline commercial et la prospection ne font plus qu'un : suivez vos prospects à travers 9 étapes, de la prise de contact jusqu'au client gagné (ou perdu).</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
       <div style="background:#F1F0EC;border-left:3px solid #888780;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#888780;font-weight:500">À contacter</div>
       <div style="background:#F4F7FA;border-left:3px solid #1A5FA8;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#1A5FA8;font-weight:500">Email envoyé</div>
@@ -1066,17 +1039,18 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       <div style="background:#EAF3DE;border-left:3px solid #639922;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#639922;font-weight:500">Réponse reçue</div>
       <div style="background:#FAEEDA;border-left:3px solid #854F0B;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#854F0B;font-weight:500">RDV planifié</div>
       <div style="background:#EEEDFE;border-left:3px solid #5B3DA5;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#5B3DA5;font-weight:500">Devis envoyé</div>
+      <div style="background:#FEF3E2;border-left:3px solid #B45309;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#B45309;font-weight:500">Négociation</div>
       <div style="background:#D6EDCA;border-left:3px solid #3B6D11;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#3B6D11;font-weight:500">Gagné ✅</div>
       <div style="background:#FCEBEB;border-left:3px solid #A32D2D;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#A32D2D;font-weight:500">Perdu ❌</div>
     </div>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
       <strong>Déplacer</strong> → boutons → sur chaque carte prospect<br>
-      <strong>Modifier</strong> → cliquer sur la carte<br>
+      <strong>Modifier / voir la fiche contact liée</strong> → cliquer sur la carte<br>
       <strong>Supprimer</strong> → bouton ✕ en haut à droite de la carte<br>
       <strong>Analyse CA</strong> → bouton en haut pour voir le CA des prospects Gagnés
     </div>
     <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
-      ✅ Astuce : Quand un prospect passe en "Gagné", renseignez le CA mensuel — il sera ajouté au Pipeline commercial.
+      ✅ Astuce : quand un prospect passe en "Gagné", renseignez le CA mensuel — il compte directement dans l'Analyse CA, plus besoin de le ressaisir ailleurs. En "Perdu", vous pouvez indiquer le motif pour garder une trace.
     </div>
   </div>
 
@@ -1589,25 +1563,6 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
   </div>
 </div>
 
-<div class="modal-bg" id="modal-deal">
-  <div class="modal">
-    <div class="modal-title">Nouvelle opportunité <button class="modal-close" onclick="closeModal('modal-deal')"><i class="ti ti-x"></i></button></div>
-    <label>Agence *</label><input id="d-agence" placeholder="Foncia Longjumeau">
-    <label>Montant estimé (€)</label>
-    <div style="display:flex;gap:8px">
-      <input type="number" id="d-montant" placeholder="800" style="flex:1">
-      <select id="d-periode" style="width:130px"><option value="mois">€ / mois</option><option value="an">€ / an</option></select>
-    </div>
-    <label>Étape</label><select id="d-etape"><option>Prospect</option><option>Qualifié</option><option>Proposé</option><option>Négociation</option><option>Gagné</option></select>
-    <label>Probabilité (%)</label><input type="number" id="d-proba" placeholder="50">
-    <label>Notes</label><textarea id="d-notes" style="min-height:60px"></textarea>
-    <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end">
-      <button class="btn" onclick="closeModal('modal-deal')">Annuler</button>
-      <button class="btn btn-primary" onclick="saveDeal()"><i class="ti ti-check"></i>Enregistrer</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-bg" id="modal-mission">
   <div class="modal">
     <div class="modal-title"><span id="modal-mission-title">Nouvelle mission EDL</span> <button class="modal-close" onclick="closeModal('modal-mission')"><i class="ti ti-x"></i></button></div>
@@ -1657,6 +1612,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 <div class="modal-bg" id="modal-prosp">
   <div class="modal">
     <div class="modal-title">Ajouter un prospect <button class="modal-close" onclick="closeModal('modal-prosp')"><i class="ti ti-x"></i></button></div>
+    <div id="pp-lien-contact" style="display:none;margin-bottom:10px"></div>
     <label>Agence / Entreprise *</label><input id="pp-agence" placeholder="Century 21 Évry">
     <div class="form-grid">
       <div><label>Contact</label><input id="pp-contact" placeholder="Marie Dupont"></div>
@@ -1674,6 +1630,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       <option>Réponse reçue</option>
       <option>RDV planifié</option>
       <option>Devis envoyé</option>
+      <option>Négociation</option>
       <option>Gagné</option>
       <option>Perdu</option>
     </select>

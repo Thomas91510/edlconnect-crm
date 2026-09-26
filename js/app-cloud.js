@@ -29,7 +29,6 @@ const SUPA_TABLES = {
   contacts : 'contacts',
   missions : 'missions',
   prospects: 'prospects',
-  deals    : 'deals',
   rdvs     : 'rdvs',
   campagnes: 'campagnes',
   trackings: 'trackings',
@@ -274,7 +273,6 @@ function subscribeRealtime(){
           if(typeof renderContacts==='function') renderContacts();
           if(typeof renderProspection==='function') renderProspection();
           if(typeof renderMissions==='function') renderMissions();
-          if(typeof renderPipeline==='function') renderPipeline();
           if(typeof renderCalendar==='function') renderCalendar();
           if(typeof renderCampaigns==='function') renderCampaigns();
           if(typeof renderTracking==='function') renderTracking();

@@ -492,12 +492,6 @@ function saveContact(){
   toggleContactTypeUI();
   renderContacts();renderDashboard();
 }
-function saveDeal(){
-  const agence=document.getElementById('d-agence').value.trim();
-  if(!agence){notify('⚠️ Agence requise','warn');return;}
-  DB.deals.push({id:'d_'+Date.now(),agence,montant:Number(document.getElementById('d-montant').value)||0,periode:document.getElementById('d-periode').value||'mois',etape:document.getElementById('d-etape').value,proba:Number(document.getElementById('d-proba').value)||0,notes:document.getElementById('d-notes').value});
-  saveToStorage();closeModal('modal-deal');notify('✅ Opportunité ajoutée !');renderPipeline();renderDashboard();
-}
 function autocompleteMission(val){
   const box=document.getElementById('m-agence-suggest');
   if(!val||val.length<2){if(box)box.style.display='none';return;}
