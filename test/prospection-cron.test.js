@@ -89,6 +89,31 @@ test('prospection-cron : envoie le premier email aux nouveaux prospects des list
   assert.ok(ligneProspect.data.sentAt1);
 });
 
+test('prospection-cron : le premier envoi à un nouveau prospect fait aussi avancer sa carte dans le pipeline commercial', async () => {
+  const mock = mockComplet({
+    prospectionRows: [],
+    listes: { '45': ['nouveau@agence.fr'] }
+  });
+  let ecritureProspects = null;
+  global.fetch = async (url, opts) => {
+    const u = String(url);
+    if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ user_id: 'u1' }] };
+    if (u.includes('/rest/v1/prospects') && (!opts || opts.method !== 'POST')) return { ok: true, json: async () => [] };
+    if (u.includes('/rest/v1/prospects') && opts && opts.method === 'POST') {
+      ecritureProspects = JSON.parse(opts.body)[0];
+      return { ok: true };
+    }
+    return mock.fetchMock(url, opts);
+  };
+
+  await handler(requete('test-cron-secret'));
+
+  assert.ok(ecritureProspects, 'une carte doit être créée dans le pipeline commercial');
+  assert.equal(ecritureProspects.data.email, 'nouveau@agence.fr');
+  assert.equal(ecritureProspects.data.etape, 'email_envoye');
+  assert.equal(ecritureProspects.user_id, 'u1');
+});
+
 test('prospection-cron : ne recontacte jamais un prospect déjà connu, même présent dans plusieurs listes', async () => {
   const mock = mockComplet({
     prospectionRows: [{ id: 'connu@agence.fr', data: { email: 'connu@agence.fr', stage: 1, sentAt1: new Date().toISOString() } }],

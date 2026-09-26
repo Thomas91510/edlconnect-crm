@@ -1,5 +1,7 @@
 export const config = { runtime: 'edge' };
 
+import { resoudreAdminUserId, avancerEtapeProspect } from './_lib/prospects-sync.js';
+
 // Séquence de prospection EDL IDF (3 emails : J0, J+4, J+6), plafonnée à 250
 // envois/jour. Remplace le scénario Make "Séquence prospection — Envoi
 // quotidien", devenu indisponible dès qu'il a dépassé le quota d'opérations
@@ -118,6 +120,12 @@ export default async function handler(req) {
     const etat = new Map(rows.map(r => [r.id, r.data || {}]));
     let quotaCount = (etat.get(`quota:${aujourdHui}`) || {}).quotaCount || 0;
 
+    // Résolu une fois pour tout le run : premier envoi à un nouveau prospect
+    // (route 3 plus bas) fait aussi avancer sa carte dans le pipeline
+    // commercial (table "prospects") — jusqu'ici les deux tables ne se
+    // parlaient pas du tout.
+    const adminUserId = await resoudreAdminUserId(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
     let envoyes1 = 0, envoyes2 = 0, envoyes3 = 0;
     let envoyesCeRun = 0;
     const erreurs = [];
@@ -182,6 +190,7 @@ export default async function handler(req) {
             etat.set(email, donnees); // marque comme traité pour les listes suivantes
             const ecrit = await persister(SUPABASE_URL, SUPABASE_SERVICE_KEY, [{ id: email, data: donnees }, ligneQuota()]);
             if (!ecrit) erreurs.push({ email, etape: 'ecriture-etat-nouveau-prospect' });
+            await avancerEtapeProspect(SUPABASE_URL, SUPABASE_SERVICE_KEY, adminUserId, email, 'email_envoye');
           } else {
             erreurs.push({ email, etape: 'nouveau-prospect' });
           }
