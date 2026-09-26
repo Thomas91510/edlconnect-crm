@@ -160,7 +160,6 @@ function updateMissionStatus(i,v){
   saveToStorage();
   notify('✅ Statut mis à jour');
   renderMissions();
-  notifierChangementStatutCommande(m);
   if(v==='annulée' && statutAvant!=='annulée' && m.rdvConfirme) notifierAnnulationMission(m);
 }
 function deleteMission(i){

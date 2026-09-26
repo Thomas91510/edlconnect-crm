@@ -3,9 +3,9 @@
 // si un domaine vérifié est configuré, sinon repli neutre Lokentia +
 // reply-to vers l'abonné).
 //
-// Recopiée à l'identique dans 6 fichiers avant ce module (booking-request,
-// confirm-rdv, reminder-rdv, edouard-cron, send-welcome-agency,
-// notify-order-status) : centralisée ici pour qu'une correction future
+// Recopiée à l'identique dans 5 fichiers avant ce module (booking-request,
+// confirm-rdv, reminder-rdv, edouard-cron, send-welcome-agency) :
+// centralisée ici pour qu'une correction future
 // (ex. un nouveau champ d'identité) n'ait plus à être répétée six fois.
 //
 // Ne lance jamais d'exception : un email dégradé (expéditeur neutre) vaut
