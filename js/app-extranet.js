@@ -24,8 +24,17 @@ function feRenderDocs(docs){
 }
 
 let _feDocs = [];
-function feUpdateDoc(i, field, val){ _feDocs[i][field] = val; }
-function feRemoveDoc(i){ _feDocs.splice(i,1); feRenderDocs(_feDocs); }
+// Plus de bouton "Enregistrer" global sur la fiche (tout s'y édite en
+// direct désormais) : chaque changement sur un document se persiste
+// immédiatement, au lieu d'attendre un save groupé qui n'existe plus.
+function feSaveDocs(){
+  const c = (typeof DB!=='undefined' && typeof currentFicheId!=='undefined') ? DB.contacts.find(x=>x.id===currentFicheId) : null;
+  if(!c) return;
+  c.documents = feGetDocs();
+  saveToStorage();
+}
+function feUpdateDoc(i, field, val){ _feDocs[i][field] = val; feSaveDocs(); }
+function feRemoveDoc(i){ _feDocs.splice(i,1); feRenderDocs(_feDocs); feSaveDocs(); }
 function feAddDoc(){
   _feDocs.push({ nom:'', url:'', type:'document' });
   feRenderDocs(_feDocs);
@@ -34,18 +43,15 @@ function feAddDoc(){
 }
 function feGetDocs(){ return _feDocs.filter(d => d.url && d.url.trim()); }
 
-// Dépose une facture PDF pour le client dont l'email est dans #fe-email.
-// Écrit directement en base (via /api/upload-facture), puis reflète le
-// document dans _feDocs pour que le bouton "Enregistrer" de la fiche —
-// qui écrase c.documents avec feGetDocs() — n'efface pas ce qui vient
-// d'être déposé.
+// Dépose une facture PDF pour le contact actuellement ouvert dans la fiche.
 async function uploadFactureCourante(){
   const fileInput = document.getElementById('fe-facture-file');
   const statusEl = document.getElementById('fe-facture-status');
-  const email = (document.getElementById('fe-email')?.value || '').trim();
+  const c = (typeof DB!=='undefined' && typeof currentFicheId!=='undefined') ? DB.contacts.find(x=>x.id===currentFicheId) : null;
+  const email = (c?.email || '').trim();
   const file = fileInput?.files?.[0];
 
-  if(!email){ notify('⚠️ Renseigne d\'abord l\'email du client', 'warn'); return; }
+  if(!email){ notify('⚠️ Ce contact n\'a pas d\'email renseigné (onglet Informations)', 'warn'); return; }
   if(!file){ notify('⚠️ Choisis un fichier PDF', 'warn'); return; }
   if(file.type !== 'application/pdf'){ notify('⚠️ Le fichier doit être un PDF', 'warn'); return; }
 
@@ -71,6 +77,7 @@ async function uploadFactureCourante(){
 
     _feDocs.push({ nom: data.nom, url: data.path, type: 'facture' });
     feRenderDocs(_feDocs);
+    feSaveDocs();
     notify('✅ Facture déposée !');
     if(statusEl) statusEl.textContent = 'Dernier dépôt : ' + file.name;
     fileInput.value = '';
