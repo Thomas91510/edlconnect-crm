@@ -355,7 +355,14 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
                 <div class="field"><label>Nom</label><input id="compte-champ-nom" disabled></div>
                 <div class="field"><label>Adresse e-mail</label><input id="compte-champ-email" disabled></div>
                 <div class="field"><label>Téléphone</label><input id="compte-champ-tel" disabled></div>
-                <div class="field"><label>Adresse</label><input id="compte-champ-adresse" disabled></div>
+                <div class="field">
+                  <label>Adresse</label>
+                  <div style="display:flex;gap:8px">
+                    <input id="compte-champ-adresse" placeholder="12 rue de la Paix, 91000 Évry-Courcouronnes" style="flex:1">
+                    <button class="btn-sm" id="btn-save-adresse" onclick="enregistrerAdresse()">Enregistrer</button>
+                  </div>
+                  <p class="compte-note" style="margin-top:6px">À renseigner vous-même — pré-remplit votre recherche de communes ci-contre pour les zones d'intervention.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -615,6 +622,30 @@ function remplirCompte(agent){
   initZones(agent.secteurPrimaire, agent.secteurSecondaire, agent.zoneStatut, agent.zoneRefusMotif, agent.adresse);
 }
 
+async function enregistrerAdresse(){
+  const input = document.getElementById('compte-champ-adresse');
+  const adresse = input.value.trim();
+  const btn = document.getElementById('btn-save-adresse');
+  const libelleOriginal = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  try{
+    const resp = await fetch('/api/agent-update-adresse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _accessToken },
+      body: JSON.stringify({ adresse }),
+    });
+    const data = await resp.json();
+    if(!resp.ok){ showToast('❌ ' + (data.error || 'Erreur lors de l\'enregistrement')); return; }
+    input.value = data.adresse;
+    preremplirRechercheDepuisAdresse(data.adresse);
+    showToast('✅ Adresse enregistrée');
+  }catch(e){
+    showToast('❌ Erreur réseau, réessaie.');
+  }finally{
+    btn.disabled = false; btn.textContent = libelleOriginal;
+  }
+}
+
 function renderBareme(bareme){
   const tbody = document.getElementById('bareme-affiche');
   if(!tbody) return;
@@ -757,19 +788,22 @@ function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus, adres
     lockNote.textContent = '✕ Zones refusées par l\'agence — ' + motifRefus;
     lockNote.classList.add('show');
   }
-  // Pré-remplit avec l'adresse renseignée par l'agence et lance une
-  // recherche immédiate, comme si l'agent venait de taper — il peut
-  // évidemment tout effacer et chercher autre chose. La recherche par nom
-  // de commune (API geo.api.gouv.fr) ne comprend pas une adresse complète
-  // ("12 rue de la Paix, 91000 Évry") : on n'en extrait que le nom de ville
-  // (ce qui suit le code postal), tout en affichant l'adresse complète
-  // dans le champ.
+  preremplirRechercheDepuisAdresse(adresse);
+}
+
+// Pré-remplit la recherche avec l'adresse renseignée par l'agent lui-même
+// (champ "Mon compte") et lance une recherche immédiate, comme s'il venait
+// de taper — il peut évidemment tout effacer et chercher autre chose. La
+// recherche par nom de commune (API geo.api.gouv.fr) ne comprend pas une
+// adresse complète ("12 rue de la Paix, 91000 Évry") : on n'en extrait que
+// le nom de ville (ce qui suit le code postal), tout en affichant l'adresse
+// complète dans le champ.
+function preremplirRechercheDepuisAdresse(adresse){
+  if(!adresse) return;
   const inputRecherche = document.getElementById('recherche-commune');
-  if(adresse){
-    inputRecherche.value = adresse;
-    const ville = (adresse.match(/\d{5}\s*,?\s*(.+)$/) || [])[1] || adresse;
-    rechercherCommunes(ville.trim());
-  }
+  inputRecherche.value = adresse;
+  const ville = (adresse.match(/\d{5}\s*,?\s*(.+)$/) || [])[1] || adresse;
+  rechercherCommunes(ville.trim());
 }
 
 async function soumettreZones(){

@@ -20,7 +20,6 @@ const HTML = `
   <input id="new-agent-nom">
   <input id="new-agent-tel">
   <input id="new-agent-email">
-  <input id="new-agent-adresse">
   <input id="new-agent-secteurs">
   <button id="agent-submit-btn"></button>
   <button id="agent-cancel-btn" style="display:none"></button>
@@ -45,26 +44,39 @@ function chargerAgentsEDL() {
   return window;
 }
 
-function remplirFormulaire(window, { nom = '', tel = '', email = '', adresse = '', secteurs = '' }) {
+function remplirFormulaire(window, { nom = '', tel = '', email = '', secteurs = '' }) {
   window.document.getElementById('new-agent-nom').value = nom;
   window.document.getElementById('new-agent-tel').value = tel;
   window.document.getElementById('new-agent-email').value = email;
-  window.document.getElementById('new-agent-adresse').value = adresse;
   window.document.getElementById('new-agent-secteurs').value = secteurs;
 }
 
 test('addAgent : crée un nouvel agent avec tous les champs', () => {
   const window = chargerAgentsEDL();
-  remplirFormulaire(window, { nom: 'Jean Dupont', tel: '0612345678', email: 'jean@exemple.fr', adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes', secteurs: '75018,75019' });
+  remplirFormulaire(window, { nom: 'Jean Dupont', tel: '0612345678', email: 'jean@exemple.fr', secteurs: '75018,75019' });
 
   window.addAgent();
 
   const agents = window.__getDB().agents;
   assert.equal(agents.length, 1);
   assert.deepEqual(
-    { nom: agents[0].nom, tel: agents[0].tel, email: agents[0].email, adresse: agents[0].adresse, secteurs: agents[0].secteurs },
-    { nom: 'Jean Dupont', tel: '0612345678', email: 'jean@exemple.fr', adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes', secteurs: '75018,75019' }
+    { nom: agents[0].nom, tel: agents[0].tel, email: agents[0].email, secteurs: agents[0].secteurs },
+    { nom: 'Jean Dupont', tel: '0612345678', email: 'jean@exemple.fr', secteurs: '75018,75019' }
   );
+});
+
+test('addAgent : ne touche jamais au champ adresse (renseigné par l\'agent lui-même, pas par l\'agence)', () => {
+  const window = chargerAgentsEDL();
+  remplirFormulaire(window, { nom: 'Jean Dupont', secteurs: '75018' });
+  window.addAgent();
+  const id = window.__getDB().agents[0].id;
+  window.__getDB().agents[0].adresse = '12 rue de la Paix, 91000 Évry-Courcouronnes';
+
+  window.editerAgent(id);
+  remplirFormulaire(window, { nom: 'Jean Dupont modifié', secteurs: '75018' });
+  window.addAgent();
+
+  assert.equal(window.__getDB().agents[0].adresse, '12 rue de la Paix, 91000 Évry-Courcouronnes', 'une modification admin ne doit jamais effacer l\'adresse saisie par l\'agent');
 });
 
 test('addAgent : le nom est requis, aucun agent créé sans lui', () => {
@@ -87,14 +99,13 @@ test('addAgent : vide le formulaire après création (pas de champs restants pou
 
 test('editerAgent : pré-remplit le formulaire avec les valeurs existantes de l\'agent', () => {
   const window = chargerAgentsEDL();
-  remplirFormulaire(window, { nom: 'Jean Dupont', tel: '0612345678', email: 'jean@exemple.fr', adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes', secteurs: '75018' });
+  remplirFormulaire(window, { nom: 'Jean Dupont', tel: '0612345678', email: 'jean@exemple.fr', secteurs: '75018' });
   window.addAgent();
   const id = window.__getDB().agents[0].id;
 
   window.editerAgent(id);
 
   assert.equal(window.document.getElementById('new-agent-nom').value, 'Jean Dupont');
-  assert.equal(window.document.getElementById('new-agent-adresse').value, '12 rue de la Paix, 91000 Évry-Courcouronnes');
   assert.equal(window.document.getElementById('new-agent-secteurs').value, '75018');
   assert.notEqual(window.document.getElementById('agent-cancel-btn').style.display, 'none');
 });

@@ -44,6 +44,7 @@ const DOM_MINIMAL = `
   <input id="compte-champ-email">
   <input id="compte-champ-tel">
   <input id="compte-champ-adresse">
+  <button id="btn-save-adresse">Enregistrer</button>
   <table><tbody id="bareme-affiche"></tbody></table>
 
   <span id="zone-status-badge" class="zone-status-badge neutral"><span class="dot"></span></span>
@@ -339,6 +340,36 @@ test('remplirCompte : affiche le nom, le téléphone, l\'adresse et personnalise
   assert.equal(w.document.getElementById('compte-champ-nom').value, 'Julie Berthier');
   assert.equal(w.document.getElementById('compte-champ-tel').value, '0612345678');
   assert.equal(w.document.getElementById('compte-champ-adresse').value, '3 rue de Rivoli, 75001 Paris');
+});
+
+test('enregistrerAdresse : envoie l\'adresse saisie, met à jour le champ et pré-remplit la recherche', async () => {
+  const w = chargerAgentApp();
+  w.initZones([], [], null, '');
+  w.document.getElementById('compte-champ-adresse').value = '12 rue de la Paix, 91000 Évry-Courcouronnes';
+  let appel = null;
+  w.fetch = async (url, opts) => {
+    appel = { url, corps: JSON.parse(opts.body) };
+    return { ok: true, json: async () => ({ success: true, adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes' }) };
+  };
+
+  await w.enregistrerAdresse();
+
+  assert.equal(appel.url, '/api/agent-update-adresse');
+  assert.deepEqual(appel.corps, { adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes' });
+  assert.equal(w.document.getElementById('compte-champ-adresse').value, '12 rue de la Paix, 91000 Évry-Courcouronnes');
+  assert.equal(w.document.getElementById('recherche-commune').value, '12 rue de la Paix, 91000 Évry-Courcouronnes');
+  assert.equal(w.document.getElementById('btn-save-adresse').disabled, false, 'le bouton doit être réactivé après l\'enregistrement');
+});
+
+test('enregistrerAdresse : erreur serveur → le bouton reste réactivé pour réessayer', async () => {
+  const w = chargerAgentApp();
+  w.initZones([], [], null, '');
+  w.document.getElementById('compte-champ-adresse').value = 'Adresse test';
+  w.fetch = async () => ({ ok: false, json: async () => ({ error: 'Erreur test' }) });
+
+  await w.enregistrerAdresse();
+
+  assert.equal(w.document.getElementById('btn-save-adresse').disabled, false);
 });
 
 test('appliquerAvatar : sans photo → initiales ; avec photo → image de fond', () => {

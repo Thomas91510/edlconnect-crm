@@ -403,10 +403,8 @@ function editerAgent(id){
   document.getElementById('new-agent-nom').value = agent.nom || '';
   document.getElementById('new-agent-tel').value = agent.tel || '';
   const emailEl = document.getElementById('new-agent-email');
-  const adresseEl = document.getElementById('new-agent-adresse');
   const secteursEl = document.getElementById('new-agent-secteurs');
   if(emailEl) emailEl.value = agent.email || '';
-  if(adresseEl) adresseEl.value = agent.adresse || '';
   if(secteursEl) secteursEl.value = agent.secteurs || '';
   const submitBtn = document.getElementById('agent-submit-btn');
   if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-check"></i> Enregistrer les modifications';
@@ -420,10 +418,8 @@ function annulerEditionAgent(){
   document.getElementById('new-agent-nom').value = '';
   document.getElementById('new-agent-tel').value = '';
   const emailEl = document.getElementById('new-agent-email');
-  const adresseEl = document.getElementById('new-agent-adresse');
   const secteursEl = document.getElementById('new-agent-secteurs');
   if(emailEl) emailEl.value = '';
-  if(adresseEl) adresseEl.value = '';
   if(secteursEl) secteursEl.value = '';
   const submitBtn = document.getElementById('agent-submit-btn');
   if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-user-plus"></i> Ajouter cet agent';
@@ -435,23 +431,24 @@ function addAgent(){
   const nomEl = document.getElementById('new-agent-nom');
   const telEl = document.getElementById('new-agent-tel');
   const emailEl = document.getElementById('new-agent-email');
-  const adresseEl = document.getElementById('new-agent-adresse');
   const secteursEl = document.getElementById('new-agent-secteurs');
   const nom = nomEl.value.trim();
   const tel = telEl.value.trim();
   const email = (emailEl ? emailEl.value : '').trim();
-  const adresse = (adresseEl ? adresseEl.value : '').trim();
   const secteurs = (secteursEl ? secteursEl.value : '').trim();
   if(!nom){ notify('⚠️ Le nom de l\'agent est requis', 'warn'); return; }
   if(!DB.agents) DB.agents = [];
 
+  // Note : "adresse" n'est jamais écrit ici — c'est l'agent qui la renseigne
+  // lui-même depuis son espace (Mon compte), pas l'agence. Object.assign ne
+  // portant que sur les clés listées, une modification admin ne l'efface pas.
   const estUneCreation = !_editingAgentId;
   if(_editingAgentId){
     const agent = DB.agents.find(a => a.id === _editingAgentId);
-    if(agent){ Object.assign(agent, { nom, tel, email, adresse, secteurs }); }
+    if(agent){ Object.assign(agent, { nom, tel, email, secteurs }); }
     _editingAgentId = null;
   } else {
-    DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, adresse, secteurs });
+    DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, secteurs });
   }
 
   saveToStorage();
