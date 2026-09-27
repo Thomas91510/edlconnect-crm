@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Espace agent — EDL IDF Expert en État des Lieux</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -109,7 +111,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .field label{font-size:11.5px}
 .field input{font-size:13.5px;padding:10px 12px}
 
-/* ─── Zones d'intervention (sectorisation par code postal) ─────────────── */
+/* ─── Zones d'intervention (recherche + carte de communes réelles) ──────── */
 .instructions-row{font-size:12px;color:var(--text2);margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
 .mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
 .legend-row{display:flex;align-items:center;gap:7px;font-size:13.5px}
@@ -117,20 +119,39 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .swatch.primaire{background:var(--blue)}
 .swatch.secondaire{background:var(--teal)}
 .legend-count{font-weight:700;color:var(--text2)}
-.idf-map{display:grid;gap:12px;grid-template-columns:1fr 1.3fr 1fr;grid-template-areas:"nw n ne" "w paris e" "gap s se"}
-@media (max-width:680px){ .idf-map{grid-template-columns:1fr;grid-template-areas:none} .idf-map .zone-group{grid-area:auto !important} }
-.zone-group{border:1px dashed var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:8px}
-.zone-group.gap{border:none}
-.zone-group .dept-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em}
-.chip-row{display:flex;flex-wrap:wrap;gap:6px}
-.cp-chip{border:1px solid var(--border);background:var(--bg);color:var(--text2);border-radius:7px;padding:6px 10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
-.cp-chip.primaire{background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue)}
-.cp-chip.secondaire{background:var(--teal-light);color:var(--teal-dark);border-color:var(--teal)}
-.cp-chip.disabled{cursor:default;opacity:.55;font-weight:400}
-.map-locked .cp-chip{pointer-events:none;opacity:.85}
-#paris-zone{grid-area:paris;background:var(--bg)}
-#paris-zone .chip-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-#paris-zone .cp-chip{text-align:center;padding:7px 4px}
+
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:11px 14px;font-size:14px;font-family:inherit;background:var(--white)}
+.search-wrap input:focus{outline:none;border-color:var(--blue)}
+.suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 24px rgba(20,20,18,.12);z-index:900;max-height:260px;overflow-y:auto;display:none}
+.suggestions.show{display:block}
+.suggestion-row{padding:10px 14px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;gap:10px}
+.suggestion-row:hover{background:var(--bg)}
+.suggestion-row .cp{color:var(--text3);font-size:11.5px;flex-shrink:0}
+.suggestion-empty{padding:12px 14px;font-size:12.5px;color:var(--text3)}
+
+.dept-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.dept-tab{padding:6px 12px;border-radius:999px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;color:var(--text2)}
+.dept-tab:hover{border-color:var(--blue)}
+.dept-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+.map-outer{position:relative}
+#map{height:420px;border-radius:var(--radius);border:1px solid var(--border)}
+.map-loading{position:absolute;inset:0;background:rgba(255,255,255,.75);display:none;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--text2);z-index:900;border-radius:var(--radius)}
+.map-loading.show{display:flex}
+.map-locked #map,.map-locked .search-wrap,.map-locked .dept-tabs{pointer-events:none;opacity:.7}
+
+.chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 8px 6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;color:#fff}
+.chip.primaire{background:var(--blue)}
+.chip.secondaire{background:var(--teal)}
+.chip .nom{cursor:pointer}
+.chip .nom:hover{text-decoration:underline}
+.chip .x{background:rgba(255,255,255,.25);border:none;color:#fff;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.chip .x:hover{background:rgba(255,255,255,.4)}
+.map-locked .chip .x{display:none}
+.chip-empty{font-size:12.5px;color:var(--text3);margin-top:14px}
+
 .zone-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px}
 .zone-status-badge.neutral{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
 .zone-status-badge.pending{background:var(--amber-bg);color:var(--amber)}
@@ -339,7 +360,15 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
             <div class="card">
               <div class="card-head" style="flex-wrap:wrap"><i class="ti ti-map-pin"></i>Zones d'intervention<span class="zone-status-badge neutral" id="zone-status-badge" style="margin-left:auto"><span class="dot"></span>Aucune zone définie</span></div>
               <div class="card-body">
-                <p class="compte-note" style="margin-bottom:12px">Sélectionnez vos secteurs par code postal. Ils doivent être validés par l'agence avant de s'appliquer à vos frais de déplacement.</p>
+                <p class="compte-note" style="margin-bottom:14px">Choisissez un département puis cliquez directement les communes sur la carte, ou recherchez-en une. Elles doivent être validées par l'agence avant de s'appliquer à vos frais de déplacement.</p>
+
+                <div class="search-wrap">
+                  <input type="text" id="recherche-commune" placeholder="Rechercher une commune (Évry, Palaiseau, Meaux…)" autocomplete="off">
+                  <div class="suggestions" id="suggestions"></div>
+                </div>
+
+                <div class="dept-tabs" id="dept-tabs"></div>
+
                 <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
                   <div class="legend-row"><span class="swatch primaire"></span>Primaire <span class="legend-count" id="count-primaire">0</span></div>
                   <div class="legend-row"><span class="swatch secondaire"></span>Secondaire <span class="legend-count" id="count-secondaire">0</span></div>
@@ -349,18 +378,16 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
                   <span class="mini-badge">2e clic = secondaire</span>
                   <span class="mini-badge">3e clic = retirer</span>
                 </div>
-                <div class="idf-map" id="idf-map">
-                  <div class="zone-group" style="grid-area:nw" data-dept="78"></div>
-                  <div class="zone-group" style="grid-area:n" data-dept="95"></div>
-                  <div class="zone-group" style="grid-area:ne" data-dept="93"></div>
-                  <div class="zone-group" style="grid-area:w" data-dept="92"></div>
-                  <div class="zone-group" id="paris-zone" style="grid-area:paris" data-dept="75"></div>
-                  <div class="zone-group" style="grid-area:e" data-dept="77"></div>
-                  <div class="zone-group gap" style="grid-area:gap"></div>
-                  <div class="zone-group" style="grid-area:s" data-dept="91"></div>
-                  <div class="zone-group" style="grid-area:se" data-dept="94"></div>
+
+                <div class="map-outer">
+                  <div id="map"></div>
+                  <div class="map-loading" id="map-loading">Chargement des communes…</div>
                 </div>
                 <div class="map-overlay-note" id="map-lock-note">🔒 Zones envoyées : en attente de validation par l'agence.</div>
+
+                <div class="chip-list" id="chip-list"></div>
+                <div class="chip-empty" id="chip-empty">Aucune commune sélectionnée pour l'instant.</div>
+
                 <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
                   <button class="btn-primary" id="btn-submit-zones" style="width:auto" onclick="soumettreZones()">Envoyer pour validation</button>
                   <button class="btn-sm" id="btn-edit-zones" style="display:none" onclick="modifierZones()">Modifier les zones</button>
@@ -593,74 +620,157 @@ function renderBareme(bareme){
     || '<tr><td colspan="2" class="empty">Barème non renseigné pour l\'instant.</td></tr>';
 }
 
-// ─── Zones d'intervention : carte par code postal (Île-de-France) ───────
-const DEPARTEMENTS = [
-  { code:'78', nom:'Yvelines',        villes:[['78000','Versailles'],['78100','St-Germain-en-Laye']], autres:38 },
-  { code:'95', nom:"Val-d'Oise",      villes:[['95000','Cergy'],['95100','Argenteuil']],               autres:36 },
-  { code:'93', nom:'Seine-St-Denis',  villes:[['93100','Montreuil'],['93200','St-Denis']],              autres:32 },
-  { code:'92', nom:'Hauts-de-Seine',  villes:[['92100','Boulogne-B.'],['92200','Neuilly-s-Seine']],     autres:34 },
-  { code:'77', nom:'Seine-et-Marne',  villes:[['77000','Melun'],['77100','Meaux']],                     autres:44 },
-  { code:'91', nom:'Essonne',         villes:[['91000','Évry-Courcouronnes'],['91100','Corbeil-Ess.']], autres:28 },
-  { code:'94', nom:'Val-de-Marne',    villes:[['94100','St-Maur-des-Fossés'],['94200','Ivry-s-Seine']], autres:26 },
+// ─── Zones d'intervention : recherche de commune + vrais contours ───────
+// Données géographiques (recherche, contours, découpage par département) :
+// API officielle et gratuite geo.api.gouv.fr (IGN/Base Adresse Nationale),
+// déjà dans l'esprit du projet qui utilise api-adresse.data.gouv.fr pour
+// l'autocomplete d'adresses ailleurs dans le CRM. codeRegion=11 = Île-de-France.
+const REGION_IDF = '11';
+const DEPARTEMENTS_IDF = [
+  { code:'75', nom:'Paris' }, { code:'77', nom:'Seine-et-Marne' }, { code:'78', nom:'Yvelines' },
+  { code:'91', nom:'Essonne' }, { code:'92', nom:'Hauts-de-Seine' }, { code:'93', nom:'Seine-St-Denis' },
+  { code:'94', nom:'Val-de-Marne' }, { code:'95', nom:"Val-d'Oise" },
 ];
-const PARIS_CODES = Array.from({length:20}, (_,i) => '750' + String(i+1).padStart(2,'0'));
 
-let assignments = {};
-let zoneStatut = null; // null | 'attente' | 'valide' | 'refuse'
-let _mapConstruite = false;
+let zones = {};              // code INSEE -> { nom, categorie } — conservé en changeant de département
+let zoneStatut = null;       // null | 'attente' | 'valide' | 'refuse'
+let coucheCommunesActuelle = null;
+let departementActif = null;
+const cacheGeojsonParDept = {};
+let leafletMap = null;
 
-function labelForDept(code){ return DEPARTEMENTS.find(d => d.code === code); }
+function initialiserCarteZones(){
+  if(leafletMap) return;
+  leafletMap = L.map('map', { scrollWheelZoom:false }).setView([48.85, 2.4], 8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(leafletMap);
+  document.getElementById('dept-tabs').innerHTML = DEPARTEMENTS_IDF.map(d =>
+    `<button type="button" class="dept-tab" data-dept="${d.code}" onclick="chargerDepartement('${d.code}')">${d.nom} (${d.code})</button>`
+  ).join('');
 
-function construireCarteZones(){
-  if(_mapConstruite) return;
-  document.querySelectorAll('.zone-group[data-dept]').forEach(group => {
-    const dept = group.getAttribute('data-dept');
-    if(dept === '75'){
-      group.innerHTML = '<div class="dept-label">Paris (75)</div><div class="chip-row"></div>';
-      const row = group.querySelector('.chip-row');
-      PARIS_CODES.forEach(cp => row.appendChild(makeChip(cp, cp.slice(3))));
+  const inputRecherche = document.getElementById('recherche-commune');
+  const boiteSuggestions = document.getElementById('suggestions');
+  let timerRecherche = null;
+  inputRecherche.addEventListener('input', () => {
+    const q = inputRecherche.value.trim();
+    clearTimeout(timerRecherche);
+    if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
+    if(q.length < 2){ boiteSuggestions.classList.remove('show'); return; }
+    timerRecherche = setTimeout(() => rechercherCommunes(q, inputRecherche, boiteSuggestions), 300);
+  });
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.search-wrap')) boiteSuggestions.classList.remove('show');
+  });
+}
+
+function couleurCategorie(cat){
+  if(cat === 'primaire') return getComputedStyle(document.documentElement).getPropertyValue('--blue').trim();
+  if(cat === 'secondaire') return getComputedStyle(document.documentElement).getPropertyValue('--teal').trim();
+  return '#c7cfce'; // neutre : commune du département, pas encore sélectionnée
+}
+
+async function chargerDepartement(code){
+  departementActif = code;
+  document.querySelectorAll('.dept-tab').forEach(b => b.classList.toggle('active', b.dataset.dept === code));
+  document.getElementById('map-loading').classList.add('show');
+  try{
+    let geojson = cacheGeojsonParDept[code];
+    if(!geojson){
+      const resp = await fetch('https://geo.api.gouv.fr/departements/' + code + '/communes?fields=nom,code&format=geojson&geometry=contour');
+      geojson = await resp.json();
+      cacheGeojsonParDept[code] = geojson;
+    }
+    if(coucheCommunesActuelle) leafletMap.removeLayer(coucheCommunesActuelle);
+    coucheCommunesActuelle = L.geoJSON(geojson, {
+      style: (feature) => {
+        const z = zones[feature.properties.code];
+        return { color:'#fff', weight:1, fillColor: couleurCategorie(z && z.categorie), fillOpacity: z ? 0.7 : 0.35 };
+      },
+      onEachFeature: (feature, layer) => {
+        layer.bindTooltip(feature.properties.nom);
+        layer.on('click', () => cyclerCategorie(feature.properties.code, feature.properties.nom));
+      }
+    }).addTo(leafletMap);
+    leafletMap.fitBounds(coucheCommunesActuelle.getBounds(), { padding:[10,10] });
+  }catch(e){
+    showToast('❌ Chargement du département indisponible pour l\'instant.');
+  }finally{
+    document.getElementById('map-loading').classList.remove('show');
+  }
+}
+
+function restylerCoucheActuelle(){
+  if(!coucheCommunesActuelle) return;
+  coucheCommunesActuelle.eachLayer(layer => {
+    const z = zones[layer.feature.properties.code];
+    layer.setStyle({ fillColor: couleurCategorie(z && z.categorie), fillOpacity: z ? 0.7 : 0.35 });
+  });
+}
+
+async function rechercherCommunes(q, inputRecherche, boiteSuggestions){
+  boiteSuggestions.innerHTML = '<div class="suggestion-empty">Recherche…</div>';
+  boiteSuggestions.classList.add('show');
+  try{
+    const url = 'https://geo.api.gouv.fr/communes?nom=' + encodeURIComponent(q) +
+      '&fields=nom,code,codeDepartement,codesPostaux&boost=population&limit=8&codeRegion=' + REGION_IDF;
+    const resp = await fetch(url);
+    const communes = await resp.json();
+    if(!Array.isArray(communes) || !communes.length){
+      boiteSuggestions.innerHTML = '<div class="suggestion-empty">Aucune commune trouvée en Île-de-France.</div>';
       return;
     }
-    const info = labelForDept(dept);
-    group.innerHTML = `<div class="dept-label">${info.nom} (${info.code})</div><div class="chip-row"></div>`;
-    const row = group.querySelector('.chip-row');
-    info.villes.forEach(([cp, nom]) => row.appendChild(makeChip(cp, cp, nom)));
-    const more = document.createElement('span');
-    more.className = 'cp-chip disabled';
-    more.textContent = '+' + info.autres + ' autres';
-    row.appendChild(more);
-  });
-  _mapConstruite = true;
+    boiteSuggestions.innerHTML = communes.map(c => `
+      <div class="suggestion-row" data-code="${c.code}" data-nom="${esc(c.nom)}" data-dept="${c.codeDepartement}">
+        <span>${esc(c.nom)}</span><span class="cp">${esc((c.codesPostaux||[]).join(', '))}</span>
+      </div>`).join('');
+    boiteSuggestions.querySelectorAll('.suggestion-row').forEach(row => {
+      row.addEventListener('click', async () => {
+        boiteSuggestions.classList.remove('show');
+        inputRecherche.value = '';
+        if(row.dataset.dept !== departementActif) await chargerDepartement(row.dataset.dept);
+        cyclerCategorie(row.dataset.code, row.dataset.nom);
+      });
+    });
+  }catch(e){
+    boiteSuggestions.innerHTML = '<div class="suggestion-empty">Recherche indisponible pour l\'instant.</div>';
+  }
 }
 
-function makeChip(code, shortLabel, title){
-  const el = document.createElement('button');
-  el.type = 'button';
-  el.className = 'cp-chip';
-  el.textContent = shortLabel;
-  el.dataset.code = code;
-  if(title) el.title = code + ' — ' + title;
-  el.addEventListener('click', () => cycleAssignment(code));
-  return el;
-}
-
-function cycleAssignment(code){
+function cyclerCategorie(code, nom){
   if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
-  const cur = assignments[code];
-  if(cur === undefined) assignments[code] = 'primaire';
-  else if(cur === 'primaire') assignments[code] = 'secondaire';
-  else delete assignments[code];
-  renderAssignments();
+  const actuel = zones[code];
+  if(!actuel) zones[code] = { nom, categorie: 'primaire' };
+  else if(actuel.categorie === 'primaire') actuel.categorie = 'secondaire';
+  else delete zones[code];
+  restylerCoucheActuelle();
+  renderZonesEtCompteurs();
 }
 
-function renderAssignments(){
-  let nbPrimaire = 0, nbSecondaire = 0;
-  document.querySelectorAll('.cp-chip[data-code]').forEach(chip => {
-    const state = assignments[chip.dataset.code];
-    chip.classList.remove('primaire', 'secondaire');
-    if(state === 'primaire'){ chip.classList.add('primaire'); nbPrimaire++; }
-    if(state === 'secondaire'){ chip.classList.add('secondaire'); nbSecondaire++; }
-  });
+function retirerCommune(code){
+  if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
+  delete zones[code];
+  restylerCoucheActuelle();
+  renderZonesEtCompteurs();
+}
+
+function renderZonesEtCompteurs(){
+  const wrap = document.getElementById('chip-list');
+  const vide = document.getElementById('chip-empty');
+  const codes = Object.keys(zones);
+  vide.style.display = codes.length ? 'none' : 'block';
+  wrap.innerHTML = codes.map(code => {
+    const z = zones[code];
+    return `<span class="chip ${z.categorie}">
+      <span class="nom" onclick="cyclerCategorie('${code}', '${String(z.nom).replace(/'/g,"\\'")}')" title="Cliquer pour changer de secteur">${esc(z.nom)}</span>
+      <button class="x" onclick="retirerCommune('${code}')" title="Retirer">✕</button>
+    </span>`;
+  }).join('');
+
+  const valeurs = Object.values(zones);
+  const nbPrimaire = valeurs.filter(z => z.categorie === 'primaire').length;
+  const nbSecondaire = valeurs.filter(z => z.categorie === 'secondaire').length;
   document.getElementById('count-primaire').textContent = nbPrimaire;
   document.getElementById('count-secondaire').textContent = nbSecondaire;
   const submitBtn = document.getElementById('btn-submit-zones');
@@ -669,13 +779,13 @@ function renderAssignments(){
 
 function setZoneStatusBadge(){
   const badge = document.getElementById('zone-status-badge');
-  const map = document.getElementById('idf-map');
+  const mapOuter = document.querySelector('.map-outer').parentElement;
   const lockNote = document.getElementById('map-lock-note');
   const editBtn = document.getElementById('btn-edit-zones');
   const submitBtn = document.getElementById('btn-submit-zones');
   const enAttenteOuValide = zoneStatut === 'attente' || zoneStatut === 'valide';
 
-  map.classList.toggle('map-locked', enAttenteOuValide);
+  mapOuter.classList.toggle('map-locked', enAttenteOuValide);
   lockNote.classList.toggle('show', zoneStatut === 'attente');
   editBtn.style.display = enAttenteOuValide ? 'inline-flex' : 'none';
   submitBtn.style.display = enAttenteOuValide ? 'none' : 'inline-flex';
@@ -686,12 +796,12 @@ function setZoneStatusBadge(){
 }
 
 function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus){
-  construireCarteZones();
-  assignments = {};
-  (secteurPrimaire || []).forEach(cp => { assignments[cp] = 'primaire'; });
-  (secteurSecondaire || []).forEach(cp => { assignments[cp] = 'secondaire'; });
+  initialiserCarteZones();
+  zones = {};
+  (secteurPrimaire || []).forEach(c => { if(c && c.code) zones[c.code] = { nom: c.nom, categorie: 'primaire' }; });
+  (secteurSecondaire || []).forEach(c => { if(c && c.code) zones[c.code] = { nom: c.nom, categorie: 'secondaire' }; });
   zoneStatut = statut || null;
-  renderAssignments();
+  renderZonesEtCompteurs();
   setZoneStatusBadge();
   if(statut === 'refuse' && motifRefus){
     const lockNote = document.getElementById('map-lock-note');
@@ -701,9 +811,9 @@ function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus){
 }
 
 async function soumettreZones(){
-  const primaire = Object.keys(assignments).filter(c => assignments[c] === 'primaire');
-  const secondaire = Object.keys(assignments).filter(c => assignments[c] === 'secondaire');
-  if(!primaire.length && !secondaire.length){ showToast('⚠️ Sélectionnez au moins un code postal'); return; }
+  const primaire = Object.entries(zones).filter(([,z]) => z.categorie === 'primaire').map(([code,z]) => ({ code, nom: z.nom }));
+  const secondaire = Object.entries(zones).filter(([,z]) => z.categorie === 'secondaire').map(([code,z]) => ({ code, nom: z.nom }));
+  if(!primaire.length && !secondaire.length){ showToast('⚠️ Sélectionnez au moins une commune'); return; }
   const btn = document.getElementById('btn-submit-zones');
   const libelleOriginal = btn.innerHTML;
   btn.disabled = true; btn.textContent = 'Envoi…';
@@ -717,7 +827,7 @@ async function soumettreZones(){
     if(!resp.ok){ showToast('❌ ' + (data.error || 'Erreur lors de l\'envoi')); btn.disabled = false; btn.innerHTML = libelleOriginal; return; }
     zoneStatut = 'attente';
     setZoneStatusBadge();
-    renderAssignments();
+    renderZonesEtCompteurs();
     showToast('📍 Zones envoyées pour validation à l\'agence');
   }catch(e){
     showToast('❌ Erreur réseau, réessaie.');
@@ -728,7 +838,7 @@ async function soumettreZones(){
 function modifierZones(){
   zoneStatut = null;
   setZoneStatusBadge();
-  renderAssignments();
+  renderZonesEtCompteurs();
 }
 
 // ─── Photo de profil ─────────────────────────────────────────

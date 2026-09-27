@@ -51,16 +51,18 @@ const DOM_MINIMAL = `
   <div id="map-lock-note"></div>
   <button id="btn-submit-zones"></button>
   <button id="btn-edit-zones" style="display:none"></button>
-  <div class="idf-map" id="idf-map">
-    <div class="zone-group" data-dept="78"></div>
-    <div class="zone-group" data-dept="95"></div>
-    <div class="zone-group" data-dept="93"></div>
-    <div class="zone-group" data-dept="92"></div>
-    <div class="zone-group" id="paris-zone" data-dept="75"></div>
-    <div class="zone-group" data-dept="77"></div>
-    <div class="zone-group gap"></div>
-    <div class="zone-group" data-dept="91"></div>
-    <div class="zone-group" data-dept="94"></div>
+  <div class="card-body">
+    <div class="search-wrap">
+      <input type="text" id="recherche-commune">
+      <div id="suggestions" class="suggestions"></div>
+    </div>
+    <div id="dept-tabs"></div>
+    <div class="map-outer">
+      <div id="map"></div>
+      <div id="map-loading" class="map-loading"></div>
+    </div>
+    <div id="chip-list" class="chip-list"></div>
+    <div id="chip-empty" class="chip-empty"></div>
   </div>
 
   <div class="modal-overlay" id="photo-modal-overlay"></div>
@@ -89,6 +91,32 @@ function chargerAgentApp({ signInWithOtp } = {}) {
       signInWithOtp: (...args) => window.__signInWithOtp(...args),
       signOut: async () => {},
     } }) };
+    // Leaflet (chargé via <script src> en prod, absent ici) : stub minimal
+    // couvrant juste ce qu'utilise agent-app.html (carte, tuiles, couche
+    // GeoJSON) — les vrais appels réseau à geo.api.gouv.fr et le rendu
+    // Leaflet lui-même se testent manuellement (preview Vercel), pas ici.
+    window.L = {
+      map: () => ({ setView(){ return this; } }),
+      tileLayer: () => ({ addTo(){ return this; } }),
+      geoJSON: (data, opts) => {
+        const couches = ((data && data.features) || []).map(feature => {
+          const couche = {
+            feature,
+            setStyle(){},
+            bindTooltip(){ return this; },
+            on(evt, cb){ if(evt === 'click') couche._click = cb; return this; },
+          };
+          if(opts && opts.onEachFeature) opts.onEachFeature(feature, couche);
+          return couche;
+        });
+        return {
+          addTo(){ return this; },
+          eachLayer(cb){ couches.forEach(cb); },
+          getBounds(){ return {}; },
+          _couches: couches,
+        };
+      },
+    };
   `, { filename: 'stub-supabase.js' }).runInContext(ctx);
   new vm.Script(inline, { filename: 'inline.js' }).runInContext(ctx);
   return dom.window;
@@ -352,40 +380,53 @@ test('renderBareme : affiche les lignes (intitulé + montant), message si vide',
   assert.ok(w.document.getElementById('bareme-affiche').textContent.includes('non renseigné'));
 });
 
-test('cycleAssignment : cycle primaire → secondaire → retrait, met à jour les compteurs', () => {
+test('cyclerCategorie : cycle primaire → secondaire → retrait, met à jour compteurs et puces', () => {
   const w = chargerAgentApp();
   w.initZones([], [], null, '');
-  w.cycleAssignment('75018'); // 1er clic → primaire
+  w.cyclerCategorie('91228', 'Évry-Courcouronnes'); // 1er clic → primaire
   assert.equal(w.document.getElementById('count-primaire').textContent, '1');
-  w.cycleAssignment('75018'); // 2e clic → secondaire
+  assert.ok(w.document.getElementById('chip-list').innerHTML.includes('Évry-Courcouronnes'));
+  w.cyclerCategorie('91228', 'Évry-Courcouronnes'); // 2e clic → secondaire
   assert.equal(w.document.getElementById('count-primaire').textContent, '0');
   assert.equal(w.document.getElementById('count-secondaire').textContent, '1');
-  w.cycleAssignment('75018'); // 3e clic → retiré
+  w.cyclerCategorie('91228', 'Évry-Courcouronnes'); // 3e clic → retiré
   assert.equal(w.document.getElementById('count-secondaire').textContent, '0');
+  assert.ok(w.document.getElementById('chip-empty').style.display !== 'none');
 });
 
-test('initZones : pré-remplit depuis les secteurs existants et verrouille si statut "valide"', () => {
+test('retirerCommune : retire une commune indépendamment de l\'ordre de clic', () => {
   const w = chargerAgentApp();
-  w.initZones(['75018'], ['92100'], 'valide', '');
+  w.initZones([{ code:'91228', nom:'Évry-Courcouronnes' }], [], null, '');
+  w.retirerCommune('91228');
+  assert.equal(w.document.getElementById('count-primaire').textContent, '0');
+  assert.ok(!w.document.getElementById('chip-list').innerHTML.includes('Évry'));
+});
+
+test('initZones : pré-remplit depuis les communes existantes et verrouille si statut "valide"', () => {
+  const w = chargerAgentApp();
+  w.initZones([{ code:'91228', nom:'Évry-Courcouronnes' }], [{ code:'92012', nom:'Boulogne-Billancourt' }], 'valide', '');
   assert.equal(w.document.getElementById('count-primaire').textContent, '1');
   assert.equal(w.document.getElementById('count-secondaire').textContent, '1');
-  assert.ok(w.document.getElementById('idf-map').classList.contains('map-locked'));
+  assert.ok(w.document.querySelector('.map-outer').parentElement.classList.contains('map-locked'));
   assert.equal(w.document.getElementById('btn-submit-zones').style.display, 'none');
+  // Verrouillé : les croix de suppression des puces doivent être neutralisées côté logique aussi.
+  w.retirerCommune('91228');
+  assert.equal(w.document.getElementById('count-primaire').textContent, '1', 'aucune modification possible tant que le statut est verrouillé');
 });
 
 test('initZones : statut "refuse" affiche le motif de refus', () => {
   const w = chargerAgentApp();
-  w.initZones(['75018'], [], 'refuse', 'Zone déjà couverte par un autre agent');
+  w.initZones([{ code:'91228', nom:'Évry-Courcouronnes' }], [], 'refuse', 'Zone déjà couverte par un autre agent');
   const note = w.document.getElementById('map-lock-note');
   assert.ok(note.classList.contains('show'));
   assert.ok(note.textContent.includes('Zone déjà couverte par un autre agent'));
 });
 
-test('soumettreZones : envoie les codes sélectionnés au bon endpoint, passe en attente si succès', async () => {
+test('soumettreZones : envoie les communes sélectionnées (code + nom) au bon endpoint, passe en attente si succès', async () => {
   const w = chargerAgentApp();
   w.initZones([], [], null, '');
-  w.cycleAssignment('75018'); // primaire
-  w.cycleAssignment('92100'); w.cycleAssignment('92100'); // secondaire
+  w.cyclerCategorie('91228', 'Évry-Courcouronnes'); // primaire
+  w.cyclerCategorie('92012', 'Boulogne-Billancourt'); w.cyclerCategorie('92012', 'Boulogne-Billancourt'); // secondaire
 
   let appel = null;
   w.fetch = async (url, opts) => { appel = { url, corps: JSON.parse(opts.body) }; return { ok: true, json: async () => ({ success: true }) }; };
@@ -393,8 +434,8 @@ test('soumettreZones : envoie les codes sélectionnés au bon endpoint, passe en
   await w.soumettreZones();
 
   assert.equal(appel.url, '/api/agent-zones-submit');
-  assert.deepEqual(appel.corps.secteurPrimaire, ['75018']);
-  assert.deepEqual(appel.corps.secteurSecondaire, ['92100']);
+  assert.deepEqual(appel.corps.secteurPrimaire, [{ code:'91228', nom:'Évry-Courcouronnes' }]);
+  assert.deepEqual(appel.corps.secteurSecondaire, [{ code:'92012', nom:'Boulogne-Billancourt' }]);
   assert.ok(w.document.getElementById('zone-status-badge').textContent.includes('attente'));
 });
 
@@ -410,7 +451,7 @@ test('soumettreZones : rien de sélectionné → n\'appelle pas le réseau', asy
 test('soumettreZones : erreur serveur → le bouton reste réactivé pour réessayer', async () => {
   const w = chargerAgentApp();
   w.initZones([], [], null, '');
-  w.cycleAssignment('75018');
+  w.cyclerCategorie('91228', 'Évry-Courcouronnes');
   w.fetch = async () => ({ ok: false, json: async () => ({ error: 'Erreur test' }) });
   await w.soumettreZones();
   assert.equal(w.document.getElementById('btn-submit-zones').disabled, false);
@@ -418,9 +459,9 @@ test('soumettreZones : erreur serveur → le bouton reste réactivé pour réess
 
 test('modifierZones : déverrouille la carte pour resoumettre', () => {
   const w = chargerAgentApp();
-  w.initZones(['75018'], [], 'refuse', 'Motif');
+  w.initZones([{ code:'91228', nom:'Évry-Courcouronnes' }], [], 'refuse', 'Motif');
   w.modifierZones();
-  assert.ok(!w.document.getElementById('idf-map').classList.contains('map-locked'));
+  assert.ok(!w.document.querySelector('.map-outer').parentElement.classList.contains('map-locked'));
   assert.equal(w.document.getElementById('btn-submit-zones').style.display, 'inline-flex');
 });
 

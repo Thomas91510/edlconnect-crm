@@ -1,7 +1,8 @@
 // Vérifie /api/agent-zones-submit : un agent soumet ses secteurs primaire /
-// secondaire (par code postal) pour ses frais de déplacement — passe sa
-// fiche en statut "attente", jamais appliqué directement (c'est l'agence
-// qui valide ensuite depuis le CRM). Sans réseau réel.
+// secondaire (par commune — code INSEE + nom, choisis via la recherche/carte
+// geo.api.gouv.fr) pour ses frais de déplacement — passe sa fiche en statut
+// "attente", jamais appliqué directement (c'est l'agence qui valide ensuite
+// depuis le CRM). Sans réseau réel.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'cle-test';
@@ -10,7 +11,10 @@ const { default: handler } = await import('../api/agent-zones-submit.js');
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });
 
-function requete({ token = 'jeton-valide', corps = { secteurPrimaire: ['75018'], secteurSecondaire: ['92100'] } } = {}) {
+const EVRY = { code: '91228', nom: 'Évry-Courcouronnes' };
+const BOULOGNE = { code: '92012', nom: 'Boulogne-Billancourt' };
+
+function requete({ token = 'jeton-valide', corps = { secteurPrimaire: [EVRY], secteurSecondaire: [BOULOGNE] } } = {}) {
   const headers = new Headers({ 'Content-Type': 'application/json' });
   if (token !== null) headers.set('authorization', 'Bearer ' + token);
   return { url: 'https://x.test/api/agent-zones-submit', method: 'POST', headers, json: async () => corps };
@@ -49,10 +53,18 @@ test('email sans fiche agent correspondante : 403', async () => {
   assert.equal(resp.status, 403);
 });
 
-test('aucun code postal soumis : 400', async () => {
+test('aucune commune soumise : 400', async () => {
   global.fetch = fabriquerFetchMock().fn;
   const resp = await handler(requete({ corps: { secteurPrimaire: [], secteurSecondaire: [] } }));
   assert.equal(resp.status, 400);
+});
+
+test('commune sans code ou sans nom : ignorée plutôt que de faire échouer toute la soumission', async () => {
+  const { fn, appels } = fabriquerFetchMock();
+  global.fetch = fn;
+  await handler(requete({ corps: { secteurPrimaire: [EVRY, { code: '', nom: 'Sans code' }, { code: '91999' }], secteurSecondaire: [] } }));
+  const agentMaj = appels.patch.corps.data.agents.find(a => a.id === 'agent-1');
+  assert.deepEqual(agentMaj.secteurPrimaire, [EVRY]);
 });
 
 test('soumission réussie : statut "attente", motif de refus précédent effacé', async () => {
@@ -65,21 +77,22 @@ test('soumission réussie : statut "attente", motif de refus précédent effacé
   assert.equal(resp.status, 200);
   assert.equal(body.zoneStatut, 'attente');
   const agentMaj = appels.patch.corps.data.agents.find(a => a.id === 'agent-1');
-  assert.deepEqual(agentMaj.secteurPrimaire, ['75018']);
-  assert.deepEqual(agentMaj.secteurSecondaire, ['92100']);
+  assert.deepEqual(agentMaj.secteurPrimaire, [EVRY]);
+  assert.deepEqual(agentMaj.secteurSecondaire, [BOULOGNE]);
   assert.equal(agentMaj.zoneStatut, 'attente');
   assert.equal(agentMaj.zoneRefusMotif, '', 'un refus précédent ne doit pas rester affiché après une nouvelle soumission');
 });
 
-test('dédoublonne les codes et retire du secondaire ceux déjà en primaire', async () => {
+test('dédoublonne les communes (par code) et retire du secondaire celles déjà en primaire', async () => {
   const { fn, appels } = fabriquerFetchMock();
   global.fetch = fn;
+  const melun = { code: '77288', nom: 'Melun' };
 
-  await handler(requete({ corps: { secteurPrimaire: ['75018', '75018', '92100'], secteurSecondaire: ['92100', '77000'] } }));
+  await handler(requete({ corps: { secteurPrimaire: [EVRY, EVRY, BOULOGNE], secteurSecondaire: [BOULOGNE, melun] } }));
 
   const agentMaj = appels.patch.corps.data.agents.find(a => a.id === 'agent-1');
-  assert.deepEqual(agentMaj.secteurPrimaire, ['75018', '92100']);
-  assert.deepEqual(agentMaj.secteurSecondaire, ['77000'], '92100 est déjà en primaire, il ne doit pas aussi apparaître en secondaire');
+  assert.deepEqual(agentMaj.secteurPrimaire, [EVRY, BOULOGNE]);
+  assert.deepEqual(agentMaj.secteurSecondaire, [melun], 'Boulogne-Billancourt est déjà en primaire, elle ne doit pas aussi apparaître en secondaire');
 });
 
 test('un agent ne peut modifier que SA PROPRE fiche', async () => {

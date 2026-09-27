@@ -151,7 +151,9 @@ test('agent.bareme : renvoie le barème configuré par l\'agence (settings.data.
 test('agent.photoUrl / secteurs / zoneStatut : reflètent la fiche agent, tel et téléphone inclus', async () => {
   const rows = [{ user_id: 'owner-1', data: { agents: [{
     id: 'agent-1', nom: 'Jean Dupont', email: 'jean@exemple.fr', tel: '0612345678',
-    photoPath: 'owner-1/agent-1.jpg', secteurPrimaire: ['75018'], secteurSecondaire: ['92100'],
+    photoPath: 'owner-1/agent-1.jpg',
+    secteurPrimaire: [{ code:'91228', nom:'Évry-Courcouronnes' }],
+    secteurSecondaire: [{ code:'92012', nom:'Boulogne-Billancourt' }],
     zoneStatut: 'attente', zoneRefusMotif: '',
   }] } }];
   global.fetch = fabriquerFetchMock({ settingsRows: rows, missionsRows: [] });
@@ -159,8 +161,8 @@ test('agent.photoUrl / secteurs / zoneStatut : reflètent la fiche agent, tel et
   const body = await resp.json();
   assert.equal(body.agent.tel, '0612345678');
   assert.ok(body.agent.photoUrl.includes('owner-1/agent-1.jpg'));
-  assert.deepEqual(body.agent.secteurPrimaire, ['75018']);
-  assert.deepEqual(body.agent.secteurSecondaire, ['92100']);
+  assert.deepEqual(body.agent.secteurPrimaire, [{ code:'91228', nom:'Évry-Courcouronnes' }]);
+  assert.deepEqual(body.agent.secteurSecondaire, [{ code:'92012', nom:'Boulogne-Billancourt' }]);
   assert.equal(body.agent.zoneStatut, 'attente');
 });
 
