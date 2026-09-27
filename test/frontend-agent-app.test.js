@@ -24,13 +24,50 @@ const DOM_MINIMAL = `
   <div id="page-documents" class="page"></div>
   <div id="page-historique" class="page"></div>
   <div id="page-aide" class="page"></div>
+  <div id="page-compte" class="page"></div>
   <button class="nav-btn active" data-page="missions"></button>
   <button class="nav-btn" data-page="documents"></button>
   <button class="nav-btn" data-page="historique"></button>
   <button class="nav-btn" data-page="aide"></button>
+  <button class="nav-btn" data-page="compte"></button>
   <input type="email" id="login-email">
   <button id="login-btn"></button>
   <div id="login-msg"></div>
+
+  <h2 id="welcome-titre"></h2>
+  <span id="sidenav-avatar"></span>
+  <span id="sidenav-nom"></span>
+  <span id="sidenav-email"></span>
+  <div id="compte-avatar"></div>
+  <div id="compte-nom"></div>
+  <input id="compte-champ-nom">
+  <input id="compte-champ-email">
+  <input id="compte-champ-tel">
+  <table><tbody id="bareme-affiche"></tbody></table>
+
+  <span id="zone-status-badge" class="zone-status-badge neutral"><span class="dot"></span></span>
+  <span id="count-primaire">0</span>
+  <span id="count-secondaire">0</span>
+  <div id="map-lock-note"></div>
+  <button id="btn-submit-zones"></button>
+  <button id="btn-edit-zones" style="display:none"></button>
+  <div class="idf-map" id="idf-map">
+    <div class="zone-group" data-dept="78"></div>
+    <div class="zone-group" data-dept="95"></div>
+    <div class="zone-group" data-dept="93"></div>
+    <div class="zone-group" data-dept="92"></div>
+    <div class="zone-group" id="paris-zone" data-dept="75"></div>
+    <div class="zone-group" data-dept="77"></div>
+    <div class="zone-group gap"></div>
+    <div class="zone-group" data-dept="91"></div>
+    <div class="zone-group" data-dept="94"></div>
+  </div>
+
+  <div class="modal-overlay" id="photo-modal-overlay"></div>
+  <input type="file" id="photo-input">
+  <div id="drop-zone-content"></div>
+  <button id="btn-enregistrer-photo" disabled></button>
+  <div id="toast"></div>
 `;
 
 function chargerAgentApp({ signInWithOtp } = {}) {
@@ -276,4 +313,143 @@ test('sendMagicLink : email invalide → refusé avant tout appel réseau', asyn
 
   assert.equal(fetchAppele, false);
   assert.ok(w.document.getElementById('login-msg').textContent.includes('invalide'));
+});
+
+// ─── Mon compte : identité, barème, zones, photo ──────────────────────
+test('remplirCompte : affiche le nom, le téléphone et personnalise la bannière (prénom)', () => {
+  const w = chargerAgentApp();
+  w.remplirCompte({ nom: 'Julie Berthier', tel: '0612345678', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
+
+  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Julie 👋');
+  assert.equal(w.document.getElementById('sidenav-nom').textContent, 'Julie Berthier');
+  assert.equal(w.document.getElementById('compte-nom').textContent, 'Julie Berthier');
+  assert.equal(w.document.getElementById('compte-champ-nom').value, 'Julie Berthier');
+  assert.equal(w.document.getElementById('compte-champ-tel').value, '0612345678');
+});
+
+test('appliquerAvatar : sans photo → initiales ; avec photo → image de fond', () => {
+  const w = chargerAgentApp();
+  w.appliquerAvatar(null, 'Julie Berthier');
+  assert.equal(w.document.getElementById('compte-avatar').textContent, 'JB');
+  assert.equal(w.document.getElementById('sidenav-avatar').textContent, 'JB');
+
+  w.appliquerAvatar('https://exemple.fr/photo.jpg', 'Julie Berthier');
+  assert.equal(w.document.getElementById('compte-avatar').textContent, '');
+  assert.ok(w.document.getElementById('compte-avatar').style.backgroundImage.includes('photo.jpg'));
+});
+
+test('renderBareme : affiche les lignes (intitulé + montant), message si vide', () => {
+  const w = chargerAgentApp();
+  w.renderBareme([{ label: 'Secteur primaire', montant: '0' }, { label: 'Secteur secondaire', montant: '18' }]);
+  const html = w.document.getElementById('bareme-affiche').innerHTML;
+  assert.ok(html.includes('Secteur primaire'));
+  assert.ok(html.includes('18'));
+
+  w.renderBareme([]);
+  assert.ok(w.document.getElementById('bareme-affiche').textContent.includes('non renseigné'));
+});
+
+test('cycleAssignment : cycle primaire → secondaire → retrait, met à jour les compteurs', () => {
+  const w = chargerAgentApp();
+  w.initZones([], [], null, '');
+  w.cycleAssignment('75018'); // 1er clic → primaire
+  assert.equal(w.document.getElementById('count-primaire').textContent, '1');
+  w.cycleAssignment('75018'); // 2e clic → secondaire
+  assert.equal(w.document.getElementById('count-primaire').textContent, '0');
+  assert.equal(w.document.getElementById('count-secondaire').textContent, '1');
+  w.cycleAssignment('75018'); // 3e clic → retiré
+  assert.equal(w.document.getElementById('count-secondaire').textContent, '0');
+});
+
+test('initZones : pré-remplit depuis les secteurs existants et verrouille si statut "valide"', () => {
+  const w = chargerAgentApp();
+  w.initZones(['75018'], ['92100'], 'valide', '');
+  assert.equal(w.document.getElementById('count-primaire').textContent, '1');
+  assert.equal(w.document.getElementById('count-secondaire').textContent, '1');
+  assert.ok(w.document.getElementById('idf-map').classList.contains('map-locked'));
+  assert.equal(w.document.getElementById('btn-submit-zones').style.display, 'none');
+});
+
+test('initZones : statut "refuse" affiche le motif de refus', () => {
+  const w = chargerAgentApp();
+  w.initZones(['75018'], [], 'refuse', 'Zone déjà couverte par un autre agent');
+  const note = w.document.getElementById('map-lock-note');
+  assert.ok(note.classList.contains('show'));
+  assert.ok(note.textContent.includes('Zone déjà couverte par un autre agent'));
+});
+
+test('soumettreZones : envoie les codes sélectionnés au bon endpoint, passe en attente si succès', async () => {
+  const w = chargerAgentApp();
+  w.initZones([], [], null, '');
+  w.cycleAssignment('75018'); // primaire
+  w.cycleAssignment('92100'); w.cycleAssignment('92100'); // secondaire
+
+  let appel = null;
+  w.fetch = async (url, opts) => { appel = { url, corps: JSON.parse(opts.body) }; return { ok: true, json: async () => ({ success: true }) }; };
+
+  await w.soumettreZones();
+
+  assert.equal(appel.url, '/api/agent-zones-submit');
+  assert.deepEqual(appel.corps.secteurPrimaire, ['75018']);
+  assert.deepEqual(appel.corps.secteurSecondaire, ['92100']);
+  assert.ok(w.document.getElementById('zone-status-badge').textContent.includes('attente'));
+});
+
+test('soumettreZones : rien de sélectionné → n\'appelle pas le réseau', async () => {
+  const w = chargerAgentApp();
+  w.initZones([], [], null, '');
+  let appele = false;
+  w.fetch = async () => { appele = true; };
+  await w.soumettreZones();
+  assert.equal(appele, false);
+});
+
+test('soumettreZones : erreur serveur → le bouton reste réactivé pour réessayer', async () => {
+  const w = chargerAgentApp();
+  w.initZones([], [], null, '');
+  w.cycleAssignment('75018');
+  w.fetch = async () => ({ ok: false, json: async () => ({ error: 'Erreur test' }) });
+  await w.soumettreZones();
+  assert.equal(w.document.getElementById('btn-submit-zones').disabled, false);
+});
+
+test('modifierZones : déverrouille la carte pour resoumettre', () => {
+  const w = chargerAgentApp();
+  w.initZones(['75018'], [], 'refuse', 'Motif');
+  w.modifierZones();
+  assert.ok(!w.document.getElementById('idf-map').classList.contains('map-locked'));
+  assert.equal(w.document.getElementById('btn-submit-zones').style.display, 'inline-flex');
+});
+
+test('ouvrirModalPhoto / fermerModalPhoto : bascule la classe "show"', () => {
+  const w = chargerAgentApp();
+  w.ouvrirModalPhoto();
+  assert.ok(w.document.getElementById('photo-modal-overlay').classList.contains('show'));
+  w.fermerModalPhoto();
+  assert.ok(!w.document.getElementById('photo-modal-overlay').classList.contains('show'));
+});
+
+test('previewPhoto : fichier trop volumineux → refusé avant lecture, bouton Enregistrer reste désactivé', () => {
+  const w = chargerAgentApp();
+  const gros = new w.File([new Uint8Array(10)], 'photo.jpg', { type: 'image/jpeg' });
+  Object.defineProperty(gros, 'size', { value: 6 * 1024 * 1024 });
+  w.previewPhoto({ target: { files: [gros], value: '' } });
+  assert.equal(w.document.getElementById('btn-enregistrer-photo').disabled, true);
+});
+
+test('reinitialiserPhoto : vide la zone de dépôt et désactive Enregistrer', () => {
+  const w = chargerAgentApp();
+  w.document.getElementById('btn-enregistrer-photo').disabled = false;
+  w.document.getElementById('drop-zone-content').innerHTML = '<img src="x">';
+  w.reinitialiserPhoto();
+  assert.equal(w.document.getElementById('btn-enregistrer-photo').disabled, true);
+  assert.ok(!w.document.getElementById('drop-zone-content').innerHTML.includes('<img'));
+});
+
+test('enregistrerPhoto : sans fichier sélectionné, n\'appelle pas le réseau', async () => {
+  const w = chargerAgentApp();
+  let appele = false;
+  w.fetch = async () => { appele = true; };
+  await w.enregistrerPhoto();
+  assert.equal(appele, false);
 });

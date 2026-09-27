@@ -1386,6 +1386,15 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         </div>
       </div>
       <div class="settings-section">
+        <div class="settings-title"><i class="ti ti-map-pin" style="font-size:18px"></i>Barème frais de déplacement</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Seule l'agence renseigne ce barème — chaque agent le voit en lecture seule dans son espace. Les cases sont libres : ajoutez, renommez ou supprimez-les selon vos besoins (secteur primaire/secondaire, hors secteurs, etc.).</div>
+        <div id="bareme-rows" style="margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="ajouterLigneBareme()"><i class="ti ti-plus"></i> Ajouter une case</button>
+          <button class="btn btn-sm" onclick="sauvegarderBareme()"><i class="ti ti-check"></i> Enregistrer le barème</button>
+        </div>
+      </div>
+      <div class="settings-section">
         <div class="settings-title"><i class="ti ti-user" style="font-size:18px"></i>Profil</div>
         <label>Nom</label><input id="set-name" placeholder="Votre nom">
         <label>Email</label><input id="set-email" placeholder="contact@votre-cabinet.fr">

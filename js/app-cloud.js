@@ -87,6 +87,13 @@ async function loadSettingsFromSupabase(){
       DB.ajustementsExternes = s.ajustementsExternes;
       try{ if(typeof renderDashboard === 'function') renderDashboard(); }catch(e){}
     }
+    // Barème frais de déplacement (secteurs primaire/secondaire/hors
+    // secteurs) — stocké dans settings comme les agents, lu en lecture
+    // seule par l'agent dans son espace (api/agent-missions.js).
+    if(Array.isArray(s.baremeDeplacement)){
+      DB.baremeDeplacement = s.baremeDeplacement;
+      try{ if(typeof renderBaremeSettings === 'function') renderBaremeSettings(); }catch(e){}
+    }
     console.log('✅ Paramètres chargés depuis Supabase');
   }catch(e){console.warn('Erreur loadSettingsFromSupabase:',e);}
 }

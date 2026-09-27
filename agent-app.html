@@ -12,6 +12,7 @@
   --blue:#1A5FA8;--blue-light:#F4F7FA;--blue-dark:#0C447C;
   --green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;
   --amber:#854F0B;--amber-bg:#FCF3E3;
+  --teal:#0F6E56;--teal-light:#E1F5EE;--teal-dark:#085041;
   --text:#1a1a1a;--text2:#6b6b6b;--text3:#999;
   --border:#e5e5e2;--bg:#f8f8f6;--white:#fff;
   --radius:10px;--radius-lg:16px;
@@ -56,13 +57,104 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 /* ─── Disposition : menu à gauche, contenu à droite ─────────────── */
 .layout{display:flex;align-items:flex-start;max-width:940px;margin:0 auto;padding:24px 16px 60px;gap:20px}
 .main{flex:1;min-width:0}
-.side-nav{width:190px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;position:sticky;top:calc(var(--header-h) + 20px)}
-.nav-btn{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius);border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:var(--text2);text-align:left;width:100%}
-.nav-btn i{font-size:16px;flex-shrink:0}
-.nav-btn:hover{background:var(--blue-light);color:var(--blue-dark)}
-.nav-btn.active{background:var(--blue);color:#fff}
+.side-nav{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;position:sticky;top:calc(var(--header-h) + 20px);min-height:calc(100vh - var(--header-h) - 60px)}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius);border:none;background:transparent;cursor:pointer;font-family:inherit;text-align:left;width:100%}
+.nav-btn i{font-size:16px;flex-shrink:0;width:18px;text-align:center;color:var(--text2)}
+.nav-btn .nav-label{display:flex;flex-direction:column;gap:1px;min-width:0}
+.nav-btn .nav-label b{font-size:12.5px;font-weight:700;color:var(--text)}
+.nav-btn .nav-label small{font-size:10.5px;font-weight:500;color:var(--text3)}
+.nav-btn:hover{background:var(--blue-light)}
+.nav-btn.active{background:var(--blue)}
+.nav-btn.active i{color:#fff}
+.nav-btn.active .nav-label b{color:#fff}
+.nav-btn.active .nav-label small{color:rgba(255,255,255,.78)}
+.side-nav-spacer{flex:1}
+.side-agent-card{display:flex;align-items:center;gap:9px;padding:10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--white);cursor:pointer;text-align:left;font-family:inherit;width:100%}
+.side-agent-card:hover{border-color:var(--blue)}
+.side-agent-info{display:flex;flex-direction:column;min-width:0}
+.side-agent-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-agent-email{font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .page{display:none}
 .page.active{display:block}
+
+/* ─── Avatar (photo de profil ou initiales) ─────────────── */
+.avatar{border-radius:50%;background:var(--blue-light);color:var(--blue-dark);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;background-size:cover;background-position:center}
+.avatar-sm{width:32px;height:32px;font-size:11px}
+.avatar-lg{width:68px;height:68px;font-size:22px}
+
+/* ─── Bannière d'accueil ─────────────── */
+.welcome-banner{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border-radius:var(--radius-lg);padding:22px 24px;margin-bottom:14px}
+.welcome-banner h2{font-size:19px;margin:0 0 6px;position:relative;font-weight:700}
+.welcome-banner p{font-size:12.5px;opacity:.92;max-width:460px;position:relative;line-height:1.5;margin:0}
+.welcome-decor{position:absolute;border-radius:50%;background:rgba(255,255,255,.08);width:170px;height:170px;top:-70px;right:-30px}
+.welcome-decor2{width:90px;height:90px;top:36px;right:80px;background:rgba(255,255,255,.06)}
+
+/* ─── Mon compte ─────────────── */
+.compte-layout{display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start}
+.compte-side{position:sticky;top:calc(var(--header-h) + 20px)}
+@media (max-width:900px){ .compte-layout{grid-template-columns:1fr} .compte-side{position:static} }
+.compte-profile-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.avatar-lg-wrap{position:relative;flex-shrink:0}
+.avatar-cam-btn{position:absolute;bottom:-3px;right:-3px;width:27px;height:27px;border-radius:50%;background:var(--blue);color:#fff;border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;padding:0}
+.avatar-cam-btn:hover{background:var(--blue-dark)}
+.compte-nom{font-size:16px;font-weight:700}
+.role-pill{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;color:var(--blue-dark);background:var(--blue-light);padding:2px 10px;border-radius:20px}
+.compte-note{font-size:12px;color:var(--text2);line-height:1.6}
+.compte-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+
+/* ─── Zones d'intervention (sectorisation par code postal) ─────────────── */
+.instructions-row{font-size:11.5px;color:var(--text2);margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap}
+.mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
+.legend-row{display:flex;align-items:center;gap:6px;font-size:12.5px}
+.swatch{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+.swatch.primaire{background:var(--blue)}
+.swatch.secondaire{background:var(--teal)}
+.legend-count{font-weight:700;color:var(--text2)}
+.idf-map{display:grid;gap:7px;grid-template-columns:1fr 1.3fr 1fr;grid-template-areas:"nw n ne" "w paris e" "gap s se"}
+@media (max-width:680px){ .idf-map{grid-template-columns:1fr;grid-template-areas:none} .idf-map .zone-group{grid-area:auto !important} }
+.zone-group{border:1px dashed var(--border);border-radius:var(--radius);padding:7px;display:flex;flex-direction:column;gap:5px}
+.zone-group.gap{border:none}
+.zone-group .dept-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em}
+.chip-row{display:flex;flex-wrap:wrap;gap:4px}
+.cp-chip{border:1px solid var(--border);background:var(--bg);color:var(--text2);border-radius:6px;padding:4px 7px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.cp-chip.primaire{background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue)}
+.cp-chip.secondaire{background:var(--teal-light);color:var(--teal-dark);border-color:var(--teal)}
+.cp-chip.disabled{cursor:default;opacity:.55;font-weight:400}
+.map-locked .cp-chip{pointer-events:none;opacity:.85}
+#paris-zone{grid-area:paris;background:var(--bg)}
+#paris-zone .chip-row{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+#paris-zone .cp-chip{text-align:center;padding:5px 2px}
+.zone-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+.zone-status-badge.neutral{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
+.zone-status-badge.pending{background:var(--amber-bg);color:var(--amber)}
+.zone-status-badge.ok{background:var(--green-bg);color:var(--green-text)}
+.zone-status-badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.map-overlay-note{margin-top:9px;font-size:11px;padding:8px 10px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber);display:none;align-items:center;gap:6px}
+.map-overlay-note.show{display:flex}
+.bareme-ro{width:100%;border-collapse:collapse;font-size:12px}
+.bareme-ro td{padding:6px 0;border-top:1px solid var(--border)}
+.bareme-ro tr:first-child td{border-top:none}
+.bareme-ro td:last-child{text-align:right;font-weight:700}
+
+/* ─── Modale photo de profil ─────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(20,20,18,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal-overlay.show{display:flex}
+.modal-card{background:var(--white);border-radius:var(--radius-lg);max-width:440px;width:100%;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.modal-head{padding:16px 18px;font-size:14px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.modal-close{background:none;border:none;font-size:16px;color:var(--text3);cursor:pointer;line-height:1;padding:2px}
+.modal-body{padding:18px}
+.modal-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.drop-zone{display:block;border:2px dashed var(--border);border-radius:var(--radius);padding:32px 16px;text-align:center;cursor:pointer;transition:.15s}
+.drop-zone:hover{border-color:var(--blue)}
+.drop-icon{width:46px;height:46px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 12px}
+.drop-title{font-size:13px;font-weight:700;margin-bottom:3px}
+.drop-sub{font-size:11px;color:var(--text3)}
+.drop-preview{max-width:100%;max-height:150px;border-radius:8px;display:block;margin:0 auto}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--text);color:#fff;padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:60}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .doc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px}
 .doc-info{min-width:0}
 .doc-adresse{font-size:13px;font-weight:600}
@@ -76,9 +168,13 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 
 @media (max-width:720px){
   .layout{flex-direction:column;padding-top:12px}
-  .side-nav{width:auto;flex-direction:row;position:sticky;top:var(--header-h);background:var(--white);border-bottom:1px solid var(--border);padding:8px 4px;margin:-12px -16px 12px;z-index:9;overflow-x:auto}
-  .nav-btn{flex-direction:column;gap:2px;padding:8px 10px;white-space:nowrap;font-size:10px}
+  .side-nav{width:auto;flex-direction:row;position:sticky;top:var(--header-h);background:var(--white);border-bottom:1px solid var(--border);padding:8px 4px;margin:-12px -16px 12px;z-index:9;overflow-x:auto;min-height:0}
+  .nav-btn{flex-direction:column;gap:2px;padding:8px 10px;white-space:nowrap}
   .nav-btn i{font-size:18px}
+  .nav-btn .nav-label small{display:none}
+  .nav-btn .nav-label b{font-size:10px}
+  .side-nav-spacer{display:none}
+  .side-agent-card{display:none}
 }
 </style>
 </head>
@@ -100,25 +196,49 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
   <div class="header">
     <div class="logo-box">
       <div class="logo-icon">EDL</div>
-      <div>
-        <div style="font-size:13px;font-weight:700" id="agent-nom-display">Mon espace</div>
-        <div style="font-size:10px;color:var(--text2)" id="agent-email-display"></div>
-      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2)">Espace agent</div>
     </div>
     <button class="btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Déconnexion</button>
   </div>
 
   <div class="layout">
     <div class="side-nav">
-      <button class="nav-btn active" data-page="missions" onclick="allerAgentPage('missions')"><i class="ti ti-calendar-event"></i><span>Mes missions</span></button>
-      <button class="nav-btn" data-page="documents" onclick="allerAgentPage('documents')"><i class="ti ti-file-text"></i><span>Mes documents</span></button>
-      <button class="nav-btn" data-page="historique" onclick="allerAgentPage('historique')"><i class="ti ti-history"></i><span>Historique</span></button>
-      <button class="nav-btn" data-page="aide" onclick="allerAgentPage('aide')"><i class="ti ti-help-circle"></i><span>Aide & Tutos</span></button>
+      <button class="nav-btn active" data-page="missions" onclick="allerAgentPage('missions')">
+        <i class="ti ti-calendar-event"></i><span class="nav-label"><b>Mes missions</b><small>Vos interventions prévues</small></span>
+      </button>
+      <button class="nav-btn" data-page="documents" onclick="allerAgentPage('documents')">
+        <i class="ti ti-file-text"></i><span class="nav-label"><b>Mes documents</b><small>Contrat & avenant</small></span>
+      </button>
+      <button class="nav-btn" data-page="historique" onclick="allerAgentPage('historique')">
+        <i class="ti ti-history"></i><span class="nav-label"><b>Historique</b><small>Missions réalisées</small></span>
+      </button>
+      <button class="nav-btn" data-page="aide" onclick="allerAgentPage('aide')">
+        <i class="ti ti-help-circle"></i><span class="nav-label"><b>Aide & Tutos</b><small>Comment ça marche</small></span>
+      </button>
+      <button class="nav-btn" data-page="compte" onclick="allerAgentPage('compte')">
+        <i class="ti ti-user-circle"></i><span class="nav-label"><b>Mon compte</b><small>Photo & informations</small></span>
+      </button>
+
+      <div class="side-nav-spacer"></div>
+
+      <button class="side-agent-card" onclick="allerAgentPage('compte')">
+        <span class="avatar avatar-sm" id="sidenav-avatar">?</span>
+        <span class="side-agent-info">
+          <span class="side-agent-name" id="sidenav-nom">Mon espace</span>
+          <span class="side-agent-email" id="sidenav-email"></span>
+        </span>
+      </button>
     </div>
 
     <div class="main">
 
       <div id="page-missions" class="page active">
+        <div class="welcome-banner">
+          <div class="welcome-decor"></div>
+          <div class="welcome-decor welcome-decor2"></div>
+          <h2 id="welcome-titre">Bonjour 👋</h2>
+          <p>Bienvenue dans votre espace agent. Suivez vos missions et gérez votre profil en toute simplicité.</p>
+        </div>
         <div class="card">
           <div class="card-head"><i class="ti ti-chart-bar"></i>Mes statistiques</div>
           <div class="card-body">
@@ -169,9 +289,107 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
         </div>
       </div>
 
+      <div id="page-compte" class="page">
+        <div class="compte-layout">
+          <div class="compte-main">
+            <div class="card">
+              <div class="card-body compte-profile-head">
+                <div class="avatar-lg-wrap">
+                  <div class="avatar avatar-lg" id="compte-avatar">?</div>
+                  <button class="avatar-cam-btn" onclick="ouvrirModalPhoto()" title="Changer la photo"><i class="ti ti-camera"></i></button>
+                </div>
+                <div>
+                  <div class="compte-nom" id="compte-nom">Mon espace</div>
+                  <span class="role-pill">Agent terrain</span>
+                  <p class="compte-note" style="margin-top:8px">Ajoutez une photo de vous pour que les clients vous reconnaissent lors de leurs rendez-vous.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><i class="ti ti-user"></i>Informations personnelles</div>
+              <div class="card-body">
+                <p class="compte-note" style="margin-bottom:14px">Ces informations sont gérées par l'agence — contactez-la pour toute correction.</p>
+                <div class="field"><label>Nom</label><input id="compte-champ-nom" disabled></div>
+                <div class="field"><label>Adresse e-mail</label><input id="compte-champ-email" disabled></div>
+                <div class="field"><label>Téléphone</label><input id="compte-champ-tel" disabled></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="compte-side">
+            <div class="card">
+              <div class="card-head" style="flex-wrap:wrap"><i class="ti ti-map-pin"></i>Zones d'intervention<span class="zone-status-badge neutral" id="zone-status-badge" style="margin-left:auto"><span class="dot"></span>Aucune zone définie</span></div>
+              <div class="card-body">
+                <p class="compte-note" style="margin-bottom:12px">Sélectionnez vos secteurs par code postal. Ils doivent être validés par l'agence avant de s'appliquer à vos frais de déplacement.</p>
+                <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
+                  <div class="legend-row"><span class="swatch primaire"></span>Primaire <span class="legend-count" id="count-primaire">0</span></div>
+                  <div class="legend-row"><span class="swatch secondaire"></span>Secondaire <span class="legend-count" id="count-secondaire">0</span></div>
+                </div>
+                <div class="instructions-row">
+                  <span class="mini-badge">1er clic = primaire</span>
+                  <span class="mini-badge">2e clic = secondaire</span>
+                  <span class="mini-badge">3e clic = retirer</span>
+                </div>
+                <div class="idf-map" id="idf-map">
+                  <div class="zone-group" style="grid-area:nw" data-dept="78"></div>
+                  <div class="zone-group" style="grid-area:n" data-dept="95"></div>
+                  <div class="zone-group" style="grid-area:ne" data-dept="93"></div>
+                  <div class="zone-group" style="grid-area:w" data-dept="92"></div>
+                  <div class="zone-group" id="paris-zone" style="grid-area:paris" data-dept="75"></div>
+                  <div class="zone-group" style="grid-area:e" data-dept="77"></div>
+                  <div class="zone-group gap" style="grid-area:gap"></div>
+                  <div class="zone-group" style="grid-area:s" data-dept="91"></div>
+                  <div class="zone-group" style="grid-area:se" data-dept="94"></div>
+                </div>
+                <div class="map-overlay-note" id="map-lock-note">🔒 Zones envoyées : en attente de validation par l'agence.</div>
+                <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                  <button class="btn-primary" id="btn-submit-zones" style="width:auto" onclick="soumettreZones()">Envoyer pour validation</button>
+                  <button class="btn-sm" id="btn-edit-zones" style="display:none" onclick="modifierZones()">Modifier les zones</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><i class="ti ti-currency-euro"></i>Barème frais de déplacement</div>
+              <div class="card-body">
+                <p class="compte-note" style="margin-bottom:10px">🔒 Renseigné uniquement par l'agence — vous le voyez ici en lecture seule.</p>
+                <table class="bareme-ro"><tbody id="bareme-affiche"></tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
+
+<div class="modal-overlay" id="photo-modal-overlay" onclick="if(event.target===this) fermerModalPhoto()">
+  <div class="modal-card">
+    <div class="modal-head">
+      <span><i class="ti ti-camera"></i> Photo de profil</span>
+      <button class="modal-close" onclick="fermerModalPhoto()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="compte-note" style="margin-bottom:14px">Ajoutez une photo de vous pour accéder à votre espace. Les clients la voient sur leurs réservations pour reconnaître le conseiller qui vient chez eux.</p>
+      <label class="drop-zone">
+        <input type="file" accept="image/jpeg,image/png,image/webp" id="photo-input" style="display:none" onchange="previewPhoto(event)">
+        <div id="drop-zone-content">
+          <div class="drop-icon"><i class="ti ti-photo"></i></div>
+          <div class="drop-title">Cliquer pour sélectionner</div>
+          <div class="drop-sub">JPG, PNG ou WebP — 5 Mo max</div>
+        </div>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm" onclick="reinitialiserPhoto()">Réinitialiser</button>
+      <button class="btn-primary" id="btn-enregistrer-photo" style="width:auto" disabled onclick="enregistrerPhoto()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
@@ -180,6 +398,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let _accessToken = '';
 let _missionsCache = [];
+let _agentEmail = '';
 
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 
@@ -207,7 +426,7 @@ function showLogin(){
 async function showDashboard(email){
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-shell').style.display = 'block';
-  document.getElementById('agent-email-display').textContent = email;
+  _agentEmail = email;
   await chargerMesMissions();
 }
 
@@ -297,8 +516,8 @@ async function chargerMesMissions(){
     const data = await resp.json();
     if (!resp.ok) { listEl.innerHTML = '<div class="empty">' + esc(data.error || 'Erreur de chargement') + '</div>'; return; }
 
-    document.getElementById('agent-nom-display').textContent = data.agent?.nom || 'Mon espace';
     _missionsCache = data.missions || [];
+    remplirCompte(data.agent || {});
     renderKpi(data.kpi);
     renderMissions(_missionsCache);
     renderDocuments(data.agent?.documents);
@@ -306,6 +525,247 @@ async function chargerMesMissions(){
   } catch(e) {
     listEl.innerHTML = '<div class="empty">Erreur de chargement.</div>';
   }
+}
+
+// ─── Identité, photo, zones d'intervention, barème ("Mon compte") ───────
+function initiales(nom){
+  return String(nom || '?').trim().split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '?';
+}
+
+function appliquerAvatar(url, nom){
+  ['sidenav-avatar', 'compte-avatar'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(url){ el.style.backgroundImage = `url(${url})`; el.textContent = ''; }
+    else { el.style.backgroundImage = ''; el.textContent = initiales(nom); }
+  });
+}
+
+function remplirCompte(agent){
+  const nom = agent.nom || 'Mon espace';
+  const prenom = nom.split(' ')[0];
+
+  document.getElementById('welcome-titre').textContent = 'Bonjour, ' + prenom + ' 👋';
+  document.getElementById('sidenav-nom').textContent = nom;
+  document.getElementById('sidenav-email').textContent = _agentEmail;
+  document.getElementById('compte-nom').textContent = nom;
+  document.getElementById('compte-champ-nom').value = nom;
+  document.getElementById('compte-champ-email').value = _agentEmail;
+  document.getElementById('compte-champ-tel').value = agent.tel || '';
+  appliquerAvatar(agent.photoUrl, nom);
+
+  renderBareme(agent.bareme);
+  initZones(agent.secteurPrimaire, agent.secteurSecondaire, agent.zoneStatut, agent.zoneRefusMotif);
+}
+
+function renderBareme(bareme){
+  const tbody = document.getElementById('bareme-affiche');
+  if(!tbody) return;
+  const lignes = Array.isArray(bareme) && bareme.length ? bareme : [];
+  tbody.innerHTML = lignes.map(l => `<tr><td>${esc(l.label)}</td><td>${esc(l.montant)}</td></tr>`).join('')
+    || '<tr><td colspan="2" class="empty">Barème non renseigné pour l\'instant.</td></tr>';
+}
+
+// ─── Zones d'intervention : carte par code postal (Île-de-France) ───────
+const DEPARTEMENTS = [
+  { code:'78', nom:'Yvelines',        villes:[['78000','Versailles'],['78100','St-Germain-en-Laye']], autres:38 },
+  { code:'95', nom:"Val-d'Oise",      villes:[['95000','Cergy'],['95100','Argenteuil']],               autres:36 },
+  { code:'93', nom:'Seine-St-Denis',  villes:[['93100','Montreuil'],['93200','St-Denis']],              autres:32 },
+  { code:'92', nom:'Hauts-de-Seine',  villes:[['92100','Boulogne-B.'],['92200','Neuilly-s-Seine']],     autres:34 },
+  { code:'77', nom:'Seine-et-Marne',  villes:[['77000','Melun'],['77100','Meaux']],                     autres:44 },
+  { code:'91', nom:'Essonne',         villes:[['91000','Évry-Courcouronnes'],['91100','Corbeil-Ess.']], autres:28 },
+  { code:'94', nom:'Val-de-Marne',    villes:[['94100','St-Maur-des-Fossés'],['94200','Ivry-s-Seine']], autres:26 },
+];
+const PARIS_CODES = Array.from({length:20}, (_,i) => '750' + String(i+1).padStart(2,'0'));
+
+let assignments = {};
+let zoneStatut = null; // null | 'attente' | 'valide' | 'refuse'
+let _mapConstruite = false;
+
+function labelForDept(code){ return DEPARTEMENTS.find(d => d.code === code); }
+
+function construireCarteZones(){
+  if(_mapConstruite) return;
+  document.querySelectorAll('.zone-group[data-dept]').forEach(group => {
+    const dept = group.getAttribute('data-dept');
+    if(dept === '75'){
+      group.innerHTML = '<div class="dept-label">Paris (75)</div><div class="chip-row"></div>';
+      const row = group.querySelector('.chip-row');
+      PARIS_CODES.forEach(cp => row.appendChild(makeChip(cp, cp.slice(3))));
+      return;
+    }
+    const info = labelForDept(dept);
+    group.innerHTML = `<div class="dept-label">${info.nom} (${info.code})</div><div class="chip-row"></div>`;
+    const row = group.querySelector('.chip-row');
+    info.villes.forEach(([cp, nom]) => row.appendChild(makeChip(cp, cp, nom)));
+    const more = document.createElement('span');
+    more.className = 'cp-chip disabled';
+    more.textContent = '+' + info.autres + ' autres';
+    row.appendChild(more);
+  });
+  _mapConstruite = true;
+}
+
+function makeChip(code, shortLabel, title){
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'cp-chip';
+  el.textContent = shortLabel;
+  el.dataset.code = code;
+  if(title) el.title = code + ' — ' + title;
+  el.addEventListener('click', () => cycleAssignment(code));
+  return el;
+}
+
+function cycleAssignment(code){
+  if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
+  const cur = assignments[code];
+  if(cur === undefined) assignments[code] = 'primaire';
+  else if(cur === 'primaire') assignments[code] = 'secondaire';
+  else delete assignments[code];
+  renderAssignments();
+}
+
+function renderAssignments(){
+  let nbPrimaire = 0, nbSecondaire = 0;
+  document.querySelectorAll('.cp-chip[data-code]').forEach(chip => {
+    const state = assignments[chip.dataset.code];
+    chip.classList.remove('primaire', 'secondaire');
+    if(state === 'primaire'){ chip.classList.add('primaire'); nbPrimaire++; }
+    if(state === 'secondaire'){ chip.classList.add('secondaire'); nbSecondaire++; }
+  });
+  document.getElementById('count-primaire').textContent = nbPrimaire;
+  document.getElementById('count-secondaire').textContent = nbSecondaire;
+  const submitBtn = document.getElementById('btn-submit-zones');
+  if(submitBtn) submitBtn.disabled = (nbPrimaire + nbSecondaire === 0) || (zoneStatut === 'attente' || zoneStatut === 'valide');
+}
+
+function setZoneStatusBadge(){
+  const badge = document.getElementById('zone-status-badge');
+  const map = document.getElementById('idf-map');
+  const lockNote = document.getElementById('map-lock-note');
+  const editBtn = document.getElementById('btn-edit-zones');
+  const submitBtn = document.getElementById('btn-submit-zones');
+  const enAttenteOuValide = zoneStatut === 'attente' || zoneStatut === 'valide';
+
+  map.classList.toggle('map-locked', enAttenteOuValide);
+  lockNote.classList.toggle('show', zoneStatut === 'attente');
+  editBtn.style.display = enAttenteOuValide ? 'inline-flex' : 'none';
+  submitBtn.style.display = enAttenteOuValide ? 'none' : 'inline-flex';
+
+  if(zoneStatut === 'attente'){ badge.className = 'zone-status-badge pending'; badge.innerHTML = '<span class="dot"></span>En attente de validation'; }
+  else if(zoneStatut === 'valide'){ badge.className = 'zone-status-badge ok'; badge.innerHTML = '<span class="dot"></span>Zones validées'; }
+  else { badge.className = 'zone-status-badge neutral'; badge.innerHTML = '<span class="dot"></span>' + (zoneStatut === 'refuse' ? 'Zones refusées' : 'Aucune zone définie'); }
+}
+
+function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus){
+  construireCarteZones();
+  assignments = {};
+  (secteurPrimaire || []).forEach(cp => { assignments[cp] = 'primaire'; });
+  (secteurSecondaire || []).forEach(cp => { assignments[cp] = 'secondaire'; });
+  zoneStatut = statut || null;
+  renderAssignments();
+  setZoneStatusBadge();
+  if(statut === 'refuse' && motifRefus){
+    const lockNote = document.getElementById('map-lock-note');
+    lockNote.textContent = '✕ Zones refusées par l\'agence — ' + motifRefus;
+    lockNote.classList.add('show');
+  }
+}
+
+async function soumettreZones(){
+  const primaire = Object.keys(assignments).filter(c => assignments[c] === 'primaire');
+  const secondaire = Object.keys(assignments).filter(c => assignments[c] === 'secondaire');
+  if(!primaire.length && !secondaire.length){ showToast('⚠️ Sélectionnez au moins un code postal'); return; }
+  const btn = document.getElementById('btn-submit-zones');
+  const libelleOriginal = btn.innerHTML;
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  try{
+    const resp = await fetch('/api/agent-zones-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _accessToken },
+      body: JSON.stringify({ secteurPrimaire: primaire, secteurSecondaire: secondaire }),
+    });
+    const data = await resp.json();
+    if(!resp.ok){ showToast('❌ ' + (data.error || 'Erreur lors de l\'envoi')); btn.disabled = false; btn.innerHTML = libelleOriginal; return; }
+    zoneStatut = 'attente';
+    setZoneStatusBadge();
+    renderAssignments();
+    showToast('📍 Zones envoyées pour validation à l\'agence');
+  }catch(e){
+    showToast('❌ Erreur réseau, réessaie.');
+    btn.disabled = false; btn.innerHTML = libelleOriginal;
+  }
+}
+
+function modifierZones(){
+  zoneStatut = null;
+  setZoneStatusBadge();
+  renderAssignments();
+}
+
+// ─── Photo de profil ─────────────────────────────────────────
+let _photoFichier = null;
+
+function ouvrirModalPhoto(){ document.getElementById('photo-modal-overlay').classList.add('show'); }
+function fermerModalPhoto(){ document.getElementById('photo-modal-overlay').classList.remove('show'); }
+
+function previewPhoto(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  if(file.size > 5 * 1024 * 1024){ showToast('⚠️ Fichier trop volumineux (5 Mo max)'); e.target.value = ''; return; }
+  _photoFichier = file;
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('drop-zone-content').innerHTML = `<img src="${reader.result}" class="drop-preview" alt="Aperçu">`;
+    document.getElementById('btn-enregistrer-photo').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function reinitialiserPhoto(){
+  _photoFichier = null;
+  const input = document.getElementById('photo-input');
+  if(input) input.value = '';
+  document.getElementById('drop-zone-content').innerHTML = `
+    <div class="drop-icon"><i class="ti ti-photo"></i></div>
+    <div class="drop-title">Cliquer pour sélectionner</div>
+    <div class="drop-sub">JPG, PNG ou WebP — 5 Mo max</div>`;
+  document.getElementById('btn-enregistrer-photo').disabled = true;
+}
+
+async function enregistrerPhoto(){
+  if(!_photoFichier) return;
+  const btn = document.getElementById('btn-enregistrer-photo');
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  try{
+    const form = new FormData();
+    form.append('file', _photoFichier);
+    const resp = await fetch('/api/agent-photo-upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + _accessToken },
+      body: form,
+    });
+    const data = await resp.json();
+    if(!resp.ok){ showToast('❌ ' + (data.error || 'Échec de l\'envoi')); btn.disabled = false; btn.textContent = 'Enregistrer'; return; }
+    appliquerAvatar(data.url, document.getElementById('compte-nom').textContent);
+    fermerModalPhoto();
+    reinitialiserPhoto();
+    showToast('✅ Photo de profil mise à jour');
+  }catch(e){
+    showToast('❌ Erreur réseau, réessaie.');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Enregistrer';
+  }
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
 function renderKpi(kpi){

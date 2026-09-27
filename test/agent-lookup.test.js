@@ -18,7 +18,11 @@ test('trouve l\'agent et son agence, email insensible à la casse/espaces', asyn
   };
 
   const resultat = await resolverAgentParEmail('  jean@exemple.fr  ', 'cle-test');
-  assert.deepEqual(resultat, { ownerId: 'owner-1', agent: { id: 'a1', nom: 'Jean', email: 'Jean@Exemple.fr' } });
+  assert.deepEqual(resultat, {
+    ownerId: 'owner-1',
+    agent: { id: 'a1', nom: 'Jean', email: 'Jean@Exemple.fr' },
+    data: { agents: [{ id: 'a1', nom: 'Jean', email: 'Jean@Exemple.fr' }] },
+  });
 });
 
 test('aucun agent ne correspond : null', async () => {

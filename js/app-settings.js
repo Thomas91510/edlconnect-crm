@@ -216,6 +216,39 @@ function populateExpertDropdown(selectedId){
 // ─── AGENTS EDL ────────────────────────────────────────────
 let _editingAgentId = null;
 
+const AGENT_PHOTOS_BUCKET_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co/storage/v1/object/public/agent-photos/';
+
+function initialesAgent(nom){
+  return String(nom || '?').trim().split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '?';
+}
+
+// Bloc "Zones d'intervention" d'un agent, sous sa ligne principale :
+// - "attente" → demande de l'agent en attente, avec Approuver/Refuser ;
+// - "valide"/"refuse" → petit rappel de l'état, sans action (l'agent
+//   modifie et resoumet depuis son espace s'il veut changer).
+function blocZonesAgent(a){
+  const nbPrimaire = (a.secteurPrimaire || []).length;
+  const nbSecondaire = (a.secteurSecondaire || []).length;
+  if(!a.zoneStatut) return '';
+  if(a.zoneStatut === 'attente'){
+    return `
+      <div style="width:100%;margin-top:8px;padding:8px 10px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber-text);font-size:11.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span>📍 Demande de zones en attente — ${nbPrimaire} code${nbPrimaire>1?'s':''} primaire, ${nbSecondaire} secondaire${nbSecondaire>1?'s':''}</span>
+        <span style="margin-left:auto;display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="approuverZonesAgent('${a.id}')"><i class="ti ti-check"></i> Approuver</button>
+          <button class="btn btn-sm" onclick="refuserZonesAgent('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-x"></i> Refuser</button>
+        </span>
+      </div>`;
+  }
+  if(a.zoneStatut === 'valide'){
+    return `<div style="width:100%;margin-top:8px;font-size:11px;color:var(--green-text)">✓ Zones validées — ${nbPrimaire} primaire, ${nbSecondaire} secondaire</div>`;
+  }
+  if(a.zoneStatut === 'refuse'){
+    return `<div style="width:100%;margin-top:8px;font-size:11px;color:#c0392b">✕ Zones refusées${a.zoneRefusMotif ? ' — ' + esc(a.zoneRefusMotif) : ''}</div>`;
+  }
+  return '';
+}
+
 function renderAgentsSettings(){
   const wrap = document.getElementById('agents-list');
   if(!wrap) return;
@@ -225,6 +258,9 @@ function renderAgentsSettings(){
   }
   wrap.innerHTML = DB.agents.map(a => `
     <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;flex-wrap:wrap">
+      ${a.photoPath
+        ? `<img src="${AGENT_PHOTOS_BUCKET_URL}${a.photoPath}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+        : `<div style="width:32px;height:32px;border-radius:50%;background:var(--blue-bg);color:var(--blue-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${esc(initialesAgent(a.nom))}</div>`}
       <div style="flex:1;min-width:160px">
         <div style="font-size:12px;font-weight:600">${esc(a.nom)}</div>
         <div style="font-size:11px;color:var(--text2)">📱 ${esc(a.tel) || '—'}${a.email ? ' · 📅 ' + esc(a.email) : ''}${a.secteurs ? ' · 📍 ' + esc(a.secteurs) : ''}</div>
@@ -239,7 +275,96 @@ function renderAgentsSettings(){
       </label>
       <button class="btn btn-sm" onclick="editerAgent('${a.id}')"><i class="ti ti-pencil"></i></button>
       <button class="btn btn-sm" onclick="removeAgent('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
+      ${blocZonesAgent(a)}
     </div>`).join('');
+}
+
+// Approuver/refuser la demande de secteurs d'un agent (voir blocZonesAgent
+// ci-dessus) — ne touche jamais aux codes soumis : seul le statut change,
+// pour que l'historique de la demande reste visible côté agent en cas de
+// refus (il peut alors ajuster et resoumettre depuis son espace).
+function approuverZonesAgent(id){
+  const a = DB.agents.find(x => x.id === id);
+  if(!a) return;
+  a.zoneStatut = 'valide';
+  a.zoneRefusMotif = '';
+  saveToStorage();
+  persistAgents();
+  renderAgentsSettings();
+  notify('✅ Zones validées pour ' + a.nom);
+}
+
+function refuserZonesAgent(id){
+  const a = DB.agents.find(x => x.id === id);
+  if(!a) return;
+  const motif = prompt('Motif du refus (visible par l\'agent) :', '') || '';
+  a.zoneStatut = 'refuse';
+  a.zoneRefusMotif = motif.trim();
+  saveToStorage();
+  persistAgents();
+  renderAgentsSettings();
+  notify('Zones refusées pour ' + a.nom, 'warn');
+}
+
+// ─── Barème frais de déplacement ────────────────────────────
+// Cases entièrement libres (intitulé + montant) : l'agence peut en
+// ajouter, en supprimer et renommer chaque ligne. Stocké dans
+// settings.data.baremeDeplacement (comme les agents), lu en lecture seule
+// par l'agent dans son espace (voir api/agent-missions.js).
+const BAREME_PAR_DEFAUT = [
+  { label: 'Secteur primaire', montant: '0' },
+  { label: 'Secteur secondaire', montant: '18' },
+  { label: 'Hors secteurs', montant: 'Sur devis' },
+];
+
+function renderBaremeSettings(){
+  const wrap = document.getElementById('bareme-rows');
+  if(!wrap) return;
+  const lignes = (DB.baremeDeplacement && DB.baremeDeplacement.length) ? DB.baremeDeplacement : BAREME_PAR_DEFAUT;
+  wrap.innerHTML = lignes.map((l, i) => `
+    <div style="display:grid;grid-template-columns:1fr 140px 32px;gap:8px;margin-bottom:6px" data-bareme-row>
+      <input class="bareme-label-input" value="${esc(l.label)}" placeholder="Intitulé">
+      <input class="bareme-montant-input" value="${esc(l.montant)}" placeholder="Montant ou texte" style="text-align:right">
+      <button class="btn btn-sm" onclick="this.closest('[data-bareme-row]').remove()" title="Supprimer cette case" style="color:#c0392b;border-color:#c0392b">✕</button>
+    </div>`).join('');
+}
+
+function ajouterLigneBareme(){
+  const wrap = document.getElementById('bareme-rows');
+  if(!wrap) return;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 140px 32px;gap:8px;margin-bottom:6px';
+  row.setAttribute('data-bareme-row', '');
+  row.innerHTML = `
+    <input class="bareme-label-input" placeholder="Intitulé">
+    <input class="bareme-montant-input" placeholder="Montant ou texte" style="text-align:right">
+    <button class="btn btn-sm" onclick="this.closest('[data-bareme-row]').remove()" title="Supprimer cette case" style="color:#c0392b;border-color:#c0392b">✕</button>`;
+  wrap.appendChild(row);
+  row.querySelector('.bareme-label-input').focus();
+}
+
+function sauvegarderBareme(){
+  const lignes = Array.from(document.querySelectorAll('#bareme-rows [data-bareme-row]')).map(row => ({
+    label: row.querySelector('.bareme-label-input').value.trim(),
+    montant: row.querySelector('.bareme-montant-input').value.trim(),
+  })).filter(l => l.label !== '');
+  if(!lignes.length){ notify('⚠️ Ajoutez au moins une case avec un intitulé', 'warn'); return; }
+  DB.baremeDeplacement = lignes;
+  saveToStorage();
+  persistBareme();
+  renderBaremeSettings();
+  notify('✅ Barème frais de déplacement enregistré');
+}
+
+async function persistBareme(){
+  if(typeof saveSettingsToSupabase !== 'function') return;
+  try{
+    if(!_supaReady || !_currentUser) return;
+    const { data } = await supabaseClient.from('settings').select('data').eq('user_id', _currentUser.id).maybeSingle();
+    const s = (data && data.data) ? data.data : {};
+    s.baremeDeplacement = DB.baremeDeplacement || [];
+    await saveSettingsToSupabase(s);
+  }catch(e){ console.warn('persistBareme:', e); }
 }
 
 // Dépôt du contrat signé / d'un avenant pour un agent (PDF, réservé à
@@ -369,6 +494,7 @@ function removeAgent(id){
 // ─── SETTINGS ─────────────────────────────────────────────
 function loadSettingsForm(){
   renderAgentsSettings();
+  renderBaremeSettings();
   document.getElementById('set-notion-token').value=CFG.notionToken||'';
   document.getElementById('set-notion-page').value=CFG.notionPageId||'';
   document.getElementById('set-brevo-key').value=CFG.brevoKey||'';
