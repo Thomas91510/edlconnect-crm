@@ -284,7 +284,20 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
           <div class="card-head"><i class="ti ti-device-mobile"></i>L'application Edouard</div>
           <div class="card-body aide-section">
             <p>Edouard est l'application que tu utilises <strong>sur place</strong> pour réaliser l'état des lieux (pièces, relevés, photos, signatures).</p>
-            <p style="margin-top:10px">Besoin de tes identifiants Edouard ou d'aide pour l'application ? Contacte l'agence directement.</p>
+
+            <div style="margin-top:14px;border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px">
+              <div>
+                <div style="font-weight:700;font-size:13px">📱 Guide terrain complet</div>
+                <div style="font-size:11.5px;color:var(--text2);margin-top:2px">Préparation, pièce par pièce, photos, signature, envoi, sortie, checklist de fin.</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button type="button" class="btn-sm" id="btn-tuto-edouard" onclick="toggleTutoEdouard()"><i class="ti ti-book-2"></i> Ouvrir le guide</button>
+                <a href="/aide/tuto-edouard.html" target="_blank" rel="noopener" class="btn-sm"><i class="ti ti-external-link"></i> Plein écran</a>
+              </div>
+            </div>
+            <iframe id="frame-tuto-edouard" title="Guide terrain Edouard" hidden style="width:100%;height:75vh;border:1px solid var(--border);border-radius:var(--radius);margin-top:12px;background:#fff"></iframe>
+
+            <p style="margin-top:14px">Besoin de tes identifiants Edouard ou d'aide pour l'application ? Contacte l'agence directement.</p>
           </div>
         </div>
       </div>
@@ -471,6 +484,15 @@ async function doLogout(){
   document.getElementById('login-btn').disabled = false;
   document.getElementById('login-btn').innerHTML = '<i class="ti ti-mail"></i> Recevoir mon lien de connexion';
   document.getElementById('login-msg').textContent = '';
+}
+
+function toggleTutoEdouard(){
+  const frame = document.getElementById('frame-tuto-edouard');
+  const btn = document.getElementById('btn-tuto-edouard');
+  if(!frame || !btn) return;
+  if(!frame.src) frame.src = '/aide/tuto-edouard.html'; // chargé seulement au premier clic
+  frame.hidden = !frame.hidden;
+  btn.innerHTML = frame.hidden ? '<i class="ti ti-book-2"></i> Ouvrir le guide' : '<i class="ti ti-x"></i> Fermer le guide';
 }
 
 function allerAgentPage(page){

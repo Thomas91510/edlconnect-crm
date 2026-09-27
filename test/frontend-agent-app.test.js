@@ -68,6 +68,9 @@ const DOM_MINIMAL = `
   <div id="drop-zone-content"></div>
   <button id="btn-enregistrer-photo" disabled></button>
   <div id="toast"></div>
+
+  <button id="btn-tuto-edouard"></button>
+  <iframe id="frame-tuto-edouard" hidden></iframe>
 `;
 
 function chargerAgentApp({ signInWithOtp } = {}) {
@@ -452,4 +455,20 @@ test('enregistrerPhoto : sans fichier sélectionné, n\'appelle pas le réseau',
   w.fetch = async () => { appele = true; };
   await w.enregistrerPhoto();
   assert.equal(appele, false);
+});
+
+// ─── Guide terrain Edouard (Aide & Tutos) ─────────────────────────────
+test('toggleTutoEdouard : charge le guide au premier clic, bascule ensuite sans recharger', () => {
+  const w = chargerAgentApp();
+  const frame = w.document.getElementById('frame-tuto-edouard');
+
+  w.toggleTutoEdouard();
+  assert.equal(frame.src, 'https://app.lokentia.fr/aide/tuto-edouard.html');
+  assert.equal(frame.hidden, false);
+  assert.ok(w.document.getElementById('btn-tuto-edouard').innerHTML.includes('Fermer'));
+
+  frame.src = 'https://exemple.fr/deja-charge.html'; // simule un chargement déjà en place
+  w.toggleTutoEdouard();
+  assert.equal(frame.hidden, true, 'un second clic referme sans toucher au src déjà chargé');
+  assert.equal(frame.src, 'https://exemple.fr/deja-charge.html');
 });
