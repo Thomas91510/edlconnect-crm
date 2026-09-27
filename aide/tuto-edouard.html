@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guide terrain Edouard</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#F4F7F6; --surface:#FFFFFF; --ink:#132322; --muted:#566B69; --line:#D6E2E0;
+  --brand:#006064; --brand-soft:#E1EFEE; --accent:#D9892B; --accent-soft:#FBF0E1;
+  --ok:#2E7D4F; --warn:#B7581F;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1716; --surface:#16211F; --ink:#E4EEEC; --muted:#9AB0AD; --line:#2A3A38;
+    --brand:#4FB8B3; --brand-soft:#15302E; --accent:#EDA84F; --accent-soft:#33260F;
+    --ok:#6FCB94; --warn:#F09A62;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1716; --surface:#16211F; --ink:#E4EEEC; --muted:#9AB0AD; --line:#2A3A38;
+  --brand:#4FB8B3; --brand-soft:#15302E; --accent:#EDA84F; --accent-soft:#33260F;
+  --ok:#6FCB94; --warn:#F09A62;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;padding-inline:16px;padding-block:0 64px}
+a{color:var(--brand);text-underline-offset:3px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1140px;margin:0 auto}
+header.hero{padding-block:48px 32px;border-bottom:1px solid var(--line);display:grid;gap:20px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,6vw,58px);line-height:1.02;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--brand)}
+.lede{max-width:64ch;color:var(--muted);font-size:19px;margin:0}
+.facts{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:14px;color:var(--muted)}
+.facts b{color:var(--ink);font-variant-numeric:tabular-nums}
+.note{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:10px;padding:12px 16px;font-size:15px;max-width:80ch}
+.layout{display:grid;grid-template-columns:220px 1fr;gap:48px;margin-top:40px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;font-size:15px}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;counter-reset:t}
+nav.toc a{display:flex;gap:10px;padding:6px 8px;border-radius:6px;text-decoration:none;color:var(--muted)}
+nav.toc a:hover{background:var(--brand-soft);color:var(--ink)}
+nav.toc .n{font-family:var(--mono);font-size:12px;color:var(--brand);min-width:18px;padding-top:3px}
+main{min-width:0}
+section.step{padding-block:40px;border-bottom:1px solid var(--line);scroll-margin-top:16px}
+section.step:first-child{padding-top:0}
+.step-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.step-num{font-family:var(--display);font-weight:800;font-size:44px;color:var(--brand);line-height:1;font-variant-numeric:tabular-nums}
+h2{font-family:var(--display);font-weight:600;font-size:clamp(26px,3.4vw,34px);margin:0;line-height:1.15;text-wrap:balance}
+h3{font-size:18px;margin:26px 0 6px;font-weight:700}
+p{margin:0 0 12px;max-width:66ch}
+.intro{color:var(--muted);max-width:66ch}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:36px;align-items:start;margin-top:18px}
+.split.two-phones{grid-template-columns:minmax(0,1fr)}
+.split.two-phones .phones{justify-content:flex-start;gap:28px;margin-top:8px}
+.phones{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+ol.howto{margin:8px 0 0;padding:0;list-style:none;counter-reset:h;display:grid;gap:10px;max-width:66ch}
+ol.howto li{counter-increment:h;display:grid;grid-template-columns:28px 1fr;gap:10px}
+ol.howto li::before{content:counter(h);font-family:var(--mono);font-size:12px;width:24px;height:24px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;margin-top:2px}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:1px 7px;border-radius:4px;background:var(--brand-soft);color:var(--brand);vertical-align:2px;margin-left:6px}
+.tag.pay{background:var(--accent-soft);color:var(--accent)}
+.tip{border-left:3px solid var(--accent);padding:4px 0 4px 14px;margin:18px 0;color:var(--ink);max-width:66ch;font-size:16px}
+.tip b{color:var(--accent)}
+kbd{font-family:var(--mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px}
+
+/* ---------- Phone mockups (écrans reconstitués, look app fixe) ---------- */
+figure.phone{margin:0;width:250px;max-width:100%}
+.device{border-radius:30px;background:#1B2424;padding:9px;box-shadow:0 18px 40px -18px rgba(0,40,40,.45)}
+.screen{border-radius:22px;background:#F7FAFA;color:#172524;overflow:hidden;font-family:var(--body);font-size:12px;line-height:1.35;height:520px;display:flex;flex-direction:column}
+.sb{display:flex;justify-content:space-between;padding:8px 16px 4px;font-size:10px;font-weight:700;color:#172524}
+.appbar{background:#006064;color:#fff;padding:10px 14px;display:flex;white-space:nowrap;align-items:center;gap:8px;font-weight:700;font-size:13px}
+.appbar .bk{opacity:.8}
+.appbar .r{margin-left:auto;white-space:nowrap;font-weight:400;font-size:11px;opacity:.85}
+.sc{padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;overflow:hidden}
+.card{background:#fff;border:1px solid #DDE7E6;border-radius:10px;padding:10px}
+.row{display:flex;align-items:center;gap:8px}
+.row .grow{flex:1}
+.ico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:#E1EFEE;color:#006064;font-weight:700;font-size:13px;flex:none}
+.sm{font-size:10.5px;color:#5D706E}
+.chk{width:16px;height:16px;border-radius:50%;background:#2E7D4F;color:#fff;font-size:10px;display:grid;place-items:center;flex:none}
+.chk.todo{background:#fff;border:1.5px solid #B9C9C7}
+.chk.warn{background:#D9892B}
+.chip{display:inline-block;padding:3px 8px;border-radius:999px;background:#EEF4F3;border:1px solid #D3E0DE;font-size:10.5px;margin:0 3px 4px 0}
+.chip.on{background:#006064;border-color:#006064;color:#fff}
+.chip.bad{background:#FCEBDD;border-color:#F0C39C;color:#9A4A12}
+.btn{background:#006064;color:#fff;text-align:center;border-radius:10px;padding:9px;font-weight:700;font-size:12px}
+.btn.ghost{background:#fff;color:#006064;border:1px solid #006064}
+.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#5D706E;font-weight:700;margin-top:2px}
+.bar{height:5px;border-radius:3px;background:#E1EAE9;overflow:hidden}
+.bar i{display:block;height:100%;background:#006064}
+.photo{height:74px;border-radius:8px;background:linear-gradient(135deg,#C9D6D4,#E9EFEE 55%,#B8C7C5);position:relative}
+.photo svg{position:absolute;inset:0;width:100%;height:100%}
+table.mini{width:100%;border-collapse:collapse;font-size:10.5px}
+table.mini td,table.mini th{padding:5px 4px;border-bottom:1px solid #E3EBEA;text-align:left}
+table.mini th{font-size:9.5px;text-transform:uppercase;color:#5D706E;letter-spacing:.04em}
+table.mini td.n{text-align:right;font-variant-numeric:tabular-nums}
+.diff{background:#FCEBDD}
+figcaption{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.4}
+figcaption .rec{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:2px}
+
+/* tables */
+.tw{overflow-x:auto;margin-top:14px}
+table.price{border-collapse:collapse;width:100%;min-width:560px;font-size:15px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+table.price th,table.price td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.price th{font-family:var(--display);font-weight:600;font-size:16px;background:var(--brand-soft)}
+table.price td.p{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+table.price tr.pick td{background:color-mix(in srgb,var(--accent-soft) 70%,var(--surface))}
+.edl-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:22px}
+.edl-box h3{margin-top:0;font-family:var(--display);font-weight:600;font-size:22px}
+.edl-box ul{margin:8px 0 0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
+.contact{display:flex;flex-wrap:wrap;gap:10px 28px;font-family:var(--mono);font-size:14px;margin-top:10px}
+.sources{font-size:14px;color:var(--muted)}
+.sources ul{padding-left:18px}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr;gap:12px}
+  nav.toc{position:static;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface)}
+  nav.toc ol{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+  .split,.split.two-phones{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+<style>
+.check{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px;max-width:70ch}
+.check li{display:grid;grid-template-columns:22px 1fr;gap:10px}
+.check li::before{content:"";width:16px;height:16px;border:2px solid var(--brand);border-radius:4px;margin-top:4px}
+.dont{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px}
+.dont div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:15.5px}
+.dont b{display:block;margin-bottom:4px;color:var(--warn)}
+</style>
+<style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">EDL IDF · Guide agent · Application Edouard</div>
+  <h1>Faire un état des lieux avec <em>Edouard</em>, de l'arrivée au logement à l'envoi du rapport</h1>
+  <p class="lede">La méthode de travail sur le terrain pour les agents EDL IDF : préparer la mission, dérouler le logement pièce par pièce, faire signer, envoyer, et réussir les sorties.</p>
+  <div class="facts">
+    <span>Fonctionne <b>sans réseau</b></span>
+    <span>Sauvegarde <b>automatique</b></span>
+    <span>Une question : <b>01 89 29 14 29</b> · <b>contact@edl-idf.com</b></span>
+  </div>
+  <div class="note"><b>À propos des écrans :</b> les écrans de ce guide sont reconstitués d'après la documentation d'Edouard pour montrer chaque étape. Selon la version de l'application, les libellés et la disposition peuvent légèrement différer.</div>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Sommaire">
+  <ol>
+    <li><a href="#demarrer"><span class="n">0</span>Avant la première mission</a></li>
+    <li><a href="#preparer"><span class="n">1</span>Préparer la mission</a></li>
+    <li><a href="#arrivee"><span class="n">2</span>Arrivée sur place</a></li>
+    <li><a href="#pieces"><span class="n">3</span>Pièce par pièce</a></li>
+    <li><a href="#photos"><span class="n">4</span>Règles photo</a></li>
+    <li><a href="#signer"><span class="n">5</span>Relire, signer, envoyer</a></li>
+    <li><a href="#sortie"><span class="n">6</span>EDL de sortie</a></li>
+    <li><a href="#erreurs"><span class="n">!</span>Erreurs à éviter</a></li>
+    <li><a href="#imprevus"><span class="n">?</span>Imprévus sur place</a></li>
+    <li><a href="#checklist"><span class="n">✓</span>Checklist de fin</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section class="step" id="demarrer">
+  <div class="step-head"><span class="step-num">0</span><h2>Avant la première mission</h2></div>
+  <ol class="howto">
+    <li><span>Installez <b>« Edouard | État des lieux »</b> depuis l'<a href="https://apps.apple.com/fr/app/edouard-%C3%A9tat-des-lieux/id6448838187" target="_blank" rel="noopener">App Store</a> ou <a href="https://play.google.com/store/apps/details?id=edouard.immo" target="_blank" rel="noopener">Google Play</a>.</span></li>
+    <li><span>Connectez-vous avec les <b>identifiants fournis par EDL IDF</b>. Ne créez pas de compte personnel : vos EDL doivent être dans l'espace de l'entreprise pour sortir avec le bon logo et les bons modèles.</span></li>
+    <li><span>Autorisez l'accès à l'<b>appareil photo</b>, au <b>micro</b> (dictée) et aux notifications (rappel une heure avant chaque rendez-vous).</span></li>
+    <li><span>Faites un <b>EDL d'entraînement</b> chez vous : une pièce complète avec l'IA, une photo annotée, une signature. Dix minutes suffisent pour avoir les réflexes.</span></li>
+  </ol>
+  <div class="tip"><b>Matériel du jour :</b> téléphone chargé à 100 % + batterie externe, lampe torche, stylo testeur de prise si vous en avez un. En cas de panne, rien n'est perdu : l'EDL reprend exactement où il s'était arrêté.</div>
+</section>
+
+<section class="step" id="preparer">
+  <div class="step-head"><span class="step-num">1</span><h2>Préparer la mission</h2></div>
+  <p class="intro">La veille ou avant de partir. Tout ce qui est saisi ici se retrouve dans le rapport, donc on vérifie l'orthographe des noms et les adresses e-mail.</p>
+  <div class="split two-phones">
+    <div>
+      <h3>Créer l'EDL</h3>
+      <ol class="howto">
+        <li><span>Touchez <b>Nouvel état des lieux</b> et choisissez <b>Entrée</b> ou <b>Sortie</b>.</span></li>
+        <li><span>Partez du <b>modèle EDL IDF</b> qui correspond au bien (studio, T2, T3, maison, meublé). Si l'agence a transmis l'ancien EDL en PDF, utilisez <b>Importer un document</b> : l'application le recrée.</span></li>
+        <li><span>Renseignez le <b>logement</b> : adresse complète, type, surface, étage, n° de lot ou de porte.</span></li>
+        <li><span>Renseignez le <b>mandant</b> (agence ou propriétaire) et le ou les <b>locataires</b> avec leur <b>e-mail</b> : c'est à cette adresse que partira le rapport.</span></li>
+      </ol>
+      <h3>Pour une sortie</h3>
+      <p>Si l'entrée a été faite dans Edouard, ouvrez-la et utilisez <b>Copier vers une sortie</b>. Pièces, éléments, descriptifs et photos sont repris : sur place, vous ne notez que ce qui a changé. Voir la <a href="#sortie">partie 6</a>.</p>
+    </div>
+    <div class="phones">
+      <figure class="phone">
+        <div class="device"><div class="screen">
+          <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+          <div class="appbar"><span class="bk">‹</span>Nouvel état des lieux</div>
+          <div class="sc">
+            <div class="lbl">Type</div>
+            <div><span class="chip on">Entrée</span><span class="chip">Sortie</span></div>
+            <div class="lbl">Gagnez du temps</div>
+            <div class="card row"><div class="ico">⇪</div><div class="grow"><b>Importer un document</b><div class="sm">Ancien EDL PDF, photo d'un rapport papier</div></div></div>
+            <div class="card row"><div class="ico">🎙</div><div class="grow"><b>Dicter</b><div class="sm">Décrivez le logement, l'IA crée les pièces</div></div></div>
+            <div class="card row"><div class="ico">✎</div><div class="grow"><b>Continuer manuellement</b><div class="sm">Partir d'un modèle</div></div></div>
+            <div class="lbl">Modèle</div>
+            <div class="card row"><div class="grow">T2 meublé · 6 pièces</div><span class="sm">›</span></div>
+          </div>
+        </div></div>
+        <figcaption><span class="rec">Écran reconstitué</span>Création de l'EDL et choix du point de départ.</figcaption>
+      </figure>
+      <figure class="phone">
+        <div class="device"><div class="screen">
+          <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+          <div class="appbar"><span class="bk">‹</span>EDL d'entrée<span class="r">Sauvegardé 9:40</span></div>
+          <div class="sc">
+            <div class="card"><b>12 rue des Tilleuls, 91630 Marolles</b><div class="sm">Appartement T2 · 46 m² · 2e étage</div></div>
+            <div class="card row"><span class="chk">✓</span><span class="grow">Logement</span></div>
+            <div class="card row"><span class="chk">✓</span><span class="grow">Mandant</span></div>
+            <div class="card row"><span class="chk">✓</span><span class="grow">Locataire(s)</span><span class="sm">1</span></div>
+            <div class="card row"><span class="chk todo"></span><span class="grow">Compteurs</span><span class="sm">0/3</span></div>
+            <div class="card row"><span class="chk todo"></span><span class="grow">Clés et badges</span></div>
+            <div class="card row"><span class="chk todo"></span><span class="grow">Pièces</span><span class="sm">0/6</span></div>
+            <div class="bar"><i style="width:38%"></i></div>
+            <div class="btn">Commencer l'état des lieux</div>
+          </div>
+        </div></div>
+        <figcaption><span class="rec">Écran reconstitué</span>L'EDL est prêt : il reste compteurs, clés et pièces à faire sur place.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="arrivee">
+  <div class="step-head"><span class="step-num">2</span><h2>Arrivée sur place</h2></div>
+  <p class="intro">Les cinq premières minutes, avant d'attaquer les pièces. On commence par ce qui est le plus souvent oublié.</p>
+  <ol class="howto">
+    <li><span>Présentez-vous, vérifiez l'<b>identité du locataire</b> et son <b>e-mail</b> dans la fiche. Corrigez tout de suite si besoin.</span></li>
+    <li><span><b>Compteurs</b> : relevez électricité, eau (froide / chaude), gaz si présent. Saisissez le numéro et l'index, et prenez une <b>photo lisible</b> de chaque compteur.</span></li>
+    <li><span><b>Clés et badges</b> : comptez-les avec le locataire (porte, boîte aux lettres, cave, badge, télécommande de parking) et notez les quantités.</span></li>
+    <li><span><b>Détecteurs de fumée</b> : notez leur présence et leur emplacement, testez-les si possible.</span></li>
+    <li><span>Faites le tour rapide du logement pour <b>vérifier la liste des pièces</b> du modèle : ajoutez ou supprimez les pièces qui ne correspondent pas.</span></li>
+  </ol>
+  <div class="tip"><b>Pas de réseau dans le logement ?</b> Continuez normalement. Tout est enregistré sur le téléphone et se synchronise dès le retour du réseau, y compris la signature.</div>
+</section>
+
+<section class="step" id="pieces">
+  <div class="step-head"><span class="step-num">3</span><h2>Pièce par pièce</h2></div>
+  <p class="intro">Toujours le même ordre dans chaque pièce, pour ne rien oublier : <b>sol → murs → plafond → menuiseries → électricité → chauffage → équipements</b>. L'IA fait la saisie, vous vérifiez et corrigez.</p>
+  <div class="split two-phones">
+    <div>
+      <h3>1. Pré-remplir la pièce avec l'IA</h3>
+      <ol class="howto">
+        <li><span>Ouvrez la pièce et lancez l'IA.</span></li>
+        <li><span>Prenez <b>3 à 4 photos d'ensemble</b> depuis les angles, ou <b>dictez</b> : « sol parquet stratifié bon état, murs peinture blanche, une fenêtre PVC double vitrage, deux prises, un radiateur électrique ».</span></li>
+        <li><span>L'IA propose la liste des éléments avec leurs caractéristiques. <b>Relisez chaque ligne</b> : retirez ce qui n'existe pas, ajoutez ce qui manque.</span></li>
+      </ol>
+      <h3>2. Qualifier chaque élément</h3>
+      <ol class="howto">
+        <li><span>Touchez l'élément pour ouvrir sa fiche.</span></li>
+        <li><span>Choisissez les <b>caractéristiques</b> (matière, couleur, type) dans les descriptifs proposés.</span></li>
+        <li><span>Choisissez l'<b>état</b> : Neuf, Bon état, Usagé, Mauvais. Voir la règle ci-dessous.</span></li>
+        <li><span>Ajoutez les <b>dégradations</b> (rayure, éclat, trace, trou, tache, calcaire…) avec leur emplacement et leur taille, au clavier ou au <b>dictaphone</b>.</span></li>
+        <li><span>Prenez la <b>photo</b> du défaut et <b>entourez-le</b> directement sur la photo.</span></li>
+      </ol>
+      <div class="tip"><b>Règle d'or :</b> l'IA propose, c'est l'agent qui signe. Un état ou une dégradation laissés tels que l'IA les a proposés sans vérification, c'est un rapport contestable à la sortie.</div>
+      <h3>Choisir le bon état</h3>
+      <div class="tw">
+        <table class="price" style="min-width:480px">
+          <thead><tr><th>État</th><th>Quand l'utiliser</th></tr></thead>
+          <tbody>
+            <tr><td><b>Neuf</b></td><td>Posé ou refait récemment, aucune trace d'usage.</td></tr>
+            <tr><td><b>Bon état</b></td><td>Traces d'usage normales à peine visibles, fonctionne parfaitement.</td></tr>
+            <tr><td><b>Usagé</b></td><td>Usure visible (rayures, jaunissement, petits éclats) mais fonctionnel. Détailler les défauts.</td></tr>
+            <tr><td><b>Mauvais</b></td><td>Dégradé, cassé ou ne fonctionne pas. Toujours avec photo et description.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Tester, pas seulement regarder</h3>
+      <p>Ouvrez et fermez chaque porte, fenêtre et volet. Allumez chaque point lumineux. Faites couler l'eau et vérifiez l'évacuation. Actionnez la chasse d'eau. Allumez plaques, four et hotte. Ce qui ne fonctionne pas se note, même si l'aspect est bon.</p>
+    </div>
+    <div class="phones">
+      <figure class="phone">
+        <div class="device"><div class="screen">
+          <div class="sb"><span>10:07</span><span>●●● 5G</span></div>
+          <div class="appbar"><span class="bk">‹</span>Cuisine<span class="r">IA</span></div>
+          <div class="sc">
+            <div class="card" style="background:#E1EFEE;border-color:#BFDCDA"><b style="color:#006064">✦ 22 éléments identifiés</b><div class="sm">À partir de 3 photos · vérifiez avant de valider</div></div>
+            <div class="card row"><span class="chk">✓</span><span class="grow">Sol · Carrelage</span><span class="sm">Bon état</span></div>
+            <div class="card row"><span class="chk">✓</span><span class="grow">Murs · Faïence + peinture</span><span class="sm">Bon état</span></div>
+            <div class="card row"><span class="chk">✓</span><span class="grow">Plafond · Peinture</span><span class="sm">Bon état</span></div>
+            <div class="card row"><span class="chk">✓</span><span class="grow">Fenêtre · PVC double vitrage</span><span class="sm">Neuf</span></div>
+            <div class="card row"><span class="chk warn">!</span><span class="grow">Évier · Inox 1 bac</span><span class="sm">Usagé</span></div>
+            <div class="sm" style="text-align:center">+ 17 autres éléments</div>
+            <div class="btn">Ajouter à la pièce</div>
+          </div>
+        </div></div>
+        <figcaption><span class="rec">Écran reconstitué</span>Résultat de l'IA à relire ligne par ligne.</figcaption>
+      </figure>
+      <figure class="phone">
+        <div class="device"><div class="screen">
+          <div class="sb"><span>10:09</span><span>●●● 5G</span></div>
+          <div class="appbar"><span class="bk">‹</span>Cuisine · Évier</div>
+          <div class="sc">
+            <div class="lbl">Caractéristiques</div>
+            <div><span class="chip on">Inox</span><span class="chip on">1 bac</span><span class="chip on">Égouttoir</span><span class="chip">Résine</span><span class="chip">Céramique</span></div>
+            <div class="lbl">État</div>
+            <div><span class="chip">Neuf</span><span class="chip">Bon état</span><span class="chip on">Usagé</span><span class="chip">Mauvais</span></div>
+            <div class="lbl">Dégradations</div>
+            <div><span class="chip bad">Rayures</span><span class="chip bad">Traces de calcaire</span><span class="chip">Éclat</span><span class="chip">Fuite</span></div>
+            <div class="lbl">Photos (2)</div>
+            <div class="photo"><svg viewBox="0 0 200 74" preserveAspectRatio="none"><ellipse cx="120" cy="38" rx="34" ry="18" fill="none" stroke="#D9392B" stroke-width="3"/></svg></div>
+            <div class="card sm">🎙 « Rayures fines au fond du bac, calcaire autour de la bonde. »</div>
+          </div>
+        </div></div>
+        <figcaption><span class="rec">Écran reconstitué</span>Fiche élément : caractéristiques, état, dégradations, photo annotée.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="photos">
+  <div class="step-head"><span class="step-num">4</span><h2>Règles photo</h2></div>
+  <p class="intro">Les photos sont la preuve en cas de litige. Elles sont illimitées : dans le doute, on prend la photo.</p>
+  <ul class="check">
+    <li><span><b>Une vue d'ensemble par pièce</b>, prise depuis la porte, plus une par angle si la pièce est grande.</span></li>
+    <li><span><b>Chaque dégradation en gros plan</b>, défaut entouré sur la photo. Un défaut noté sans photo sera difficile à opposer à la sortie.</span></li>
+    <li><span><b>Un repère d'échelle</b> pour les défauts (prise, interrupteur, main, mètre) afin qu'on comprenne la taille.</span></li>
+    <li><span><b>Compteurs lisibles</b> : numéro et index nets, sans reflet.</span></li>
+    <li><span><b>Lumière allumée</b>, volets ouverts. Pas de photo floue : on la reprend.</span></li>
+    <li><span><b>Pas de personnes</b> ni d'effets personnels identifiables en premier plan.</span></li>
+  </ul>
+</section>
+
+<section class="step" id="signer">
+  <div class="step-head"><span class="step-num">5</span><h2>Relire, signer, envoyer</h2></div>
+  <p class="intro">On ne quitte pas le logement avant que le rapport soit signé et envoyé.</p>
+  <div class="split two-phones">
+    <div>
+      <h3>Relire</h3>
+      <ol class="howto">
+        <li><span>Ouvrez la <b>prévisualisation PDF</b>. Parcourez compteurs, clés, puis chaque pièce.</span></li>
+        <li><span>Touchez <b>Signer</b> : l'application lance ses <b>contrôles</b> et signale ce qui manque (partie incomplète, clés, compteurs, détecteurs). Corrigez tout avant de continuer.</span></li>
+        <li><span>Parcourez le rapport <b>avec le locataire</b> sur les points importants (dégradations, équipements hors service). Il signe plus sereinement quand il a vu.</span></li>
+      </ol>
+      <h3>Signer</h3>
+      <ol class="howto">
+        <li><span>Chaque partie présente <b>paraphe et signe au doigt</b> sur l'écran.</span></li>
+        <li><span>Le locataire peut écrire ses <b>réserves</b>. Ne le dissuadez pas : une réserve écrite vaut mieux qu'une contestation plus tard.</span></li>
+        <li><span>Si une partie n'est pas présente (le mandant, en général), envoyez-lui la <b>signature à distance</b> : elle reçoit un lien par e-mail et valide avec un code SMS.</span></li>
+      </ol>
+      <h3>Envoyer</h3>
+      <p>Après signature, envoyez le rapport par e-mail à toutes les parties depuis l'application. Vérifiez dans l'<b>historique des envois</b> que l'envoi est bien parti avant de partir.</p>
+    </div>
+    <div class="phones">
+      <figure class="phone">
+        <div class="device"><div class="screen">
+          <div class="sb"><span>10:52</span><span>●●● 5G</span></div>
+          <div class="appbar"><span class="bk">‹</span>Aperçu du rapport<span class="r">PDF</span></div>
+          <div class="sc" style="background:#E9EEEE">
+            <div class="card" style="border-radius:4px">
+              <div class="row"><b style="color:#006064">ÉTAT DES LIEUX D'ENTRÉE</b></div>
+              <div class="sm">12 rue des Tilleuls · 26/09/2026 10:00</div>
+              <table class="mini" style="margin-top:6px">
+                <tr><th>Compteur</th><th>N°</th><th>Index</th></tr>
+                <tr><td>Électricité</td><td>0215…</td><td class="n">18 452</td></tr>
+                <tr><td>Eau froide</td><td>A77…</td><td class="n">312,4</td></tr>
+              </table>
+              <table class="mini" style="margin-top:6px">
+                <tr><th>Clés</th><th></th><th>Qté</th></tr>
+                <tr><td>Porte d'entrée</td><td></td><td class="n">3</td></tr>
+                <tr><td>Badge immeuble</td><td></td><td class="n">1</td></tr>
+              </table>
+            </div>
+            <div class="card" style="border-radius:4px"><b>Entrée</b>
+              <table class="mini"><tr><td>Sol · Parquet</td><td>Bon état</td></tr><tr><td>Murs · Peinture</td><td>Bon état</td></tr></table>
+              <div class="row" style="margin-top:6px;gap:5px"><div class="photo" style="height:38px;flex:1"></div><div class="photo" style="height:38px;flex:1"></div><div class="photo" style="height:38px;flex:1"></div></div>
+            </div>
+          </div>
+        </div></div>
+        <figcaption><span class="rec">Écran reconstitué</span>Prévisualisation du rapport avant signature.</figcaption>
+      </figure>
+      <figure class="phone">
+        <div class="device"><div class="screen">
+          <div class="sb"><span>10:58</span><span>●●● 5G</span></div>
+          <div class="appbar"><span class="bk">‹</span>Signature</div>
+          <div class="sc">
+            <div class="row"><span class="chk">✓</span><span class="grow">Mandant</span><span class="sm">Signé</span></div>
+            <div class="row"><span class="chk todo"></span><span class="grow"><b>Locataire · M. Durand</b></span></div>
+            <div class="lbl">Lu et approuvé · signez ci-dessous</div>
+            <div class="card" style="height:150px;position:relative;padding:0">
+              <svg viewBox="0 0 220 150" width="100%" height="100%"><path d="M22 98 C 40 40, 58 40, 60 92 S 88 120, 98 70 S 120 40, 126 88 C 130 110, 150 60, 168 76 S 190 98, 204 70" fill="none" stroke="#172524" stroke-width="2.4" stroke-linecap="round"/><line x1="18" y1="120" x2="202" y2="120" stroke="#C9D6D4" stroke-dasharray="4 4"/></svg>
+            </div>
+            <div class="card sm">Réserves du locataire (facultatif)</div>
+            <div class="row"><div class="btn ghost grow">Effacer</div><div class="btn grow">Valider</div></div>
+            <div class="sm" style="text-align:center">Horodatage certifié à la validation</div>
+          </div>
+        </div></div>
+        <figcaption><span class="rec">Écran reconstitué</span>Signature au doigt, avec champ de réserves.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="sortie">
+  <div class="step-head"><span class="step-num">6</span><h2>L'EDL de sortie</h2></div>
+  <p class="intro">La sortie se fait toujours à partir de l'entrée, pour comparer élément par élément.</p>
+  <div class="split two-phones">
+    <div>
+      <ol class="howto">
+        <li><span>Ouvrez l'EDL d'entrée et faites <b>Copier vers une sortie</b>. Si l'entrée a été faite ailleurs, importez son PDF.</span></li>
+        <li><span>Mettez à jour les <b>parties</b> (même locataire, nouvel e-mail éventuel), les <b>compteurs</b> et les <b>clés restituées</b>.</span></li>
+        <li><span>Dans chaque pièce, reprenez chaque élément et <b>modifiez uniquement ce qui a changé</b> : nouvel état, nouvelles dégradations, nouvelles photos.</span></li>
+        <li><span>Notez aussi la <b>propreté</b> de chaque pièce et des équipements (four, frigo, sanitaires).</span></li>
+        <li><span>Générez le <b>rapport comparatif</b> : les différences entre entrée et sortie ressortent ligne par ligne. Relisez-le avec le locataire avant la signature.</span></li>
+        <li><span>Si la mission le demande, lancez le <b>chiffrage</b> : l'application estime travaux et ménage à partir des dégradations relevées, vétusté comprise. Vérifiez les lignes avant l'envoi.</span></li>
+      </ol>
+      <div class="tip"><b>Attention à l'usure normale.</b> Une peinture un peu passée après trois ans d'occupation relève de la vétusté, pas d'une dégradation. Décrivez objectivement ce que vous voyez, sans juger qui paie.</div>
+    </div>
+    <div class="phones">
+      <figure class="phone">
+        <div class="device"><div class="screen">
+          <div class="sb"><span>15:20</span><span>●●● 5G</span></div>
+          <div class="appbar"><span class="bk">‹</span>Comparatif</div>
+          <div class="sc">
+            <div class="sm">Entrée 02/10/2023 → Sortie 26/09/2026</div>
+            <div class="card" style="padding:6px">
+              <b>Séjour</b>
+              <table class="mini">
+                <tr><th>Élément</th><th>Entrée</th><th>Sortie</th></tr>
+                <tr><td>Sol parquet</td><td>Bon</td><td>Bon</td></tr>
+                <tr class="diff"><td>Murs peinture</td><td>Bon</td><td>Usagé</td></tr>
+                <tr><td>Plafond</td><td>Bon</td><td>Bon</td></tr>
+                <tr class="diff"><td>Porte-fenêtre</td><td>Neuf</td><td>Mauvais</td></tr>
+              </table>
+            </div>
+            <div class="card" style="padding:6px">
+              <b>Cuisine</b>
+              <table class="mini">
+                <tr><td>Évier inox</td><td>Usagé</td><td>Usagé</td></tr>
+                <tr class="diff"><td>Plan de travail</td><td>Bon</td><td>Brûlure</td></tr>
+                <tr><td>Hotte</td><td>Bon</td><td>Bon</td></tr>
+              </table>
+            </div>
+            <div class="sm"><span style="display:inline-block;width:10px;height:10px;background:#FCEBDD;border:1px solid #F0C39C;vertical-align:-1px"></span> 3 différences relevées</div>
+          </div>
+        </div></div>
+        <figcaption><span class="rec">Écran reconstitué</span>Rapport comparatif : les écarts ressortent ligne par ligne.</figcaption>
+      </figure>
+      <figure class="phone">
+        <div class="device"><div class="screen">
+          <div class="sb"><span>15:31</span><span>●●● 5G</span></div>
+          <div class="appbar"><span class="bk">‹</span>Chiffrage des travaux</div>
+          <div class="sc">
+            <div><span class="chip">Peintre</span><span class="chip on">Menuisier</span><span class="chip">Nettoyage</span></div>
+            <div class="card">
+              <table class="mini">
+                <tr><th>Travaux estimés</th><th>Vétusté</th><th style="text-align:right">€</th></tr>
+                <tr><td>Porte-fenêtre : réglage + joint</td><td>30 %</td><td class="n">126</td></tr>
+                <tr><td>Plan de travail : reprise brûlure</td><td>40 %</td><td class="n">96</td></tr>
+                <tr><td>Déplacement</td><td>–</td><td class="n">35</td></tr>
+              </table>
+            </div>
+            <div class="card row"><span class="grow"><b>Total menuisier</b><div class="sm">Après vétusté</div></span><b style="font-size:15px">257 €</b></div>
+          </div>
+        </div></div>
+        <figcaption><span class="rec">Écran reconstitué</span>Chiffrage par métier, si demandé par la mission. Montants d'exemple.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="erreurs">
+  <div class="step-head"><span class="step-num">!</span><h2>Erreurs à éviter</h2></div>
+  <div class="dont">
+    <div><b>Valider l'IA sans relire</b>Un élément inventé ou un état faux se retrouve dans un document signé.</div>
+    <div><b>Dégradation sans photo</b>À la sortie, rien ne prouve ce qui existait déjà.</div>
+    <div><b>« Usagé » sans détail</b>Toujours préciser quoi, où et quelle taille : « 3 rayures de 5 cm sur le plan de travail, à gauche de l'évier ».</div>
+    <div><b>Oublier compteurs, clés ou détecteurs</b>Ce sont les premiers points relevés par l'agence. À faire dès l'arrivée.</div>
+    <div><b>Mauvais e-mail locataire</b>Le rapport ne part pas au bon endroit. Vérifier à l'arrivée avec le locataire.</div>
+    <div><b>Partir avant l'envoi</b>On vérifie l'historique des envois avant de quitter le logement.</div>
+  </div>
+</section>
+
+<section class="step" id="imprevus">
+  <div class="step-head"><span class="step-num">?</span><h2>Imprévus sur place</h2></div>
+  <h3>Le locataire refuse de signer</h3>
+  <p>Restez calme, proposez-lui d'écrire ses réserves. S'il refuse toujours, finalisez l'EDL en <b>mentionnant explicitement le refus</b>, puis prévenez EDL IDF : la suite (recommandé, commissaire de justice) est gérée par le bureau.</p>
+  <h3>Le téléphone s'éteint ou l'application se ferme</h3>
+  <p>Rechargez et rouvrez : l'EDL reprend exactement où il s'était arrêté. La sauvegarde est continue.</p>
+  <h3>Pas de réseau</h3>
+  <p>Faites tout l'EDL et la signature normalement. L'envoi partira au retour du réseau : vérifiez l'historique des envois une fois sorti.</p>
+  <h3>Le logement ne correspond pas au modèle</h3>
+  <p>Ajoutez ou supprimez les pièces dans l'EDL. Prévenez le bureau si la typologie annoncée était fausse (ex. T2 annoncé, T3 sur place).</p>
+  <h3>Correction après signature</h3>
+  <p>Ne recréez pas un EDL. Un EDL signé peut être <b>corrigé puis re-signé</b>, ou complété par un <b>avenant</b> avec l'accord des parties. Passez par le bureau.</p>
+</section>
+
+<section class="step" id="checklist">
+  <div class="step-head"><span class="step-num">✓</span><h2>Checklist de fin de mission</h2></div>
+  <p class="intro">À dérouler avant de quitter le logement.</p>
+  <ul class="check">
+    <li><span>Compteurs relevés avec photo lisible</span></li>
+    <li><span>Clés et badges comptés avec le locataire</span></li>
+    <li><span>Détecteurs de fumée notés</span></li>
+    <li><span>Toutes les pièces faites, chaque élément relu après l'IA</span></li>
+    <li><span>Chaque dégradation décrite (quoi, où, taille) et photographiée</span></li>
+    <li><span>Contrôles de l'application passés sans alerte</span></li>
+    <li><span>Rapport relu avec le locataire, réserves notées s'il y en a</span></li>
+    <li><span>Signatures faites (ou signature à distance envoyée au mandant)</span></li>
+    <li><span>Rapport envoyé, visible dans l'historique des envois</span></li>
+  </ul>
+  <div class="tip" style="margin-top:28px"><b>Pour toute question</b>, contactez <b>EDL IDF, Expert en État des Lieux</b> au <span style="font-family:var(--mono)">01 89 29 14 29</span> ou à <span style="font-family:var(--mono)">contact@edl-idf.com</span>.</div>
+</section>
+
+</main>
+</div>
+</div>
+
+</body>
+</html>

@@ -44,6 +44,6 @@
     { "source": "/booking", "destination": "/api/booking-page" },
     { "source": "/extranet-app", "destination": "/extranet-app.html" },
     { "source": "/agent-app", "destination": "/agent-app.html" },
-    { "source": "/((?!extranet-app$|agent-app$|js/).*)", "destination": "/index.html" }
+    { "source": "/((?!extranet-app$|agent-app$|js/|aide/).*)", "destination": "/index.html" }
   ]
 }
