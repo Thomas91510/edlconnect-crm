@@ -151,6 +151,7 @@ test('agent.bareme : renvoie le barème configuré par l\'agence (settings.data.
 test('agent.photoUrl / secteurs / zoneStatut : reflètent la fiche agent, tel et téléphone inclus', async () => {
   const rows = [{ user_id: 'owner-1', data: { agents: [{
     id: 'agent-1', nom: 'Jean Dupont', email: 'jean@exemple.fr', tel: '0612345678',
+    adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes',
     photoPath: 'owner-1/agent-1.jpg',
     secteurPrimaire: [{ code:'91228', nom:'Évry-Courcouronnes' }],
     secteurSecondaire: [{ code:'92012', nom:'Boulogne-Billancourt' }],
@@ -160,6 +161,7 @@ test('agent.photoUrl / secteurs / zoneStatut : reflètent la fiche agent, tel et
   const resp = await handler(requete('jeton-valide'));
   const body = await resp.json();
   assert.equal(body.agent.tel, '0612345678');
+  assert.equal(body.agent.adresse, '12 rue de la Paix, 91000 Évry-Courcouronnes');
   assert.ok(body.agent.photoUrl.includes('owner-1/agent-1.jpg'));
   assert.deepEqual(body.agent.secteurPrimaire, [{ code:'91228', nom:'Évry-Courcouronnes' }]);
   assert.deepEqual(body.agent.secteurSecondaire, [{ code:'92012', nom:'Boulogne-Billancourt' }]);

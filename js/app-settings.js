@@ -263,7 +263,7 @@ function renderAgentsSettings(){
         : `<div style="width:32px;height:32px;border-radius:50%;background:var(--blue-bg);color:var(--blue-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${esc(initialesAgent(a.nom))}</div>`}
       <div style="flex:1;min-width:160px">
         <div style="font-size:12px;font-weight:600">${esc(a.nom)}</div>
-        <div style="font-size:11px;color:var(--text2)">📱 ${esc(a.tel) || '—'}${a.email ? ' · 📅 ' + esc(a.email) : ''}${a.secteurs ? ' · 📍 ' + esc(a.secteurs) : ''}</div>
+        <div style="font-size:11px;color:var(--text2)">📱 ${esc(a.tel) || '—'}${a.email ? ' · 📅 ' + esc(a.email) : ''}${a.adresse ? ' · 🏠 ' + esc(a.adresse) : ''}${a.secteurs ? ' · 📍 ' + esc(a.secteurs) : ''}</div>
       </div>
       <label class="btn btn-sm" style="cursor:pointer" title="${a.contratPath ? 'Remplacer le contrat déposé' : 'Déposer le contrat signé (PDF)'}">
         <i class="ti ${a.contratPath ? 'ti-file-check' : 'ti-file-upload'}"></i> Contrat
@@ -403,8 +403,10 @@ function editerAgent(id){
   document.getElementById('new-agent-nom').value = agent.nom || '';
   document.getElementById('new-agent-tel').value = agent.tel || '';
   const emailEl = document.getElementById('new-agent-email');
+  const adresseEl = document.getElementById('new-agent-adresse');
   const secteursEl = document.getElementById('new-agent-secteurs');
   if(emailEl) emailEl.value = agent.email || '';
+  if(adresseEl) adresseEl.value = agent.adresse || '';
   if(secteursEl) secteursEl.value = agent.secteurs || '';
   const submitBtn = document.getElementById('agent-submit-btn');
   if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-check"></i> Enregistrer les modifications';
@@ -418,8 +420,10 @@ function annulerEditionAgent(){
   document.getElementById('new-agent-nom').value = '';
   document.getElementById('new-agent-tel').value = '';
   const emailEl = document.getElementById('new-agent-email');
+  const adresseEl = document.getElementById('new-agent-adresse');
   const secteursEl = document.getElementById('new-agent-secteurs');
   if(emailEl) emailEl.value = '';
+  if(adresseEl) adresseEl.value = '';
   if(secteursEl) secteursEl.value = '';
   const submitBtn = document.getElementById('agent-submit-btn');
   if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-user-plus"></i> Ajouter cet agent';
@@ -431,10 +435,12 @@ function addAgent(){
   const nomEl = document.getElementById('new-agent-nom');
   const telEl = document.getElementById('new-agent-tel');
   const emailEl = document.getElementById('new-agent-email');
+  const adresseEl = document.getElementById('new-agent-adresse');
   const secteursEl = document.getElementById('new-agent-secteurs');
   const nom = nomEl.value.trim();
   const tel = telEl.value.trim();
   const email = (emailEl ? emailEl.value : '').trim();
+  const adresse = (adresseEl ? adresseEl.value : '').trim();
   const secteurs = (secteursEl ? secteursEl.value : '').trim();
   if(!nom){ notify('⚠️ Le nom de l\'agent est requis', 'warn'); return; }
   if(!DB.agents) DB.agents = [];
@@ -442,10 +448,10 @@ function addAgent(){
   const estUneCreation = !_editingAgentId;
   if(_editingAgentId){
     const agent = DB.agents.find(a => a.id === _editingAgentId);
-    if(agent){ Object.assign(agent, { nom, tel, email, secteurs }); }
+    if(agent){ Object.assign(agent, { nom, tel, email, adresse, secteurs }); }
     _editingAgentId = null;
   } else {
-    DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, secteurs });
+    DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, adresse, secteurs });
   }
 
   saveToStorage();

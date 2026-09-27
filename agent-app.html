@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Espace agent — EDL IDF Expert en État des Lieux</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -111,45 +109,50 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .field label{font-size:11.5px}
 .field input{font-size:13.5px;padding:10px 12px}
 
-/* ─── Zones d'intervention (recherche + carte de communes réelles) ──────── */
-.instructions-row{font-size:12px;color:var(--text2);margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
-.mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
+/* ─── Zones d'intervention (recherche + liste de communes à cocher) ─────── */
 .legend-row{display:flex;align-items:center;gap:7px;font-size:13.5px}
 .swatch{width:13px;height:13px;border-radius:4px;flex-shrink:0}
 .swatch.primaire{background:var(--blue)}
 .swatch.secondaire{background:var(--teal)}
 .legend-count{font-weight:700;color:var(--text2)}
 
-.search-wrap{position:relative;margin-bottom:12px}
+.mode-toggle{display:flex;gap:8px;margin-bottom:14px}
+.mode-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:999px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit;color:var(--text2)}
+.mode-btn .dot{width:9px;height:9px;border-radius:50%}
+.mode-btn[data-mode="primaire"] .dot{background:var(--blue)}
+.mode-btn[data-mode="secondaire"] .dot{background:var(--teal)}
+.mode-btn.active[data-mode="primaire"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.mode-btn.active[data-mode="primaire"] .dot{background:#fff}
+.mode-btn.active[data-mode="secondaire"]{background:var(--teal);border-color:var(--teal);color:#fff}
+.mode-btn.active[data-mode="secondaire"] .dot{background:#fff}
+
+.search-wrap{position:relative;margin-bottom:6px}
 .search-wrap input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:11px 14px;font-size:14px;font-family:inherit;background:var(--white)}
 .search-wrap input:focus{outline:none;border-color:var(--blue)}
-.suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 24px rgba(20,20,18,.12);z-index:900;max-height:260px;overflow-y:auto;display:none}
-.suggestions.show{display:block}
-.suggestion-row{padding:10px 14px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;gap:10px}
-.suggestion-row:hover{background:var(--bg)}
-.suggestion-row .cp{color:var(--text3);font-size:11.5px;flex-shrink:0}
-.suggestion-empty{padding:12px 14px;font-size:12.5px;color:var(--text3)}
+.search-hint{font-size:11.5px;color:var(--text3);margin-bottom:14px}
 
-.dept-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.dept-tab{padding:6px 12px;border-radius:999px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;color:var(--text2)}
-.dept-tab:hover{border-color:var(--blue)}
-.dept-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.result-list{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+.result-empty{padding:20px;text-align:center;font-size:12.5px;color:var(--text3)}
+.result-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--border);cursor:pointer}
+.result-row:first-child{border-top:none}
+.result-row:hover{background:var(--bg)}
+.result-row input[type="checkbox"]{width:18px;height:18px;flex-shrink:0;accent-color:var(--blue)}
+.result-row.secondaire input[type="checkbox"]{accent-color:var(--teal)}
+.result-nom{font-weight:600;flex:1}
+.result-cp{font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+.result-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em}
+.result-row.primaire .result-pill{background:var(--blue-light);color:var(--blue-dark)}
+.result-row.secondaire .result-pill{background:var(--teal-light);color:var(--teal-dark)}
 
-.map-outer{position:relative}
-#map{height:420px;border-radius:var(--radius);border:1px solid var(--border)}
-.map-loading{position:absolute;inset:0;background:rgba(255,255,255,.75);display:none;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--text2);z-index:900;border-radius:var(--radius)}
-.map-loading.show{display:flex}
-.map-locked #map,.map-locked .search-wrap,.map-locked .dept-tabs{pointer-events:none;opacity:.7}
+.zones-locked .zones-interactive{pointer-events:none;opacity:.7}
 
 .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .chip{display:inline-flex;align-items:center;gap:7px;padding:6px 8px 6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;color:#fff}
 .chip.primaire{background:var(--blue)}
 .chip.secondaire{background:var(--teal)}
-.chip .nom{cursor:pointer}
-.chip .nom:hover{text-decoration:underline}
 .chip .x{background:rgba(255,255,255,.25);border:none;color:#fff;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
 .chip .x:hover{background:rgba(255,255,255,.4)}
-.map-locked .chip .x{display:none}
+.zones-locked .chip .x{display:none}
 .chip-empty{font-size:12.5px;color:var(--text3);margin-top:14px}
 
 .zone-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px}
@@ -352,6 +355,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
                 <div class="field"><label>Nom</label><input id="compte-champ-nom" disabled></div>
                 <div class="field"><label>Adresse e-mail</label><input id="compte-champ-email" disabled></div>
                 <div class="field"><label>Téléphone</label><input id="compte-champ-tel" disabled></div>
+                <div class="field"><label>Adresse</label><input id="compte-champ-adresse" disabled></div>
               </div>
             </div>
           </div>
@@ -360,29 +364,27 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
             <div class="card">
               <div class="card-head" style="flex-wrap:wrap"><i class="ti ti-map-pin"></i>Zones d'intervention<span class="zone-status-badge neutral" id="zone-status-badge" style="margin-left:auto"><span class="dot"></span>Aucune zone définie</span></div>
               <div class="card-body">
-                <p class="compte-note" style="margin-bottom:14px">Choisissez un département puis cliquez directement les communes sur la carte, ou recherchez-en une. Elles doivent être validées par l'agence avant de s'appliquer à vos frais de déplacement.</p>
+                <p class="compte-note" style="margin-bottom:14px">Recherchez une commune et cochez-la — elles doivent être validées par l'agence avant de s'appliquer à vos frais de déplacement.</p>
 
-                <div class="search-wrap">
-                  <input type="text" id="recherche-commune" placeholder="Rechercher une commune (Évry, Palaiseau, Meaux…)" autocomplete="off">
-                  <div class="suggestions" id="suggestions"></div>
+                <div class="zones-interactive">
+                  <div class="mode-toggle">
+                    <button type="button" class="mode-btn active" data-mode="primaire" onclick="choisirModeZone('primaire')"><span class="dot"></span>Ajouter en primaire</button>
+                    <button type="button" class="mode-btn" data-mode="secondaire" onclick="choisirModeZone('secondaire')"><span class="dot"></span>Ajouter en secondaire</button>
+                  </div>
+
+                  <div class="search-wrap">
+                    <input type="text" id="recherche-commune" placeholder="Rechercher une commune (Évry, Palaiseau, Meaux…)" autocomplete="off">
+                  </div>
+                  <div class="search-hint">Modifiez le texte pour chercher une autre commune.</div>
+
+                  <div class="result-list" id="result-list"></div>
                 </div>
-
-                <div class="dept-tabs" id="dept-tabs"></div>
 
                 <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
                   <div class="legend-row"><span class="swatch primaire"></span>Primaire <span class="legend-count" id="count-primaire">0</span></div>
                   <div class="legend-row"><span class="swatch secondaire"></span>Secondaire <span class="legend-count" id="count-secondaire">0</span></div>
                 </div>
-                <div class="instructions-row">
-                  <span class="mini-badge">1er clic = primaire</span>
-                  <span class="mini-badge">2e clic = secondaire</span>
-                  <span class="mini-badge">3e clic = retirer</span>
-                </div>
 
-                <div class="map-outer">
-                  <div id="map"></div>
-                  <div class="map-loading" id="map-loading">Chargement des communes…</div>
-                </div>
                 <div class="map-overlay-note" id="map-lock-note">🔒 Zones envoyées : en attente de validation par l'agence.</div>
 
                 <div class="chip-list" id="chip-list"></div>
@@ -606,10 +608,11 @@ function remplirCompte(agent){
   document.getElementById('compte-champ-nom').value = nom;
   document.getElementById('compte-champ-email').value = _agentEmail;
   document.getElementById('compte-champ-tel').value = agent.tel || '';
+  document.getElementById('compte-champ-adresse').value = agent.adresse || '';
   appliquerAvatar(agent.photoUrl, nom);
 
   renderBareme(agent.bareme);
-  initZones(agent.secteurPrimaire, agent.secteurSecondaire, agent.zoneStatut, agent.zoneRefusMotif);
+  initZones(agent.secteurPrimaire, agent.secteurSecondaire, agent.zoneStatut, agent.zoneRefusMotif, agent.adresse);
 }
 
 function renderBareme(bareme){
@@ -620,184 +623,84 @@ function renderBareme(bareme){
     || '<tr><td colspan="2" class="empty">Barème non renseigné pour l\'instant.</td></tr>';
 }
 
-// ─── Zones d'intervention : recherche de commune + vrais contours ───────
-// Données géographiques (recherche, contours, découpage par département) :
-// API officielle et gratuite geo.api.gouv.fr (IGN/Base Adresse Nationale),
-// déjà dans l'esprit du projet qui utilise api-adresse.data.gouv.fr pour
-// l'autocomplete d'adresses ailleurs dans le CRM. codeRegion=11 = Île-de-France.
+// ─── Zones d'intervention : recherche de commune + sélection par case ───
+// Rien n'est chargé tant que l'agent ne cherche rien : pas de carte, pas de
+// mesh de communes précharge (l'ancienne version, trop lente à afficher).
+// Données géographiques : API officielle et gratuite geo.api.gouv.fr
+// (IGN/Base Adresse Nationale), déjà dans l'esprit du projet qui utilise
+// api-adresse.data.gouv.fr pour l'autocomplete d'adresses ailleurs dans le
+// CRM. codeRegion=11 = Île-de-France.
 const REGION_IDF = '11';
-const DEPARTEMENTS_IDF = [
-  { code:'75', nom:'Paris' }, { code:'77', nom:'Seine-et-Marne' }, { code:'78', nom:'Yvelines' },
-  { code:'91', nom:'Essonne' }, { code:'92', nom:'Hauts-de-Seine' }, { code:'93', nom:'Seine-St-Denis' },
-  { code:'94', nom:'Val-de-Marne' }, { code:'95', nom:"Val-d'Oise" },
-];
 
-// Aperçu léger (points) + détail réel à la demande, pour la vitesse : charger
-// le contour précis des ~500 communes d'un département comme la Seine-et-
-// Marne d'un coup est beaucoup trop lourd/lent. On charge donc juste les
-// centres (minuscule payload) pour TOUTES les communes du département —
-// cliquables directement — et on ne va chercher le vrai contour détaillé
-// que pour les communes que l'agent sélectionne réellement (typiquement
-// une poignée), affiché par-dessus le point.
-let zones = {};              // code INSEE -> { nom, categorie, layer? } — conservé en changeant de département
+let zones = {};              // code INSEE -> { nom, categorie }
 let zoneStatut = null;       // null | 'attente' | 'valide' | 'refuse'
-let coucheMarqueursActuelle = null;
-let marqueursParCode = {};
-let departementActif = null;
-const cacheCommunesParDept = {};   // liste légère {nom,code,centre} par département
-const cachePolygoneParCode = {};   // contour détaillé par commune, une fois demandé
-let leafletMap = null;
+let modeZoneActif = 'primaire';
+let dernierResultats = [];   // résultats de recherche affichés, pour re-render au clic
 
-function initialiserCarteZones(){
-  if(leafletMap) return;
-  leafletMap = L.map('map', { scrollWheelZoom:false, preferCanvas:true }).setView([48.85, 2.4], 8);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  }).addTo(leafletMap);
-  document.getElementById('dept-tabs').innerHTML = DEPARTEMENTS_IDF.map(d =>
-    `<button type="button" class="dept-tab" data-dept="${d.code}" onclick="chargerDepartement('${d.code}')">${d.nom} (${d.code})</button>`
-  ).join('');
+function choisirModeZone(mode){
+  modeZoneActif = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+}
 
+function initialiserRechercheZones(){
   const inputRecherche = document.getElementById('recherche-commune');
-  const boiteSuggestions = document.getElementById('suggestions');
   let timerRecherche = null;
   inputRecherche.addEventListener('input', () => {
     const q = inputRecherche.value.trim();
     clearTimeout(timerRecherche);
     if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
-    if(q.length < 2){ boiteSuggestions.classList.remove('show'); return; }
-    timerRecherche = setTimeout(() => rechercherCommunes(q, inputRecherche, boiteSuggestions), 300);
-  });
-  document.addEventListener('click', (e) => {
-    if(!e.target.closest('.search-wrap')) boiteSuggestions.classList.remove('show');
+    timerRecherche = setTimeout(() => rechercherCommunes(q), 300);
   });
 }
 
-function couleurCategorie(cat){
-  if(cat === 'primaire') return getComputedStyle(document.documentElement).getPropertyValue('--blue').trim();
-  if(cat === 'secondaire') return getComputedStyle(document.documentElement).getPropertyValue('--teal').trim();
-  return '#c7cfce'; // neutre : commune du département, pas encore sélectionnée
-}
-
-async function chargerDepartement(code){
-  departementActif = code;
-  document.querySelectorAll('.dept-tab').forEach(b => b.classList.toggle('active', b.dataset.dept === code));
-  document.getElementById('map-loading').classList.add('show');
-  try{
-    let communes = cacheCommunesParDept[code];
-    if(!communes){
-      const resp = await fetch('https://geo.api.gouv.fr/departements/' + code + '/communes?fields=nom,code,centre');
-      communes = (await resp.json()).filter(c => c.centre);
-      cacheCommunesParDept[code] = communes;
-    }
-    if(coucheMarqueursActuelle) leafletMap.removeLayer(coucheMarqueursActuelle);
-    marqueursParCode = {};
-    const marqueurs = communes.map(c => {
-      const z = zones[c.code];
-      const marker = L.circleMarker([c.centre.coordinates[1], c.centre.coordinates[0]], {
-        radius: 7, color:'#fff', weight:1.5, fillColor: couleurCategorie(z && z.categorie), fillOpacity:0.9
-      });
-      marker.bindTooltip(c.nom);
-      marker.on('click', () => cyclerCategorie(c.code, c.nom));
-      marqueursParCode[c.code] = marker;
-      if(z && !z.layer) afficherPolygoneCommune(c.code, c.nom); // sélection déjà connue → contour réel aussi
-      return marker;
-    });
-    coucheMarqueursActuelle = L.layerGroup(marqueurs).addTo(leafletMap);
-    const bounds = L.latLngBounds(communes.map(c => [c.centre.coordinates[1], c.centre.coordinates[0]]));
-    if(bounds.isValid()) leafletMap.fitBounds(bounds, { padding:[20,20] });
-  }catch(e){
-    showToast('❌ Chargement du département indisponible pour l\'instant.');
-  }finally{
-    document.getElementById('map-loading').classList.remove('show');
+function renderResultats(){
+  const listeEl = document.getElementById('result-list');
+  if(!dernierResultats.length){
+    listeEl.innerHTML = '<div class="result-empty">Tapez au moins 2 caractères (nom de commune).</div>';
+    return;
   }
+  listeEl.innerHTML = dernierResultats.map(c => {
+    const z = zones[c.code];
+    const classe = z ? z.categorie : '';
+    return `<div class="result-row ${classe}" onclick="basculerCommune('${c.code}', '${String(c.nom).replace(/'/g,"\\'")}')">
+      <input type="checkbox" ${z ? 'checked' : ''} onclick="event.stopPropagation(); basculerCommune('${c.code}', '${String(c.nom).replace(/'/g,"\\'")}')">
+      <span class="result-nom">${esc(c.nom)}</span>
+      <span class="result-cp">${esc((c.codesPostaux||[]).join(', '))}</span>
+      ${z ? `<span class="result-pill">${z.categorie}</span>` : ''}
+    </div>`;
+  }).join('');
 }
 
-// Contour réel d'UNE commune, chargé seulement quand elle est sélectionnée
-// (payload minuscule comparé à un département entier) — affiché par-dessus
-// son point sur la carte.
-async function afficherPolygoneCommune(code, nom){
-  try{
-    let geojson = cachePolygoneParCode[code];
-    if(!geojson){
-      const resp = await fetch('https://geo.api.gouv.fr/communes/' + code + '?fields=nom,contour&format=geojson&geometry=contour');
-      geojson = await resp.json();
-      cachePolygoneParCode[code] = geojson;
-    }
-    if(!zones[code]) return; // retirée entre-temps
-    const layer = L.geoJSON(geojson, {
-      style: () => ({ color:'#fff', weight:1.5, fillColor: couleurCategorie(zones[code] && zones[code].categorie), fillOpacity:0.65 })
-    }).addTo(leafletMap);
-    layer.on('click', () => cyclerCategorie(code, nom));
-    zones[code].layer = layer;
-  }catch(e){ /* tant pis : le point coloré suffit à représenter la sélection */ }
-}
-
-function retirerPolygoneCommune(code){
-  if(zones[code] && zones[code].layer){ leafletMap.removeLayer(zones[code].layer); }
-}
-
-function restylerMarqueurs(){
-  Object.keys(marqueursParCode).forEach(code => {
-    const z = zones[code];
-    marqueursParCode[code].setStyle({ fillColor: couleurCategorie(z && z.categorie) });
-  });
-  Object.entries(zones).forEach(([code, z]) => {
-    if(z.layer) z.layer.setStyle({ fillColor: couleurCategorie(z.categorie) });
-  });
-}
-
-async function rechercherCommunes(q, inputRecherche, boiteSuggestions){
-  boiteSuggestions.innerHTML = '<div class="suggestion-empty">Recherche…</div>';
-  boiteSuggestions.classList.add('show');
+async function rechercherCommunes(q){
+  const listeEl = document.getElementById('result-list');
+  if(q.length < 2){ dernierResultats = []; listeEl.innerHTML = '<div class="result-empty">Tapez au moins 2 caractères (nom de commune).</div>'; return; }
+  listeEl.innerHTML = '<div class="result-empty">Recherche…</div>';
   try{
     const url = 'https://geo.api.gouv.fr/communes?nom=' + encodeURIComponent(q) +
       '&fields=nom,code,codeDepartement,codesPostaux&boost=population&limit=8&codeRegion=' + REGION_IDF;
     const resp = await fetch(url);
     const communes = await resp.json();
-    if(!Array.isArray(communes) || !communes.length){
-      boiteSuggestions.innerHTML = '<div class="suggestion-empty">Aucune commune trouvée en Île-de-France.</div>';
-      return;
-    }
-    boiteSuggestions.innerHTML = communes.map(c => `
-      <div class="suggestion-row" data-code="${c.code}" data-nom="${esc(c.nom)}" data-dept="${c.codeDepartement}">
-        <span>${esc(c.nom)}</span><span class="cp">${esc((c.codesPostaux||[]).join(', '))}</span>
-      </div>`).join('');
-    boiteSuggestions.querySelectorAll('.suggestion-row').forEach(row => {
-      row.addEventListener('click', async () => {
-        boiteSuggestions.classList.remove('show');
-        inputRecherche.value = '';
-        if(row.dataset.dept !== departementActif) await chargerDepartement(row.dataset.dept);
-        cyclerCategorie(row.dataset.code, row.dataset.nom);
-      });
-    });
+    dernierResultats = Array.isArray(communes) ? communes : [];
+    if(!dernierResultats.length){ listeEl.innerHTML = '<div class="result-empty">Aucune commune trouvée en Île-de-France.</div>'; return; }
+    renderResultats();
   }catch(e){
-    boiteSuggestions.innerHTML = '<div class="suggestion-empty">Recherche indisponible pour l\'instant.</div>';
+    dernierResultats = [];
+    listeEl.innerHTML = '<div class="result-empty">Recherche indisponible pour l\'instant.</div>';
   }
 }
 
-function cyclerCategorie(code, nom){
+function basculerCommune(code, nom){
   if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
-  const actuel = zones[code];
-  if(!actuel){
-    zones[code] = { nom, categorie: 'primaire' };
-    afficherPolygoneCommune(code, nom);
-  } else if(actuel.categorie === 'primaire'){
-    actuel.categorie = 'secondaire';
-  } else {
-    retirerPolygoneCommune(code);
-    delete zones[code];
-  }
-  restylerMarqueurs();
+  if(zones[code]) delete zones[code];
+  else zones[code] = { nom, categorie: modeZoneActif };
+  renderResultats();
   renderZonesEtCompteurs();
 }
 
 function retirerCommune(code){
   if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
-  retirerPolygoneCommune(code);
   delete zones[code];
-  restylerMarqueurs();
+  renderResultats();
   renderZonesEtCompteurs();
 }
 
@@ -809,7 +712,7 @@ function renderZonesEtCompteurs(){
   wrap.innerHTML = codes.map(code => {
     const z = zones[code];
     return `<span class="chip ${z.categorie}">
-      <span class="nom" onclick="cyclerCategorie('${code}', '${String(z.nom).replace(/'/g,"\\'")}')" title="Cliquer pour changer de secteur">${esc(z.nom)}</span>
+      <span>${esc(z.nom)}</span>
       <button class="x" onclick="retirerCommune('${code}')" title="Retirer">✕</button>
     </span>`;
   }).join('');
@@ -825,13 +728,13 @@ function renderZonesEtCompteurs(){
 
 function setZoneStatusBadge(){
   const badge = document.getElementById('zone-status-badge');
-  const mapOuter = document.querySelector('.map-outer').parentElement;
+  const zonesCard = document.querySelector('.zones-interactive').parentElement;
   const lockNote = document.getElementById('map-lock-note');
   const editBtn = document.getElementById('btn-edit-zones');
   const submitBtn = document.getElementById('btn-submit-zones');
   const enAttenteOuValide = zoneStatut === 'attente' || zoneStatut === 'valide';
 
-  mapOuter.classList.toggle('map-locked', enAttenteOuValide);
+  zonesCard.classList.toggle('zones-locked', enAttenteOuValide);
   lockNote.classList.toggle('show', zoneStatut === 'attente');
   editBtn.style.display = enAttenteOuValide ? 'inline-flex' : 'none';
   submitBtn.style.display = enAttenteOuValide ? 'none' : 'inline-flex';
@@ -841,8 +744,8 @@ function setZoneStatusBadge(){
   else { badge.className = 'zone-status-badge neutral'; badge.innerHTML = '<span class="dot"></span>' + (zoneStatut === 'refuse' ? 'Zones refusées' : 'Aucune zone définie'); }
 }
 
-function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus){
-  initialiserCarteZones();
+function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus, adresse){
+  initialiserRechercheZones();
   zones = {};
   (secteurPrimaire || []).forEach(c => { if(c && c.code) zones[c.code] = { nom: c.nom, categorie: 'primaire' }; });
   (secteurSecondaire || []).forEach(c => { if(c && c.code) zones[c.code] = { nom: c.nom, categorie: 'secondaire' }; });
@@ -853,6 +756,19 @@ function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus){
     const lockNote = document.getElementById('map-lock-note');
     lockNote.textContent = '✕ Zones refusées par l\'agence — ' + motifRefus;
     lockNote.classList.add('show');
+  }
+  // Pré-remplit avec l'adresse renseignée par l'agence et lance une
+  // recherche immédiate, comme si l'agent venait de taper — il peut
+  // évidemment tout effacer et chercher autre chose. La recherche par nom
+  // de commune (API geo.api.gouv.fr) ne comprend pas une adresse complète
+  // ("12 rue de la Paix, 91000 Évry") : on n'en extrait que le nom de ville
+  // (ce qui suit le code postal), tout en affichant l'adresse complète
+  // dans le champ.
+  const inputRecherche = document.getElementById('recherche-commune');
+  if(adresse){
+    inputRecherche.value = adresse;
+    const ville = (adresse.match(/\d{5}\s*,?\s*(.+)$/) || [])[1] || adresse;
+    rechercherCommunes(ville.trim());
   }
 }
 

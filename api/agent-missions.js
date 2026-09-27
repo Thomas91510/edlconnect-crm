@@ -91,6 +91,7 @@ export default async function handler(req) {
     agent: {
       nom: agent.nom || '',
       tel: agent.tel || '',
+      adresse: agent.adresse || '',
       documents: { contrat: !!agent.contratPath, avenant: !!agent.avenantPath },
       // Photo hébergée dans un bucket PUBLIC ("agent-photos") — à la
       // différence de contratPath/avenantPath ci-dessus (bucket privé,
