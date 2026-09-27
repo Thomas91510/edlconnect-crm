@@ -43,6 +43,11 @@ const DOM_MINIMAL = `
   <input id="compte-champ-nom">
   <input id="compte-champ-email">
   <input id="compte-champ-tel">
+  <div class="adresse-wrap">
+    <input id="compte-champ-adresse" oninput="onSaisieAdresseAgent()">
+    <div id="compte-adresse-suggestions" class="adresse-suggestions"></div>
+  </div>
+  <button id="btn-save-adresse">Enregistrer</button>
   <table><tbody id="bareme-affiche"></tbody></table>
 
   <span id="zone-status-badge" class="zone-status-badge neutral"><span class="dot"></span></span>
@@ -51,16 +56,12 @@ const DOM_MINIMAL = `
   <div id="map-lock-note"></div>
   <button id="btn-submit-zones"></button>
   <button id="btn-edit-zones" style="display:none"></button>
-  <div class="idf-map" id="idf-map">
-    <div class="zone-group" data-dept="78"></div>
-    <div class="zone-group" data-dept="95"></div>
-    <div class="zone-group" data-dept="93"></div>
-    <div class="zone-group" data-dept="92"></div>
-    <div class="zone-group" id="paris-zone" data-dept="75"></div>
-    <div class="zone-group" data-dept="77"></div>
-    <div class="zone-group gap"></div>
-    <div class="zone-group" data-dept="91"></div>
-    <div class="zone-group" data-dept="94"></div>
+  <div class="card-body">
+    <div class="zones-interactive">
+      <select id="select-departement"><option value="">— Choisir —</option></select>
+      <div id="cp-grid" class="cp-grid"></div>
+      <div id="cp-loading" class="cp-loading"></div>
+    </div>
   </div>
 
   <div class="modal-overlay" id="photo-modal-overlay"></div>
@@ -89,6 +90,12 @@ function chargerAgentApp({ signInWithOtp } = {}) {
       signInWithOtp: (...args) => window.__signInWithOtp(...args),
       signOut: async () => {},
     } }) };
+    // Filet de sécurité : tout appel réseau non explicitement stubbé par un
+    // test (ex. le fetch réel de geo.api.gouv.fr déclenché par une recherche
+    // de commune) doit échouer immédiatement plutôt que de taper le vrai
+    // réseau depuis les tests — les appels réels se vérifient sur la preview
+    // Vercel, pas ici.
+    window.fetch = async () => { throw new Error('fetch non stubbé dans ce test'); };
   `, { filename: 'stub-supabase.js' }).runInContext(ctx);
   new vm.Script(inline, { filename: 'inline.js' }).runInContext(ctx);
   return dom.window;
@@ -319,15 +326,75 @@ test('sendMagicLink : email invalide → refusé avant tout appel réseau', asyn
 });
 
 // ─── Mon compte : identité, barème, zones, photo ──────────────────────
-test('remplirCompte : affiche le nom, le téléphone et personnalise la bannière (prénom)', () => {
+test('remplirCompte : affiche le nom, le téléphone, l\'adresse et personnalise la bannière (prénom)', () => {
   const w = chargerAgentApp();
-  w.remplirCompte({ nom: 'Julie Berthier', tel: '0612345678', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
+  w.remplirCompte({ nom: 'Julie Berthier', tel: '0612345678', adresse: '3 rue de Rivoli, 75001 Paris', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
 
   assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Julie 👋');
   assert.equal(w.document.getElementById('sidenav-nom').textContent, 'Julie Berthier');
   assert.equal(w.document.getElementById('compte-nom').textContent, 'Julie Berthier');
   assert.equal(w.document.getElementById('compte-champ-nom').value, 'Julie Berthier');
   assert.equal(w.document.getElementById('compte-champ-tel').value, '0612345678');
+  assert.equal(w.document.getElementById('compte-champ-adresse').value, '3 rue de Rivoli, 75001 Paris');
+});
+
+test('enregistrerAdresse : envoie l\'adresse saisie et met à jour le champ', async () => {
+  const w = chargerAgentApp();
+  w.document.getElementById('compte-champ-adresse').value = '12 rue de la Paix, 91000 Évry-Courcouronnes';
+  let appel = null;
+  w.fetch = async (url, opts) => {
+    appel = { url, corps: JSON.parse(opts.body) };
+    return { ok: true, json: async () => ({ success: true, adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes' }) };
+  };
+
+  await w.enregistrerAdresse();
+
+  assert.equal(appel.url, '/api/agent-update-adresse');
+  assert.deepEqual(appel.corps, { adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes' });
+  assert.equal(w.document.getElementById('compte-champ-adresse').value, '12 rue de la Paix, 91000 Évry-Courcouronnes');
+  assert.equal(w.document.getElementById('btn-save-adresse').disabled, false, 'le bouton doit être réactivé après l\'enregistrement');
+});
+
+test('enregistrerAdresse : erreur serveur → le bouton reste réactivé pour réessayer', async () => {
+  const w = chargerAgentApp();
+  w.document.getElementById('compte-champ-adresse').value = 'Adresse test';
+  w.fetch = async () => ({ ok: false, json: async () => ({ error: 'Erreur test' }) });
+
+  await w.enregistrerAdresse();
+
+  assert.equal(w.document.getElementById('btn-save-adresse').disabled, false);
+});
+
+test('onSaisieAdresseAgent / choisirSuggestionAdresseAgent : recherche puis sélection d\'une suggestion', async () => {
+  const w = chargerAgentApp();
+  const champ = w.document.getElementById('compte-champ-adresse');
+  champ.value = '12 rue de la Paix';
+  let urlAppelee = null;
+  w.fetch = async (url) => {
+    urlAppelee = url;
+    return { ok: true, json: async () => ({ features: [{ properties: { label: '12 Rue de la Paix 91000 Évry-Courcouronnes', postcode: '91000' } }] }) };
+  };
+
+  w.onSaisieAdresseAgent();
+  await new Promise(r => setTimeout(r, 320)); // laisse passer le debounce (300ms)
+
+  assert.ok(urlAppelee.includes('api-adresse.data.gouv.fr'));
+  const suggestions = w.document.getElementById('compte-adresse-suggestions');
+  assert.ok(suggestions.classList.contains('show'));
+  assert.ok(suggestions.innerHTML.includes('Évry-Courcouronnes'));
+
+  w.document.querySelector('.adresse-suggestion').click();
+  assert.equal(champ.value, '12 Rue de la Paix 91000 Évry-Courcouronnes');
+  assert.ok(!suggestions.classList.contains('show'), 'les suggestions se referment après sélection');
+});
+
+test('onSaisieAdresseAgent : moins de 3 caractères → aucune recherche', () => {
+  const w = chargerAgentApp();
+  w.document.getElementById('compte-champ-adresse').value = 'ab';
+  let appele = false;
+  w.fetch = async () => { appele = true; };
+  w.onSaisieAdresseAgent();
+  assert.equal(appele, false);
 });
 
 test('appliquerAvatar : sans photo → initiales ; avec photo → image de fond', () => {
@@ -364,12 +431,42 @@ test('cycleAssignment : cycle primaire → secondaire → retrait, met à jour l
   assert.equal(w.document.getElementById('count-secondaire').textContent, '0');
 });
 
+test('chargerCodesPostauxDept : construit une grille de codes postaux cliquables à partir de geo.api.gouv.fr', async () => {
+  const w = chargerAgentApp();
+  w.initZones([], [], null, '');
+  w.fetch = async (url) => {
+    assert.ok(url.includes('geo.api.gouv.fr/departements/91/communes'));
+    return { json: async () => ([
+      { nom: 'Évry-Courcouronnes', codesPostaux: ['91000'] },
+      { nom: 'Palaiseau', codesPostaux: ['91120'] },
+    ]) };
+  };
+
+  await w.chargerCodesPostauxDept('91');
+
+  const chips = [...w.document.querySelectorAll('.cp-chip[data-code]')].map(c => c.dataset.code);
+  assert.deepEqual(chips, ['91000', '91120']);
+  assert.equal(w.document.getElementById('select-departement').value, '91');
+});
+
+test('chargerCodesPostauxDept : met les codes postaux en cache (un seul appel réseau par département)', async () => {
+  const w = chargerAgentApp();
+  w.initZones([], [], null, '');
+  let appels = 0;
+  w.fetch = async () => { appels++; return { json: async () => ([{ nom: 'Paris', codesPostaux: ['75001'] }]) }; };
+
+  await w.chargerCodesPostauxDept('75');
+  await w.chargerCodesPostauxDept('75');
+
+  assert.equal(appels, 1);
+});
+
 test('initZones : pré-remplit depuis les secteurs existants et verrouille si statut "valide"', () => {
   const w = chargerAgentApp();
   w.initZones(['75018'], ['92100'], 'valide', '');
   assert.equal(w.document.getElementById('count-primaire').textContent, '1');
   assert.equal(w.document.getElementById('count-secondaire').textContent, '1');
-  assert.ok(w.document.getElementById('idf-map').classList.contains('map-locked'));
+  assert.ok(w.document.querySelector('.zones-interactive').parentElement.classList.contains('zones-locked'));
   assert.equal(w.document.getElementById('btn-submit-zones').style.display, 'none');
 });
 
@@ -416,11 +513,11 @@ test('soumettreZones : erreur serveur → le bouton reste réactivé pour réess
   assert.equal(w.document.getElementById('btn-submit-zones').disabled, false);
 });
 
-test('modifierZones : déverrouille la carte pour resoumettre', () => {
+test('modifierZones : déverrouille pour resoumettre', () => {
   const w = chargerAgentApp();
   w.initZones(['75018'], [], 'refuse', 'Motif');
   w.modifierZones();
-  assert.ok(!w.document.getElementById('idf-map').classList.contains('map-locked'));
+  assert.ok(!w.document.querySelector('.zones-interactive').parentElement.classList.contains('zones-locked'));
   assert.equal(w.document.getElementById('btn-submit-zones').style.display, 'inline-flex');
 });
 

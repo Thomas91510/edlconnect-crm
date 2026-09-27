@@ -65,6 +65,20 @@ test('addAgent : crée un nouvel agent avec tous les champs', () => {
   );
 });
 
+test('addAgent : ne touche jamais au champ adresse (renseigné par l\'agent lui-même, pas par l\'agence)', () => {
+  const window = chargerAgentsEDL();
+  remplirFormulaire(window, { nom: 'Jean Dupont', secteurs: '75018' });
+  window.addAgent();
+  const id = window.__getDB().agents[0].id;
+  window.__getDB().agents[0].adresse = '12 rue de la Paix, 91000 Évry-Courcouronnes';
+
+  window.editerAgent(id);
+  remplirFormulaire(window, { nom: 'Jean Dupont modifié', secteurs: '75018' });
+  window.addAgent();
+
+  assert.equal(window.__getDB().agents[0].adresse, '12 rue de la Paix, 91000 Évry-Courcouronnes', 'une modification admin ne doit jamais effacer l\'adresse saisie par l\'agent');
+});
+
 test('addAgent : le nom est requis, aucun agent créé sans lui', () => {
   const window = chargerAgentsEDL();
   remplirFormulaire(window, { nom: '', tel: '0612345678' });

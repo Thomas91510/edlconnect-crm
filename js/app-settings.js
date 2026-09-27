@@ -263,7 +263,7 @@ function renderAgentsSettings(){
         : `<div style="width:32px;height:32px;border-radius:50%;background:var(--blue-bg);color:var(--blue-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${esc(initialesAgent(a.nom))}</div>`}
       <div style="flex:1;min-width:160px">
         <div style="font-size:12px;font-weight:600">${esc(a.nom)}</div>
-        <div style="font-size:11px;color:var(--text2)">📱 ${esc(a.tel) || '—'}${a.email ? ' · 📅 ' + esc(a.email) : ''}${a.secteurs ? ' · 📍 ' + esc(a.secteurs) : ''}</div>
+        <div style="font-size:11px;color:var(--text2)">📱 ${esc(a.tel) || '—'}${a.email ? ' · 📅 ' + esc(a.email) : ''}${a.adresse ? ' · 🏠 ' + esc(a.adresse) : ''}${a.secteurs ? ' · 📍 ' + esc(a.secteurs) : ''}</div>
       </div>
       <label class="btn btn-sm" style="cursor:pointer" title="${a.contratPath ? 'Remplacer le contrat déposé' : 'Déposer le contrat signé (PDF)'}">
         <i class="ti ${a.contratPath ? 'ti-file-check' : 'ti-file-upload'}"></i> Contrat
@@ -439,6 +439,9 @@ function addAgent(){
   if(!nom){ notify('⚠️ Le nom de l\'agent est requis', 'warn'); return; }
   if(!DB.agents) DB.agents = [];
 
+  // Note : "adresse" n'est jamais écrit ici — c'est l'agent qui la renseigne
+  // lui-même depuis son espace (Mon compte), pas l'agence. Object.assign ne
+  // portant que sur les clés listées, une modification admin ne l'efface pas.
   const estUneCreation = !_editingAgentId;
   if(_editingAgentId){
     const agent = DB.agents.find(a => a.id === _editingAgentId);

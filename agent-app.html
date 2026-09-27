@@ -22,9 +22,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .header{background:var(--white);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:10}
 .logo-box{display:flex;align-items:center;gap:10px}
 .logo-icon{background:var(--blue-light);width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:var(--blue);letter-spacing:-1px}
-.card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);margin-bottom:14px;overflow:hidden}
-.card-head{padding:12px 16px;font-size:12px;font-weight:600;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;color:var(--blue)}
-.card-body{padding:16px}
+.card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);margin-bottom:16px;overflow:hidden}
+.card-head{padding:14px 18px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;color:var(--blue)}
+.card-body{padding:18px}
 input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-size:13px;background:var(--white);color:var(--text);font-family:inherit;outline:none;transition:border-color .15s}
 input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
 label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
@@ -55,7 +55,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .empty{text-align:center;color:var(--text3);font-size:12px;padding:30px 0}
 
 /* ─── Disposition : menu à gauche, contenu à droite ─────────────── */
-.layout{display:flex;align-items:flex-start;max-width:940px;margin:0 auto;padding:24px 16px 60px;gap:20px}
+.layout{display:flex;align-items:flex-start;max-width:1400px;margin:0 auto;padding:24px 16px 60px;gap:24px}
 .main{flex:1;min-width:0}
 .side-nav{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;position:sticky;top:calc(var(--header-h) + 20px);min-height:calc(100vh - var(--header-h) - 60px)}
 .nav-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius);border:none;background:transparent;cursor:pointer;font-family:inherit;text-align:left;width:100%}
@@ -90,51 +90,65 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .welcome-decor2{width:90px;height:90px;top:36px;right:80px;background:rgba(255,255,255,.06)}
 
 /* ─── Mon compte ─────────────── */
-.compte-layout{display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start}
-.compte-side{position:sticky;top:calc(var(--header-h) + 20px)}
-@media (max-width:900px){ .compte-layout{grid-template-columns:1fr} .compte-side{position:static} }
+/* Colonne gauche (profil/infos) à largeur fixe et raisonnable pour la
+   lecture ; colonne droite (zones/barème) flexible : c'est elle qui
+   profite de la largeur d'écran disponible (carte des codes postaux). */
+.compte-layout{display:grid;grid-template-columns:440px 1fr;gap:20px;align-items:start}
+.compte-side{position:sticky;top:calc(var(--header-h) + 20px);min-width:0}
+@media (max-width:1000px){ .compte-layout{grid-template-columns:1fr} .compte-side{position:static} }
 .compte-profile-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .avatar-lg-wrap{position:relative;flex-shrink:0}
 .avatar-cam-btn{position:absolute;bottom:-3px;right:-3px;width:27px;height:27px;border-radius:50%;background:var(--blue);color:#fff;border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;padding:0}
 .avatar-cam-btn:hover{background:var(--blue-dark)}
-.compte-nom{font-size:16px;font-weight:700}
+.compte-nom{font-size:17px;font-weight:700}
 .role-pill{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;color:var(--blue-dark);background:var(--blue-light);padding:2px 10px;border-radius:20px}
-.compte-note{font-size:12px;color:var(--text2);line-height:1.6}
+.compte-note{font-size:12.5px;color:var(--text2);line-height:1.6}
 .compte-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.field{margin-bottom:12px}
+.field{margin-bottom:14px}
 .field:last-child{margin-bottom:0}
+.field label{font-size:11.5px}
+.field input{font-size:13.5px;padding:10px 12px}
 
-/* ─── Zones d'intervention (sectorisation par code postal) ─────────────── */
-.instructions-row{font-size:11.5px;color:var(--text2);margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap}
-.mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
-.legend-row{display:flex;align-items:center;gap:6px;font-size:12.5px}
-.swatch{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+/* ─── Zones d'intervention (département + codes postaux à cliquer) ─────── */
+.legend-row{display:flex;align-items:center;gap:7px;font-size:13.5px}
+.swatch{width:13px;height:13px;border-radius:4px;flex-shrink:0}
 .swatch.primaire{background:var(--blue)}
 .swatch.secondaire{background:var(--teal)}
 .legend-count{font-weight:700;color:var(--text2)}
-.idf-map{display:grid;gap:7px;grid-template-columns:1fr 1.3fr 1fr;grid-template-areas:"nw n ne" "w paris e" "gap s se"}
-@media (max-width:680px){ .idf-map{grid-template-columns:1fr;grid-template-areas:none} .idf-map .zone-group{grid-area:auto !important} }
-.zone-group{border:1px dashed var(--border);border-radius:var(--radius);padding:7px;display:flex;flex-direction:column;gap:5px}
-.zone-group.gap{border:none}
-.zone-group .dept-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em}
-.chip-row{display:flex;flex-wrap:wrap;gap:4px}
-.cp-chip{border:1px solid var(--border);background:var(--bg);color:var(--text2);border-radius:6px;padding:4px 7px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit}
+
+.instructions-row{font-size:12px;color:var(--text2);margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
+.mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
+
+.field select{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:13.5px;font-family:inherit;background:var(--white);color:var(--text);outline:none}
+.field select:focus{border-color:var(--blue)}
+
+.cp-grid{display:flex;flex-wrap:wrap;gap:7px;min-height:44px;margin-bottom:6px}
+.cp-grid-empty{font-size:12.5px;color:var(--text3);padding:20px 0;text-align:center;width:100%}
+.cp-chip{border:1px solid var(--border);background:var(--bg);color:var(--text2);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.cp-chip:hover{border-color:var(--blue)}
 .cp-chip.primaire{background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue)}
 .cp-chip.secondaire{background:var(--teal-light);color:var(--teal-dark);border-color:var(--teal)}
-.cp-chip.disabled{cursor:default;opacity:.55;font-weight:400}
-.map-locked .cp-chip{pointer-events:none;opacity:.85}
-#paris-zone{grid-area:paris;background:var(--bg)}
-#paris-zone .chip-row{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-#paris-zone .cp-chip{text-align:center;padding:5px 2px}
-.zone-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+.cp-loading{padding:16px 0;text-align:center;font-size:12.5px;color:var(--text2);display:none}
+.cp-loading.show{display:block}
+.zones-locked .zones-interactive{pointer-events:none;opacity:.7}
+
+/* Autocomplétion d'adresse (même API que le reste du CRM, api-adresse.data.gouv.fr) */
+.adresse-wrap{position:relative}
+.adresse-suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:20;max-height:220px;overflow-y:auto;display:none}
+.adresse-suggestions.show{display:block}
+.adresse-suggestion{padding:9px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.adresse-suggestion:last-child{border-bottom:none}
+.adresse-suggestion:hover{background:var(--blue-light);color:var(--blue-dark)}
+
+.zone-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px}
 .zone-status-badge.neutral{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
 .zone-status-badge.pending{background:var(--amber-bg);color:var(--amber)}
 .zone-status-badge.ok{background:var(--green-bg);color:var(--green-text)}
 .zone-status-badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-.map-overlay-note{margin-top:9px;font-size:11px;padding:8px 10px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber);display:none;align-items:center;gap:6px}
+.map-overlay-note{margin-top:12px;font-size:12px;padding:10px 12px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber);display:none;align-items:center;gap:6px}
 .map-overlay-note.show{display:flex}
-.bareme-ro{width:100%;border-collapse:collapse;font-size:12px}
-.bareme-ro td{padding:6px 0;border-top:1px solid var(--border)}
+.bareme-ro{width:100%;border-collapse:collapse;font-size:13.5px}
+.bareme-ro td{padding:9px 0;border-top:1px solid var(--border)}
 .bareme-ro tr:first-child td{border-top:none}
 .bareme-ro td:last-child{text-align:right;font-weight:700}
 
@@ -326,6 +340,17 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
                 <div class="field"><label>Nom</label><input id="compte-champ-nom" disabled></div>
                 <div class="field"><label>Adresse e-mail</label><input id="compte-champ-email" disabled></div>
                 <div class="field"><label>Téléphone</label><input id="compte-champ-tel" disabled></div>
+                <div class="field">
+                  <label>Adresse</label>
+                  <div style="display:flex;gap:8px">
+                    <div class="adresse-wrap" style="flex:1">
+                      <input type="text" id="compte-champ-adresse" placeholder="12 rue de la Paix, 91000 Évry-Courcouronnes" autocomplete="off" oninput="onSaisieAdresseAgent()">
+                      <div class="adresse-suggestions" id="compte-adresse-suggestions"></div>
+                    </div>
+                    <button class="btn-sm" id="btn-save-adresse" onclick="enregistrerAdresse()">Enregistrer</button>
+                  </div>
+                  <p class="compte-note" style="margin-top:6px">À renseigner vous-même — la sélection dans les suggestions évite les erreurs de saisie.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -334,28 +359,32 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
             <div class="card">
               <div class="card-head" style="flex-wrap:wrap"><i class="ti ti-map-pin"></i>Zones d'intervention<span class="zone-status-badge neutral" id="zone-status-badge" style="margin-left:auto"><span class="dot"></span>Aucune zone définie</span></div>
               <div class="card-body">
-                <p class="compte-note" style="margin-bottom:12px">Sélectionnez vos secteurs par code postal. Ils doivent être validés par l'agence avant de s'appliquer à vos frais de déplacement.</p>
-                <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
-                  <div class="legend-row"><span class="swatch primaire"></span>Primaire <span class="legend-count" id="count-primaire">0</span></div>
-                  <div class="legend-row"><span class="swatch secondaire"></span>Secondaire <span class="legend-count" id="count-secondaire">0</span></div>
+                <p class="compte-note" style="margin-bottom:14px">Choisissez un département, puis cliquez sur les codes postaux à couvrir — ils doivent être validés par l'agence avant de s'appliquer à vos frais de déplacement.</p>
+
+                <div class="zones-interactive">
+                  <div class="field">
+                    <label>Département</label>
+                    <select id="select-departement" onchange="chargerCodesPostauxDept(this.value)">
+                      <option value="">— Choisir —</option>
+                    </select>
+                  </div>
+
+                  <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
+                    <div class="legend-row"><span class="swatch primaire"></span>Primaire <span class="legend-count" id="count-primaire">0</span></div>
+                    <div class="legend-row"><span class="swatch secondaire"></span>Secondaire <span class="legend-count" id="count-secondaire">0</span></div>
+                  </div>
+                  <div class="instructions-row">
+                    <span class="mini-badge">1er clic = primaire</span>
+                    <span class="mini-badge">2e clic = secondaire</span>
+                    <span class="mini-badge">3e clic = retirer</span>
+                  </div>
+
+                  <div class="cp-grid" id="cp-grid"><div class="cp-grid-empty">Choisissez un département pour voir ses codes postaux.</div></div>
+                  <div class="cp-loading" id="cp-loading">Chargement des codes postaux…</div>
                 </div>
-                <div class="instructions-row">
-                  <span class="mini-badge">1er clic = primaire</span>
-                  <span class="mini-badge">2e clic = secondaire</span>
-                  <span class="mini-badge">3e clic = retirer</span>
-                </div>
-                <div class="idf-map" id="idf-map">
-                  <div class="zone-group" style="grid-area:nw" data-dept="78"></div>
-                  <div class="zone-group" style="grid-area:n" data-dept="95"></div>
-                  <div class="zone-group" style="grid-area:ne" data-dept="93"></div>
-                  <div class="zone-group" style="grid-area:w" data-dept="92"></div>
-                  <div class="zone-group" id="paris-zone" style="grid-area:paris" data-dept="75"></div>
-                  <div class="zone-group" style="grid-area:e" data-dept="77"></div>
-                  <div class="zone-group gap" style="grid-area:gap"></div>
-                  <div class="zone-group" style="grid-area:s" data-dept="91"></div>
-                  <div class="zone-group" style="grid-area:se" data-dept="94"></div>
-                </div>
+
                 <div class="map-overlay-note" id="map-lock-note">🔒 Zones envoyées : en attente de validation par l'agence.</div>
+
                 <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
                   <button class="btn-primary" id="btn-submit-zones" style="width:auto" onclick="soumettreZones()">Envoyer pour validation</button>
                   <button class="btn-sm" id="btn-edit-zones" style="display:none" onclick="modifierZones()">Modifier les zones</button>
@@ -574,11 +603,99 @@ function remplirCompte(agent){
   document.getElementById('compte-champ-nom').value = nom;
   document.getElementById('compte-champ-email').value = _agentEmail;
   document.getElementById('compte-champ-tel').value = agent.tel || '';
+  document.getElementById('compte-champ-adresse').value = agent.adresse || '';
   appliquerAvatar(agent.photoUrl, nom);
 
   renderBareme(agent.bareme);
   initZones(agent.secteurPrimaire, agent.secteurSecondaire, agent.zoneStatut, agent.zoneRefusMotif);
 }
+
+async function enregistrerAdresse(){
+  const input = document.getElementById('compte-champ-adresse');
+  const adresse = input.value.trim();
+  const btn = document.getElementById('btn-save-adresse');
+  const libelleOriginal = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  try{
+    const resp = await fetch('/api/agent-update-adresse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _accessToken },
+      body: JSON.stringify({ adresse }),
+    });
+    const data = await resp.json();
+    if(!resp.ok){ showToast('❌ ' + (data.error || 'Erreur lors de l\'enregistrement')); return; }
+    input.value = data.adresse;
+    showToast('✅ Adresse enregistrée');
+  }catch(e){
+    showToast('❌ Erreur réseau, réessaie.');
+  }finally{
+    btn.disabled = false; btn.textContent = libelleOriginal;
+  }
+}
+
+// ─── Autocomplétion d'adresse (API Adresse gratuite, data.gouv.fr) ─────
+// Même logique que le formulaire public de réservation (voir extranet-app.html
+// / api/booking-page.js) : suggestions d'adresses françaises pendant la
+// saisie, sans clé API ni facturation — dégrade silencieusement en cas de
+// panne/lenteur, le champ reste une saisie libre normale dans tous les cas.
+// Sert uniquement à éviter les fautes de frappe ; la valeur finale enregistrée
+// reste le texte du champ (édité ou choisi dans les suggestions).
+let _adresseAgentDebounce = null;
+let _adresseAgentRequeteEnCours = 0;
+
+function onSaisieAdresseAgent(){
+  const champ = document.getElementById('compte-champ-adresse');
+  const requete = champ.value.trim();
+  clearTimeout(_adresseAgentDebounce);
+  if(requete.length < 3){ masquerSuggestionsAdresseAgent(); return; }
+  _adresseAgentDebounce = setTimeout(() => rechercherAdressesAgent(requete), 300);
+}
+
+async function rechercherAdressesAgent(requete){
+  const requeteId = ++_adresseAgentRequeteEnCours;
+  try{
+    const resp = await fetch('https://api-adresse.data.gouv.fr/search/?limit=5&autocomplete=1&q=' + encodeURIComponent(requete));
+    if(requeteId !== _adresseAgentRequeteEnCours) return; // une frappe plus récente a déjà relancé une recherche
+    if(!resp.ok){ masquerSuggestionsAdresseAgent(); return; }
+    const data = await resp.json();
+    afficherSuggestionsAdresseAgent((data && data.features) || []);
+  }catch(e){
+    masquerSuggestionsAdresseAgent(); // silencieux : la saisie libre reste utilisable
+  }
+}
+
+function afficherSuggestionsAdresseAgent(features){
+  const wrap = document.getElementById('compte-adresse-suggestions');
+  if(!wrap) return;
+  if(!features.length){ masquerSuggestionsAdresseAgent(); return; }
+  wrap.innerHTML = '';
+  features.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'adresse-suggestion';
+    item.textContent = (f.properties && f.properties.label) || '';
+    item.onclick = () => choisirSuggestionAdresseAgent(f);
+    wrap.appendChild(item);
+  });
+  wrap.classList.add('show');
+}
+
+function masquerSuggestionsAdresseAgent(){
+  const wrap = document.getElementById('compte-adresse-suggestions');
+  if(wrap){ wrap.classList.remove('show'); wrap.innerHTML = ''; }
+}
+
+function choisirSuggestionAdresseAgent(feature){
+  const champ = document.getElementById('compte-champ-adresse');
+  champ.value = (feature.properties && feature.properties.label) || champ.value;
+  masquerSuggestionsAdresseAgent();
+}
+
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('compte-adresse-suggestions');
+  const champ = document.getElementById('compte-champ-adresse');
+  if(!wrap || !champ) return;
+  if(e.target !== champ && !wrap.contains(e.target)) masquerSuggestionsAdresseAgent();
+});
 
 function renderBareme(bareme){
   const tbody = document.getElementById('bareme-affiche');
@@ -588,53 +705,77 @@ function renderBareme(bareme){
     || '<tr><td colspan="2" class="empty">Barème non renseigné pour l\'instant.</td></tr>';
 }
 
-// ─── Zones d'intervention : carte par code postal (Île-de-France) ───────
-const DEPARTEMENTS = [
-  { code:'78', nom:'Yvelines',        villes:[['78000','Versailles'],['78100','St-Germain-en-Laye']], autres:38 },
-  { code:'95', nom:"Val-d'Oise",      villes:[['95000','Cergy'],['95100','Argenteuil']],               autres:36 },
-  { code:'93', nom:'Seine-St-Denis',  villes:[['93100','Montreuil'],['93200','St-Denis']],              autres:32 },
-  { code:'92', nom:'Hauts-de-Seine',  villes:[['92100','Boulogne-B.'],['92200','Neuilly-s-Seine']],     autres:34 },
-  { code:'77', nom:'Seine-et-Marne',  villes:[['77000','Melun'],['77100','Meaux']],                     autres:44 },
-  { code:'91', nom:'Essonne',         villes:[['91000','Évry-Courcouronnes'],['91100','Corbeil-Ess.']], autres:28 },
-  { code:'94', nom:'Val-de-Marne',    villes:[['94100','St-Maur-des-Fossés'],['94200','Ivry-s-Seine']], autres:26 },
+// ─── Zones d'intervention : département puis codes postaux à cliquer ───
+// Modèle simple et direct : l'agent choisit un département, on va chercher
+// (une seule fois, mis en cache) les codes postaux réels de ce département
+// via l'API officielle et gratuite geo.api.gouv.fr (IGN/Base Adresse
+// Nationale) — juste les codes postaux, pas les contours : la requête reste
+// légère même pour un grand département. Chaque code postal est un bouton
+// qu'un clic fait passer par primaire → secondaire → retiré.
+const DEPARTEMENTS_IDF = [
+  { code:'75', nom:'Paris' }, { code:'77', nom:'Seine-et-Marne' }, { code:'78', nom:'Yvelines' },
+  { code:'91', nom:'Essonne' }, { code:'92', nom:'Hauts-de-Seine' }, { code:'93', nom:'Seine-St-Denis' },
+  { code:'94', nom:'Val-de-Marne' }, { code:'95', nom:"Val-d'Oise" },
 ];
-const PARIS_CODES = Array.from({length:20}, (_,i) => '750' + String(i+1).padStart(2,'0'));
 
-let assignments = {};
-let zoneStatut = null; // null | 'attente' | 'valide' | 'refuse'
-let _mapConstruite = false;
+let assignments = {};        // code postal -> 'primaire' | 'secondaire'
+let zoneStatut = null;       // null | 'attente' | 'valide' | 'refuse'
+let _selectDeptConstruit = false;
+const cacheCodesParDept = {}; // { code, villes[] }[] par département, une fois demandé
 
-function labelForDept(code){ return DEPARTEMENTS.find(d => d.code === code); }
-
-function construireCarteZones(){
-  if(_mapConstruite) return;
-  document.querySelectorAll('.zone-group[data-dept]').forEach(group => {
-    const dept = group.getAttribute('data-dept');
-    if(dept === '75'){
-      group.innerHTML = '<div class="dept-label">Paris (75)</div><div class="chip-row"></div>';
-      const row = group.querySelector('.chip-row');
-      PARIS_CODES.forEach(cp => row.appendChild(makeChip(cp, cp.slice(3))));
-      return;
-    }
-    const info = labelForDept(dept);
-    group.innerHTML = `<div class="dept-label">${info.nom} (${info.code})</div><div class="chip-row"></div>`;
-    const row = group.querySelector('.chip-row');
-    info.villes.forEach(([cp, nom]) => row.appendChild(makeChip(cp, cp, nom)));
-    const more = document.createElement('span');
-    more.className = 'cp-chip disabled';
-    more.textContent = '+' + info.autres + ' autres';
-    row.appendChild(more);
+function construireSelectDepartements(){
+  if(_selectDeptConstruit) return;
+  const select = document.getElementById('select-departement');
+  DEPARTEMENTS_IDF.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.code;
+    opt.textContent = d.nom + ' (' + d.code + ')';
+    select.appendChild(opt);
   });
-  _mapConstruite = true;
+  _selectDeptConstruit = true;
 }
 
-function makeChip(code, shortLabel, title){
+async function chargerCodesPostauxDept(deptCode){
+  const select = document.getElementById('select-departement');
+  const grid = document.getElementById('cp-grid');
+  const loading = document.getElementById('cp-loading');
+  select.value = deptCode;
+  if(!deptCode){ grid.innerHTML = '<div class="cp-grid-empty">Choisissez un département pour voir ses codes postaux.</div>'; return; }
+  loading.classList.add('show');
+  grid.innerHTML = '';
+  try{
+    let codes = cacheCodesParDept[deptCode];
+    if(!codes){
+      const resp = await fetch('https://geo.api.gouv.fr/departements/' + deptCode + '/communes?fields=nom,codesPostaux');
+      const communes = await resp.json();
+      const villesParCode = {};
+      (Array.isArray(communes) ? communes : []).forEach(c => {
+        (c.codesPostaux || []).forEach(cp => {
+          if(!villesParCode[cp]) villesParCode[cp] = [];
+          if(!villesParCode[cp].includes(c.nom)) villesParCode[cp].push(c.nom);
+        });
+      });
+      codes = Object.keys(villesParCode).sort().map(cp => ({ code: cp, villes: villesParCode[cp] }));
+      cacheCodesParDept[deptCode] = codes;
+    }
+    if(!codes.length){ grid.innerHTML = '<div class="cp-grid-empty">Aucun code postal trouvé pour ce département.</div>'; return; }
+    grid.innerHTML = '';
+    codes.forEach(({ code, villes }) => grid.appendChild(makeChip(code, villes.join(', '))));
+    renderAssignments();
+  }catch(e){
+    grid.innerHTML = '<div class="cp-grid-empty">Chargement indisponible pour l\'instant.</div>';
+  }finally{
+    loading.classList.remove('show');
+  }
+}
+
+function makeChip(code, titre){
   const el = document.createElement('button');
   el.type = 'button';
   el.className = 'cp-chip';
-  el.textContent = shortLabel;
+  el.textContent = code;
   el.dataset.code = code;
-  if(title) el.title = code + ' — ' + title;
+  if(titre) el.title = code + ' — ' + titre;
   el.addEventListener('click', () => cycleAssignment(code));
   return el;
 }
@@ -649,13 +790,15 @@ function cycleAssignment(code){
 }
 
 function renderAssignments(){
-  let nbPrimaire = 0, nbSecondaire = 0;
   document.querySelectorAll('.cp-chip[data-code]').forEach(chip => {
     const state = assignments[chip.dataset.code];
     chip.classList.remove('primaire', 'secondaire');
-    if(state === 'primaire'){ chip.classList.add('primaire'); nbPrimaire++; }
-    if(state === 'secondaire'){ chip.classList.add('secondaire'); nbSecondaire++; }
+    if(state === 'primaire' || state === 'secondaire') chip.classList.add(state);
   });
+  // Les compteurs portent sur TOUS les codes assignés, pas seulement ceux du
+  // département affiché — l'agent peut en avoir dans plusieurs départements.
+  let nbPrimaire = 0, nbSecondaire = 0;
+  Object.values(assignments).forEach(v => { if(v === 'primaire') nbPrimaire++; else if(v === 'secondaire') nbSecondaire++; });
   document.getElementById('count-primaire').textContent = nbPrimaire;
   document.getElementById('count-secondaire').textContent = nbSecondaire;
   const submitBtn = document.getElementById('btn-submit-zones');
@@ -664,13 +807,13 @@ function renderAssignments(){
 
 function setZoneStatusBadge(){
   const badge = document.getElementById('zone-status-badge');
-  const map = document.getElementById('idf-map');
+  const zonesCard = document.querySelector('.zones-interactive').parentElement;
   const lockNote = document.getElementById('map-lock-note');
   const editBtn = document.getElementById('btn-edit-zones');
   const submitBtn = document.getElementById('btn-submit-zones');
   const enAttenteOuValide = zoneStatut === 'attente' || zoneStatut === 'valide';
 
-  map.classList.toggle('map-locked', enAttenteOuValide);
+  zonesCard.classList.toggle('zones-locked', enAttenteOuValide);
   lockNote.classList.toggle('show', zoneStatut === 'attente');
   editBtn.style.display = enAttenteOuValide ? 'inline-flex' : 'none';
   submitBtn.style.display = enAttenteOuValide ? 'none' : 'inline-flex';
@@ -681,13 +824,18 @@ function setZoneStatusBadge(){
 }
 
 function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus){
-  construireCarteZones();
+  construireSelectDepartements();
   assignments = {};
-  (secteurPrimaire || []).forEach(cp => { assignments[cp] = 'primaire'; });
-  (secteurSecondaire || []).forEach(cp => { assignments[cp] = 'secondaire'; });
+  (secteurPrimaire || []).forEach(cp => { if(cp) assignments[cp] = 'primaire'; });
+  (secteurSecondaire || []).forEach(cp => { if(cp) assignments[cp] = 'secondaire'; });
   zoneStatut = statut || null;
-  renderAssignments();
   setZoneStatusBadge();
+  renderAssignments(); // compteurs à jour tout de suite, même avant que la grille ne soit chargée
+  // Ouvre directement le département du premier code déjà sélectionné, pour
+  // que l'agent retrouve tout de suite ses codes postaux existants.
+  const premierCode = Object.keys(assignments)[0];
+  const dept = premierCode ? premierCode.slice(0, 2) : '';
+  if(dept && DEPARTEMENTS_IDF.some(d => d.code === dept)) chargerCodesPostauxDept(dept);
   if(statut === 'refuse' && motifRefus){
     const lockNote = document.getElementById('map-lock-note');
     lockNote.textContent = '✕ Zones refusées par l\'agence — ' + motifRefus;
