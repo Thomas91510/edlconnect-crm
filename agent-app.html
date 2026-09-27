@@ -22,9 +22,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .header{background:var(--white);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:10}
 .logo-box{display:flex;align-items:center;gap:10px}
 .logo-icon{background:var(--blue-light);width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:var(--blue);letter-spacing:-1px}
-.card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);margin-bottom:14px;overflow:hidden}
-.card-head{padding:12px 16px;font-size:12px;font-weight:600;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;color:var(--blue)}
-.card-body{padding:16px}
+.card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);margin-bottom:16px;overflow:hidden}
+.card-head{padding:14px 18px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;color:var(--blue)}
+.card-body{padding:18px}
 input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-size:13px;background:var(--white);color:var(--text);font-family:inherit;outline:none;transition:border-color .15s}
 input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
 label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
@@ -55,7 +55,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .empty{text-align:center;color:var(--text3);font-size:12px;padding:30px 0}
 
 /* ─── Disposition : menu à gauche, contenu à droite ─────────────── */
-.layout{display:flex;align-items:flex-start;max-width:940px;margin:0 auto;padding:24px 16px 60px;gap:20px}
+.layout{display:flex;align-items:flex-start;max-width:1400px;margin:0 auto;padding:24px 16px 60px;gap:24px}
 .main{flex:1;min-width:0}
 .side-nav{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;position:sticky;top:calc(var(--header-h) + 20px);min-height:calc(100vh - var(--header-h) - 60px)}
 .nav-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius);border:none;background:transparent;cursor:pointer;font-family:inherit;text-align:left;width:100%}
@@ -90,51 +90,56 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .welcome-decor2{width:90px;height:90px;top:36px;right:80px;background:rgba(255,255,255,.06)}
 
 /* ─── Mon compte ─────────────── */
-.compte-layout{display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start}
-.compte-side{position:sticky;top:calc(var(--header-h) + 20px)}
-@media (max-width:900px){ .compte-layout{grid-template-columns:1fr} .compte-side{position:static} }
+/* Colonne gauche (profil/infos) à largeur fixe et raisonnable pour la
+   lecture ; colonne droite (zones/barème) flexible : c'est elle qui
+   profite de la largeur d'écran disponible (carte des codes postaux). */
+.compte-layout{display:grid;grid-template-columns:440px 1fr;gap:20px;align-items:start}
+.compte-side{position:sticky;top:calc(var(--header-h) + 20px);min-width:0}
+@media (max-width:1000px){ .compte-layout{grid-template-columns:1fr} .compte-side{position:static} }
 .compte-profile-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .avatar-lg-wrap{position:relative;flex-shrink:0}
 .avatar-cam-btn{position:absolute;bottom:-3px;right:-3px;width:27px;height:27px;border-radius:50%;background:var(--blue);color:#fff;border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;padding:0}
 .avatar-cam-btn:hover{background:var(--blue-dark)}
-.compte-nom{font-size:16px;font-weight:700}
+.compte-nom{font-size:17px;font-weight:700}
 .role-pill{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;color:var(--blue-dark);background:var(--blue-light);padding:2px 10px;border-radius:20px}
-.compte-note{font-size:12px;color:var(--text2);line-height:1.6}
+.compte-note{font-size:12.5px;color:var(--text2);line-height:1.6}
 .compte-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.field{margin-bottom:12px}
+.field{margin-bottom:14px}
 .field:last-child{margin-bottom:0}
+.field label{font-size:11.5px}
+.field input{font-size:13.5px;padding:10px 12px}
 
 /* ─── Zones d'intervention (sectorisation par code postal) ─────────────── */
-.instructions-row{font-size:11.5px;color:var(--text2);margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap}
-.mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
-.legend-row{display:flex;align-items:center;gap:6px;font-size:12.5px}
-.swatch{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+.instructions-row{font-size:12px;color:var(--text2);margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
+.mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
+.legend-row{display:flex;align-items:center;gap:7px;font-size:13.5px}
+.swatch{width:13px;height:13px;border-radius:4px;flex-shrink:0}
 .swatch.primaire{background:var(--blue)}
 .swatch.secondaire{background:var(--teal)}
 .legend-count{font-weight:700;color:var(--text2)}
-.idf-map{display:grid;gap:7px;grid-template-columns:1fr 1.3fr 1fr;grid-template-areas:"nw n ne" "w paris e" "gap s se"}
+.idf-map{display:grid;gap:12px;grid-template-columns:1fr 1.3fr 1fr;grid-template-areas:"nw n ne" "w paris e" "gap s se"}
 @media (max-width:680px){ .idf-map{grid-template-columns:1fr;grid-template-areas:none} .idf-map .zone-group{grid-area:auto !important} }
-.zone-group{border:1px dashed var(--border);border-radius:var(--radius);padding:7px;display:flex;flex-direction:column;gap:5px}
+.zone-group{border:1px dashed var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:8px}
 .zone-group.gap{border:none}
-.zone-group .dept-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em}
-.chip-row{display:flex;flex-wrap:wrap;gap:4px}
-.cp-chip{border:1px solid var(--border);background:var(--bg);color:var(--text2);border-radius:6px;padding:4px 7px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.zone-group .dept-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.cp-chip{border:1px solid var(--border);background:var(--bg);color:var(--text2);border-radius:7px;padding:6px 10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
 .cp-chip.primaire{background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue)}
 .cp-chip.secondaire{background:var(--teal-light);color:var(--teal-dark);border-color:var(--teal)}
 .cp-chip.disabled{cursor:default;opacity:.55;font-weight:400}
 .map-locked .cp-chip{pointer-events:none;opacity:.85}
 #paris-zone{grid-area:paris;background:var(--bg)}
-#paris-zone .chip-row{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-#paris-zone .cp-chip{text-align:center;padding:5px 2px}
-.zone-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+#paris-zone .chip-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+#paris-zone .cp-chip{text-align:center;padding:7px 4px}
+.zone-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px}
 .zone-status-badge.neutral{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
 .zone-status-badge.pending{background:var(--amber-bg);color:var(--amber)}
 .zone-status-badge.ok{background:var(--green-bg);color:var(--green-text)}
 .zone-status-badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-.map-overlay-note{margin-top:9px;font-size:11px;padding:8px 10px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber);display:none;align-items:center;gap:6px}
+.map-overlay-note{margin-top:12px;font-size:12px;padding:10px 12px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber);display:none;align-items:center;gap:6px}
 .map-overlay-note.show{display:flex}
-.bareme-ro{width:100%;border-collapse:collapse;font-size:12px}
-.bareme-ro td{padding:6px 0;border-top:1px solid var(--border)}
+.bareme-ro{width:100%;border-collapse:collapse;font-size:13.5px}
+.bareme-ro td{padding:9px 0;border-top:1px solid var(--border)}
 .bareme-ro tr:first-child td{border-top:none}
 .bareme-ro td:last-child{text-align:right;font-weight:700}
 
