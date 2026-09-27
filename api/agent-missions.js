@@ -5,6 +5,12 @@ import { origineAutorisee } from './_lib/cors.js';
 import { resolverAgentParEmail } from './_lib/agent-lookup.js';
 import { calculerKpiAgent } from './_lib/agent-kpi.js';
 
+const BAREME_PAR_DEFAUT = [
+  { label: 'Secteur primaire', montant: '0' },
+  { label: 'Secteur secondaire', montant: '18' },
+  { label: 'Hors secteurs', montant: 'Sur devis' },
+];
+
 // Endpoint du portail agent (agent-app.html) : authentifié par jeton de
 // session Supabase (lien magique, même mécanisme que l'extranet client) —
 // ne renvoie QUE les missions de l'agent authentifié, jamais celles d'un
@@ -51,7 +57,7 @@ export default async function handler(req) {
   if (!resolu) {
     return new Response(JSON.stringify({ error: 'Aucun profil agent trouvé pour cet email' }), { status: 403, headers });
   }
-  const { ownerId, agent } = resolu;
+  const { ownerId, agent, data } = resolu;
 
   const missionsResp = await fetch(
     `${SUPABASE_URL}/rest/v1/missions?select=id,data&user_id=eq.${encodeURIComponent(ownerId)}`,
@@ -84,7 +90,19 @@ export default async function handler(req) {
   const body = {
     agent: {
       nom: agent.nom || '',
+      tel: agent.tel || '',
       documents: { contrat: !!agent.contratPath, avenant: !!agent.avenantPath },
+      // Photo hébergée dans un bucket PUBLIC ("agent-photos") — à la
+      // différence de contratPath/avenantPath ci-dessus (bucket privé,
+      // jamais exposé tel quel), une URL publique directe ne fuite aucune
+      // donnée sensible : c'est une photo de profil, déjà destinée à être
+      // vue par les clients sur leurs confirmations de RDV.
+      photoUrl: agent.photoPath ? `${SUPABASE_URL}/storage/v1/object/public/agent-photos/${agent.photoPath}` : null,
+      secteurPrimaire: Array.isArray(agent.secteurPrimaire) ? agent.secteurPrimaire : [],
+      secteurSecondaire: Array.isArray(agent.secteurSecondaire) ? agent.secteurSecondaire : [],
+      zoneStatut: agent.zoneStatut || null,
+      zoneRefusMotif: agent.zoneRefusMotif || '',
+      bareme: Array.isArray(data.baremeDeplacement) && data.baremeDeplacement.length ? data.baremeDeplacement : BAREME_PAR_DEFAUT,
     },
     missions: missionsPubliques,
     kpi: calculerKpiAgent(missions),

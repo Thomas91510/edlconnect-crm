@@ -127,6 +127,43 @@ test('agent.documents indique la présence du contrat/avenant sans exposer le ch
   assert.ok(!JSON.stringify(body).includes('agent-1/contrat-123.pdf'), 'le chemin de stockage ne doit jamais être renvoyé au client');
 });
 
+test('agent.bareme : barème par défaut si l\'agence n\'a rien configuré', async () => {
+  global.fetch = fabriquerFetchMock({ settingsRows: AGENTS_OWNER1, missionsRows: [] });
+  const resp = await handler(requete('jeton-valide'));
+  const body = await resp.json();
+  assert.ok(Array.isArray(body.agent.bareme) && body.agent.bareme.length > 0);
+  assert.equal(body.agent.tel, '');
+  assert.equal(body.agent.photoUrl, null);
+  assert.deepEqual(body.agent.secteurPrimaire, []);
+});
+
+test('agent.bareme : renvoie le barème configuré par l\'agence (settings.data.baremeDeplacement)', async () => {
+  const rows = [{ user_id: 'owner-1', data: {
+    agents: [{ id: 'agent-1', nom: 'Jean Dupont', email: 'jean@exemple.fr' }],
+    baremeDeplacement: [{ label: 'Zone A', montant: '10' }],
+  } }];
+  global.fetch = fabriquerFetchMock({ settingsRows: rows, missionsRows: [] });
+  const resp = await handler(requete('jeton-valide'));
+  const body = await resp.json();
+  assert.deepEqual(body.agent.bareme, [{ label: 'Zone A', montant: '10' }]);
+});
+
+test('agent.photoUrl / secteurs / zoneStatut : reflètent la fiche agent, tel et téléphone inclus', async () => {
+  const rows = [{ user_id: 'owner-1', data: { agents: [{
+    id: 'agent-1', nom: 'Jean Dupont', email: 'jean@exemple.fr', tel: '0612345678',
+    photoPath: 'owner-1/agent-1.jpg', secteurPrimaire: ['75018'], secteurSecondaire: ['92100'],
+    zoneStatut: 'attente', zoneRefusMotif: '',
+  }] } }];
+  global.fetch = fabriquerFetchMock({ settingsRows: rows, missionsRows: [] });
+  const resp = await handler(requete('jeton-valide'));
+  const body = await resp.json();
+  assert.equal(body.agent.tel, '0612345678');
+  assert.ok(body.agent.photoUrl.includes('owner-1/agent-1.jpg'));
+  assert.deepEqual(body.agent.secteurPrimaire, ['75018']);
+  assert.deepEqual(body.agent.secteurSecondaire, ['92100']);
+  assert.equal(body.agent.zoneStatut, 'attente');
+});
+
 test('panne réseau sur les missions : 500 propre (pas de fuite d\'exception)', async () => {
   global.fetch = async (url) => {
     if (String(url).includes('/auth/v1/user')) return { ok: true, json: async () => ({ email: 'jean@exemple.fr' }) };

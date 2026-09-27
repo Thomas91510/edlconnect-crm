@@ -23,6 +23,7 @@ const HTML = `
   <input id="new-agent-secteurs">
   <button id="agent-submit-btn"></button>
   <button id="agent-cancel-btn" style="display:none"></button>
+  <div id="bareme-rows"></div>
 `;
 
 function chargerAgentsEDL() {
@@ -282,4 +283,126 @@ test('televerserDocumentAgent : échec serveur affiche une erreur sans modifier 
   await window.televerserDocumentAgent(id, 'contrat', inputEl);
 
   assert.equal(window.__getDB().agents[0].contratPath, undefined);
+});
+
+// ─── Photo de profil (affichage côté agence) ──────────────────────────
+test('renderAgentsSettings : sans photo, affiche les initiales de l\'agent', () => {
+  const window = chargerAgentsEDL();
+  remplirFormulaire(window, { nom: 'Julie Berthier' });
+  window.addAgent();
+
+  const html = window.document.getElementById('agents-list').innerHTML;
+  assert.ok(html.includes('JB'));
+  assert.ok(!html.includes('<img'));
+});
+
+test('renderAgentsSettings : avec photoPath, affiche la photo au lieu des initiales', () => {
+  const window = chargerAgentsEDL();
+  remplirFormulaire(window, { nom: 'Julie Berthier' });
+  window.addAgent();
+  window.__getDB().agents[0].photoPath = 'owner-1/agent-1.jpg';
+  window.renderAgentsSettings();
+
+  const html = window.document.getElementById('agents-list').innerHTML;
+  assert.ok(html.includes('<img'));
+  assert.ok(html.includes('owner-1/agent-1.jpg'));
+});
+
+// ─── Zones d'intervention (validation par l'agence) ───────────────────
+function agentAvecZonesEnAttente(window){
+  remplirFormulaire(window, { nom: 'Julie Berthier' });
+  window.addAgent();
+  const agent = window.__getDB().agents[0];
+  Object.assign(agent, { secteurPrimaire: ['75018', '75019'], secteurSecondaire: ['92100'], zoneStatut: 'attente' });
+  window.renderAgentsSettings();
+  return agent.id;
+}
+
+test('renderAgentsSettings : demande de zones en attente affiche les compteurs et les actions', () => {
+  const window = chargerAgentsEDL();
+  agentAvecZonesEnAttente(window);
+
+  const html = window.document.getElementById('agents-list').innerHTML;
+  assert.ok(html.includes('2 codes primaire, 1 secondaire'));
+  assert.ok(html.includes('approuverZonesAgent'));
+  assert.ok(html.includes('refuserZonesAgent'));
+});
+
+test('approuverZonesAgent : passe le statut à "valide" et synchronise', () => {
+  const window = chargerAgentsEDL();
+  const id = agentAvecZonesEnAttente(window);
+
+  window.approuverZonesAgent(id);
+
+  assert.equal(window.__getDB().agents[0].zoneStatut, 'valide');
+});
+
+test('refuserZonesAgent : passe le statut à "refuse" avec le motif saisi', () => {
+  const window = chargerAgentsEDL();
+  const id = agentAvecZonesEnAttente(window);
+  window.prompt = () => 'Zone déjà couverte par un autre agent';
+
+  window.refuserZonesAgent(id);
+
+  const agent = window.__getDB().agents[0];
+  assert.equal(agent.zoneStatut, 'refuse');
+  assert.equal(agent.zoneRefusMotif, 'Zone déjà couverte par un autre agent');
+});
+
+test('renderAgentsSettings : zones validées ou refusées affichées sans action (rien à approuver)', () => {
+  const window = chargerAgentsEDL();
+  remplirFormulaire(window, { nom: 'Julie Berthier' });
+  window.addAgent();
+  Object.assign(window.__getDB().agents[0], { secteurPrimaire: ['75018'], secteurSecondaire: [], zoneStatut: 'valide' });
+  window.renderAgentsSettings();
+
+  const html = window.document.getElementById('agents-list').innerHTML;
+  assert.ok(html.includes('validées'));
+  assert.ok(!html.includes('approuverZonesAgent'));
+});
+
+// ─── Barème frais de déplacement ───────────────────────────────────────
+test('renderBaremeSettings : affiche le barème par défaut quand rien n\'est configuré', () => {
+  const window = chargerAgentsEDL();
+  window.renderBaremeSettings();
+
+  const rows = window.document.querySelectorAll('#bareme-rows [data-bareme-row]');
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].querySelector('.bareme-label-input').value, 'Secteur primaire');
+});
+
+test('ajouterLigneBareme : ajoute une case vide, focus dessus', () => {
+  const window = chargerAgentsEDL();
+  window.renderBaremeSettings();
+  window.ajouterLigneBareme();
+
+  const rows = window.document.querySelectorAll('#bareme-rows [data-bareme-row]');
+  assert.equal(rows.length, 4);
+  assert.equal(rows[3].querySelector('.bareme-label-input').value, '');
+});
+
+test('sauvegarderBareme : enregistre les lignes renommées, ignore celles sans intitulé', () => {
+  const window = chargerAgentsEDL();
+  window.renderBaremeSettings();
+  const rows = window.document.querySelectorAll('#bareme-rows [data-bareme-row]');
+  rows[0].querySelector('.bareme-label-input').value = 'Zone proche';
+  rows[0].querySelector('.bareme-montant-input').value = '5';
+  rows[1].querySelector('.bareme-label-input').value = ''; // sans intitulé → ignorée
+
+  window.sauvegarderBareme();
+
+  const bareme = window.__getDB().baremeDeplacement;
+  assert.ok(bareme.find(l => l.label === 'Zone proche' && l.montant === '5'));
+  assert.equal(bareme.length, 2, 'la ligne sans intitulé ne doit pas être enregistrée');
+});
+
+test('sauvegarderBareme : aucune ligne valide → n\'écrase pas le barème existant', () => {
+  const window = chargerAgentsEDL();
+  window.__getDB().baremeDeplacement = [{ label: 'Existant', montant: '9' }];
+  window.document.getElementById('bareme-rows').innerHTML = `
+    <div data-bareme-row><input class="bareme-label-input" value=""><input class="bareme-montant-input" value=""></div>`;
+
+  window.sauvegarderBareme();
+
+  assert.deepEqual(window.__getDB().baremeDeplacement, [{ label: 'Existant', montant: '9' }]);
 });

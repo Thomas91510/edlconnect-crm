@@ -294,7 +294,7 @@ function loadFromStorage(){
   }catch(e){}
   // Garde-fou : si les données sauvegardées datent d'avant l'ajout d'un champ (ex: invoices),
   // s'assurer que tous les tableaux attendus existent pour éviter les erreurs "Cannot read properties of undefined"
-  const expectedArrays=['contacts','deals','missions','campaigns','rdvs','invoices','trackings','prospects','dups','brevoContacts','agents','ajustementsExternes'];
+  const expectedArrays=['contacts','deals','missions','campaigns','rdvs','invoices','trackings','prospects','dups','brevoContacts','agents','ajustementsExternes','baremeDeplacement'];
   expectedArrays.forEach(key=>{ if(!Array.isArray(DB[key])) DB[key]=[]; });
   // Dédoublonner les contacts au chargement (protection permanente)
   const seen=new Set();

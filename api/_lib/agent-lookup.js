@@ -25,7 +25,7 @@ export async function resolverAgentParEmail(email, serviceKey) {
   for (const row of rows) {
     const agents = (row.data && row.data.agents) || [];
     const agent = agents.find(a => String((a && a.email) || '').trim().toLowerCase() === emailNormalise);
-    if (agent) return { ownerId: row.user_id, agent };
+    if (agent) return { ownerId: row.user_id, agent, data: row.data || {} };
   }
   return null;
 }
