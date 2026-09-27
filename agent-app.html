@@ -592,9 +592,19 @@ function appliquerAvatar(url, nom){
   });
 }
 
+// Le champ "Nom" saisi par l'agence n'est pas toujours "Prénom Nom" — la
+// convention administrative "NOM Prénom" (ex. "LANGLADE Thomas") est
+// fréquente. Si le premier mot est tout en majuscules, on le traite comme
+// le nom de famille et on prend le mot suivant comme prénom.
+function extrairePrenom(nom){
+  const mots = nom.trim().split(/\s+/);
+  if(mots.length > 1 && mots[0] === mots[0].toUpperCase() && /[A-ZÀ-Ý]/.test(mots[0])) return mots[1];
+  return mots[0];
+}
+
 function remplirCompte(agent){
   const nom = agent.nom || 'Mon espace';
-  const prenom = nom.split(' ')[0];
+  const prenom = extrairePrenom(nom);
 
   document.getElementById('welcome-titre').textContent = 'Bonjour, ' + prenom + ' 👋';
   document.getElementById('sidenav-nom').textContent = nom;

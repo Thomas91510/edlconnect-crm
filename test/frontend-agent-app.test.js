@@ -338,6 +338,18 @@ test('remplirCompte : affiche le nom, le téléphone, l\'adresse et personnalise
   assert.equal(w.document.getElementById('compte-champ-adresse').value, '3 rue de Rivoli, 75001 Paris');
 });
 
+test('remplirCompte : extrait le bon prénom même au format "NOM Prénom" (ex. LANGLADE Thomas)', () => {
+  const w = chargerAgentApp();
+  w.remplirCompte({ nom: 'LANGLADE Thomas', tel: '', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
+  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Thomas 👋');
+});
+
+test('remplirCompte : nom sur un seul mot → utilisé tel quel', () => {
+  const w = chargerAgentApp();
+  w.remplirCompte({ nom: 'Paul', tel: '', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
+  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Paul 👋');
+});
+
 test('enregistrerAdresse : envoie l\'adresse saisie et met à jour le champ', async () => {
   const w = chargerAgentApp();
   w.document.getElementById('compte-champ-adresse').value = '12 rue de la Paix, 91000 Évry-Courcouronnes';
