@@ -43,7 +43,10 @@ const DOM_MINIMAL = `
   <input id="compte-champ-nom">
   <input id="compte-champ-email">
   <input id="compte-champ-tel">
-  <input id="compte-champ-adresse">
+  <div class="adresse-wrap">
+    <input id="compte-champ-adresse" oninput="onSaisieAdresseAgent()">
+    <div id="compte-adresse-suggestions" class="adresse-suggestions"></div>
+  </div>
   <button id="btn-save-adresse">Enregistrer</button>
   <table><tbody id="bareme-affiche"></tbody></table>
 
@@ -55,17 +58,10 @@ const DOM_MINIMAL = `
   <button id="btn-edit-zones" style="display:none"></button>
   <div class="card-body">
     <div class="zones-interactive">
-      <div class="mode-toggle">
-        <button type="button" class="mode-btn active" data-mode="primaire"></button>
-        <button type="button" class="mode-btn" data-mode="secondaire"></button>
-      </div>
-      <div class="search-wrap">
-        <input type="text" id="recherche-commune">
-      </div>
-      <div id="result-list" class="result-list"></div>
+      <select id="select-departement"><option value="">— Choisir —</option></select>
+      <div id="cp-grid" class="cp-grid"></div>
+      <div id="cp-loading" class="cp-loading"></div>
     </div>
-    <div id="chip-list" class="chip-list"></div>
-    <div id="chip-empty" class="chip-empty"></div>
   </div>
 
   <div class="modal-overlay" id="photo-modal-overlay"></div>
@@ -342,9 +338,8 @@ test('remplirCompte : affiche le nom, le téléphone, l\'adresse et personnalise
   assert.equal(w.document.getElementById('compte-champ-adresse').value, '3 rue de Rivoli, 75001 Paris');
 });
 
-test('enregistrerAdresse : envoie l\'adresse saisie, met à jour le champ et pré-remplit la recherche', async () => {
+test('enregistrerAdresse : envoie l\'adresse saisie et met à jour le champ', async () => {
   const w = chargerAgentApp();
-  w.initZones([], [], null, '');
   w.document.getElementById('compte-champ-adresse').value = '12 rue de la Paix, 91000 Évry-Courcouronnes';
   let appel = null;
   w.fetch = async (url, opts) => {
@@ -357,19 +352,49 @@ test('enregistrerAdresse : envoie l\'adresse saisie, met à jour le champ et pr�
   assert.equal(appel.url, '/api/agent-update-adresse');
   assert.deepEqual(appel.corps, { adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes' });
   assert.equal(w.document.getElementById('compte-champ-adresse').value, '12 rue de la Paix, 91000 Évry-Courcouronnes');
-  assert.equal(w.document.getElementById('recherche-commune').value, '12 rue de la Paix, 91000 Évry-Courcouronnes');
   assert.equal(w.document.getElementById('btn-save-adresse').disabled, false, 'le bouton doit être réactivé après l\'enregistrement');
 });
 
 test('enregistrerAdresse : erreur serveur → le bouton reste réactivé pour réessayer', async () => {
   const w = chargerAgentApp();
-  w.initZones([], [], null, '');
   w.document.getElementById('compte-champ-adresse').value = 'Adresse test';
   w.fetch = async () => ({ ok: false, json: async () => ({ error: 'Erreur test' }) });
 
   await w.enregistrerAdresse();
 
   assert.equal(w.document.getElementById('btn-save-adresse').disabled, false);
+});
+
+test('onSaisieAdresseAgent / choisirSuggestionAdresseAgent : recherche puis sélection d\'une suggestion', async () => {
+  const w = chargerAgentApp();
+  const champ = w.document.getElementById('compte-champ-adresse');
+  champ.value = '12 rue de la Paix';
+  let urlAppelee = null;
+  w.fetch = async (url) => {
+    urlAppelee = url;
+    return { ok: true, json: async () => ({ features: [{ properties: { label: '12 Rue de la Paix 91000 Évry-Courcouronnes', postcode: '91000' } }] }) };
+  };
+
+  w.onSaisieAdresseAgent();
+  await new Promise(r => setTimeout(r, 320)); // laisse passer le debounce (300ms)
+
+  assert.ok(urlAppelee.includes('api-adresse.data.gouv.fr'));
+  const suggestions = w.document.getElementById('compte-adresse-suggestions');
+  assert.ok(suggestions.classList.contains('show'));
+  assert.ok(suggestions.innerHTML.includes('Évry-Courcouronnes'));
+
+  w.document.querySelector('.adresse-suggestion').click();
+  assert.equal(champ.value, '12 Rue de la Paix 91000 Évry-Courcouronnes');
+  assert.ok(!suggestions.classList.contains('show'), 'les suggestions se referment après sélection');
+});
+
+test('onSaisieAdresseAgent : moins de 3 caractères → aucune recherche', () => {
+  const w = chargerAgentApp();
+  w.document.getElementById('compte-champ-adresse').value = 'ab';
+  let appele = false;
+  w.fetch = async () => { appele = true; };
+  w.onSaisieAdresseAgent();
+  assert.equal(appele, false);
 });
 
 test('appliquerAvatar : sans photo → initiales ; avec photo → image de fond', () => {
@@ -394,83 +419,70 @@ test('renderBareme : affiche les lignes (intitulé + montant), message si vide',
   assert.ok(w.document.getElementById('bareme-affiche').textContent.includes('non renseigné'));
 });
 
-test('basculerCommune : ajoute dans le mode actif (primaire par défaut), retire si déjà cochée', () => {
+test('cycleAssignment : cycle primaire → secondaire → retrait, met à jour les compteurs', () => {
   const w = chargerAgentApp();
   w.initZones([], [], null, '');
-  w.basculerCommune('91228', 'Évry-Courcouronnes'); // mode par défaut : primaire
+  w.cycleAssignment('75018'); // 1er clic → primaire
   assert.equal(w.document.getElementById('count-primaire').textContent, '1');
-  assert.ok(w.document.getElementById('chip-list').innerHTML.includes('Évry-Courcouronnes'));
-  w.basculerCommune('91228', 'Évry-Courcouronnes'); // déjà cochée → retrait
-  assert.equal(w.document.getElementById('count-primaire').textContent, '0');
-  assert.ok(w.document.getElementById('chip-empty').style.display !== 'none');
-});
-
-test('choisirModeZone : bascule le mode, les prochains ajouts suivent la nouvelle catégorie', () => {
-  const w = chargerAgentApp();
-  w.initZones([], [], null, '');
-  w.choisirModeZone('secondaire');
-  w.basculerCommune('92012', 'Boulogne-Billancourt');
+  w.cycleAssignment('75018'); // 2e clic → secondaire
   assert.equal(w.document.getElementById('count-primaire').textContent, '0');
   assert.equal(w.document.getElementById('count-secondaire').textContent, '1');
-  assert.ok(w.document.querySelector('.mode-btn[data-mode="secondaire"]').classList.contains('active'));
-  assert.ok(!w.document.querySelector('.mode-btn[data-mode="primaire"]').classList.contains('active'));
+  w.cycleAssignment('75018'); // 3e clic → retiré
+  assert.equal(w.document.getElementById('count-secondaire').textContent, '0');
 });
 
-test('retirerCommune : retire une commune indépendamment de l\'ordre de clic', () => {
+test('chargerCodesPostauxDept : construit une grille de codes postaux cliquables à partir de geo.api.gouv.fr', async () => {
   const w = chargerAgentApp();
-  w.initZones([{ code:'91228', nom:'Évry-Courcouronnes' }], [], null, '');
-  w.retirerCommune('91228');
-  assert.equal(w.document.getElementById('count-primaire').textContent, '0');
-  assert.ok(!w.document.getElementById('chip-list').innerHTML.includes('Évry'));
+  w.initZones([], [], null, '');
+  w.fetch = async (url) => {
+    assert.ok(url.includes('geo.api.gouv.fr/departements/91/communes'));
+    return { json: async () => ([
+      { nom: 'Évry-Courcouronnes', codesPostaux: ['91000'] },
+      { nom: 'Palaiseau', codesPostaux: ['91120'] },
+    ]) };
+  };
+
+  await w.chargerCodesPostauxDept('91');
+
+  const chips = [...w.document.querySelectorAll('.cp-chip[data-code]')].map(c => c.dataset.code);
+  assert.deepEqual(chips, ['91000', '91120']);
+  assert.equal(w.document.getElementById('select-departement').value, '91');
 });
 
-test('initZones : pré-remplit depuis les communes existantes et verrouille si statut "valide"', () => {
+test('chargerCodesPostauxDept : met les codes postaux en cache (un seul appel réseau par département)', async () => {
   const w = chargerAgentApp();
-  w.initZones([{ code:'91228', nom:'Évry-Courcouronnes' }], [{ code:'92012', nom:'Boulogne-Billancourt' }], 'valide', '');
+  w.initZones([], [], null, '');
+  let appels = 0;
+  w.fetch = async () => { appels++; return { json: async () => ([{ nom: 'Paris', codesPostaux: ['75001'] }]) }; };
+
+  await w.chargerCodesPostauxDept('75');
+  await w.chargerCodesPostauxDept('75');
+
+  assert.equal(appels, 1);
+});
+
+test('initZones : pré-remplit depuis les secteurs existants et verrouille si statut "valide"', () => {
+  const w = chargerAgentApp();
+  w.initZones(['75018'], ['92100'], 'valide', '');
   assert.equal(w.document.getElementById('count-primaire').textContent, '1');
   assert.equal(w.document.getElementById('count-secondaire').textContent, '1');
   assert.ok(w.document.querySelector('.zones-interactive').parentElement.classList.contains('zones-locked'));
   assert.equal(w.document.getElementById('btn-submit-zones').style.display, 'none');
-  // Verrouillé : les croix de suppression des puces doivent être neutralisées côté logique aussi.
-  w.retirerCommune('91228');
-  assert.equal(w.document.getElementById('count-primaire').textContent, '1', 'aucune modification possible tant que le statut est verrouillé');
 });
 
 test('initZones : statut "refuse" affiche le motif de refus', () => {
   const w = chargerAgentApp();
-  w.initZones([{ code:'91228', nom:'Évry-Courcouronnes' }], [], 'refuse', 'Zone déjà couverte par un autre agent');
+  w.initZones(['75018'], [], 'refuse', 'Zone déjà couverte par un autre agent');
   const note = w.document.getElementById('map-lock-note');
   assert.ok(note.classList.contains('show'));
   assert.ok(note.textContent.includes('Zone déjà couverte par un autre agent'));
 });
 
-test('initZones : pré-remplit la recherche avec l\'adresse de l\'agent et cherche le nom de ville extrait', async () => {
-  const w = chargerAgentApp();
-  let urlAppelee = null;
-  w.fetch = async (url) => { urlAppelee = url; return { json: async () => [] }; };
-
-  w.initZones([], [], null, '', '12 rue de la Paix, 91000 Évry-Courcouronnes');
-  await new Promise(r => setTimeout(r, 0));
-
-  assert.equal(w.document.getElementById('recherche-commune').value, '12 rue de la Paix, 91000 Évry-Courcouronnes');
-  assert.ok(urlAppelee.includes(encodeURIComponent('Évry-Courcouronnes')), 'la recherche doit porter sur le nom de ville extrait, pas l\'adresse complète');
-});
-
-test('initZones : sans adresse renseignée, aucune recherche n\'est lancée', () => {
-  const w = chargerAgentApp();
-  let appele = false;
-  w.fetch = async () => { appele = true; };
-  w.initZones([], [], null, '');
-  assert.equal(appele, false);
-  assert.equal(w.document.getElementById('recherche-commune').value, '');
-});
-
-test('soumettreZones : envoie les communes sélectionnées (code + nom) au bon endpoint, passe en attente si succès', async () => {
+test('soumettreZones : envoie les codes sélectionnés au bon endpoint, passe en attente si succès', async () => {
   const w = chargerAgentApp();
   w.initZones([], [], null, '');
-  w.basculerCommune('91228', 'Évry-Courcouronnes'); // primaire
-  w.choisirModeZone('secondaire');
-  w.basculerCommune('92012', 'Boulogne-Billancourt'); // secondaire
+  w.cycleAssignment('75018'); // primaire
+  w.cycleAssignment('92100'); w.cycleAssignment('92100'); // secondaire
 
   let appel = null;
   w.fetch = async (url, opts) => { appel = { url, corps: JSON.parse(opts.body) }; return { ok: true, json: async () => ({ success: true }) }; };
@@ -478,8 +490,8 @@ test('soumettreZones : envoie les communes sélectionnées (code + nom) au bon e
   await w.soumettreZones();
 
   assert.equal(appel.url, '/api/agent-zones-submit');
-  assert.deepEqual(appel.corps.secteurPrimaire, [{ code:'91228', nom:'Évry-Courcouronnes' }]);
-  assert.deepEqual(appel.corps.secteurSecondaire, [{ code:'92012', nom:'Boulogne-Billancourt' }]);
+  assert.deepEqual(appel.corps.secteurPrimaire, ['75018']);
+  assert.deepEqual(appel.corps.secteurSecondaire, ['92100']);
   assert.ok(w.document.getElementById('zone-status-badge').textContent.includes('attente'));
 });
 
@@ -495,15 +507,15 @@ test('soumettreZones : rien de sélectionné → n\'appelle pas le réseau', asy
 test('soumettreZones : erreur serveur → le bouton reste réactivé pour réessayer', async () => {
   const w = chargerAgentApp();
   w.initZones([], [], null, '');
-  w.basculerCommune('91228', 'Évry-Courcouronnes');
+  w.cycleAssignment('75018');
   w.fetch = async () => ({ ok: false, json: async () => ({ error: 'Erreur test' }) });
   await w.soumettreZones();
   assert.equal(w.document.getElementById('btn-submit-zones').disabled, false);
 });
 
-test('modifierZones : déverrouille la carte pour resoumettre', () => {
+test('modifierZones : déverrouille pour resoumettre', () => {
   const w = chargerAgentApp();
-  w.initZones([{ code:'91228', nom:'Évry-Courcouronnes' }], [], 'refuse', 'Motif');
+  w.initZones(['75018'], [], 'refuse', 'Motif');
   w.modifierZones();
   assert.ok(!w.document.querySelector('.zones-interactive').parentElement.classList.contains('zones-locked'));
   assert.equal(w.document.getElementById('btn-submit-zones').style.display, 'inline-flex');

@@ -153,8 +153,8 @@ test('agent.photoUrl / secteurs / zoneStatut : reflètent la fiche agent, tel et
     id: 'agent-1', nom: 'Jean Dupont', email: 'jean@exemple.fr', tel: '0612345678',
     adresse: '12 rue de la Paix, 91000 Évry-Courcouronnes',
     photoPath: 'owner-1/agent-1.jpg',
-    secteurPrimaire: [{ code:'91228', nom:'Évry-Courcouronnes' }],
-    secteurSecondaire: [{ code:'92012', nom:'Boulogne-Billancourt' }],
+    secteurPrimaire: ['91000'],
+    secteurSecondaire: ['92100'],
     zoneStatut: 'attente', zoneRefusMotif: '',
   }] } }];
   global.fetch = fabriquerFetchMock({ settingsRows: rows, missionsRows: [] });
@@ -163,8 +163,8 @@ test('agent.photoUrl / secteurs / zoneStatut : reflètent la fiche agent, tel et
   assert.equal(body.agent.tel, '0612345678');
   assert.equal(body.agent.adresse, '12 rue de la Paix, 91000 Évry-Courcouronnes');
   assert.ok(body.agent.photoUrl.includes('owner-1/agent-1.jpg'));
-  assert.deepEqual(body.agent.secteurPrimaire, [{ code:'91228', nom:'Évry-Courcouronnes' }]);
-  assert.deepEqual(body.agent.secteurSecondaire, [{ code:'92012', nom:'Boulogne-Billancourt' }]);
+  assert.deepEqual(body.agent.secteurPrimaire, ['91000']);
+  assert.deepEqual(body.agent.secteurSecondaire, ['92100']);
   assert.equal(body.agent.zoneStatut, 'attente');
 });
 

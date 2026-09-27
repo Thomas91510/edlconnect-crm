@@ -109,51 +109,36 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .field label{font-size:11.5px}
 .field input{font-size:13.5px;padding:10px 12px}
 
-/* ─── Zones d'intervention (recherche + liste de communes à cocher) ─────── */
+/* ─── Zones d'intervention (département + codes postaux à cliquer) ─────── */
 .legend-row{display:flex;align-items:center;gap:7px;font-size:13.5px}
 .swatch{width:13px;height:13px;border-radius:4px;flex-shrink:0}
 .swatch.primaire{background:var(--blue)}
 .swatch.secondaire{background:var(--teal)}
 .legend-count{font-weight:700;color:var(--text2)}
 
-.mode-toggle{display:flex;gap:8px;margin-bottom:14px}
-.mode-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:999px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit;color:var(--text2)}
-.mode-btn .dot{width:9px;height:9px;border-radius:50%}
-.mode-btn[data-mode="primaire"] .dot{background:var(--blue)}
-.mode-btn[data-mode="secondaire"] .dot{background:var(--teal)}
-.mode-btn.active[data-mode="primaire"]{background:var(--blue);border-color:var(--blue);color:#fff}
-.mode-btn.active[data-mode="primaire"] .dot{background:#fff}
-.mode-btn.active[data-mode="secondaire"]{background:var(--teal);border-color:var(--teal);color:#fff}
-.mode-btn.active[data-mode="secondaire"] .dot{background:#fff}
+.instructions-row{font-size:12px;color:var(--text2);margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
+.mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
 
-.search-wrap{position:relative;margin-bottom:6px}
-.search-wrap input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:11px 14px;font-size:14px;font-family:inherit;background:var(--white)}
-.search-wrap input:focus{outline:none;border-color:var(--blue)}
-.search-hint{font-size:11.5px;color:var(--text3);margin-bottom:14px}
+.field select{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:13.5px;font-family:inherit;background:var(--white);color:var(--text);outline:none}
+.field select:focus{border-color:var(--blue)}
 
-.result-list{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
-.result-empty{padding:20px;text-align:center;font-size:12.5px;color:var(--text3)}
-.result-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--border);cursor:pointer}
-.result-row:first-child{border-top:none}
-.result-row:hover{background:var(--bg)}
-.result-row input[type="checkbox"]{width:18px;height:18px;flex-shrink:0;accent-color:var(--blue)}
-.result-row.secondaire input[type="checkbox"]{accent-color:var(--teal)}
-.result-nom{font-weight:600;flex:1}
-.result-cp{font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums}
-.result-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em}
-.result-row.primaire .result-pill{background:var(--blue-light);color:var(--blue-dark)}
-.result-row.secondaire .result-pill{background:var(--teal-light);color:var(--teal-dark)}
-
+.cp-grid{display:flex;flex-wrap:wrap;gap:7px;min-height:44px;margin-bottom:6px}
+.cp-grid-empty{font-size:12.5px;color:var(--text3);padding:20px 0;text-align:center;width:100%}
+.cp-chip{border:1px solid var(--border);background:var(--bg);color:var(--text2);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.cp-chip:hover{border-color:var(--blue)}
+.cp-chip.primaire{background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue)}
+.cp-chip.secondaire{background:var(--teal-light);color:var(--teal-dark);border-color:var(--teal)}
+.cp-loading{padding:16px 0;text-align:center;font-size:12.5px;color:var(--text2);display:none}
+.cp-loading.show{display:block}
 .zones-locked .zones-interactive{pointer-events:none;opacity:.7}
 
-.chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 8px 6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;color:#fff}
-.chip.primaire{background:var(--blue)}
-.chip.secondaire{background:var(--teal)}
-.chip .x{background:rgba(255,255,255,.25);border:none;color:#fff;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
-.chip .x:hover{background:rgba(255,255,255,.4)}
-.zones-locked .chip .x{display:none}
-.chip-empty{font-size:12.5px;color:var(--text3);margin-top:14px}
+/* Autocomplétion d'adresse (même API que le reste du CRM, api-adresse.data.gouv.fr) */
+.adresse-wrap{position:relative}
+.adresse-suggestions{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:20;max-height:220px;overflow-y:auto;display:none}
+.adresse-suggestions.show{display:block}
+.adresse-suggestion{padding:9px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.adresse-suggestion:last-child{border-bottom:none}
+.adresse-suggestion:hover{background:var(--blue-light);color:var(--blue-dark)}
 
 .zone-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px}
 .zone-status-badge.neutral{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
@@ -358,10 +343,13 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
                 <div class="field">
                   <label>Adresse</label>
                   <div style="display:flex;gap:8px">
-                    <input id="compte-champ-adresse" placeholder="12 rue de la Paix, 91000 Évry-Courcouronnes" style="flex:1">
+                    <div class="adresse-wrap" style="flex:1">
+                      <input type="text" id="compte-champ-adresse" placeholder="12 rue de la Paix, 91000 Évry-Courcouronnes" autocomplete="off" oninput="onSaisieAdresseAgent()">
+                      <div class="adresse-suggestions" id="compte-adresse-suggestions"></div>
+                    </div>
                     <button class="btn-sm" id="btn-save-adresse" onclick="enregistrerAdresse()">Enregistrer</button>
                   </div>
-                  <p class="compte-note" style="margin-top:6px">À renseigner vous-même — pré-remplit votre recherche de communes ci-contre pour les zones d'intervention.</p>
+                  <p class="compte-note" style="margin-top:6px">À renseigner vous-même — la sélection dans les suggestions évite les erreurs de saisie.</p>
                 </div>
               </div>
             </div>
@@ -371,31 +359,31 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
             <div class="card">
               <div class="card-head" style="flex-wrap:wrap"><i class="ti ti-map-pin"></i>Zones d'intervention<span class="zone-status-badge neutral" id="zone-status-badge" style="margin-left:auto"><span class="dot"></span>Aucune zone définie</span></div>
               <div class="card-body">
-                <p class="compte-note" style="margin-bottom:14px">Recherchez une commune et cochez-la — elles doivent être validées par l'agence avant de s'appliquer à vos frais de déplacement.</p>
+                <p class="compte-note" style="margin-bottom:14px">Choisissez un département, puis cliquez sur les codes postaux à couvrir — ils doivent être validés par l'agence avant de s'appliquer à vos frais de déplacement.</p>
 
                 <div class="zones-interactive">
-                  <div class="mode-toggle">
-                    <button type="button" class="mode-btn active" data-mode="primaire" onclick="choisirModeZone('primaire')"><span class="dot"></span>Ajouter en primaire</button>
-                    <button type="button" class="mode-btn" data-mode="secondaire" onclick="choisirModeZone('secondaire')"><span class="dot"></span>Ajouter en secondaire</button>
+                  <div class="field">
+                    <label>Département</label>
+                    <select id="select-departement" onchange="chargerCodesPostauxDept(this.value)">
+                      <option value="">— Choisir —</option>
+                    </select>
                   </div>
 
-                  <div class="search-wrap">
-                    <input type="text" id="recherche-commune" placeholder="Rechercher une commune (Évry, Palaiseau, Meaux…)" autocomplete="off">
+                  <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
+                    <div class="legend-row"><span class="swatch primaire"></span>Primaire <span class="legend-count" id="count-primaire">0</span></div>
+                    <div class="legend-row"><span class="swatch secondaire"></span>Secondaire <span class="legend-count" id="count-secondaire">0</span></div>
                   </div>
-                  <div class="search-hint">Modifiez le texte pour chercher une autre commune.</div>
+                  <div class="instructions-row">
+                    <span class="mini-badge">1er clic = primaire</span>
+                    <span class="mini-badge">2e clic = secondaire</span>
+                    <span class="mini-badge">3e clic = retirer</span>
+                  </div>
 
-                  <div class="result-list" id="result-list"></div>
-                </div>
-
-                <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
-                  <div class="legend-row"><span class="swatch primaire"></span>Primaire <span class="legend-count" id="count-primaire">0</span></div>
-                  <div class="legend-row"><span class="swatch secondaire"></span>Secondaire <span class="legend-count" id="count-secondaire">0</span></div>
+                  <div class="cp-grid" id="cp-grid"><div class="cp-grid-empty">Choisissez un département pour voir ses codes postaux.</div></div>
+                  <div class="cp-loading" id="cp-loading">Chargement des codes postaux…</div>
                 </div>
 
                 <div class="map-overlay-note" id="map-lock-note">🔒 Zones envoyées : en attente de validation par l'agence.</div>
-
-                <div class="chip-list" id="chip-list"></div>
-                <div class="chip-empty" id="chip-empty">Aucune commune sélectionnée pour l'instant.</div>
 
                 <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
                   <button class="btn-primary" id="btn-submit-zones" style="width:auto" onclick="soumettreZones()">Envoyer pour validation</button>
@@ -619,7 +607,7 @@ function remplirCompte(agent){
   appliquerAvatar(agent.photoUrl, nom);
 
   renderBareme(agent.bareme);
-  initZones(agent.secteurPrimaire, agent.secteurSecondaire, agent.zoneStatut, agent.zoneRefusMotif, agent.adresse);
+  initZones(agent.secteurPrimaire, agent.secteurSecondaire, agent.zoneStatut, agent.zoneRefusMotif);
 }
 
 async function enregistrerAdresse(){
@@ -637,7 +625,6 @@ async function enregistrerAdresse(){
     const data = await resp.json();
     if(!resp.ok){ showToast('❌ ' + (data.error || 'Erreur lors de l\'enregistrement')); return; }
     input.value = data.adresse;
-    preremplirRechercheDepuisAdresse(data.adresse);
     showToast('✅ Adresse enregistrée');
   }catch(e){
     showToast('❌ Erreur réseau, réessaie.');
@@ -645,6 +632,70 @@ async function enregistrerAdresse(){
     btn.disabled = false; btn.textContent = libelleOriginal;
   }
 }
+
+// ─── Autocomplétion d'adresse (API Adresse gratuite, data.gouv.fr) ─────
+// Même logique que le formulaire public de réservation (voir extranet-app.html
+// / api/booking-page.js) : suggestions d'adresses françaises pendant la
+// saisie, sans clé API ni facturation — dégrade silencieusement en cas de
+// panne/lenteur, le champ reste une saisie libre normale dans tous les cas.
+// Sert uniquement à éviter les fautes de frappe ; la valeur finale enregistrée
+// reste le texte du champ (édité ou choisi dans les suggestions).
+let _adresseAgentDebounce = null;
+let _adresseAgentRequeteEnCours = 0;
+
+function onSaisieAdresseAgent(){
+  const champ = document.getElementById('compte-champ-adresse');
+  const requete = champ.value.trim();
+  clearTimeout(_adresseAgentDebounce);
+  if(requete.length < 3){ masquerSuggestionsAdresseAgent(); return; }
+  _adresseAgentDebounce = setTimeout(() => rechercherAdressesAgent(requete), 300);
+}
+
+async function rechercherAdressesAgent(requete){
+  const requeteId = ++_adresseAgentRequeteEnCours;
+  try{
+    const resp = await fetch('https://api-adresse.data.gouv.fr/search/?limit=5&autocomplete=1&q=' + encodeURIComponent(requete));
+    if(requeteId !== _adresseAgentRequeteEnCours) return; // une frappe plus récente a déjà relancé une recherche
+    if(!resp.ok){ masquerSuggestionsAdresseAgent(); return; }
+    const data = await resp.json();
+    afficherSuggestionsAdresseAgent((data && data.features) || []);
+  }catch(e){
+    masquerSuggestionsAdresseAgent(); // silencieux : la saisie libre reste utilisable
+  }
+}
+
+function afficherSuggestionsAdresseAgent(features){
+  const wrap = document.getElementById('compte-adresse-suggestions');
+  if(!wrap) return;
+  if(!features.length){ masquerSuggestionsAdresseAgent(); return; }
+  wrap.innerHTML = '';
+  features.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'adresse-suggestion';
+    item.textContent = (f.properties && f.properties.label) || '';
+    item.onclick = () => choisirSuggestionAdresseAgent(f);
+    wrap.appendChild(item);
+  });
+  wrap.classList.add('show');
+}
+
+function masquerSuggestionsAdresseAgent(){
+  const wrap = document.getElementById('compte-adresse-suggestions');
+  if(wrap){ wrap.classList.remove('show'); wrap.innerHTML = ''; }
+}
+
+function choisirSuggestionAdresseAgent(feature){
+  const champ = document.getElementById('compte-champ-adresse');
+  champ.value = (feature.properties && feature.properties.label) || champ.value;
+  masquerSuggestionsAdresseAgent();
+}
+
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('compte-adresse-suggestions');
+  const champ = document.getElementById('compte-champ-adresse');
+  if(!wrap || !champ) return;
+  if(e.target !== champ && !wrap.contains(e.target)) masquerSuggestionsAdresseAgent();
+});
 
 function renderBareme(bareme){
   const tbody = document.getElementById('bareme-affiche');
@@ -654,103 +705,100 @@ function renderBareme(bareme){
     || '<tr><td colspan="2" class="empty">Barème non renseigné pour l\'instant.</td></tr>';
 }
 
-// ─── Zones d'intervention : recherche de commune + sélection par case ───
-// Rien n'est chargé tant que l'agent ne cherche rien : pas de carte, pas de
-// mesh de communes précharge (l'ancienne version, trop lente à afficher).
-// Données géographiques : API officielle et gratuite geo.api.gouv.fr
-// (IGN/Base Adresse Nationale), déjà dans l'esprit du projet qui utilise
-// api-adresse.data.gouv.fr pour l'autocomplete d'adresses ailleurs dans le
-// CRM. codeRegion=11 = Île-de-France.
-const REGION_IDF = '11';
+// ─── Zones d'intervention : département puis codes postaux à cliquer ───
+// Modèle simple et direct : l'agent choisit un département, on va chercher
+// (une seule fois, mis en cache) les codes postaux réels de ce département
+// via l'API officielle et gratuite geo.api.gouv.fr (IGN/Base Adresse
+// Nationale) — juste les codes postaux, pas les contours : la requête reste
+// légère même pour un grand département. Chaque code postal est un bouton
+// qu'un clic fait passer par primaire → secondaire → retiré.
+const DEPARTEMENTS_IDF = [
+  { code:'75', nom:'Paris' }, { code:'77', nom:'Seine-et-Marne' }, { code:'78', nom:'Yvelines' },
+  { code:'91', nom:'Essonne' }, { code:'92', nom:'Hauts-de-Seine' }, { code:'93', nom:'Seine-St-Denis' },
+  { code:'94', nom:'Val-de-Marne' }, { code:'95', nom:"Val-d'Oise" },
+];
 
-let zones = {};              // code INSEE -> { nom, categorie }
+let assignments = {};        // code postal -> 'primaire' | 'secondaire'
 let zoneStatut = null;       // null | 'attente' | 'valide' | 'refuse'
-let modeZoneActif = 'primaire';
-let dernierResultats = [];   // résultats de recherche affichés, pour re-render au clic
+let _selectDeptConstruit = false;
+const cacheCodesParDept = {}; // { code, villes[] }[] par département, une fois demandé
 
-function choisirModeZone(mode){
-  modeZoneActif = mode;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-}
-
-function initialiserRechercheZones(){
-  const inputRecherche = document.getElementById('recherche-commune');
-  let timerRecherche = null;
-  inputRecherche.addEventListener('input', () => {
-    const q = inputRecherche.value.trim();
-    clearTimeout(timerRecherche);
-    if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
-    timerRecherche = setTimeout(() => rechercherCommunes(q), 300);
+function construireSelectDepartements(){
+  if(_selectDeptConstruit) return;
+  const select = document.getElementById('select-departement');
+  DEPARTEMENTS_IDF.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.code;
+    opt.textContent = d.nom + ' (' + d.code + ')';
+    select.appendChild(opt);
   });
+  _selectDeptConstruit = true;
 }
 
-function renderResultats(){
-  const listeEl = document.getElementById('result-list');
-  if(!dernierResultats.length){
-    listeEl.innerHTML = '<div class="result-empty">Tapez au moins 2 caractères (nom de commune).</div>';
-    return;
-  }
-  listeEl.innerHTML = dernierResultats.map(c => {
-    const z = zones[c.code];
-    const classe = z ? z.categorie : '';
-    return `<div class="result-row ${classe}" onclick="basculerCommune('${c.code}', '${String(c.nom).replace(/'/g,"\\'")}')">
-      <input type="checkbox" ${z ? 'checked' : ''} onclick="event.stopPropagation(); basculerCommune('${c.code}', '${String(c.nom).replace(/'/g,"\\'")}')">
-      <span class="result-nom">${esc(c.nom)}</span>
-      <span class="result-cp">${esc((c.codesPostaux||[]).join(', '))}</span>
-      ${z ? `<span class="result-pill">${z.categorie}</span>` : ''}
-    </div>`;
-  }).join('');
-}
-
-async function rechercherCommunes(q){
-  const listeEl = document.getElementById('result-list');
-  if(q.length < 2){ dernierResultats = []; listeEl.innerHTML = '<div class="result-empty">Tapez au moins 2 caractères (nom de commune).</div>'; return; }
-  listeEl.innerHTML = '<div class="result-empty">Recherche…</div>';
+async function chargerCodesPostauxDept(deptCode){
+  const select = document.getElementById('select-departement');
+  const grid = document.getElementById('cp-grid');
+  const loading = document.getElementById('cp-loading');
+  select.value = deptCode;
+  if(!deptCode){ grid.innerHTML = '<div class="cp-grid-empty">Choisissez un département pour voir ses codes postaux.</div>'; return; }
+  loading.classList.add('show');
+  grid.innerHTML = '';
   try{
-    const url = 'https://geo.api.gouv.fr/communes?nom=' + encodeURIComponent(q) +
-      '&fields=nom,code,codeDepartement,codesPostaux&boost=population&limit=8&codeRegion=' + REGION_IDF;
-    const resp = await fetch(url);
-    const communes = await resp.json();
-    dernierResultats = Array.isArray(communes) ? communes : [];
-    if(!dernierResultats.length){ listeEl.innerHTML = '<div class="result-empty">Aucune commune trouvée en Île-de-France.</div>'; return; }
-    renderResultats();
+    let codes = cacheCodesParDept[deptCode];
+    if(!codes){
+      const resp = await fetch('https://geo.api.gouv.fr/departements/' + deptCode + '/communes?fields=nom,codesPostaux');
+      const communes = await resp.json();
+      const villesParCode = {};
+      (Array.isArray(communes) ? communes : []).forEach(c => {
+        (c.codesPostaux || []).forEach(cp => {
+          if(!villesParCode[cp]) villesParCode[cp] = [];
+          if(!villesParCode[cp].includes(c.nom)) villesParCode[cp].push(c.nom);
+        });
+      });
+      codes = Object.keys(villesParCode).sort().map(cp => ({ code: cp, villes: villesParCode[cp] }));
+      cacheCodesParDept[deptCode] = codes;
+    }
+    if(!codes.length){ grid.innerHTML = '<div class="cp-grid-empty">Aucun code postal trouvé pour ce département.</div>'; return; }
+    grid.innerHTML = '';
+    codes.forEach(({ code, villes }) => grid.appendChild(makeChip(code, villes.join(', '))));
+    renderAssignments();
   }catch(e){
-    dernierResultats = [];
-    listeEl.innerHTML = '<div class="result-empty">Recherche indisponible pour l\'instant.</div>';
+    grid.innerHTML = '<div class="cp-grid-empty">Chargement indisponible pour l\'instant.</div>';
+  }finally{
+    loading.classList.remove('show');
   }
 }
 
-function basculerCommune(code, nom){
-  if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
-  if(zones[code]) delete zones[code];
-  else zones[code] = { nom, categorie: modeZoneActif };
-  renderResultats();
-  renderZonesEtCompteurs();
+function makeChip(code, titre){
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'cp-chip';
+  el.textContent = code;
+  el.dataset.code = code;
+  if(titre) el.title = code + ' — ' + titre;
+  el.addEventListener('click', () => cycleAssignment(code));
+  return el;
 }
 
-function retirerCommune(code){
+function cycleAssignment(code){
   if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
-  delete zones[code];
-  renderResultats();
-  renderZonesEtCompteurs();
+  const cur = assignments[code];
+  if(cur === undefined) assignments[code] = 'primaire';
+  else if(cur === 'primaire') assignments[code] = 'secondaire';
+  else delete assignments[code];
+  renderAssignments();
 }
 
-function renderZonesEtCompteurs(){
-  const wrap = document.getElementById('chip-list');
-  const vide = document.getElementById('chip-empty');
-  const codes = Object.keys(zones);
-  vide.style.display = codes.length ? 'none' : 'block';
-  wrap.innerHTML = codes.map(code => {
-    const z = zones[code];
-    return `<span class="chip ${z.categorie}">
-      <span>${esc(z.nom)}</span>
-      <button class="x" onclick="retirerCommune('${code}')" title="Retirer">✕</button>
-    </span>`;
-  }).join('');
-
-  const valeurs = Object.values(zones);
-  const nbPrimaire = valeurs.filter(z => z.categorie === 'primaire').length;
-  const nbSecondaire = valeurs.filter(z => z.categorie === 'secondaire').length;
+function renderAssignments(){
+  document.querySelectorAll('.cp-chip[data-code]').forEach(chip => {
+    const state = assignments[chip.dataset.code];
+    chip.classList.remove('primaire', 'secondaire');
+    if(state === 'primaire' || state === 'secondaire') chip.classList.add(state);
+  });
+  // Les compteurs portent sur TOUS les codes assignés, pas seulement ceux du
+  // département affiché — l'agent peut en avoir dans plusieurs départements.
+  let nbPrimaire = 0, nbSecondaire = 0;
+  Object.values(assignments).forEach(v => { if(v === 'primaire') nbPrimaire++; else if(v === 'secondaire') nbSecondaire++; });
   document.getElementById('count-primaire').textContent = nbPrimaire;
   document.getElementById('count-secondaire').textContent = nbSecondaire;
   const submitBtn = document.getElementById('btn-submit-zones');
@@ -775,41 +823,30 @@ function setZoneStatusBadge(){
   else { badge.className = 'zone-status-badge neutral'; badge.innerHTML = '<span class="dot"></span>' + (zoneStatut === 'refuse' ? 'Zones refusées' : 'Aucune zone définie'); }
 }
 
-function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus, adresse){
-  initialiserRechercheZones();
-  zones = {};
-  (secteurPrimaire || []).forEach(c => { if(c && c.code) zones[c.code] = { nom: c.nom, categorie: 'primaire' }; });
-  (secteurSecondaire || []).forEach(c => { if(c && c.code) zones[c.code] = { nom: c.nom, categorie: 'secondaire' }; });
+function initZones(secteurPrimaire, secteurSecondaire, statut, motifRefus){
+  construireSelectDepartements();
+  assignments = {};
+  (secteurPrimaire || []).forEach(cp => { if(cp) assignments[cp] = 'primaire'; });
+  (secteurSecondaire || []).forEach(cp => { if(cp) assignments[cp] = 'secondaire'; });
   zoneStatut = statut || null;
-  renderZonesEtCompteurs();
   setZoneStatusBadge();
+  renderAssignments(); // compteurs à jour tout de suite, même avant que la grille ne soit chargée
+  // Ouvre directement le département du premier code déjà sélectionné, pour
+  // que l'agent retrouve tout de suite ses codes postaux existants.
+  const premierCode = Object.keys(assignments)[0];
+  const dept = premierCode ? premierCode.slice(0, 2) : '';
+  if(dept && DEPARTEMENTS_IDF.some(d => d.code === dept)) chargerCodesPostauxDept(dept);
   if(statut === 'refuse' && motifRefus){
     const lockNote = document.getElementById('map-lock-note');
     lockNote.textContent = '✕ Zones refusées par l\'agence — ' + motifRefus;
     lockNote.classList.add('show');
   }
-  preremplirRechercheDepuisAdresse(adresse);
-}
-
-// Pré-remplit la recherche avec l'adresse renseignée par l'agent lui-même
-// (champ "Mon compte") et lance une recherche immédiate, comme s'il venait
-// de taper — il peut évidemment tout effacer et chercher autre chose. La
-// recherche par nom de commune (API geo.api.gouv.fr) ne comprend pas une
-// adresse complète ("12 rue de la Paix, 91000 Évry") : on n'en extrait que
-// le nom de ville (ce qui suit le code postal), tout en affichant l'adresse
-// complète dans le champ.
-function preremplirRechercheDepuisAdresse(adresse){
-  if(!adresse) return;
-  const inputRecherche = document.getElementById('recherche-commune');
-  inputRecherche.value = adresse;
-  const ville = (adresse.match(/\d{5}\s*,?\s*(.+)$/) || [])[1] || adresse;
-  rechercherCommunes(ville.trim());
 }
 
 async function soumettreZones(){
-  const primaire = Object.entries(zones).filter(([,z]) => z.categorie === 'primaire').map(([code,z]) => ({ code, nom: z.nom }));
-  const secondaire = Object.entries(zones).filter(([,z]) => z.categorie === 'secondaire').map(([code,z]) => ({ code, nom: z.nom }));
-  if(!primaire.length && !secondaire.length){ showToast('⚠️ Sélectionnez au moins une commune'); return; }
+  const primaire = Object.keys(assignments).filter(c => assignments[c] === 'primaire');
+  const secondaire = Object.keys(assignments).filter(c => assignments[c] === 'secondaire');
+  if(!primaire.length && !secondaire.length){ showToast('⚠️ Sélectionnez au moins un code postal'); return; }
   const btn = document.getElementById('btn-submit-zones');
   const libelleOriginal = btn.innerHTML;
   btn.disabled = true; btn.textContent = 'Envoi…';
@@ -823,7 +860,7 @@ async function soumettreZones(){
     if(!resp.ok){ showToast('❌ ' + (data.error || 'Erreur lors de l\'envoi')); btn.disabled = false; btn.innerHTML = libelleOriginal; return; }
     zoneStatut = 'attente';
     setZoneStatusBadge();
-    renderZonesEtCompteurs();
+    renderAssignments();
     showToast('📍 Zones envoyées pour validation à l\'agence');
   }catch(e){
     showToast('❌ Erreur réseau, réessaie.');
@@ -834,7 +871,7 @@ async function soumettreZones(){
 function modifierZones(){
   zoneStatut = null;
   setZoneStatusBadge();
-  renderZonesEtCompteurs();
+  renderAssignments();
 }
 
 // ─── Photo de profil ─────────────────────────────────────────

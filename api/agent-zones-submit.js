@@ -4,26 +4,24 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { resolverAgentParEmail } from './_lib/agent-lookup.js';
 
-const MAX_COMMUNES = 300; // garde-fou, largement au-dessus du nombre réel de communes qu'un agent couvrirait
+const MAX_CODES = 300; // garde-fou, largement au-dessus du nombre réel de codes postaux d'Île-de-France
 
 // Soumission par un agent (agent-app.html) de ses secteurs d'intervention
-// (primaire/secondaire, par commune — code INSEE + nom, choisis via la
-// recherche/carte geo.api.gouv.fr) pour les frais de déplacement. Passe la
-// fiche agent en statut "attente" : c'est l'agence qui valide ou refuse
-// ensuite depuis le CRM (Paramètres → Agents EDL), jamais appliqué
+// (primaire/secondaire, par code postal) pour les frais de déplacement.
+// Passe la fiche agent en statut "attente" : c'est l'agence qui valide ou
+// refuse ensuite depuis le CRM (Paramètres → Agents EDL), jamais appliqué
 // automatiquement. Authentification identique à agent-missions.js — un
 // agent ne peut modifier que SA propre fiche.
-function nettoyerCommunes(valeur) {
+function nettoyerCodes(valeur) {
   if (!Array.isArray(valeur)) return [];
   const vus = new Set();
   const resultat = [];
   for (const v of valeur) {
-    const code = String((v && v.code) || '').trim();
-    const nom = String((v && v.nom) || '').trim();
-    if (!code || !nom || vus.has(code)) continue;
+    const code = String(v || '').trim();
+    if (!code || vus.has(code)) continue;
     vus.add(code);
-    resultat.push({ code, nom });
-    if (resultat.length >= MAX_COMMUNES) break;
+    resultat.push(code);
+    if (resultat.length >= MAX_CODES) break;
   }
   return resultat;
 }
@@ -72,11 +70,10 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Corps de requête invalide' }), { status: 400, headers });
   }
 
-  const secteurPrimaire = nettoyerCommunes(body.secteurPrimaire);
-  const codesPrimaire = new Set(secteurPrimaire.map(c => c.code));
-  const secteurSecondaire = nettoyerCommunes(body.secteurSecondaire).filter(c => !codesPrimaire.has(c.code));
+  const secteurPrimaire = nettoyerCodes(body.secteurPrimaire);
+  const secteurSecondaire = nettoyerCodes(body.secteurSecondaire).filter(c => !secteurPrimaire.includes(c));
   if (secteurPrimaire.length + secteurSecondaire.length === 0) {
-    return new Response(JSON.stringify({ error: 'Sélectionnez au moins une commune' }), { status: 400, headers });
+    return new Response(JSON.stringify({ error: 'Sélectionnez au moins un code postal' }), { status: 400, headers });
   }
 
   const supaHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
