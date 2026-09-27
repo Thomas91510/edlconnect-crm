@@ -98,6 +98,9 @@ function chargerAgentApp({ signInWithOtp } = {}) {
     window.L = {
       map: () => ({ setView(){ return this; } }),
       tileLayer: () => ({ addTo(){ return this; } }),
+      layerGroup: () => ({ addTo(){ return this; } }),
+      latLngBounds: () => ({ isValid: () => false }),
+      circleMarker: () => ({ setStyle(){}, bindTooltip(){ return this; }, on(){ return this; } }),
       geoJSON: (data, opts) => {
         const couches = ((data && data.features) || []).map(feature => {
           const couche = {
@@ -113,10 +116,17 @@ function chargerAgentApp({ signInWithOtp } = {}) {
           addTo(){ return this; },
           eachLayer(cb){ couches.forEach(cb); },
           getBounds(){ return {}; },
+          on(){ return this; },
           _couches: couches,
         };
       },
     };
+    // Filet de sécurité : tout appel réseau non explicitement stubbé par un
+    // test (ex. le fetch réel de geo.api.gouv.fr déclenché par la sélection
+    // d'une commune) doit échouer immédiatement plutôt que de taper le vrai
+    // réseau depuis les tests — les appels réels se vérifient sur la preview
+    // Vercel, pas ici.
+    window.fetch = async () => { throw new Error('fetch non stubbé dans ce test'); };
   `, { filename: 'stub-supabase.js' }).runInContext(ctx);
   new vm.Script(inline, { filename: 'inline.js' }).runInContext(ctx);
   return dom.window;

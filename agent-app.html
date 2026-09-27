@@ -632,16 +632,25 @@ const DEPARTEMENTS_IDF = [
   { code:'94', nom:'Val-de-Marne' }, { code:'95', nom:"Val-d'Oise" },
 ];
 
-let zones = {};              // code INSEE -> { nom, categorie } — conservé en changeant de département
+// Aperçu léger (points) + détail réel à la demande, pour la vitesse : charger
+// le contour précis des ~500 communes d'un département comme la Seine-et-
+// Marne d'un coup est beaucoup trop lourd/lent. On charge donc juste les
+// centres (minuscule payload) pour TOUTES les communes du département —
+// cliquables directement — et on ne va chercher le vrai contour détaillé
+// que pour les communes que l'agent sélectionne réellement (typiquement
+// une poignée), affiché par-dessus le point.
+let zones = {};              // code INSEE -> { nom, categorie, layer? } — conservé en changeant de département
 let zoneStatut = null;       // null | 'attente' | 'valide' | 'refuse'
-let coucheCommunesActuelle = null;
+let coucheMarqueursActuelle = null;
+let marqueursParCode = {};
 let departementActif = null;
-const cacheGeojsonParDept = {};
+const cacheCommunesParDept = {};   // liste légère {nom,code,centre} par département
+const cachePolygoneParCode = {};   // contour détaillé par commune, une fois demandé
 let leafletMap = null;
 
 function initialiserCarteZones(){
   if(leafletMap) return;
-  leafletMap = L.map('map', { scrollWheelZoom:false }).setView([48.85, 2.4], 8);
+  leafletMap = L.map('map', { scrollWheelZoom:false, preferCanvas:true }).setView([48.85, 2.4], 8);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -676,24 +685,28 @@ async function chargerDepartement(code){
   document.querySelectorAll('.dept-tab').forEach(b => b.classList.toggle('active', b.dataset.dept === code));
   document.getElementById('map-loading').classList.add('show');
   try{
-    let geojson = cacheGeojsonParDept[code];
-    if(!geojson){
-      const resp = await fetch('https://geo.api.gouv.fr/departements/' + code + '/communes?fields=nom,code&format=geojson&geometry=contour');
-      geojson = await resp.json();
-      cacheGeojsonParDept[code] = geojson;
+    let communes = cacheCommunesParDept[code];
+    if(!communes){
+      const resp = await fetch('https://geo.api.gouv.fr/departements/' + code + '/communes?fields=nom,code,centre');
+      communes = (await resp.json()).filter(c => c.centre);
+      cacheCommunesParDept[code] = communes;
     }
-    if(coucheCommunesActuelle) leafletMap.removeLayer(coucheCommunesActuelle);
-    coucheCommunesActuelle = L.geoJSON(geojson, {
-      style: (feature) => {
-        const z = zones[feature.properties.code];
-        return { color:'#fff', weight:1, fillColor: couleurCategorie(z && z.categorie), fillOpacity: z ? 0.7 : 0.35 };
-      },
-      onEachFeature: (feature, layer) => {
-        layer.bindTooltip(feature.properties.nom);
-        layer.on('click', () => cyclerCategorie(feature.properties.code, feature.properties.nom));
-      }
-    }).addTo(leafletMap);
-    leafletMap.fitBounds(coucheCommunesActuelle.getBounds(), { padding:[10,10] });
+    if(coucheMarqueursActuelle) leafletMap.removeLayer(coucheMarqueursActuelle);
+    marqueursParCode = {};
+    const marqueurs = communes.map(c => {
+      const z = zones[c.code];
+      const marker = L.circleMarker([c.centre.coordinates[1], c.centre.coordinates[0]], {
+        radius: 7, color:'#fff', weight:1.5, fillColor: couleurCategorie(z && z.categorie), fillOpacity:0.9
+      });
+      marker.bindTooltip(c.nom);
+      marker.on('click', () => cyclerCategorie(c.code, c.nom));
+      marqueursParCode[c.code] = marker;
+      if(z && !z.layer) afficherPolygoneCommune(c.code, c.nom); // sélection déjà connue → contour réel aussi
+      return marker;
+    });
+    coucheMarqueursActuelle = L.layerGroup(marqueurs).addTo(leafletMap);
+    const bounds = L.latLngBounds(communes.map(c => [c.centre.coordinates[1], c.centre.coordinates[0]]));
+    if(bounds.isValid()) leafletMap.fitBounds(bounds, { padding:[20,20] });
   }catch(e){
     showToast('❌ Chargement du département indisponible pour l\'instant.');
   }finally{
@@ -701,11 +714,37 @@ async function chargerDepartement(code){
   }
 }
 
-function restylerCoucheActuelle(){
-  if(!coucheCommunesActuelle) return;
-  coucheCommunesActuelle.eachLayer(layer => {
-    const z = zones[layer.feature.properties.code];
-    layer.setStyle({ fillColor: couleurCategorie(z && z.categorie), fillOpacity: z ? 0.7 : 0.35 });
+// Contour réel d'UNE commune, chargé seulement quand elle est sélectionnée
+// (payload minuscule comparé à un département entier) — affiché par-dessus
+// son point sur la carte.
+async function afficherPolygoneCommune(code, nom){
+  try{
+    let geojson = cachePolygoneParCode[code];
+    if(!geojson){
+      const resp = await fetch('https://geo.api.gouv.fr/communes/' + code + '?fields=nom,contour&format=geojson&geometry=contour');
+      geojson = await resp.json();
+      cachePolygoneParCode[code] = geojson;
+    }
+    if(!zones[code]) return; // retirée entre-temps
+    const layer = L.geoJSON(geojson, {
+      style: () => ({ color:'#fff', weight:1.5, fillColor: couleurCategorie(zones[code] && zones[code].categorie), fillOpacity:0.65 })
+    }).addTo(leafletMap);
+    layer.on('click', () => cyclerCategorie(code, nom));
+    zones[code].layer = layer;
+  }catch(e){ /* tant pis : le point coloré suffit à représenter la sélection */ }
+}
+
+function retirerPolygoneCommune(code){
+  if(zones[code] && zones[code].layer){ leafletMap.removeLayer(zones[code].layer); }
+}
+
+function restylerMarqueurs(){
+  Object.keys(marqueursParCode).forEach(code => {
+    const z = zones[code];
+    marqueursParCode[code].setStyle({ fillColor: couleurCategorie(z && z.categorie) });
+  });
+  Object.entries(zones).forEach(([code, z]) => {
+    if(z.layer) z.layer.setStyle({ fillColor: couleurCategorie(z.categorie) });
   });
 }
 
@@ -741,17 +780,24 @@ async function rechercherCommunes(q, inputRecherche, boiteSuggestions){
 function cyclerCategorie(code, nom){
   if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
   const actuel = zones[code];
-  if(!actuel) zones[code] = { nom, categorie: 'primaire' };
-  else if(actuel.categorie === 'primaire') actuel.categorie = 'secondaire';
-  else delete zones[code];
-  restylerCoucheActuelle();
+  if(!actuel){
+    zones[code] = { nom, categorie: 'primaire' };
+    afficherPolygoneCommune(code, nom);
+  } else if(actuel.categorie === 'primaire'){
+    actuel.categorie = 'secondaire';
+  } else {
+    retirerPolygoneCommune(code);
+    delete zones[code];
+  }
+  restylerMarqueurs();
   renderZonesEtCompteurs();
 }
 
 function retirerCommune(code){
   if(zoneStatut === 'attente' || zoneStatut === 'valide') return;
+  retirerPolygoneCommune(code);
   delete zones[code];
-  restylerCoucheActuelle();
+  restylerMarqueurs();
   renderZonesEtCompteurs();
 }
 
