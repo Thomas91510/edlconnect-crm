@@ -461,7 +461,8 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
     <div class="logo">
       <div class="logo-top">
-        <svg viewBox="0 0 120 120" width="36" height="36" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
+        <svg id="sidebar-logo-svg" viewBox="0 0 120 120" width="36" height="36" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
+        <img id="sidebar-logo-custom" src="" alt="Logo" style="display:none;width:36px;height:36px;border-radius:8px;object-fit:contain;flex-shrink:0;background:#fff">
         <div>
           <div class="logo-title" id="sidebar-company-name">Lokentia</div>
           <div class="logo-sub" id="sidebar-user-email">CRM Pro</div>
@@ -1428,12 +1429,33 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       <div class="settings-section">
         <div class="settings-title"><i class="ti ti-palette" style="font-size:18px"></i>Identité visuelle</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">
-          Cette couleur remplace le bleu par défaut dans ce CRM, l'espace agent et votre page publique de demande d'état des lieux.
+          Votre couleur et votre logo remplacent ceux de Lokentia dans ce CRM, l'espace agent et votre page publique de demande d'état des lieux.
         </div>
-        <label>Couleur principale</label>
-        <div style="display:flex;align-items:center;gap:10px">
-          <input type="color" id="set-couleur" value="#1A5FA8" style="width:52px;height:38px;padding:2px;cursor:pointer" oninput="appliquerCouleurMarque(this.value)">
-          <span style="font-size:12px;color:var(--text2)">Aperçu appliqué immédiatement — cliquez "Enregistrer" pour la conserver.</span>
+
+        <div id="identite-visuelle-verrou" style="display:none;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--radius);padding:14px;text-align:center">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px"><i class="ti ti-lock"></i> Réservé aux abonnements payants</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Passez à la formule Starter ou Pro pour personnaliser votre couleur et votre logo.</div>
+          <button class="btn btn-sm btn-primary" onclick="nav('settings');document.getElementById('abo-offres')?.scrollIntoView({behavior:'smooth'})">Voir les formules</button>
+        </div>
+
+        <div id="identite-visuelle-controles">
+          <label>Couleur principale</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <input type="color" id="set-couleur" value="#1A5FA8" style="width:52px;height:38px;padding:2px;cursor:pointer" oninput="onCouleurSwatchChange(this.value)">
+            <input type="text" id="set-couleur-hex" value="#1A5FA8" placeholder="#1A5FA8" maxlength="7" style="width:110px;font-family:monospace" oninput="onCouleurHexChange(this.value)">
+            <span style="font-size:12px;color:var(--text2)">Aperçu appliqué immédiatement — cliquez "Enregistrer" pour la conserver.</span>
+          </div>
+
+          <label>Logo</label>
+          <div style="display:flex;align-items:center;gap:12px">
+            <img id="set-logo-apercu" src="" alt="Logo" style="display:none;width:52px;height:52px;border-radius:8px;object-fit:contain;border:1px solid var(--border2);background:#fff">
+            <label class="btn btn-sm" style="cursor:pointer">
+              <i class="ti ti-upload"></i> Choisir un logo
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none" onchange="televerserLogoAgence(this)">
+            </label>
+            <button class="btn btn-sm" id="set-logo-retirer" style="display:none;color:#c0392b;border-color:#c0392b" onclick="retirerLogoAgence()"><i class="ti ti-trash"></i> Retirer</button>
+          </div>
+          <div style="font-size:11px;color:var(--text2);margin-top:6px">PNG, JPG, WebP ou SVG — 2 Mo maximum. Enregistré immédiatement (pas besoin de cliquer sur "Enregistrer").</div>
         </div>
       </div>
       <button class="btn btn-primary" onclick="saveSettings()"><i class="ti ti-check"></i>Enregistrer les paramètres</button>

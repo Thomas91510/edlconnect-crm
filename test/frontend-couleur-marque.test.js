@@ -60,3 +60,44 @@ test('CFG.couleurPrimaire : "#1A5FA8" par défaut, persiste ce qui est enregistr
   cfg.couleurPrimaire = '#800000';
   assert.equal(cfg.couleurPrimaire, '#800000');
 });
+
+test('CFG.logoPath : vide par défaut, persiste ce qui est enregistré', () => {
+  const w = chargerScripts(['app-config.js'], '', 'window.__getCFG = function(){ return CFG; };').window;
+  const cfg = w.__getCFG();
+  assert.equal(cfg.logoPath, '');
+  cfg.logoPath = 'abc123.png';
+  assert.equal(cfg.logoPath, 'abc123.png');
+});
+
+function setupLogo() {
+  return chargerScripts(
+    ['app-core.js'],
+    '<svg id="sidebar-logo-svg"></svg><img id="sidebar-logo-custom" style="display:none">'
+  ).window;
+}
+
+test('appliquerLogoMarque : une URL affiche le logo personnalisé et masque le SVG par défaut', () => {
+  const w = setupLogo();
+  w.appliquerLogoMarque('https://exemple/logo.png');
+  const svg = w.document.getElementById('sidebar-logo-svg');
+  const img = w.document.getElementById('sidebar-logo-custom');
+  assert.equal(img.src, 'https://exemple/logo.png');
+  assert.notEqual(img.style.display, 'none');
+  assert.equal(svg.style.display, 'none');
+});
+
+test('appliquerLogoMarque : une URL vide restaure le SVG par défaut et retire le src', () => {
+  const w = setupLogo();
+  w.appliquerLogoMarque('https://exemple/logo.png');
+  w.appliquerLogoMarque('');
+  const svg = w.document.getElementById('sidebar-logo-svg');
+  const img = w.document.getElementById('sidebar-logo-custom');
+  assert.equal(img.style.display, 'none');
+  assert.equal(img.hasAttribute('src'), false);
+  assert.notEqual(svg.style.display, 'none');
+});
+
+test('appliquerLogoMarque : ne fait rien (ne plante pas) si les éléments de la sidebar sont absents', () => {
+  const w = chargerScripts(['app-core.js'], '').window;
+  assert.doesNotThrow(() => w.appliquerLogoMarque('https://exemple/logo.png'));
+});

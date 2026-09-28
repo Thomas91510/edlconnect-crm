@@ -100,6 +100,16 @@ function appliquerCouleurMarque(hexBrut){
   racine.setProperty('--blue-bg',melangerHexMarque(base,[255,255,255],0.92));
   racine.setProperty('--blue-text',melangerHexMarque(base,[0,0,0],0.42));
 }
+
+// Logo de l'agence (Paramètres → Identité visuelle) : remplace le logo
+// Lokentia par défaut dans la sidebar par le sien, une fois déposé.
+function appliquerLogoMarque(url){
+  const svg=document.getElementById('sidebar-logo-svg');
+  const img=document.getElementById('sidebar-logo-custom');
+  if(!svg||!img)return;
+  if(url){ img.src=url; img.style.display=''; svg.style.display='none'; }
+  else { img.style.display='none'; img.removeAttribute('src'); svg.style.display=''; }
+}
 function statusBadge(s){
   const m={'Client actif':'b-green','Client signé ✅':'b-green','Cible potentielle':'b-blue','Partenaire':'b-teal','Inactif':'b-gray','planifiée':'b-blue','en cours':'b-amber','terminée':'b-teal','annulée':'b-red','Gagné':'b-green','Négociation':'b-amber','Proposé':'b-blue','Qualifié':'b-teal','Prospect':'b-gray','Terminée':'b-gray','Active':'b-green','subscribed':'b-green','unsubscribed':'b-amber','bounced':'b-red','blocked':'b-red'};
   return `<span class="badge badge-status ${m[s]||'b-gray'}">${esc(s)||'—'}</span>`;

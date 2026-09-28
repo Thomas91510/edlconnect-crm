@@ -39,6 +39,10 @@ const CFG={
   // agent et la page publique de réservation. #1A5FA8 = bleu par défaut.
   get couleurPrimaire(){return localStorage.getItem('edl_couleur_primaire')||'#1A5FA8';},
   set couleurPrimaire(v){localStorage.setItem('edl_couleur_primaire',v);},
+  // Chemin de stockage du logo (bucket public "agency-logos") — vide si
+  // aucun logo déposé, auquel cas le logo Lokentia par défaut reste affiché.
+  get logoPath(){return localStorage.getItem('edl_logo_path')||'';},
+  set logoPath(v){localStorage.setItem('edl_logo_path',v);},
   proxy:'https://api.allorigins.win/raw?url='
 };
 
