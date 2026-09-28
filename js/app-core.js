@@ -80,6 +80,26 @@ function initials(n){const w=(n||'?').trim().split(' ');return((w[0]||'?')[0]+((
 // pour empêcher l'injection de code (XSS). Priorité : données externes (agences,
 // locataires, réservations issues des formulaires publics).
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+// Couleur de marque de l'agence (Paramètres) : dérive les nuances déjà
+// utilisées dans tout le CSS du CRM (--blue/--blue-bg/--blue-text) à partir
+// d'une seule couleur choisie, appliquées comme variables CSS sur :root.
+// Même principe appliqué séparément dans agent-app.html (autres noms de
+// variables, --blue-light/--blue-dark) et api/booking-page.js (rendu serveur).
+function melangerHexMarque(hex,vers,taux){
+  const n=parseInt(hex.slice(1),16);
+  const r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  const mix=(c,v)=>Math.round(c+(v-c)*taux);
+  return '#'+[mix(r,vers[0]),mix(g,vers[1]),mix(b,vers[2])]
+    .map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');
+}
+function appliquerCouleurMarque(hexBrut){
+  const base=/^#[0-9a-fA-F]{6}$/.test(hexBrut||'')?hexBrut:'#1A5FA8';
+  const racine=document.documentElement.style;
+  racine.setProperty('--blue',base);
+  racine.setProperty('--blue-bg',melangerHexMarque(base,[255,255,255],0.92));
+  racine.setProperty('--blue-text',melangerHexMarque(base,[0,0,0],0.42));
+}
 function statusBadge(s){
   const m={'Client actif':'b-green','Client signé ✅':'b-green','Cible potentielle':'b-blue','Partenaire':'b-teal','Inactif':'b-gray','planifiée':'b-blue','en cours':'b-amber','terminée':'b-teal','annulée':'b-red','Gagné':'b-green','Négociation':'b-amber','Proposé':'b-blue','Qualifié':'b-teal','Prospect':'b-gray','Terminée':'b-gray','Active':'b-green','subscribed':'b-green','unsubscribed':'b-amber','bounced':'b-red','blocked':'b-red'};
   return `<span class="badge badge-status ${m[s]||'b-gray'}">${esc(s)||'—'}</span>`;

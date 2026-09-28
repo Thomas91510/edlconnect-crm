@@ -263,6 +263,32 @@ test('telechargerDocument : appelle agent-document-download avec le type, ouvre 
   assert.equal(btn.disabled, false, 'le bouton doit être réactivé après le téléchargement');
 });
 
+const KPI_VIDE = { total: 0, parCategorie: { entrant: 0, sortant: 0, simultane: 0, autre: 0 }, meuble: 0, nu: 0, parTypologie: {} };
+
+test('chargerMesMissions : applique la couleur de marque renvoyée par l\'API', async () => {
+  const w = chargerAgentApp();
+  w.fetch = async () => ({
+    ok: true,
+    json: async () => ({ missions: [], agent: {}, kpi: KPI_VIDE, couleurPrimaire: '#800000' }),
+  });
+
+  await w.chargerMesMissions();
+
+  assert.equal(w.document.documentElement.style.getPropertyValue('--blue'), '#800000');
+});
+
+test('chargerMesMissions : sans couleur renvoyée, garde le bleu par défaut', async () => {
+  const w = chargerAgentApp();
+  w.fetch = async () => ({
+    ok: true,
+    json: async () => ({ missions: [], agent: {}, kpi: KPI_VIDE, couleurPrimaire: '' }),
+  });
+
+  await w.chargerMesMissions();
+
+  assert.equal(w.document.documentElement.style.getPropertyValue('--blue'), '#1A5FA8');
+});
+
 test('telechargerDocument : document indisponible → alerte, pas d\'ouverture d\'URL', async () => {
   const w = chargerAgentApp();
   let appelOpen = null;

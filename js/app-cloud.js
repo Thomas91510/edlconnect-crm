@@ -76,6 +76,7 @@ async function loadSettingsFromSupabase(){
     if(s.expediteurTel){localStorage.setItem('edl_exp_tel',s.expediteurTel);}
     if(s.expediteurSignature){localStorage.setItem('edl_exp_signature',s.expediteurSignature);}
     if(s.expediteurPartenaire){localStorage.setItem('edl_exp_partenaire',s.expediteurPartenaire);}
+    if(s.couleurPrimaire){localStorage.setItem('edl_couleur_primaire',s.couleurPrimaire);}
     // Agents / collaborateurs (stockés dans settings, pas dans une table dédiée)
     if(Array.isArray(s.agents)){
       DB.agents = s.agents;

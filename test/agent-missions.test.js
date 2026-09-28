@@ -135,6 +135,18 @@ test('agent.bareme : barème par défaut si l\'agence n\'a rien configuré', asy
   assert.equal(body.agent.tel, '');
   assert.equal(body.agent.photoUrl, null);
   assert.deepEqual(body.agent.secteurPrimaire, []);
+  assert.equal(body.couleurPrimaire, '', 'sans couleur configurée, la valeur reste vide (le front applique alors son bleu par défaut)');
+});
+
+test('couleurPrimaire : reflète la couleur de marque configurée par l\'agence (settings.data.couleurPrimaire)', async () => {
+  const rows = [{ user_id: 'owner-1', data: {
+    agents: [{ id: 'agent-1', nom: 'Jean Dupont', email: 'jean@exemple.fr' }],
+    couleurPrimaire: '#800000',
+  } }];
+  global.fetch = fabriquerFetchMock({ settingsRows: rows, missionsRows: [] });
+  const resp = await handler(requete('jeton-valide'));
+  const body = await resp.json();
+  assert.equal(body.couleurPrimaire, '#800000');
 });
 
 test('agent.bareme : renvoie le barème configuré par l\'agence (settings.data.baremeDeplacement)', async () => {

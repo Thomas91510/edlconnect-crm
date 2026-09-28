@@ -511,6 +511,7 @@ function loadSettingsForm(){
   _set('set-exp-tel',CFG.expediteurTel);
   _set('set-exp-signature',CFG.expediteurSignature);
   _set('set-exp-partenaire',CFG.expediteurPartenaire);
+  _set('set-couleur',CFG.couleurPrimaire);
   const ck=document.getElementById('set-claude-key');
   if(ck) ck.value=localStorage.getItem('edl_claude_key')||'';
   // Afficher une alerte si les clés ne sont pas configurées
@@ -532,6 +533,8 @@ function saveSettings(){
   CFG.expediteurTel=_get('set-exp-tel');
   CFG.expediteurSignature=_get('set-exp-signature');
   CFG.expediteurPartenaire=_get('set-exp-partenaire');
+  CFG.couleurPrimaire=_get('set-couleur')||'#1A5FA8';
+  appliquerCouleurMarque(CFG.couleurPrimaire);
   const claudeKey=document.getElementById('set-claude-key')?.value.trim();
   if(claudeKey) localStorage.setItem('edl_claude_key', claudeKey);
   // Sauvegarder dans Supabase (lié au user_id)
@@ -550,6 +553,7 @@ function saveSettings(){
     expediteurTel:CFG.expediteurTel||'',
     expediteurSignature:CFG.expediteurSignature||'',
     expediteurPartenaire:CFG.expediteurPartenaire||'',
+    couleurPrimaire:CFG.couleurPrimaire||'',
     agents:DB.agents||[]
   };
   saveSettingsToSupabase(settingsData);
@@ -1110,6 +1114,7 @@ async function onAuthSuccess(user){
   }catch(e){}
   // Charger les paramètres depuis Supabase d'abord
   await loadSettingsFromSupabase();
+  appliquerCouleurMarque(CFG.couleurPrimaire);
   // Puis charger les données
   loadFromSupabase().then(async synced => {
     if(synced){

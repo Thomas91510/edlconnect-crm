@@ -9,6 +9,30 @@ function escHtml(v) {
   return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// Couleur de marque choisie par l'agence (Paramètres → settings.data.couleurPrimaire) :
+// dérive les mêmes nuances --blue/--blue-light/--blue-dark que le reste du
+// CRM à partir de cette seule couleur, pour que cette page publique (le
+// formulaire de réservation partagé par l'agence) reste cohérente avec son
+// identité visuelle plutôt que le bleu Lokentia par défaut.
+function couleurValide(hex) {
+  return /^#[0-9a-fA-F]{6}$/.test(hex || '') ? hex : '#1A5FA8';
+}
+function melangerHex(hex, vers, taux) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const mix = (c, v) => Math.round(c + (v - c) * taux);
+  return '#' + [mix(r, vers[0]), mix(g, vers[1]), mix(b, vers[2])]
+    .map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+}
+function deriverPaletteMarque(hexBrut) {
+  const base = couleurValide(hexBrut);
+  return {
+    blue: base,
+    blueLight: melangerHex(base, [255, 255, 255], 0.92),
+    blueDark: melangerHex(base, [0, 0, 0], 0.28),
+  };
+}
+
 export default async function handler(req) {
   const url = new URL(req.url);
   // agencyId n'est qu'un slug (genere par copyBookingLink : a-z0-9-), jamais
@@ -21,6 +45,7 @@ export default async function handler(req) {
 
   // Identite du proprietaire de cette page (via le contact du lien, sinon le nom d'agence)
   let IDENT = { nom: 'Lokentia', tel: '', email: 'contact@lokentia.fr' };
+  let couleurPrimaire = '';
   try {
     const key = process.env.SUPABASE_SERVICE_KEY;
     if (key) {
@@ -45,11 +70,13 @@ export default async function handler(req) {
             tel: (d.expediteurTel || '').trim(),
             email: (d.expediteurEmail || d.userEmail || '').trim() || 'contact@lokentia.fr'
           };
+          couleurPrimaire = d.couleurPrimaire || '';
         }
       }
     }
   } catch (e) { /* identite neutre */ }
   const identTelHref = IDENT.tel.replace(/[^0-9+]/g, '');
+  const palette = deriverPaletteMarque(couleurPrimaire);
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -61,7 +88,7 @@ export default async function handler(req) {
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#1A5FA8;--blue-light:#F4F7FA;--blue-dark:#0C447C;
+  --blue:${palette.blue};--blue-light:${palette.blueLight};--blue-dark:${palette.blueDark};
   --green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;
   --text:#1a1a1a;--text2:#6b6b6b;--text3:#999;
   --border:#e5e5e2;--bg:#f8f8f6;--white:#fff;

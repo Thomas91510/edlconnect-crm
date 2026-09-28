@@ -1425,6 +1425,17 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         <label>Lien partenaire déménagement (facultatif)</label>
         <input id="set-exp-partenaire" placeholder="https://... — laisser vide pour ne pas l'afficher">
       </div>
+      <div class="settings-section">
+        <div class="settings-title"><i class="ti ti-palette" style="font-size:18px"></i>Identité visuelle</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">
+          Cette couleur remplace le bleu par défaut dans ce CRM, l'espace agent et votre page publique de demande d'état des lieux.
+        </div>
+        <label>Couleur principale</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="color" id="set-couleur" value="#1A5FA8" style="width:52px;height:38px;padding:2px;cursor:pointer" oninput="appliquerCouleurMarque(this.value)">
+          <span style="font-size:12px;color:var(--text2)">Aperçu appliqué immédiatement — cliquez "Enregistrer" pour la conserver.</span>
+        </div>
+      </div>
       <button class="btn btn-primary" onclick="saveSettings()"><i class="ti ti-check"></i>Enregistrer les paramètres</button>
     </div>
 
