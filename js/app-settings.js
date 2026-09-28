@@ -217,6 +217,7 @@ function populateExpertDropdown(selectedId){
 let _editingAgentId = null;
 
 const AGENT_PHOTOS_BUCKET_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co/storage/v1/object/public/agent-photos/';
+const AGENCY_LOGOS_BUCKET_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co/storage/v1/object/public/agency-logos/';
 
 function initialesAgent(nom){
   return String(nom || '?').trim().split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '?';
@@ -511,6 +512,9 @@ function loadSettingsForm(){
   _set('set-exp-tel',CFG.expediteurTel);
   _set('set-exp-signature',CFG.expediteurSignature);
   _set('set-exp-partenaire',CFG.expediteurPartenaire);
+  _set('set-couleur',CFG.couleurPrimaire);
+  _set('set-couleur-hex',CFG.couleurPrimaire);
+  afficherApercuLogo(CFG.logoPath ? AGENCY_LOGOS_BUCKET_URL+CFG.logoPath : '');
   const ck=document.getElementById('set-claude-key');
   if(ck) ck.value=localStorage.getItem('edl_claude_key')||'';
   // Afficher une alerte si les clés ne sont pas configurées
@@ -532,6 +536,8 @@ function saveSettings(){
   CFG.expediteurTel=_get('set-exp-tel');
   CFG.expediteurSignature=_get('set-exp-signature');
   CFG.expediteurPartenaire=_get('set-exp-partenaire');
+  CFG.couleurPrimaire=_get('set-couleur')||'#1A5FA8';
+  appliquerCouleurMarque(CFG.couleurPrimaire);
   const claudeKey=document.getElementById('set-claude-key')?.value.trim();
   if(claudeKey) localStorage.setItem('edl_claude_key', claudeKey);
   // Sauvegarder dans Supabase (lié au user_id)
@@ -550,6 +556,7 @@ function saveSettings(){
     expediteurTel:CFG.expediteurTel||'',
     expediteurSignature:CFG.expediteurSignature||'',
     expediteurPartenaire:CFG.expediteurPartenaire||'',
+    couleurPrimaire:CFG.couleurPrimaire||'',
     agents:DB.agents||[]
   };
   saveSettingsToSupabase(settingsData);
@@ -557,6 +564,64 @@ function saveSettings(){
   const sidebarName = document.getElementById('sidebar-company-name');
   if(sidebarName && settingsData.companyName) sidebarName.textContent = settingsData.companyName;
   notify('✅ Paramètres enregistrés et synchronisés !');
+}
+
+// ─── IDENTITÉ VISUELLE (couleur + logo) ───────────────────
+function onCouleurSwatchChange(hex){
+  const champHex=document.getElementById('set-couleur-hex');
+  if(champHex) champHex.value=hex;
+  appliquerCouleurMarque(hex);
+}
+function onCouleurHexChange(valeur){
+  const hex=(valeur||'').trim();
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return; // en cours de saisie, on attend un hex complet
+  const swatch=document.getElementById('set-couleur');
+  if(swatch) swatch.value=hex;
+  appliquerCouleurMarque(hex);
+}
+function afficherApercuLogo(url){
+  const img=document.getElementById('set-logo-apercu');
+  const retirer=document.getElementById('set-logo-retirer');
+  if(!img) return;
+  if(url){ img.src=url; img.style.display=''; if(retirer) retirer.style.display=''; }
+  else { img.style.display='none'; img.removeAttribute('src'); if(retirer) retirer.style.display='none'; }
+}
+async function televerserLogoAgence(inputEl){
+  const fichier=inputEl.files && inputEl.files[0];
+  if(!fichier) return;
+  try{
+    const form=new FormData();
+    form.append('file',fichier);
+    const authHeaders=await _authHeaders();
+    delete authHeaders['Content-Type']; // laisser le navigateur fixer le boundary multipart
+    const resp=await fetch('/api/upload-agency-logo',{ method:'POST', headers:authHeaders, body:form });
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok || !data.success){ notify('❌ '+(data.error||'Échec du dépôt du logo'),'err'); return; }
+    CFG.logoPath=data.path;
+    afficherApercuLogo(data.url);
+    appliquerLogoMarque(data.url);
+    notify('✅ Logo mis à jour');
+  }catch(e){ notify('❌ Erreur réseau lors du dépôt du logo','err'); }
+  finally{ inputEl.value=''; }
+}
+async function retirerLogoAgence(){
+  try{
+    const resp=await fetch('/api/upload-agency-logo',{ method:'DELETE', headers:await _authHeaders() });
+    if(!resp.ok){ notify('❌ Échec du retrait du logo','err'); return; }
+    CFG.logoPath='';
+    afficherApercuLogo('');
+    appliquerLogoMarque('');
+    notify('✅ Logo retiré');
+  }catch(e){ notify('❌ Erreur réseau lors du retrait du logo','err'); }
+}
+function majAffichageIdentiteVisuelle(){
+  const verrou=document.getElementById('identite-visuelle-verrou');
+  const controles=document.getElementById('identite-visuelle-controles');
+  if(!verrou || !controles) return;
+  const plan=(_userPlan && _userPlan.plan) || 'free';
+  const autorise=isAdmin() || plan!=='free';
+  verrou.style.display=autorise?'none':'';
+  controles.style.display=autorise?'':'none';
 }
 
 // ─── INIT ─────────────────────────────────────────────────
@@ -684,6 +749,10 @@ function majAffichageAbonnement(){
       badge.style.display = 'none';
     }
   }
+
+  // Identité visuelle (couleur + logo) : verrouillée aux agences gratuites,
+  // indépendamment de la section Abonnement ci-dessous.
+  majAffichageIdentiteVisuelle();
 
   // À partir d'ici : gestion de la section Abonnement (Réglages uniquement).
   const info = document.getElementById('abo-plan-actuel');
@@ -1110,6 +1179,8 @@ async function onAuthSuccess(user){
   }catch(e){}
   // Charger les paramètres depuis Supabase d'abord
   await loadSettingsFromSupabase();
+  appliquerCouleurMarque(CFG.couleurPrimaire);
+  appliquerLogoMarque(CFG.logoPath ? AGENCY_LOGOS_BUCKET_URL + CFG.logoPath : '');
   // Puis charger les données
   loadFromSupabase().then(async synced => {
     if(synced){

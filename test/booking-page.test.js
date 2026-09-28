@@ -127,6 +127,48 @@ test('booking-page : contact trouvé mais sans ligne "settings" associée retomb
   assert.ok(html.includes('contact@lokentia.fr'));
 });
 
+// ─── Couleur de marque (settings.data.couleurPrimaire) ──────────────────
+test('booking-page : sans couleur configurée, garde le bleu par défaut', async () => {
+  process.env.SUPABASE_SERVICE_KEY = 'test-key';
+  global.fetch = async (url) => {
+    const u = String(url);
+    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [{ user_id: 'owner1' }] };
+    if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ data: {} }] };
+    return { ok: true, json: async () => [] };
+  };
+  const res = await handler(req('c=contact123'));
+  const html = await res.text();
+  assert.ok(html.includes('--blue:#1A5FA8;'));
+});
+
+test('booking-page : applique la couleur de marque de l\'agence dans le :root généré', async () => {
+  process.env.SUPABASE_SERVICE_KEY = 'test-key';
+  global.fetch = async (url) => {
+    const u = String(url);
+    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [{ user_id: 'owner1' }] };
+    if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ data: { couleurPrimaire: '#800000' } }] };
+    return { ok: true, json: async () => [] };
+  };
+  const res = await handler(req('c=contact123'));
+  const html = await res.text();
+  assert.ok(html.includes('--blue:#800000;'), 'la couleur de base doit être reprise telle quelle');
+  assert.ok(!html.includes('--blue:#1A5FA8;'), 'le bleu par défaut ne doit plus apparaître');
+});
+
+test('booking-page : une couleur invalide (échappement CSS) retombe sur le bleu par défaut', async () => {
+  process.env.SUPABASE_SERVICE_KEY = 'test-key';
+  global.fetch = async (url) => {
+    const u = String(url);
+    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [{ user_id: 'owner1' }] };
+    if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ data: { couleurPrimaire: '#fff}</style><script>alert(1)</script>' } }] };
+    return { ok: true, json: async () => [] };
+  };
+  const res = await handler(req('c=contact123'));
+  const html = await res.text();
+  assert.ok(!html.includes('<script>alert(1)</script>'), 'une couleur mal formée ne doit jamais casser hors du CSS');
+  assert.ok(html.includes('--blue:#1A5FA8;'));
+});
+
 // ─── L'agence du lien doit être transmise à /api/agenda-disponibilites ──
 // (sinon l'endpoint retombe sur DEFAULT_OWNER_ID et mélange les agendas
 // de toutes les agences — voir test/resoudre-owner.test.js et

@@ -107,6 +107,9 @@ export default async function handler(req) {
     },
     missions: missionsPubliques,
     kpi: calculerKpiAgent(missions),
+    // Couleur de marque choisie par l'agence (Paramètres) — recolore
+    // l'espace agent pour qu'il reste cohérent avec l'identité de l'agence.
+    couleurPrimaire: data.couleurPrimaire || '',
   };
   return new Response(JSON.stringify(body), { status: 200, headers });
 }
