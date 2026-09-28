@@ -12,6 +12,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { chargerScripts } from './_lib/frontend-env.js';
 
+// Les tableaux/objets construits par du code exécuté dans le contexte vm de
+// jsdom (Array/Object de cette autre "réalité") échouent à assert.deepEqual
+// face à un littéral de CE module, même strictement identiques en contenu
+// ("same structure but not reference-equal") — on repasse par JSON pour
+// comparer de simples valeurs, sans dépendre du constructeur d'origine.
+function versSimple(v) { return JSON.parse(JSON.stringify(v)); }
+
 const HTML = `
   <div id="notif"></div>
   <div id="view-contacts"></div>
@@ -169,7 +176,14 @@ function setupFull(contact) {
     DB.trackings = [];
     window.__getDB = function(){ return DB; };
   `;
-  return chargerScripts(['app-extranet.js', 'app-contacts.js'], HTML_FULL, codeSetup).window;
+  const w = chargerScripts(['app-extranet.js', 'app-contacts.js'], HTML_FULL, codeSetup).window;
+  // renderDashboard()/renderContacts() (appelés par quickUpdateContact après
+  // chaque modification) référencent des éléments du vrai tableau de bord et
+  // de la liste contacts, absents de ce DOM minimal — neutralisés ici comme
+  // dans setup(), sans effet sur les tests qui n'appellent pas quickUpdateContact.
+  w.renderDashboard = () => {};
+  w.renderContacts = () => {};
+  return w;
 }
 
 test('openFiche : Entreprise, Contact et Notes sont éditables en direct dans "Informations" (plus d\'onglet "Modifier" séparé)', () => {
@@ -191,4 +205,72 @@ test('openFiche : le statut "Client signé ✅" est sélectionnable dans "Inform
   w.openFiche('c1');
   const html = w.document.getElementById('fiche-fields').innerHTML;
   assert.ok(html.includes('>Client signé ✅</option>'));
+});
+
+// ─── Emails / téléphones multiples avec type (Pro/Perso/Autre, Fixe/Mobile/Autre) ───
+test('openFiche : affiche l\'email et le téléphone principaux, éditables, avec leur type', () => {
+  const w = setupFull({ id: 'c1', entreprise: 'X', email: 'contact@x.fr', emailType: 'perso', tel: '0102030405', telType: 'fixe' });
+  w.openFiche('c1');
+  const emailInput = w.document.querySelector('#fiche-emails-rows input[type="email"]');
+  const emailSelect = w.document.querySelector('#fiche-emails-rows select');
+  const telInput = w.document.querySelector('#fiche-tels-rows input');
+  const telSelect = w.document.querySelector('#fiche-tels-rows select');
+  assert.equal(emailInput.value, 'contact@x.fr');
+  assert.equal(emailSelect.value, 'perso');
+  assert.equal(telInput.value, '0102030405');
+  assert.equal(telSelect.value, 'fixe');
+});
+
+test('ajouterEmailContact : ajoute une ligne vide (type "autre") et persiste dans emailsAutres', () => {
+  const w = setupFull({ id: 'c1', entreprise: 'X', email: 'a@a.fr' });
+  w.openFiche('c1');
+  w.ajouterEmailContact('c1');
+  const c = w.__getDB().contacts[0];
+  assert.deepEqual(versSimple(c.emailsAutres), [{ type: 'autre', valeur: '' }]);
+  assert.ok(w.document.getElementById('fiche-emails-rows').innerHTML.includes('btn-mini-remove'), 'la nouvelle ligne doit apparaître avec un bouton de suppression');
+});
+
+test('modifierEmailAutre : modifie le type ou la valeur d\'une entrée existante', () => {
+  const w = setupFull({ id: 'c1', entreprise: 'X', emailsAutres: [{ type: 'autre', valeur: '' }] });
+  w.openFiche('c1');
+  w.modifierEmailAutre('c1', 0, 'valeur', 'perso@exemple.fr');
+  w.modifierEmailAutre('c1', 0, 'type', 'perso');
+  const c = w.__getDB().contacts[0];
+  assert.deepEqual(versSimple(c.emailsAutres), [{ type: 'perso', valeur: 'perso@exemple.fr' }]);
+});
+
+test('retirerEmailAutre : retire l\'entrée et met à jour l\'affichage', () => {
+  const w = setupFull({ id: 'c1', entreprise: 'X', emailsAutres: [{ type: 'pro', valeur: 'pro@x.fr' }, { type: 'perso', valeur: 'perso@x.fr' }] });
+  w.openFiche('c1');
+  w.retirerEmailAutre('c1', 0);
+  const c = w.__getDB().contacts[0];
+  assert.deepEqual(versSimple(c.emailsAutres), [{ type: 'perso', valeur: 'perso@x.fr' }]);
+  assert.ok(!w.document.getElementById('fiche-emails-rows').innerHTML.includes('pro@x.fr'));
+  assert.ok(w.document.getElementById('fiche-emails-rows').innerHTML.includes('perso@x.fr'));
+});
+
+test('ajouterTelContact / modifierTelAutre / retirerTelAutre : même comportement pour les téléphones', () => {
+  const w = setupFull({ id: 'c1', entreprise: 'X', tel: '0600000000' });
+  w.openFiche('c1');
+
+  w.ajouterTelContact('c1');
+  assert.deepEqual(versSimple(w.__getDB().contacts[0].telsAutres), [{ type: 'autre', valeur: '' }]);
+
+  w.modifierTelAutre('c1', 0, 'valeur', '0708090910');
+  w.modifierTelAutre('c1', 0, 'type', 'mobile');
+  assert.deepEqual(versSimple(w.__getDB().contacts[0].telsAutres), [{ type: 'mobile', valeur: '0708090910' }]);
+
+  w.retirerTelAutre('c1', 0);
+  assert.deepEqual(versSimple(w.__getDB().contacts[0].telsAutres), []);
+  assert.ok(!w.document.getElementById('fiche-tels-rows').innerHTML.includes('0708090910'));
+});
+
+test('renderEmailRows : une valeur saisie contenant du HTML reste une simple donnée, jamais du HTML actif (anti-XSS)', () => {
+  const payload = '"><script>alert(1)</script>';
+  const w = setupFull({ id: 'c1', entreprise: 'X', emailsAutres: [{ type: 'autre', valeur: payload }] });
+  w.openFiche('c1');
+  const wrap = w.document.getElementById('fiche-emails-rows');
+  assert.equal(wrap.querySelectorAll('script').length, 0, 'aucun <script> ne doit être injecté dans le DOM');
+  const inputs = wrap.querySelectorAll('input[type="email"]');
+  assert.equal(inputs[1].value, payload, 'la valeur doit être conservée telle quelle, jamais interprétée comme du HTML');
 });

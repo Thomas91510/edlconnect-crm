@@ -163,6 +163,13 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-t
 .fiche-section-title{font-size:10.5px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
 .fiche-inline-field label{font-size:10px;color:var(--text2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em;display:block}
 .fiche-inline-field input,.fiche-inline-field select{width:100%;font-size:12.5px;padding:6px 9px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg)}
+.fiche-field-wide{grid-column:1/-1}
+.fiche-multi-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.fiche-multi-row select{flex:0 0 88px;width:auto}
+.fiche-multi-row input{flex:1}
+.fiche-multi-row .btn-mini-remove{flex:0 0 auto;width:26px;height:26px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text2);cursor:pointer;font-size:12px}
+.fiche-multi-row .btn-mini-remove:hover{background:var(--red-bg);color:var(--red-text);border-color:var(--red-text)}
+.btn-mini-add{margin-top:2px}
 .stat-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:500}
 .pill-open{background:var(--green-bg);color:var(--green-text)}
 .pill-click{background:var(--blue-bg);color:var(--blue-text)}

@@ -3,6 +3,100 @@
 // Genere depuis index.html — NE PAS reordonner les fichiers dans index.html
 
 let currentFicheId=null;
+
+// ─── Email(s) / Téléphone(s) multiples avec type ────────────────────────
+// c.email/c.tel restent les champs principaux (utilisés tels quels ailleurs
+// dans le CRM : recherche de commandes liées, email de bienvenue, détection
+// de doublons) — c.emailsAutres/c.telsAutres ne stockent que les entrées
+// SUPPLÉMENTAIRES, chacune avec son type. Rien d'autre dans le CRM n'a besoin
+// de connaître ces tableaux : ils sont uniquement affichés/édités ici.
+const TYPES_EMAIL=[['pro','Pro'],['perso','Perso'],['autre','Autre']];
+const TYPES_TEL=[['fixe','Fixe'],['mobile','Mobile'],['autre','Autre']];
+
+function optionsType(types,selection){
+  return types.map(([v,l])=>`<option value="${v}"${v===selection?' selected':''}>${l}</option>`).join('');
+}
+
+function renderEmailRows(c){
+  const principal=`<div class="fiche-multi-row">
+      <select onchange="quickUpdateContact('${c.id}','emailType',this.value)">${optionsType(TYPES_EMAIL,c.emailType||'pro')}</select>
+      <input type="email" placeholder="email@exemple.fr" value="${esc(c.email||'')}" onchange="quickUpdateContact('${c.id}','email',this.value)">
+    </div>`;
+  const autres=(Array.isArray(c.emailsAutres)?c.emailsAutres:[]).map((e,i)=>`
+    <div class="fiche-multi-row">
+      <select onchange="modifierEmailAutre('${c.id}',${i},'type',this.value)">${optionsType(TYPES_EMAIL,e.type||'autre')}</select>
+      <input type="email" placeholder="email@exemple.fr" value="${esc(e.valeur||'')}" onchange="modifierEmailAutre('${c.id}',${i},'valeur',this.value)">
+      <button type="button" class="btn-mini-remove" onclick="retirerEmailAutre('${c.id}',${i})" title="Retirer"><i class="ti ti-x"></i></button>
+    </div>`).join('');
+  return principal+autres;
+}
+
+function renderTelRows(c){
+  const principal=`<div class="fiche-multi-row">
+      <select onchange="quickUpdateContact('${c.id}','telType',this.value)">${optionsType(TYPES_TEL,c.telType||'mobile')}</select>
+      <input placeholder="06 12 34 56 78" value="${esc(c.tel||'')}" onchange="quickUpdateContact('${c.id}','tel',this.value)">
+    </div>`;
+  const autres=(Array.isArray(c.telsAutres)?c.telsAutres:[]).map((t,i)=>`
+    <div class="fiche-multi-row">
+      <select onchange="modifierTelAutre('${c.id}',${i},'type',this.value)">${optionsType(TYPES_TEL,t.type||'autre')}</select>
+      <input placeholder="06 12 34 56 78" value="${esc(t.valeur||'')}" onchange="modifierTelAutre('${c.id}',${i},'valeur',this.value)">
+      <button type="button" class="btn-mini-remove" onclick="retirerTelAutre('${c.id}',${i})" title="Retirer"><i class="ti ti-x"></i></button>
+    </div>`).join('');
+  return principal+autres;
+}
+
+function ajouterEmailContact(id){
+  const c=DB.contacts.find(x=>x.id===id);if(!c)return;
+  const liste=Array.isArray(c.emailsAutres)?c.emailsAutres.slice():[];
+  liste.push({type:'autre',valeur:''});
+  quickUpdateContact(id,'emailsAutres',liste);
+  const wrap=document.getElementById('fiche-emails-rows');
+  if(wrap)wrap.innerHTML=renderEmailRows(c);
+}
+
+function modifierEmailAutre(id,index,champ,valeur){
+  const c=DB.contacts.find(x=>x.id===id);if(!c)return;
+  const liste=Array.isArray(c.emailsAutres)?c.emailsAutres.slice():[];
+  if(!liste[index])return;
+  liste[index]={...liste[index],[champ]:valeur};
+  quickUpdateContact(id,'emailsAutres',liste);
+}
+
+function retirerEmailAutre(id,index){
+  const c=DB.contacts.find(x=>x.id===id);if(!c)return;
+  const liste=Array.isArray(c.emailsAutres)?c.emailsAutres.slice():[];
+  liste.splice(index,1);
+  quickUpdateContact(id,'emailsAutres',liste);
+  const wrap=document.getElementById('fiche-emails-rows');
+  if(wrap)wrap.innerHTML=renderEmailRows(c);
+}
+
+function ajouterTelContact(id){
+  const c=DB.contacts.find(x=>x.id===id);if(!c)return;
+  const liste=Array.isArray(c.telsAutres)?c.telsAutres.slice():[];
+  liste.push({type:'autre',valeur:''});
+  quickUpdateContact(id,'telsAutres',liste);
+  const wrap=document.getElementById('fiche-tels-rows');
+  if(wrap)wrap.innerHTML=renderTelRows(c);
+}
+
+function modifierTelAutre(id,index,champ,valeur){
+  const c=DB.contacts.find(x=>x.id===id);if(!c)return;
+  const liste=Array.isArray(c.telsAutres)?c.telsAutres.slice():[];
+  if(!liste[index])return;
+  liste[index]={...liste[index],[champ]:valeur};
+  quickUpdateContact(id,'telsAutres',liste);
+}
+
+function retirerTelAutre(id,index){
+  const c=DB.contacts.find(x=>x.id===id);if(!c)return;
+  const liste=Array.isArray(c.telsAutres)?c.telsAutres.slice():[];
+  liste.splice(index,1);
+  quickUpdateContact(id,'telsAutres',liste);
+  const wrap=document.getElementById('fiche-tels-rows');
+  if(wrap)wrap.innerHTML=renderTelRows(c);
+}
+
 function openFiche(id){
   const c=DB.contacts.find(x=>x.id===id);if(!c)return;
   currentFicheId=id;
@@ -21,11 +115,15 @@ function openFiche(id){
         <div class="fiche-inline-field"><label>Contact</label>
           <input value="${esc(c.contact||'')}" onchange="quickUpdateContact('${c.id}','contact',this.value)">
         </div>
-        <div class="fiche-inline-field"><label>Email</label>
-          <input type="email" value="${esc(c.email||'')}" onchange="quickUpdateContact('${c.id}','email',this.value)">
+        <div class="fiche-inline-field fiche-field-wide">
+          <label>Email(s)</label>
+          <div id="fiche-emails-rows">${renderEmailRows(c)}</div>
+          <button type="button" class="btn btn-sm btn-mini-add" onclick="ajouterEmailContact('${c.id}')"><i class="ti ti-plus"></i> Ajouter un email</button>
         </div>
-        <div class="fiche-inline-field"><label>Téléphone</label>
-          <input value="${esc(c.tel||'')}" onchange="quickUpdateContact('${c.id}','tel',this.value)">
+        <div class="fiche-inline-field fiche-field-wide">
+          <label>Téléphone(s)</label>
+          <div id="fiche-tels-rows">${renderTelRows(c)}</div>
+          <button type="button" class="btn btn-sm btn-mini-add" onclick="ajouterTelContact('${c.id}')"><i class="ti ti-plus"></i> Ajouter un numéro</button>
         </div>
       </div>
     </div>
