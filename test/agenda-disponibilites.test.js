@@ -33,6 +33,22 @@ function requete(params) {
   return { url: `https://x.test/api/agenda-disponibilites?${qs}`, method: 'GET', headers: new Headers() };
 }
 
+// La fenêtre de recherche par défaut du handler est le MOIS CALENDAIRE en
+// cours (jamais avant, cf. moisActuelParis) : sans paramètre "mois" explicite,
+// un test lancé en toute fin de mois ne dispose plus que d'un jour ou deux de
+// fenêtre, ce qui, combiné au délai minimum de 48h, peut ne laisser aucun
+// créneau valide même pour un collaborateur totalement libre — un échec de
+// test qui dépend alors de la date du jour, pas d'un vrai bug. Les tests qui
+// s'appuient sur un collaborateur totalement libre pour vérifier qu'un
+// créneau existe ciblent donc explicitement le mois SUIVANT (calculé au
+// moment de l'exécution, jamais une date figée) : une fenêtre pleine, garantie
+// quel que soit le jour où la suite tourne.
+function moisSuivantPourTest() {
+  const maintenant = new Date();
+  const cible = new Date(Date.UTC(maintenant.getUTCFullYear(), maintenant.getUTCMonth() + 1, 1));
+  return cible.getUTCFullYear() + '-' + String(cible.getUTCMonth() + 1).padStart(2, '0');
+}
+
 // Mock fetch qui répond aux trois appels réseau du handler : la liste des
 // agents (Supabase "settings"), le jeton OAuth2 (oauth2.googleapis.com/token)
 // puis freebusy.query — capture la requête freebusy pour inspection, et
@@ -178,7 +194,7 @@ test('tampon de 30 min transmis au calcul des créneaux : un rendez-vous voisin 
   });
   global.fetch = fn;
 
-  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu', mois: moisSuivantPourTest() }));
   const body = await resp.json();
 
   assert.equal(resp.status, 200);
@@ -193,7 +209,7 @@ test('un collaborateur occupé, un autre libre : des créneaux restent disponibl
   });
   global.fetch = fn;
 
-  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu', mois: moisSuivantPourTest() }));
   const body = await resp.json();
 
   assert.equal(body.available, true);
@@ -314,7 +330,7 @@ test('un agenda en erreur, l\'autre réellement libre : les créneaux restent pr
   });
   global.fetch = fn;
 
-  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu', mois: moisSuivantPourTest() }));
   const body = await resp.json();
 
   assert.equal(body.available, true);
