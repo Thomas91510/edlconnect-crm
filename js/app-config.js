@@ -828,27 +828,4 @@ document.addEventListener('DOMContentLoaded', function(){
   setTimeout(injecterBoutonsModeles, 300);
 });
 
-// ─── SIGNATURE EMAIL ──────────────────────────────────────
-const EMAIL_SIGNATURE = `
-<br><br>
-<div style="font-family:Arial,sans-serif;font-size:13px;color:#2345d4;border-top:2px solid #2345d4;padding-top:12px;margin-top:12px">
-  <table cellpadding="0" cellspacing="0">
-    <tr>
-      <td style="padding-right:16px;vertical-align:middle">
-        <img src="https://lokentia.fr/logo-edl-idf-seul.png" alt="EDL IDF" style="width:160px;height:auto;display:block">
-      </td>
-      <td style="vertical-align:middle;padding-left:16px;border-left:1px solid #2345d4">
-        <div style="font-weight:700;font-size:14px;color:#2345d4">Thomas LANGLADE</div>
-        <div style="color:#333;font-size:12px">EDL IDF — Expert en État des lieux</div>
-        <div style="margin-top:6px;font-size:12px;color:#555">
-          📞 <a href="tel:+33189291429" style="color:#555;text-decoration:none">01 89 29 14 29</a><br>
-          ✉️ <a href="mailto:contact@edl-idf.com" style="color:#2345d4;text-decoration:none">contact@edl-idf.com</a><br>
-          📍 18 Grande Rue, 91510 LARDY<br>
-          🌐 <a href="https://www.edl-idf.fr" style="color:#2345d4;text-decoration:none">www.edl-idf.fr</a>
-        </div>
-      </td>
-    </tr>
-  </table>
-</div>`;
-
 // ─── STATE ────────────────────────────────────────────────

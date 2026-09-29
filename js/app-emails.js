@@ -38,6 +38,44 @@ function afficherExpediteurCompose(){
   champ.value = (domaine && DOMAINES_VERIFIES_AFFICHAGE.includes(domaine)) ? mail : 'contact@lokentia.fr';
 }
 
+// Signature ajoutée en bas des emails envoyés via le Composer — auparavant
+// un bloc HTML figé avec les coordonnées personnelles de Thomas (EDL IDF),
+// ajouté à l'identique à TOUS les emails envoyés par TOUS les comptes. On
+// la reconstruit ici à partir de l'identité propre à ce compte (Paramètres
+// → "Identité de vos emails" + "Identité visuelle"), et on ne renvoie rien
+// si l'abonné n'a encore rien configuré (pas de signature générique inventée).
+function genererSignatureEmail(){
+  const nom = CFG.expediteurSignature || CFG.expediteurNom || CFG.companyName || '';
+  const sousTitre = [CFG.expediteurNom, CFG.companyName].find(v => v && v !== nom) || '';
+  const tel = CFG.expediteurTel || '';
+  const email = CFG.expediteurEmail || '';
+  const logo = CFG.logoPath ? (AGENCY_LOGOS_BUCKET_URL + CFG.logoPath) : '';
+  if(!nom && !tel && !email && !logo) return '';
+
+  const couleur = /^#[0-9a-fA-F]{6}$/.test(CFG.couleurPrimaire || '') ? CFG.couleurPrimaire : '#1A5FA8';
+  const blocLogo = logo
+    ? `<td style="padding-right:16px;vertical-align:middle"><img src="${esc(logo)}" alt="${esc(nom||sousTitre)}" style="width:120px;max-height:70px;height:auto;display:block"></td>`
+    : '';
+
+  return `
+<br><br>
+<div style="font-family:Arial,sans-serif;font-size:13px;color:${couleur};border-top:2px solid ${couleur};padding-top:12px;margin-top:12px">
+  <table cellpadding="0" cellspacing="0">
+    <tr>
+      ${blocLogo}
+      <td style="vertical-align:middle;${logo?`padding-left:16px;border-left:1px solid ${couleur}`:''}">
+        ${nom ? `<div style="font-weight:700;font-size:14px;color:${couleur}">${esc(nom)}</div>` : ''}
+        ${sousTitre ? `<div style="color:#333;font-size:12px">${esc(sousTitre)}</div>` : ''}
+        <div style="margin-top:6px;font-size:12px;color:#555">
+          ${tel ? `📞 <a href="tel:${esc(tel.replace(/[^0-9+]/g,''))}" style="color:#555;text-decoration:none">${esc(tel)}</a><br>` : ''}
+          ${email ? `✉️ <a href="mailto:${esc(email)}" style="color:${couleur};text-decoration:none">${esc(email)}</a>` : ''}
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>`;
+}
+
 function renderTracking(){
   const statColor={'Envoyé':'#888','Ouvert':'#3B6D11','Cliqué':'#1A5FA8','Répondu':'#854F0B','Sans suite':'#A32D2D'};
   document.getElementById('tracking-list').innerHTML=DB.trackings.length?DB.trackings.slice(0,20).map(t=>`<div class="tracking-item" style="cursor:pointer" onclick="openFicheByEmail('${(t.email||'').replace(/'/g,"\\'")}')">
@@ -225,7 +263,7 @@ async function sendEmail(){
         sender:{name:'EDL IDF',email:'contact@edl-idf.com'},
         to:[{email:dest}],
         subject:subj,
-        htmlContent:`<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${body.replace(/\n/g,'<br>')}${EMAIL_SIGNATURE}</div>`,
+        htmlContent:`<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${body.replace(/\n/g,'<br>')}${genererSignatureEmail()}</div>`,
         textContent:body,
         headers:{'X-CRM-ID':entry.id}
       };
