@@ -136,7 +136,21 @@ function openFicheByEmail(email){
   if(c)openFiche(c.id);
   else notify('Contact non trouvé dans la base','warn');
 }
-function applyTpl(key){const t=TEMPLATES[key];document.getElementById('subj-f').value=t.subj;document.getElementById('body-f').value=t.body;}
+// Les modèles TEMPLATES contiennent des placeholders {{SOCIETE}} et
+// {{AVIS_GOOGLE_LIEN}} (jamais "EDL IDF" en dur) : substitués ici avec
+// l'identité du compte connecté, au moment où le modèle est appliqué (donc
+// toujours à jour, contrairement à une valeur figée à la définition de
+// TEMPLATES qui capturerait un CFG pas encore synchronisé au chargement).
+function remplacerPlaceholdersModele(texte){
+  const societe = CFG.companyName || CFG.expediteurNom || 'notre entreprise';
+  const lienAvis = CFG.avisGoogleLien || "[votre lien d'avis Google — à renseigner dans Paramètres]";
+  return texte.split('{{SOCIETE}}').join(societe).split('{{AVIS_GOOGLE_LIEN}}').join(lienAvis);
+}
+function applyTpl(key){
+  const t=TEMPLATES[key];
+  document.getElementById('subj-f').value=remplacerPlaceholdersModele(t.subj);
+  document.getElementById('body-f').value=remplacerPlaceholdersModele(t.body);
+}
 
 // Données pièce jointe
 let _attachData = null;

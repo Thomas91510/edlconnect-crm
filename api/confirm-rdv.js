@@ -176,7 +176,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
+    <span style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <h2 style="font-size:20px;margin:0 0 16px 0">✅ Confirmation de votre état des lieux</h2>
@@ -211,7 +211,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
+    <span style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_BONJOUR__</p>
@@ -272,7 +272,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
+    <span style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>
@@ -339,7 +339,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">EDL IDF Expert en Etat des Lieux</span>
+    <span style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>

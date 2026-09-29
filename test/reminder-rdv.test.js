@@ -25,7 +25,12 @@ function dansNJours(n) { const d = new Date(); d.setDate(d.getDate() + n); retur
 // Construit un mock fetch complet : missions renvoyées par Supabase, capture
 // des PATCH de marquage et des envois Brevo, et neutralise l'appel de
 // synchro Edouard fait en fin de cron (hors périmètre de ce fichier).
-function mockComplet(missionsRows, { brevoOk = true } = {}) {
+// avisGoogleLien : configuré par défaut (comme un compte qui a renseigné son
+// lien dans Paramètres) pour que les tests d'envoi d'avis n'aient pas tous à
+// le préciser ; passer avisGoogleLien: '' pour simuler un compte qui n'a rien
+// configuré (la demande d'avis ne doit alors jamais partir — voir le test
+// dédié plus bas).
+function mockComplet(missionsRows, { brevoOk = true, avisGoogleLien = 'https://g.page/r/test/review' } = {}) {
   const patches = [];
   const brevoAppels = [];
   const fetchMock = async (url, opts) => {
@@ -38,7 +43,7 @@ function mockComplet(missionsRows, { brevoOk = true } = {}) {
       return { ok: true };
     }
     if (u.includes('/rest/v1/settings')) {
-      return { ok: true, json: async () => [] }; // identiteAbonne → repli neutre
+      return { ok: true, json: async () => (avisGoogleLien ? [{ data: { avisGoogleLien } }] : []) };
     }
     if (u.includes('api.brevo.com')) {
       brevoAppels.push(JSON.parse(opts.body));
@@ -134,6 +139,27 @@ test('reminder-rdv : envoie la 1re demande d\'avis (J-1) au locataire', async ()
   assert.equal(body.avisSent, 1);
   assert.equal(brevoAppels[0].to[0].email, 'locataire@x.fr');
   assert.ok(patches.some(p => p.body.data.avisEnvoye === true));
+});
+
+// Corollaire du correctif "signature EDL IDF en dur" : sans lien Google
+// configuré par l'abonné, on ne doit jamais envoyer de demande d'avis
+// pointant vers la page Google d'un autre abonné (ou nulle part).
+test('reminder-rdv : n\'envoie PAS de demande d\'avis (J-1) si l\'abonné n\'a pas configuré de lien Google', async () => {
+  const hier = dansNJours(-1);
+  // user_id dédié : identiteAbonne() met en cache par user_id au niveau du
+  // module, donc réutiliser "u1" (déjà résolu avec un lien dans un test
+  // précédent du même fichier) renverrait l'identité déjà en cache au lieu
+  // de repasser par ce mock sans lien.
+  const rows = [{ id: 'm1', user_id: 'u_sans_avis_google', data: {
+    date: hier.toISOString(), locataireEmail: 'locataire@x.fr', locataireNom: 'Durand', statut: 'terminée'
+  } }];
+  const { fetchMock, brevoAppels, patches } = mockComplet(rows, { avisGoogleLien: '' });
+  global.fetch = fetchMock;
+  const res = await handler(requete('test-cron-secret'));
+  const body = await res.json();
+  assert.equal(body.avisSent, 0);
+  assert.equal(brevoAppels.length, 0);
+  assert.equal(patches.length, 0);
 });
 
 // Vérifie le lien avec le correctif "annulée" du 12/09 : une mission annulée

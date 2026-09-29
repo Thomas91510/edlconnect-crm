@@ -20,6 +20,7 @@ const IDENTITE_NEUTRE = {
   tel: '',
   signature: '',
   partenaire: '',
+  avisGoogleLien: '',
   notifEmail: 'contact@edl-idf.com'
 };
 
@@ -43,6 +44,7 @@ export async function identiteAbonne(supaUrl, serviceKey, userId) {
       tel: (d.expediteurTel || '').trim(),
       signature: (d.expediteurSignature || '').trim(),
       partenaire: (d.expediteurPartenaire || '').trim(),
+      avisGoogleLien: (d.avisGoogleLien || '').trim(),
       notifEmail: mail || IDENTITE_NEUTRE.notifEmail
     };
   } catch (e) {

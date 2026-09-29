@@ -32,12 +32,15 @@ async function generateWithClaude(){
   label.textContent = 'Génération…';
   status.textContent = '⏳ Claude rédige…';
 
-  // Contexte EDL IDF pour Claude
-  const systemPrompt = `Tu es l'assistant commercial de Thomas Langlade, Directeur Général d'EDL IDF, expert en états des lieux professionnels basé à Lardy (91510) en Île-de-France. 
+  // Contexte propre au compte connecté (jamais EDL IDF en dur : ce panneau
+  // sert tous les abonnés du CRM, pas seulement EDL IDF).
+  const societe = CFG.companyName || CFG.expediteurNom || 'notre entreprise';
+  const nomSignature = CFG.expediteurSignature || CFG.expediteurNom || CFG.companyName || 'Lokentia';
+  const systemPrompt = `Tu es l'assistant commercial de ${societe}, expert en états des lieux professionnels.
 Tu rédiges des emails professionnels B2B en français pour des agences immobilières.
 Ton style est : professionnel, bienveillant, concis, sans fioritures.
 Tu ne mets JAMAIS de formules creuses comme "j'espère que ce message vous trouve en bonne santé".
-Tu signes toujours : Thomas Langlade — EDL IDF.
+Tu signes toujours : ${nomSignature}.
 Tu retournes UNIQUEMENT le texte de l'email (objet sur la première ligne précédé de "Objet: ", puis le corps), sans aucune explication ni commentaire.`;
 
   const userPrompt = `Rédige un email professionnel.
@@ -109,13 +112,21 @@ Objet: [objet de l'email]
 
 function generateLocalEmail(prompt, to, subjEl, bodyEl){
   const p = prompt.toLowerCase();
-  const agence = to ? `(${to})` : '';
+  // Identité propre au compte connecté (jamais EDL IDF en dur : ce mode de
+  // secours sert tous les abonnés du CRM, pas seulement EDL IDF).
+  const societe = CFG.companyName || CFG.expediteurNom || '';
+  const prefixe = societe ? societe + ' — ' : '';
+  const nomSignature = CFG.expediteurSignature || CFG.expediteurNom || CFG.companyName || 'Lokentia';
+  const sousTitre = [CFG.expediteurNom, CFG.companyName].find(v => v && v !== nomSignature) || '';
+  const contactLigne = [CFG.expediteurTel, CFG.expediteurEmail].filter(Boolean).join(' | ');
+  const signature = (intro) => `${intro}\n${nomSignature}` + (sousTitre ? `\n${sousTitre}` : '') + (contactLigne ? `\n📞 ${contactLigne}` : '');
+
   let objet = '';
   let body  = '';
 
   // Détecter le type d'email demandé et générer le bon template
   if(p.includes('facture') || p.includes('règlement') || p.includes('reglement') || p.includes('paiement')){
-    objet = 'EDL IDF — Confirmation de réception de votre règlement';
+    objet = prefixe + 'Confirmation de réception de votre règlement';
     body  = `Bonjour,
 
 Je vous confirme la bonne réception de votre règlement et vous en remercie.
@@ -124,39 +135,30 @@ Vous trouverez en pièce jointe la facture acquittée correspondante à notre pr
 
 N'hésitez pas à me contacter pour toute question.
 
-Cordialement,
-Thomas Langlade
-EDL IDF — Expert en état des lieux
-📞 01 89 29 14 29 | contact@edl-idf.com`;
+${signature('Cordialement,')}`;
 
   } else if(p.includes('relance') || p.includes('pas répondu') || p.includes('pas repondu') || p.includes('suivi')){
-    objet = 'EDL IDF — Suite à notre échange';
+    objet = prefixe + 'Suite à notre échange';
     body  = `Bonjour,
 
 Je me permets de revenir vers vous suite à mon précédent message, sans vouloir vous importuner.
 
-Notre service d'états des lieux externalisés permet à de nombreuses agences de l'Essonne de gagner 2 à 3 heures par dossier. Seriez-vous disponible pour un échange rapide de 15 minutes ?
+Notre service d'états des lieux externalisés permet à de nombreuses agences de gagner 2 à 3 heures par dossier. Seriez-vous disponible pour un échange rapide de 15 minutes ?
 
-Cordialement,
-Thomas Langlade
-EDL IDF — Expert en état des lieux
-📞 01 89 29 14 29 | contact@edl-idf.com`;
+${signature('Cordialement,')}`;
 
   } else if(p.includes('rdv') || p.includes('rendez-vous') || p.includes('rendez vous') || p.includes('réunion')){
-    objet = 'EDL IDF — Confirmation de rendez-vous';
+    objet = prefixe + 'Confirmation de rendez-vous';
     body  = `Bonjour,
 
 Je vous confirme notre rendez-vous à la date et l'heure convenues.
 
 N'hésitez pas à me contacter si vous avez des questions en amont.
 
-À très bientôt,
-Thomas Langlade
-EDL IDF — Expert en état des lieux
-📞 01 89 29 14 29 | contact@edl-idf.com`;
+${signature('À très bientôt,')}`;
 
   } else if(p.includes('devis') || p.includes('tarif') || p.includes('prix')){
-    objet = 'EDL IDF — Votre devis personnalisé';
+    objet = prefixe + 'Votre devis personnalisé';
     body  = `Bonjour,
 
 Suite à notre échange, veuillez trouver ci-joint notre proposition tarifaire pour la réalisation de vos états des lieux.
@@ -165,39 +167,30 @@ Nos prestations comprennent l'EDL entrant, sortant et le pré-état des lieux, a
 
 Je reste disponible pour tout renseignement complémentaire.
 
-Cordialement,
-Thomas Langlade
-EDL IDF — Expert en état des lieux
-📞 01 89 29 14 29 | contact@edl-idf.com`;
+${signature('Cordialement,')}`;
 
   } else if(p.includes('confirmation') || p.includes('confirmer') || p.includes('mission')){
-    objet = 'EDL IDF — Confirmation de votre mission';
+    objet = prefixe + 'Confirmation de votre mission';
     body  = `Bonjour,
 
 Je vous confirme la prise en charge de votre mission d'état des lieux.
 
 Nous vous contacterons dans les plus brefs délais pour convenir des modalités d'intervention.
 
-Cordialement,
-Thomas Langlade
-EDL IDF — Expert en état des lieux
-📞 01 89 29 14 29 | contact@edl-idf.com`;
+${signature('Cordialement,')}`;
 
   } else {
     // Générique
-    objet = 'EDL IDF — Externalisation de vos états des lieux';
+    objet = prefixe + 'Externalisation de vos états des lieux';
     body  = `Bonjour,
 
 Je me permets de vous contacter au sujet de l'externalisation de vos états des lieux.
 
-EDL IDF accompagne les agences immobilières de l'Essonne pour réaliser leurs états des lieux entrants et sortants, avec rapport remis sous 24h.
+Nous accompagnons les agences immobilières pour réaliser leurs états des lieux entrants et sortants, avec rapport remis sous 24h.
 
 Seriez-vous disponible pour un échange de 15 minutes ?
 
-Cordialement,
-Thomas Langlade
-EDL IDF — Expert en état des lieux
-📞 01 89 29 14 29 | contact@edl-idf.com`;
+${signature('Cordialement,')}`;
   }
 
   if(subjEl && !subjEl.value) subjEl.value = objet;
@@ -512,6 +505,7 @@ function loadSettingsForm(){
   _set('set-exp-tel',CFG.expediteurTel);
   _set('set-exp-signature',CFG.expediteurSignature);
   _set('set-exp-partenaire',CFG.expediteurPartenaire);
+  _set('set-exp-avis-google',CFG.avisGoogleLien);
   _set('set-couleur',CFG.couleurPrimaire);
   _set('set-couleur-hex',CFG.couleurPrimaire);
   afficherApercuLogo(CFG.logoPath ? AGENCY_LOGOS_BUCKET_URL+CFG.logoPath : '');
@@ -536,6 +530,7 @@ function saveSettings(){
   CFG.expediteurTel=_get('set-exp-tel');
   CFG.expediteurSignature=_get('set-exp-signature');
   CFG.expediteurPartenaire=_get('set-exp-partenaire');
+  CFG.avisGoogleLien=_get('set-exp-avis-google');
   CFG.couleurPrimaire=_get('set-couleur')||'#1A5FA8';
   appliquerCouleurMarque(CFG.couleurPrimaire);
   afficherExpediteurCompose();
@@ -557,6 +552,7 @@ function saveSettings(){
     expediteurTel:CFG.expediteurTel||'',
     expediteurSignature:CFG.expediteurSignature||'',
     expediteurPartenaire:CFG.expediteurPartenaire||'',
+    avisGoogleLien:CFG.avisGoogleLien||'',
     couleurPrimaire:CFG.couleurPrimaire||'',
     agents:DB.agents||[]
   };
