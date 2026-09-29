@@ -21,6 +21,23 @@ function renderCampaigns(){
 }
 
 // ─── COMPOSE ──────────────────────────────────────────────
+// Champ "De" (readonly) : purement informatif — l'expéditeur réel est
+// toujours décidé côté serveur par identiteAbonne() (api/send-email.js
+// ignore le sender envoyé par le client, précisément pour empêcher un
+// abonné d'usurper l'identité d'un autre). On rejoue ici la même règle
+// (domaine vérifié -> propre adresse, sinon expéditeur neutre Lokentia)
+// uniquement pour que ce champ affiche ce qui sera vraiment utilisé,
+// au lieu de l'ancienne valeur "contact@edl-idf.com" figée en dur qui
+// s'affichait à l'identique pour tous les comptes.
+const DOMAINES_VERIFIES_AFFICHAGE = ['edl-idf.com', 'lokentia.fr'];
+function afficherExpediteurCompose(){
+  const champ = document.getElementById('compose-from');
+  if(!champ) return;
+  const mail = (CFG.expediteurEmail || CFG.userEmail || '').trim();
+  const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
+  champ.value = (domaine && DOMAINES_VERIFIES_AFFICHAGE.includes(domaine)) ? mail : 'contact@lokentia.fr';
+}
+
 function renderTracking(){
   const statColor={'Envoyé':'#888','Ouvert':'#3B6D11','Cliqué':'#1A5FA8','Répondu':'#854F0B','Sans suite':'#A32D2D'};
   document.getElementById('tracking-list').innerHTML=DB.trackings.length?DB.trackings.slice(0,20).map(t=>`<div class="tracking-item" style="cursor:pointer" onclick="openFicheByEmail('${(t.email||'').replace(/'/g,"\\'")}')">

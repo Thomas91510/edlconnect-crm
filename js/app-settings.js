@@ -538,6 +538,7 @@ function saveSettings(){
   CFG.expediteurPartenaire=_get('set-exp-partenaire');
   CFG.couleurPrimaire=_get('set-couleur')||'#1A5FA8';
   appliquerCouleurMarque(CFG.couleurPrimaire);
+  afficherExpediteurCompose();
   const claudeKey=document.getElementById('set-claude-key')?.value.trim();
   if(claudeKey) localStorage.setItem('edl_claude_key', claudeKey);
   // Sauvegarder dans Supabase (lié au user_id)
@@ -1343,6 +1344,7 @@ async function onAuthSuccess(user){
   await loadSettingsFromSupabase();
   appliquerCouleurMarque(CFG.couleurPrimaire);
   appliquerLogoMarque(CFG.logoPath ? AGENCY_LOGOS_BUCKET_URL + CFG.logoPath : '');
+  afficherExpediteurCompose();
   // Puis charger les données
   loadFromSupabase().then(async synced => {
     if(synced){
