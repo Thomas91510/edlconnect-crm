@@ -624,6 +624,161 @@ function majAffichageIdentiteVisuelle(){
   controles.style.display=autorise?'':'none';
 }
 
+// ─── DOUBLE AUTHENTIFICATION (TOTP) ────────────────────────
+// Réservée à qui l'active soi-même (aucun rôle codé en dur) : Supabase
+// n'exige un second facteur (aal2) qu'aux comptes ayant un facteur TOTP
+// vérifié — les autres comptes ne voient jamais l'écran de vérification.
+let _mfaFactorId = null;         // facteur actif (activé et vérifié)
+let _mfaEnrollFactorId = null;   // facteur en cours d'activation (pas encore confirmé)
+let _mfaPendingUser = null;      // utilisateur en attente du code, entre signInWithPassword et challengeAndVerify
+
+async function mfaChallengeRequis(){
+  try{
+    const { data, error } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(error || !data) return null;
+    if(data.nextLevel === 'aal2' && data.currentLevel !== 'aal2'){
+      const { data: facteurs } = await supabaseClient.auth.mfa.listFactors();
+      const facteur = (facteurs?.totp || []).find(f => f.status === 'verified');
+      if(facteur) return { factorId: facteur.id };
+    }
+  }catch(e){ /* en cas d'erreur, ne jamais bloquer la connexion */ }
+  return null;
+}
+
+// Point d'entrée unique après un signInWithPassword ou une restauration de
+// session : ouvre le CRM directement, ou intercale l'écran de code si ce
+// compte a activé la double authentification.
+async function tenterOuvrirSession(user){
+  const besoin = await mfaChallengeRequis();
+  if(besoin){
+    _mfaPendingUser = user;
+    afficherEcranMfa(besoin.factorId);
+  } else {
+    onAuthSuccess(user);
+  }
+}
+
+function afficherEcranMfa(factorId){
+  _mfaFactorId = factorId;
+  document.getElementById('auth-login').style.display = 'none';
+  document.getElementById('auth-signup').style.display = 'none';
+  document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'none');
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('auth-success').classList.remove('show');
+  document.getElementById('auth-mfa').style.display = 'block';
+  const champ = document.getElementById('mfa-code');
+  champ.value = '';
+  champ.focus();
+}
+async function verifierCodeMfa(){
+  const code = document.getElementById('mfa-code').value.trim();
+  if(!/^\d{6}$/.test(code)){ showAuthError('Code à 6 chiffres requis'); return; }
+  const btn = document.getElementById('mfa-verify-btn');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Vérification…';
+  try{
+    const { error } = await supabaseClient.auth.mfa.challengeAndVerify({ factorId: _mfaFactorId, code });
+    if(error) throw error;
+    document.getElementById('auth-mfa').style.display = 'none';
+    const user = _mfaPendingUser;
+    _mfaPendingUser = null;
+    onAuthSuccess(user);
+  }catch(e){
+    showAuthError('Code invalide ou expiré — réessayez');
+  }
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-check"></i> Vérifier';
+}
+async function annulerMfa(){
+  _mfaPendingUser = null;
+  await supabaseClient.auth.signOut();
+  document.getElementById('auth-mfa').style.display = 'none';
+  document.querySelectorAll('.auth-tab').forEach(t => t.style.display = '');
+  authTab('login', document.querySelector('.auth-tab'));
+}
+
+// ── Activation depuis Paramètres → Sécurité (compte admin uniquement) ──
+async function chargerEtatMfa(){
+  if(!document.getElementById('securite-section')) return;
+  try{
+    const { data, error } = await supabaseClient.auth.mfa.listFactors();
+    if(error) throw error;
+    const facteur = (data?.totp || []).find(f => f.status === 'verified');
+    afficherEtatMfa(facteur || null);
+  }catch(e){ console.warn('Erreur chargement état MFA:', e); }
+}
+function afficherEtatMfa(facteur){
+  const statut = document.getElementById('mfa-statut');
+  const zoneActivee = document.getElementById('mfa-zone-activee');
+  const zoneInactive = document.getElementById('mfa-zone-inactive');
+  const zoneEnrolement = document.getElementById('mfa-zone-enrolement');
+  if(zoneEnrolement) zoneEnrolement.style.display = 'none';
+  if(facteur){
+    _mfaFactorId = facteur.id;
+    if(statut) statut.innerHTML = '<span style="color:var(--green,#2F8F5B)"><i class="ti ti-shield-check"></i> Activée</span>';
+    if(zoneActivee) zoneActivee.style.display = '';
+    if(zoneInactive) zoneInactive.style.display = 'none';
+  } else {
+    if(statut) statut.innerHTML = '<span style="color:var(--text2)"><i class="ti ti-shield-off"></i> Désactivée</span>';
+    if(zoneActivee) zoneActivee.style.display = 'none';
+    if(zoneInactive) zoneInactive.style.display = '';
+  }
+}
+async function demarrerEnrolementMfa(){
+  try{
+    const { data, error } = await supabaseClient.auth.mfa.enroll({ factorType: 'totp' });
+    if(error) throw error;
+    _mfaEnrollFactorId = data.id;
+    document.getElementById('mfa-qr').src = data.totp.qr_code;
+    document.getElementById('mfa-secret').textContent = data.totp.secret;
+    const erreur = document.getElementById('mfa-enrol-erreur');
+    if(erreur){ erreur.classList.remove('show'); erreur.textContent = ''; }
+    document.getElementById('mfa-enrol-code').value = '';
+    document.getElementById('mfa-zone-enrolement').style.display = '';
+  }catch(e){
+    notify('❌ ' + (e.message || 'Impossible de démarrer l\'activation'), 'err');
+  }
+}
+async function confirmerEnrolementMfa(){
+  const code = document.getElementById('mfa-enrol-code').value.trim();
+  const erreur = document.getElementById('mfa-enrol-erreur');
+  if(!/^\d{6}$/.test(code)){
+    if(erreur){ erreur.textContent = 'Code à 6 chiffres requis'; erreur.classList.add('show'); }
+    return;
+  }
+  const btn = document.getElementById('mfa-enrol-confirmer-btn');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Vérification…';
+  try{
+    const { error } = await supabaseClient.auth.mfa.challengeAndVerify({ factorId: _mfaEnrollFactorId, code });
+    if(error) throw error;
+    _mfaEnrollFactorId = null;
+    notify('✅ Double authentification activée');
+    await chargerEtatMfa();
+  }catch(e){
+    if(erreur){ erreur.textContent = 'Code invalide — réessayez'; erreur.classList.add('show'); }
+  }
+  btn.disabled = false; btn.innerHTML = 'Confirmer';
+}
+function annulerEnrolementMfa(){
+  document.getElementById('mfa-zone-enrolement').style.display = 'none';
+  // Retirer le facteur non confirmé pour ne pas laisser un facteur "unverified" trainer
+  if(_mfaEnrollFactorId){
+    supabaseClient.auth.mfa.unenroll({ factorId: _mfaEnrollFactorId }).catch(()=>{});
+    _mfaEnrollFactorId = null;
+  }
+}
+async function desactiverMfa(){
+  if(!_mfaFactorId) return;
+  if(!confirm('Désactiver la double authentification ?')) return;
+  try{
+    const { error } = await supabaseClient.auth.mfa.unenroll({ factorId: _mfaFactorId });
+    if(error) throw error;
+    _mfaFactorId = null;
+    notify('Double authentification désactivée');
+    await chargerEtatMfa();
+  }catch(e){
+    notify('❌ ' + (e.message || 'Erreur lors de la désactivation'), 'err');
+  }
+}
+
 // ─── INIT ─────────────────────────────────────────────────
 // Charger la clé Brevo depuis brevo_config.json (persistance même si localStorage effacé)
 (async () => {
@@ -1099,7 +1254,7 @@ async function doLogin(){
   try{
     const{data,error}=await supabaseClient.auth.signInWithPassword({email,password});
     if(error)throw error;
-    onAuthSuccess(data.user);
+    await tenterOuvrirSession(data.user);
   }catch(e){
     showAuthError(e.message==='Invalid login credentials'?'Email ou mot de passe incorrect':e.message);
     btn.innerHTML='<i class="ti ti-login"></i> Se connecter';btn.disabled=false;
@@ -1160,6 +1315,13 @@ async function onAuthSuccess(user){
   // Afficher le bouton admin si admin
   const navAdmin = document.getElementById('nav-admin');
   if(navAdmin && ADMIN_EMAILS.includes(user.email)) navAdmin.style.display='flex';
+  // Section Sécurité (double authentification) : réservée au compte admin
+  const securiteSection = document.getElementById('securite-section');
+  if(securiteSection){
+    const estAdmin = ADMIN_EMAILS.includes(user.email);
+    securiteSection.style.display = estAdmin ? '' : 'none';
+    if(estAdmin) chargerEtatMfa();
+  }
   // Charger le plan de l'utilisateur
   await loadUserPlan();
   // Gérer le retour de paiement Stripe (?abonnement=succes|annule)
@@ -1280,7 +1442,7 @@ async function checkAuth(){
   supabaseClient.auth.onAuthStateChange((event,session)=>{
     // Si on est en mode extranet, ignorer complètement cet événement
     if(window._EXTRANET_MODE) return;
-    if(event==='SIGNED_IN'&&session){_currentUser=session.user;onAuthSuccess(session.user);}
+    if(event==='SIGNED_IN'&&session){_currentUser=session.user;tenterOuvrirSession(session.user);}
     if(event==='SIGNED_OUT'){
       _currentUser=null;
       document.getElementById('auth-screen').classList.add('show');
@@ -1297,7 +1459,7 @@ async function checkAuth(){
   if(window._EXTRANET_MODE) return;
   if(session){
     _currentUser=session.user;
-    onAuthSuccess(session.user);
+    await tenterOuvrirSession(session.user);
   } else {
     document.getElementById('auth-screen').classList.add('show');
     document.querySelector('.crm').style.display='none';
