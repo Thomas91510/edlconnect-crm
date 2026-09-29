@@ -275,6 +275,10 @@ export default async function handler(req) {
     for(const row of missionsHier) {
       const m = row.data;
       const IDENT = await identiteAbonne(row.user_id);
+      // Pas de lien d'avis Google configuré pour cet abonné : ne pas envoyer
+      // (mieux vaut ne rien demander que de renvoyer vers la page Google
+      // d'un autre abonné).
+      if (!IDENT.avisGoogleLien) continue;
       try {
         const dest = destinataireAvis(m);
         const salutation = dest.salutation;
@@ -285,25 +289,25 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:17px;font-weight:700">EDL IDF Expert en État des Lieux</span>
+    <span style="color:#fff;font-size:17px;font-weight:700">${esc(IDENT.nom)}</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + esc(salutation) + '</strong>' : ''},</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
-      Chez <strong>EDL IDF</strong>, nous accordons une grande importance à la qualité de nos prestations et à la satisfaction des personnes que nous accompagnons. Votre retour est précieux&nbsp;: il nous permet d'améliorer continuellement nos services.
+      Chez <strong>${esc(IDENT.nom)}</strong>, nous accordons une grande importance à la qualité de nos prestations et à la satisfaction des personnes que nous accompagnons. Votre retour est précieux&nbsp;: il nous permet d'améliorer continuellement nos services.
     </p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
       Si vous avez quelques instants, pourriez-vous partager votre expérience sur notre page Google&nbsp;? Cela ne prend que quelques minutes et nous aide énormément&nbsp;:
     </p>
     <div style="text-align:center;margin:0 0 24px 0">
-      <a href="https://g.page/r/CQOIf5lzL3xwEBM/review" style="display:inline-block;background:#1A5FA8;color:#fff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none">⭐ Laisser un avis Google</a>
+      <a href="${esc(IDENT.avisGoogleLien)}" style="display:inline-block;background:#1A5FA8;color:#fff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none">⭐ Laisser un avis Google</a>
     </div>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
       N'hésitez pas si vous avez la moindre question, nous restons à votre entière disposition.
     </p>
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Bien cordialement,<br>
-      <strong>L'équipe EDL IDF</strong><br>
+      <strong>L'équipe ${esc(IDENT.nom)}</strong><br>
       ${IDENT.tel ? `📞 <a href="tel:${esc(IDENT.tel.replace(/[^0-9+]/g,''))}" style="color:#1A5FA8;text-decoration:none">${esc(IDENT.tel)}</a>` : ''}
     </div>
   </div>
@@ -360,6 +364,7 @@ export default async function handler(req) {
     for(const row of missionsJ3) {
       const m = row.data;
       const IDENT = await identiteAbonne(row.user_id);
+      if (!IDENT.avisGoogleLien) continue;
       try {
         const dest = destinataireAvis(m);
         const salutation = dest.salutation;
@@ -370,7 +375,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
   <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:17px;font-weight:700">EDL IDF Expert en État des Lieux</span>
+    <span style="color:#fff;font-size:17px;font-weight:700">${esc(IDENT.nom)}</span>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + esc(salutation) + '</strong>' : ''},</p>
@@ -378,14 +383,14 @@ export default async function handler(req) {
       Nous nous permettons de revenir vers vous au sujet de l'état des lieux réalisé récemment. Si vous n'avez pas encore eu l'occasion de nous laisser un avis, votre retour nous serait très précieux&nbsp;: il ne prend qu'une minute et nous aide beaucoup à faire connaître notre travail.
     </p>
     <div style="text-align:center;margin:0 0 24px 0">
-      <a href="https://g.page/r/CQOIf5lzL3xwEBM/review" style="display:inline-block;background:#1A5FA8;color:#fff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none">⭐ Laisser un avis Google</a>
+      <a href="${esc(IDENT.avisGoogleLien)}" style="display:inline-block;background:#1A5FA8;color:#fff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none">⭐ Laisser un avis Google</a>
     </div>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
       Si vous l'avez déjà fait, nous vous en remercions sincèrement et vous prions d'ignorer ce message.
     </p>
     <div style="font-size:13px;color:#6b6b6b;border-top:1px solid #e5e5e2;padding-top:16px;line-height:1.8">
       Bien cordialement,<br>
-      <strong>L'équipe EDL IDF</strong><br>
+      <strong>L'équipe ${esc(IDENT.nom)}</strong><br>
       ${IDENT.tel ? `📞 <a href="tel:${esc(IDENT.tel.replace(/[^0-9+]/g,''))}" style="color:#1A5FA8;text-decoration:none">${esc(IDENT.tel)}</a>` : ''}
     </div>
   </div>
