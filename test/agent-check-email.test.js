@@ -4,11 +4,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import handler from '../api/agent-check-email.js';
+import { _reinitialiserPourTests } from '../api/_lib/rate-limit.js';
 
 const fetchOriginal = global.fetch;
 const envOriginal = process.env.SUPABASE_SERVICE_KEY;
 test.after(() => { global.fetch = fetchOriginal; process.env.SUPABASE_SERVICE_KEY = envOriginal; });
-test.beforeEach(() => { process.env.SUPABASE_SERVICE_KEY = 'cle-test'; });
+test.beforeEach(() => { process.env.SUPABASE_SERVICE_KEY = 'cle-test'; _reinitialiserPourTests(); });
 
 function requete(body) {
   return { url: 'https://x.test/api/agent-check-email', method: 'POST', headers: new Headers(), json: async () => body };
@@ -68,4 +69,15 @@ test('panne réseau vers Supabase : dégrade vers registered=true, jamais d\'exc
 test('refuse les méthodes autres que POST/OPTIONS', async () => {
   const resp = await handler({ url: 'https://x.test/api/agent-check-email', method: 'GET', headers: new Headers() });
   assert.equal(resp.status, 405);
+});
+
+test('au-delà de 20 vérifications depuis la même IP en 10 min, renvoie 429', async () => {
+  global.fetch = async () => ({ ok: true, json: async () => [] });
+  const req = () => ({ url: 'https://x.test/api/agent-check-email', method: 'POST', headers: new Headers({ 'x-forwarded-for': '3.3.3.3' }), json: async () => ({ email: 'jean@exemple.fr' }) });
+  for (let i = 0; i < 20; i++) {
+    const resp = await handler(req());
+    assert.equal(resp.status, 200);
+  }
+  const resp21 = await handler(req());
+  assert.equal(resp21.status, 429);
 });

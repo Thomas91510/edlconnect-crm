@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { origineAutorisee } from './_lib/cors.js';
 import { resolverAgentParEmail } from './_lib/agent-lookup.js';
+import { ipAppelant, limiteAtteinte } from './_lib/rate-limit.js';
 
 // Vérifie, AVANT l'envoi du lien magique, si un email correspond à un
 // Agent EDL enregistré — pour ne jamais envoyer de lien de connexion à
@@ -9,7 +10,8 @@ import { resolverAgentParEmail } from './_lib/agent-lookup.js';
 // connecté (voir api/agent-missions.js). Endpoint public (appelé avant
 // authentification) qui ne renvoie qu'un booléen, jamais le nom de
 // l'agent ni son agence — pas de fuite d'information au-delà du strict
-// nécessaire pour bloquer l'envoi côté client.
+// nécessaire pour bloquer l'envoi côté client. Limité en débit par IP
+// (best effort, voir rate-limit.js) pour freiner l'énumération d'emails.
 export default async function handler(req) {
   const headers = {
     'Content-Type': 'application/json',
@@ -20,6 +22,10 @@ export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { headers });
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
+  }
+
+  if (limiteAtteinte('agent-check-email:' + ipAppelant(req), { max: 20, fenetreMs: 10 * 60 * 1000 })) {
+    return new Response(JSON.stringify({ error: 'Trop de tentatives, réessayez plus tard' }), { status: 429, headers });
   }
 
   try {

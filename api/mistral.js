@@ -2,6 +2,17 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 
+// Seul appelant existant : js/app-settings.js (génération IA du Composer),
+// modèle 'mistral-small-latest', 2 messages (system + user). La liste et
+// les bornes ci-dessous ne couvrent QUE cet usage : le corps du client
+// n'est jamais transmis tel quel à Mistral (qui facture chaque appel sur
+// la clé API de Thomas), pour ne jamais transformer cet endpoint en proxy
+// IA ouvert et illimité.
+const MODELES_AUTORISES = ['mistral-small-latest'];
+const MAX_TOKENS_PLAFOND = 1500;
+const MAX_MESSAGES = 4;
+const MAX_LONGUEUR_MESSAGE = 6000;
+
 // ── Vérifie que l'utilisateur est admin ou sur un plan payant actif. ──
 // En cas d'erreur d'infrastructure (clé service manquante, Supabase injoignable),
 // on laisse passer plutôt que de bloquer un abonné payant par accident.
@@ -49,13 +60,36 @@ export default async function handler(req) {
   try {
     const body = await req.json();
 
+    // ── Validation stricte : on ne transmet jamais le corps du client tel
+    // quel à Mistral (cf. commentaire en tête de fichier). ──
+    if (!MODELES_AUTORISES.includes(body?.model)) {
+      return new Response(JSON.stringify({ error: 'Modèle non autorisé' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
+    }
+    if (!Array.isArray(body?.messages) || body.messages.length === 0 || body.messages.length > MAX_MESSAGES) {
+      return new Response(JSON.stringify({ error: 'Messages invalides' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
+    }
+    for (const m of body.messages) {
+      if (!m || (m.role !== 'system' && m.role !== 'user' && m.role !== 'assistant') || typeof m.content !== 'string' || m.content.length > MAX_LONGUEUR_MESSAGE) {
+        return new Response(JSON.stringify({ error: 'Messages invalides' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
+      }
+    }
+    const maxTokens = Math.min(Number(body.max_tokens) || MAX_TOKENS_PLAFOND, MAX_TOKENS_PLAFOND);
+    const temperature = Math.max(0, Math.min(Number.isFinite(body.temperature) ? body.temperature : 0.7, 1));
+
+    const corpsMistral = {
+      model: body.model,
+      messages: body.messages.map(m => ({ role: m.role, content: m.content })),
+      max_tokens: maxTokens,
+      temperature,
+    };
+
     const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(corpsMistral)
     });
 
     const data = await response.json();
