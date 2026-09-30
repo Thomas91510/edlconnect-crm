@@ -26,10 +26,19 @@ const envOriginal = {
   cle: process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_KEY,
   ownerId: process.env.DEFAULT_OWNER_ID,
   serviceKey: process.env.SUPABASE_SERVICE_KEY,
+  debugSecret: process.env.AGENDA_DEBUG_SECRET,
 };
 
+const DEBUG_SECRET_TEST = 'secret-debug-test';
+
+// Endpoint public non authentifié : &debug=1 seul ne suffit plus à obtenir
+// le détail sensible (ownerId, vrais calendriers, réponse Google brute) —
+// il faut aussi &debugKey=<AGENDA_DEBUG_SECRET>. La plupart des tests ici
+// vérifient le comportement métier (créneaux, filtrage d'agents...) via ces
+// champs debug, donc la clé est fournie par défaut ; des tests dédiés plus
+// bas vérifient spécifiquement que le mode debug est bien verrouillé.
 function requete(params) {
-  const qs = new URLSearchParams({ debug: '1', ...params }).toString();
+  const qs = new URLSearchParams({ debug: '1', debugKey: DEBUG_SECRET_TEST, ...params }).toString();
   return { url: `https://x.test/api/agenda-disponibilites?${qs}`, method: 'GET', headers: new Headers() };
 }
 
@@ -81,6 +90,7 @@ test.beforeEach(() => {
   process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_KEY = privateKey;
   process.env.DEFAULT_OWNER_ID = 'owner-test-123';
   process.env.SUPABASE_SERVICE_KEY = 'service-key-test';
+  process.env.AGENDA_DEBUG_SECRET = DEBUG_SECRET_TEST;
 });
 
 test.after(() => {
@@ -90,9 +100,48 @@ test.after(() => {
     GOOGLE_FREEBUSY_SERVICE_ACCOUNT_KEY: envOriginal.cle,
     DEFAULT_OWNER_ID: envOriginal.ownerId,
     SUPABASE_SERVICE_KEY: envOriginal.serviceKey,
+    AGENDA_DEBUG_SECRET: envOriginal.debugSecret,
   })) {
     if (v === undefined) delete process.env[k]; else process.env[k] = v;
   }
+});
+
+// ─── Verrouillage du mode debug (fuite d'information sur un endpoint public) ───
+test('sans debugKey : le mode debug est ignoré, aucun champ sensible renvoyé', async () => {
+  const { fn } = fabriquerFetchMock();
+  global.fetch = fn;
+
+  const qs = new URLSearchParams({ bienTypo: 'T1', meuble: 'Nu', debug: '1' }).toString();
+  const resp = await handler({ url: `https://x.test/api/agenda-disponibilites?${qs}`, method: 'GET', headers: new Headers() });
+  const body = await resp.json();
+
+  assert.equal(body.ownerId, undefined);
+  assert.equal(body.calendriers, undefined);
+  assert.equal(body.fbDataBrut, undefined);
+});
+
+test('avec une debugKey incorrecte : le mode debug est ignoré', async () => {
+  const { fn } = fabriquerFetchMock();
+  global.fetch = fn;
+
+  const qs = new URLSearchParams({ bienTypo: 'T1', meuble: 'Nu', debug: '1', debugKey: 'mauvaise-cle' }).toString();
+  const resp = await handler({ url: `https://x.test/api/agenda-disponibilites?${qs}`, method: 'GET', headers: new Headers() });
+  const body = await resp.json();
+
+  assert.equal(body.ownerId, undefined);
+  assert.equal(body.calendriers, undefined);
+});
+
+test('AGENDA_DEBUG_SECRET non configuré : le mode debug reste désactivé même avec la bonne clé', async () => {
+  delete process.env.AGENDA_DEBUG_SECRET;
+  const { fn } = fabriquerFetchMock();
+  global.fetch = fn;
+
+  const resp = await handler(requete({ bienTypo: 'T1', meuble: 'Nu' }));
+  const body = await resp.json();
+
+  assert.equal(body.ownerId, undefined);
+  assert.equal(body.calendriers, undefined);
 });
 
 test('les 14 combinaisons typologie × meublé/nu sont couvertes', () => {

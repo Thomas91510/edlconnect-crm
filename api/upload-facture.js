@@ -9,12 +9,18 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BUCKET = 'factures';
 const TAILLE_MAX = 15 * 1024 * 1024; // 15 Mo
 
-// Dépôt d'une facture PDF pour un client : réservé aux administrateurs
-// (aucun client ne dépose lui-même de facture). Le fichier est envoyé au
-// bucket Storage "factures" (privé — doit être créé une fois manuellement
-// dans le tableau de bord Supabase), et un document {type:'facture'} est
-// ajouté à TOUS les contacts correspondant à l'email du client (comme pour
-// les rapports Edouard, un client peut apparaître dans plusieurs agences).
+// Dépôt d'une facture PDF pour un contact, depuis sa fiche dans le CRM : tout
+// abonné authentifié peut déposer une facture pour SES PROPRES contacts (le
+// bouton "🧾 Déposer une facture" de la fiche contact est visible pour tous
+// les abonnés — rien ne le réservait auparavant à l'admin côté interface,
+// alors que le serveur, lui, rejetait tout appel non-admin). Le fichier est
+// envoyé au bucket Storage "factures" (privé — doit être créé une fois
+// manuellement dans le tableau de bord Supabase). Un admin conserve en plus
+// le comportement historique : le document est alors ajouté à TOUS les
+// contacts correspondant à l'email du client, même dans une autre agence
+// (comme pour les rapports Edouard, un client peut apparaître dans
+// plusieurs agences) — un abonné normal, lui, ne peut écrire que sur SES
+// PROPRES contacts (data.ownerId), jamais sur la fiche d'une autre agence.
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -49,11 +55,12 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: cors });
     }
     const user = await userResp.json();
+    const _userId = user?.id;
     const callerEmail = (user?.email || '').toLowerCase().trim();
-
-    if (!ADMIN_EMAILS.includes(callerEmail)) {
-      return new Response(JSON.stringify({ error: 'Réservé aux administrateurs' }), { status: 403, headers: cors });
+    if (!_userId) {
+      return new Response(JSON.stringify({ error: 'Utilisateur introuvable' }), { status: 401, headers: cors });
     }
+    const estAdmin = ADMIN_EMAILS.includes(callerEmail);
 
     let form;
     try {
@@ -99,11 +106,14 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Échec du téléversement — le bucket "factures" existe-t-il dans Supabase Storage ?' }), { status: 500, headers: cors });
     }
 
-    // Rattacher le document à tous les contacts correspondant à cet email.
-    const contactsResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/contacts?select=id,data&data->>email=ilike.${encodeURIComponent(escapeIlike(clientEmail))}`,
-      { headers: supaHeaders }
-    );
+    // Rattacher le document aux contacts correspondant à cet email — un
+    // admin voit tous les contacts (toutes agences), un abonné normal est
+    // restreint à SES PROPRES contacts (jamais la fiche d'une autre agence).
+    let urlContacts = `${SUPABASE_URL}/rest/v1/contacts?select=id,data&data->>email=ilike.${encodeURIComponent(escapeIlike(clientEmail))}`;
+    if (!estAdmin) {
+      urlContacts += `&data->>ownerId=eq.${encodeURIComponent(_userId)}`;
+    }
+    const contactsResp = await fetch(urlContacts, { headers: supaHeaders });
     if (!contactsResp.ok) {
       return new Response(JSON.stringify({ error: 'Fichier déposé, mais aucun contact trouvé pour cet email' }), { status: 404, headers: cors });
     }

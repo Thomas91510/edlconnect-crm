@@ -1,5 +1,6 @@
 export const config = { runtime: 'edge' };
 import { origineAutorisee } from './_lib/cors.js';
+import { ipAppelant, limiteAtteinte } from './_lib/rate-limit.js';
 
 // Echappement HTML : endpoint public, les valeurs viennent d'un visiteur
 // anonyme et sont reinjectees dans l'email envoye au propriétaire.
@@ -24,6 +25,12 @@ export default async function handler(req) {
   }
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
+  }
+
+  // Limité en débit par IP (best effort, voir rate-limit.js) : formulaire
+  // public sans authentification, cible facile pour un envoi massif.
+  if (limiteAtteinte('contact-form:' + ipAppelant(req), { max: 5, fenetreMs: 60 * 60 * 1000 })) {
+    return new Response(JSON.stringify({ error: 'Trop de messages envoyés, réessayez plus tard' }), { status: 429, headers });
   }
 
   try {
@@ -61,7 +68,7 @@ export default async function handler(req) {
       headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
       body: JSON.stringify({
         sender: { name: 'Lokentia — Site web', email: 'contact@lokentia.fr' },
-        to: [{ email: 'contact@lokentia.fr', name: 'ImmoCheck EDL' }],
+        to: [{ email: 'contact@lokentia.fr', name: 'Lokentia' }],
         replyTo: { email, name: nom },
         subject: `[Lokentia] Contact : ${sujet || 'Sans sujet'} — ${nom}`,
         htmlContent: `<p><strong>Nom :</strong> ${esc(nom)}</p><p><strong>Email :</strong> ${esc(email)}</p><p><strong>Sujet :</strong> ${esc(sujet) || '—'}</p><hr><p>${esc(message).replace(/\n/g, '<br>')}</p>`,
