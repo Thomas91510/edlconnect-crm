@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { dureeEnMinutes } from './_lib/duree.js';
 import { parisEnUTC } from './_lib/fuseau-paris.js';
+import { ADMIN_EMAILS } from './_lib/admin.js';
 
 // Le CRM envoie une date "AAAA-MM-JJTHH:mm:ss" sans fuseau — l'heure de Paris
 // telle que saisie par l'utilisateur, pas un instant UTC. `new Date(...)` sur
@@ -48,6 +49,16 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // GOOGLE_REFRESH_TOKEN pointe vers UN SEUL agenda Google, partagé par
+  // toute la plateforme (pas encore un agenda par abonné) : sans ce garde-
+  // fou, le RDV de N'IMPORTE QUEL abonné (adresse, coordonnées du
+  // locataire) atterrirait dans l'agenda personnel de l'administrateur.
+  // Même principe que edouard-push.js pour l'intégration Edouard.
+  const _userCal = await _userResp.json();
+  if (!_userCal || !ADMIN_EMAILS.includes(_userCal.email)) {
+    return res.status(200).json({ success: false, skipped: true, raison: 'Google Calendar non activé pour ce compte' });
+  }
 
   if (!process.env.GOOGLE_REFRESH_TOKEN) {
     return res.status(503).json({ error: 'Google Calendar non configuré' });

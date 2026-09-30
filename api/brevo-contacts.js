@@ -4,23 +4,14 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 
-// ── Vérifie que l'utilisateur est admin ou sur un plan payant actif. ──
-async function planAutorise(userId, email) {
-  if (email && ADMIN_EMAILS.includes(email)) return true;
-  try {
-    const key = process.env.SUPABASE_SERVICE_KEY;
-    if (!key || !userId) return true;
-    const r = await fetch(SUPABASE_URL + '/rest/v1/user_plans?select=plan,status&user_id=eq.' + encodeURIComponent(userId), {
-      headers: { apikey: key, Authorization: 'Bearer ' + key }
-    });
-    if (!r.ok) return true;
-    const rows = await r.json();
-    const p = rows && rows[0];
-    if (!p) return false;
-    return (p.plan === 'starter' || p.plan === 'pro') && p.status === 'active';
-  } catch (e) { return true; }
-}
-
+// Le compte Brevo est UNIQUE et partagé par toute la plateforme (une seule
+// BREVO_API_KEY). Les contacts Brevo (/v3/contacts), à la différence des
+// emails transactionnels, ne portent aucun tag "sub_<user_id>" permettant
+// de les rattacher à un abonné (voir brevo-tracking.js et send-email.js) —
+// il n'existe donc AUCUN moyen de filtrer cette liste par abonné. Réservé
+// à l'admin (faille corrigée ici : renvoyait auparavant TOUS les contacts
+// Brevo, réels clients de l'agence, à n'importe quel abonné Starter/Pro
+// authentifié).
 export default async function handler(req) {
   const headers = {
     'Content-Type': 'application/json',
@@ -52,11 +43,11 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers });
   }
 
-  // ── Fonctionnalité réservée aux plans Starter/Pro ──
+  // ── Réservé à l'admin (voir commentaire en tête de fichier) ──
   const _user = await userResp.json();
-  const _autorise = await planAutorise(_user && _user.id, _user && _user.email);
-  if (!_autorise) {
-    return new Response(JSON.stringify({ error: 'La synchronisation Brevo est réservée aux plans Starter et Pro.', planRequis: true }), { status: 403, headers });
+  const _callerEmail = (_user && _user.email || '').toLowerCase().trim();
+  if (!ADMIN_EMAILS.includes(_callerEmail)) {
+    return new Response(JSON.stringify({ error: 'Réservé aux administrateurs' }), { status: 403, headers });
   }
 
   try {

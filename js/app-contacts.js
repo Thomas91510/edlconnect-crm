@@ -377,7 +377,7 @@ async function quickUpdateContact(id,field,value){
   }
   // Déclencher email si passage à "Client signé"
   if(field === 'statut' && value === 'Client signé ✅' && prevValue !== 'Client signé ✅'){
-    if(c.email && confirm('Envoyer l\'email de bienvenue EDL IDF à ' + (c.entreprise||c.contact) + ' ?')){
+    if(c.email && confirm('Envoyer l\'email de bienvenue à ' + (c.entreprise||c.contact) + ' ?')){
       try {
         await fetch('/api/send-welcome-agency', {
           method:'POST', headers: await _authHeaders({'Content-Type':'application/json'}),

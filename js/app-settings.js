@@ -821,9 +821,10 @@ setTimeout(()=>{
   if(ot)ot.value=localStorage.getItem('edl_obj_trim')||'';
   if(oa)oa.value=localStorage.getItem('edl_obj_annuel')||'';
 },500);
-// Démarrer la sync automatique toutes les 5 min (seulement en mode CRM)
+// Démarrer la sync automatique toutes les 5 min (seulement en mode CRM,
+// et réservé à l'admin — voir api/brevo-contacts.js)
 setTimeout(()=>{
-  if(window._EXTRANET_MODE) return;
+  if(window._EXTRANET_MODE || !isAdmin()) return;
   startAutoSync();
   silentSyncBrevo(); // Sync immédiate au démarrage
 }, 2000);
@@ -1312,6 +1313,11 @@ async function onAuthSuccess(user){
   // Afficher le bouton admin si admin
   const navAdmin = document.getElementById('nav-admin');
   if(navAdmin && ADMIN_EMAILS.includes(user.email)) navAdmin.style.display='flex';
+  // Sync Brevo : réservée à l'admin côté serveur (api/brevo-contacts.js —
+  // le compte Brevo est unique et partagé, sans tag par abonné pour filtrer
+  // les contacts), donc masquée pour tout autre compte.
+  const navBrevo = document.getElementById('nav-brevo');
+  if(navBrevo && ADMIN_EMAILS.includes(user.email)) navBrevo.style.display='flex';
   // Section Sécurité (double authentification) : réservée au compte admin
   const securiteSection = document.getElementById('securite-section');
   if(securiteSection){
