@@ -60,9 +60,13 @@ export default async function handler(req) {
   }
 
   const url = new URL(req.url);
-  // &debug=1 renvoie le détail de l'appel Google (utile en cas de souci) au
-  // lieu de dégrader silencieusement — sans, comportement normal.
-  const debug = url.searchParams.get('debug') === '1';
+  // &debug=1&debugKey=... renvoie le détail de l'appel Google (utile en cas
+  // de souci) au lieu de dégrader silencieusement — sans, comportement
+  // normal. Endpoint public et non authentifié : le detail (ownerId, vrais
+  // identifiants Google Calendar de l'agence, réponse brute freebusy) ne
+  // doit jamais être accessible sans connaître AGENDA_DEBUG_SECRET.
+  const debugSecret = process.env.AGENDA_DEBUG_SECRET;
+  const debug = !!debugSecret && url.searchParams.get('debug') === '1' && url.searchParams.get('debugKey') === debugSecret;
   const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [], configured: false }, debug ? extra : {})), { status: 200, headers });
 
   const email = process.env.GOOGLE_FREEBUSY_SERVICE_ACCOUNT_EMAIL;

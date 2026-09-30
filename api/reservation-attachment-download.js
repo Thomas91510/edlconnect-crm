@@ -7,16 +7,17 @@ import { ADMIN_EMAILS } from './_lib/admin.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BUCKET = 'reservations';
 
-// Les pièces jointes de réservation n'appartiennent à aucun client précis
-// (contrairement aux factures) — seul un administrateur du CRM peut en
-// demander le téléchargement. Le bucket est privé : mint une URL signée de
-// très courte durée (60s), jamais stockée.
+// Les pièces jointes de réservation appartiennent à l'agence propriétaire de
+// la réservation (comme pour delete-reservation.js) : chaque abonné peut
+// télécharger les pièces jointes de SES PROPRES réservations, un admin peut
+// télécharger celles de n'importe quelle agence. Le bucket est privé : mint
+// une URL signée de très courte durée (60s), jamais stockée.
 //
-// Défense en profondeur : même réservé aux admins, le chemin ne doit jamais
-// être signé tel quel sans vérifier qu'il correspond à une pièce jointe
-// RÉELLEMENT rattachée à une réservation existante (piecesJointes[].path) —
-// même principe que facture-download.js, pour ne jamais transformer cet
-// endpoint en "signeur" de n'importe quel chemin du bucket.
+// Défense en profondeur : le chemin ne doit jamais être signé tel quel sans
+// vérifier qu'il correspond à une pièce jointe RÉELLEMENT rattachée à une
+// réservation existante ET appartenant à l'appelant (piecesJointes[].path +
+// data.ownerId) — même principe que facture-download.js, pour ne jamais
+// transformer cet endpoint en "signeur" de n'importe quel chemin du bucket.
 export default async function handler(req) {
   const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) };
   if (req.method === 'OPTIONS') {
@@ -42,10 +43,12 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), { status: 401, headers: cors });
     }
     const user = await userResp.json();
+    const _userId = user?.id;
     const callerEmail = (user?.email || '').toLowerCase().trim();
-    if (!ADMIN_EMAILS.includes(callerEmail)) {
-      return new Response(JSON.stringify({ error: 'Réservé aux administrateurs' }), { status: 403, headers: cors });
+    if (!_userId) {
+      return new Response(JSON.stringify({ error: 'Utilisateur introuvable' }), { status: 401, headers: cors });
     }
+    const estAdmin = ADMIN_EMAILS.includes(callerEmail);
 
     let body = {};
     try { body = await req.json(); } catch (_) {}
@@ -58,12 +61,15 @@ export default async function handler(req) {
 
     // Le chemin doit correspondre à une pièce jointe réellement enregistrée
     // sur une réservation — sinon on pourrait signer n'importe quel objet
-    // du bucket sur simple appel, sans lien avec une vraie réservation.
+    // du bucket sur simple appel, sans lien avec une vraie réservation. Un
+    // non-admin est en plus restreint à SES propres réservations (même
+    // cloisonnement que get-reservations.js/delete-reservation.js).
     const filtreContient = 'cs.' + encodeURIComponent(JSON.stringify([{ path: chemin }]));
-    const checkResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/bookings?select=id&data->piecesJointes=${filtreContient}&limit=1`,
-      { headers: supaHeaders }
-    );
+    let urlVerif = `${SUPABASE_URL}/rest/v1/bookings?select=id&data->piecesJointes=${filtreContient}&limit=1`;
+    if (!estAdmin) {
+      urlVerif += `&data->>ownerId=eq.${encodeURIComponent(_userId)}`;
+    }
+    const checkResp = await fetch(urlVerif, { headers: supaHeaders });
     if (!checkResp.ok) {
       return new Response(JSON.stringify({ error: 'Accès refusé' }), { status: 403, headers: cors });
     }
