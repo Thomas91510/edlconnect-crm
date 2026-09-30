@@ -100,8 +100,8 @@ export default async function handler(req) {
 
   <!-- Header -->
   <div style="background:#1A5FA8;padding:24px;border-radius:12px 12px 0 0;text-align:center">
-    <div style="color:#fff;font-size:21px;font-weight:700">EDL IDF Expert en État des Lieux</div>
-    <div style="color:rgba(255,255,255,0.75);font-size:12px;margin-top:4px">Votre partenaire état des lieux en Île-de-France</div>
+    <div style="color:#fff;font-size:21px;font-weight:700">${esc(IDENT.nom)}</div>
+    <div style="color:rgba(255,255,255,0.75);font-size:12px;margin-top:4px">Votre partenaire état des lieux</div>
   </div>
 
   <!-- Corps -->
@@ -113,7 +113,7 @@ export default async function handler(req) {
 
     <p style="font-size:13px;color:#444;line-height:1.8;margin:0 0 20px 0">
       Nous sommes ravis de vous accueillir parmi nos partenaires et vous remercions de votre confiance.<br><br>
-      À partir d'aujourd'hui, <strong>EDL IDF Expert en État des Lieux</strong> prend en charge la réalisation de vos états des lieux entrants, sortants et pré-états des lieux en Île-de-France.
+      À partir d'aujourd'hui, <strong>${esc(IDENT.nom)}</strong> prend en charge la réalisation de vos états des lieux entrants, sortants et pré-états des lieux.
     </p>
 
     <!-- Ce que nous proposons -->
@@ -122,8 +122,7 @@ export default async function handler(req) {
       <div style="font-size:13px;color:#0C447C;line-height:2">
         ✅ Intervention 7j/7 de 9h à 20h<br>
         ✅ Rapport numérique remis sous 24h<br>
-        ✅ Signature électronique incluse<br>
-        ✅ Couverture complète de l'Île-de-France
+        ✅ Signature électronique incluse
       </div>
     </div>
 
@@ -175,10 +174,9 @@ export default async function handler(req) {
     <div style="background:#f8f8f6;border-radius:8px;padding:16px;margin-bottom:20px">
       <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:8px">📞 Votre contact dédié :</div>
       <div style="font-size:13px;color:#444;line-height:1.9">
-        <strong>${IDENT.signature || IDENT.nom}</strong><br>
-        Directeur Général — EDL IDF Expert en État des Lieux<br>
-        ${IDENT.tel ? `📞 <a href="tel:${IDENT.tel.replace(/[^0-9+]/g,'')}" style="color:#1A5FA8;text-decoration:none">${IDENT.tel}</a>` : ''}<br>
-        ✉️ <a href="mailto:${IDENT.replyTo || IDENT.email}" style="color:#1A5FA8;text-decoration:none">${IDENT.replyTo || IDENT.email}</a>
+        <strong>${esc(IDENT.signature || IDENT.nom)}</strong><br>
+        ${IDENT.tel ? `📞 <a href="tel:${esc(IDENT.tel.replace(/[^0-9+]/g,''))}" style="color:#1A5FA8;text-decoration:none">${esc(IDENT.tel)}</a>` : ''}<br>
+        ✉️ <a href="mailto:${esc(IDENT.replyTo || IDENT.email)}" style="color:#1A5FA8;text-decoration:none">${esc(IDENT.replyTo || IDENT.email)}</a>
       </div>
     </div>
 
@@ -189,16 +187,15 @@ export default async function handler(req) {
 
     <!-- Signature -->
     <div style="border-top:2px solid #1A5FA8;padding-top:16px;font-size:13px;color:#1A5FA8">
-      <strong>${IDENT.signature || IDENT.nom}</strong><br>
-      <span style="color:#6b6b6b">Directeur Général — EDL IDF Expert en État des Lieux</span><br>
-      <span style="color:#6b6b6b">${IDENT.tel ? `📞 ${IDENT.tel} · ` : ``}✉️ ${IDENT.replyTo || IDENT.email}</span>
+      <strong>${esc(IDENT.signature || IDENT.nom)}</strong><br>
+      <span style="color:#6b6b6b">${IDENT.tel ? `📞 ${esc(IDENT.tel)} · ` : ``}✉️ ${esc(IDENT.replyTo || IDENT.email)}</span>
     </div>
 
   </div>
 
   <!-- Footer -->
   <div style="text-align:center;font-size:11px;color:#999;padding:16px">
-    EDL IDF Expert en État des Lieux · 18 Grande Rue, 91510 Lardy
+    ${esc(IDENT.nom)}
   </div>
 
 </div>
@@ -211,7 +208,7 @@ export default async function handler(req) {
         sender: { name: IDENT.nom, email: IDENT.email },
         ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
         to: [{ email, name: companyName || email }],
-        subject: `🤝 Bienvenue chez EDL IDF Expert en État des Lieux — Votre espace de réservation est prêt !`,
+        subject: `🤝 Bienvenue chez ${IDENT.nom} — Votre espace de réservation est prêt !`,
         htmlContent
       })
     });
