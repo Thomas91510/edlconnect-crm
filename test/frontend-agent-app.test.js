@@ -657,3 +657,21 @@ test('renderRemuneration : grille, totaux du mois et détail échappé', () => {
   assert.ok(html.includes('Non défini'), 'un type sans tarif est signalé');
   assert.ok(!html.includes('<img src=x'), 'l’adresse doit être échappée');
 });
+
+test('renderRemuneration : grille par typologie (T1 / studio … T7 et plus, sortant + entrant)', () => {
+  const w = chargerAgentApp();
+  const box = avecConteneurRemu(w);
+  const parTypo = { T1: { simple: 35, double: 60 }, T2: { simple: 40, double: 70 }, T3: { simple: null, double: null }, T4: { simple: null, double: null }, T5: { simple: null, double: null }, T6: { simple: null, double: null }, 'T7+': { simple: 90, double: null } };
+  w.renderRemuneration({
+    reference: { configuree: true, mode: 'typologie', unite: 'HT', parType: null, parTypo, typoAutre: 30, note: '' },
+    moisCourant: { mois: '2026-10', acquis: 40, prevu: 0, nbAcquises: 1 },
+    parMois: [], nonCouvertes: 0,
+    lignes: [{ id: 'm1', date: '2026-10-02T09:00:00', adresse: '1 rue A', type: 'EDL entrant', typologie: 'T2', etat: 'acquise', montant: 40 }],
+  });
+  const html = box.innerHTML;
+  assert.ok(html.includes('T1 / studio'));
+  assert.ok(html.includes('T7 et plus'));
+  assert.ok(html.includes('70 € HT'), 'colonne sortant + entrant');
+  assert.ok(html.includes('30 € HT'), 'pré-état des lieux');
+  assert.ok(html.includes('<td>T2</td>'), 'typologie affichée dans le détail');
+});

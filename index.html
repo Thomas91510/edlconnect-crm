@@ -595,6 +595,8 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 .settings-section{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 26px;margin-bottom:20px}
 .settings-title{font-size:15px;margin-bottom:14px}
 .settings-section[hidden]{display:none !important}
+.rem-typo-table th,.rem-typo-table td{padding:6px 8px 6px 0;border-bottom:none;max-width:none;white-space:nowrap}
+.rem-typo-table td input{height:38px}
 
 /* Accueil : tâches du jour */
 .todo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
@@ -1594,6 +1596,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
             <div><label for="new-agent-rem-mode">Mode de calcul</label>
               <select id="new-agent-rem-mode" onchange="majFormulaireRemuneration()">
                 <option value="forfait">Forfait par type d'état des lieux</option>
+                <option value="typologie">Par typologie du bien (T1 à T7+)</option>
                 <option value="pourcentage">Pourcentage du montant de la mission</option>
               </select></div>
             <div><label for="new-agent-rem-unite">Montants exprimés en</label>
@@ -1604,6 +1607,37 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
             <div><label for="new-agent-rem-sortant">EDL sortant (€)</label><input id="new-agent-rem-sortant" inputmode="decimal" placeholder="Ex : 45"></div>
             <div><label for="new-agent-rem-simultane">Sortant + entrant (€)</label><input id="new-agent-rem-simultane" inputmode="decimal" placeholder="Ex : 80"></div>
             <div><label for="new-agent-rem-autre">Autre / pré-état des lieux (€)</label><input id="new-agent-rem-autre" inputmode="decimal" placeholder="Ex : 35"></div>
+          </div>
+          <div id="agent-rem-typologie" style="display:none">
+            <table class="tbl rem-typo-table" style="margin-top:12px">
+              <thead><tr><th>Typologie</th><th>Entrant ou sortant (€)</th><th>Sortant + entrant (€)</th></tr></thead>
+              <tbody>
+              <tr><th scope="row">T1 / studio</th>
+                <td><input id="new-agent-rem-typo-T1-simple" inputmode="decimal" aria-label="T1 / studio — entrant ou sortant (€)"></td>
+                <td><input id="new-agent-rem-typo-T1-double" inputmode="decimal" aria-label="T1 / studio — sortant + entrant (€)"></td></tr>
+              <tr><th scope="row">T2</th>
+                <td><input id="new-agent-rem-typo-T2-simple" inputmode="decimal" aria-label="T2 — entrant ou sortant (€)"></td>
+                <td><input id="new-agent-rem-typo-T2-double" inputmode="decimal" aria-label="T2 — sortant + entrant (€)"></td></tr>
+              <tr><th scope="row">T3</th>
+                <td><input id="new-agent-rem-typo-T3-simple" inputmode="decimal" aria-label="T3 — entrant ou sortant (€)"></td>
+                <td><input id="new-agent-rem-typo-T3-double" inputmode="decimal" aria-label="T3 — sortant + entrant (€)"></td></tr>
+              <tr><th scope="row">T4</th>
+                <td><input id="new-agent-rem-typo-T4-simple" inputmode="decimal" aria-label="T4 — entrant ou sortant (€)"></td>
+                <td><input id="new-agent-rem-typo-T4-double" inputmode="decimal" aria-label="T4 — sortant + entrant (€)"></td></tr>
+              <tr><th scope="row">T5</th>
+                <td><input id="new-agent-rem-typo-T5-simple" inputmode="decimal" aria-label="T5 — entrant ou sortant (€)"></td>
+                <td><input id="new-agent-rem-typo-T5-double" inputmode="decimal" aria-label="T5 — sortant + entrant (€)"></td></tr>
+              <tr><th scope="row">T6</th>
+                <td><input id="new-agent-rem-typo-T6-simple" inputmode="decimal" aria-label="T6 — entrant ou sortant (€)"></td>
+                <td><input id="new-agent-rem-typo-T6-double" inputmode="decimal" aria-label="T6 — sortant + entrant (€)"></td></tr>
+              <tr><th scope="row">T7 et plus</th>
+                <td><input id="new-agent-rem-typo-T7-simple" inputmode="decimal" aria-label="T7 et plus — entrant ou sortant (€)"></td>
+                <td><input id="new-agent-rem-typo-T7-double" inputmode="decimal" aria-label="T7 et plus — sortant + entrant (€)"></td></tr>
+              </tbody>
+            </table>
+            <label for="new-agent-rem-typo-autre">Autre / pré-état des lieux, toutes typologies (€)</label>
+            <input id="new-agent-rem-typo-autre" inputmode="decimal" placeholder="Ex : 30" style="max-width:200px">
+            <div style="font-size:12px;color:var(--text2);margin-top:8px">La typologie est lue sur chaque mission (studio = T1, F3 = T3, au-delà de T7 = T7 et plus). Une case vide = pas de tarif : la mission est signalée à l'agent.</div>
           </div>
           <div id="agent-rem-pourcentage" style="display:none">
             <label for="new-agent-rem-pct">Pourcentage du montant HT facturé (%)</label>

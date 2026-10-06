@@ -395,23 +395,35 @@ async function televerserDocumentAgent(agentId, type, inputEl){
 // Lue côté serveur par api/_lib/agent-remuneration.js pour l'onglet
 // « Rémunération » de l'espace agent. Champs vides = pas de tarif.
 const CHAMPS_REM_TYPE = ['entrant','sortant','simultane','autre'];
+// Clés stockées (T7+) et suffixes d'identifiants HTML (T7) des typologies.
+const TYPOS_REM = [['T1','T1'],['T2','T2'],['T3','T3'],['T4','T4'],['T5','T5'],['T6','T6'],['T7+','T7']];
 function majFormulaireRemuneration(){
   const mode = (document.getElementById('new-agent-rem-mode')||{}).value || 'forfait';
   const f = document.getElementById('agent-rem-forfait');
+  const t = document.getElementById('agent-rem-typologie');
   const p = document.getElementById('agent-rem-pourcentage');
   if(f) f.style.display = mode === 'forfait' ? '' : 'none';
+  if(t) t.style.display = mode === 'typologie' ? '' : 'none';
   if(p) p.style.display = mode === 'pourcentage' ? '' : 'none';
 }
 function lireFormulaireRemuneration(){
   const val = id => ((document.getElementById(id)||{}).value || '').trim();
   const parType = {};
   CHAMPS_REM_TYPE.forEach(k => { parType[k] = val('new-agent-rem-' + k); });
-  return { mode: val('new-agent-rem-mode') || 'forfait', parType, pourcentage: val('new-agent-rem-pct'), unite: val('new-agent-rem-unite') || 'HT', note: val('new-agent-rem-note') };
+  const parTypo = {};
+  TYPOS_REM.forEach(([cle, id]) => { parTypo[cle] = { simple: val('new-agent-rem-typo-' + id + '-simple'), double: val('new-agent-rem-typo-' + id + '-double') }; });
+  return { mode: val('new-agent-rem-mode') || 'forfait', parType, parTypo, typoAutre: val('new-agent-rem-typo-autre'), pourcentage: val('new-agent-rem-pct'), unite: val('new-agent-rem-unite') || 'HT', note: val('new-agent-rem-note') };
 }
 function remplirFormulaireRemuneration(rem){
   const r = rem || {};
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v == null ? '' : v; };
-  set('new-agent-rem-mode', r.mode === 'pourcentage' ? 'pourcentage' : 'forfait');
+  set('new-agent-rem-mode', ['pourcentage','typologie'].includes(r.mode) ? r.mode : 'forfait');
+  TYPOS_REM.forEach(([cle, id]) => {
+    const l = (r.parTypo || {})[cle] || {};
+    set('new-agent-rem-typo-' + id + '-simple', l.simple);
+    set('new-agent-rem-typo-' + id + '-double', l.double);
+  });
+  set('new-agent-rem-typo-autre', r.typoAutre);
   set('new-agent-rem-unite', r.unite || 'HT');
   CHAMPS_REM_TYPE.forEach(k => set('new-agent-rem-' + k, (r.parType || {})[k]));
   set('new-agent-rem-pct', r.pourcentage);
@@ -423,6 +435,10 @@ function resumeRemunerationAgent(rem){
   if(!rem) return 'Rémunération non renseignée';
   const unite = rem.unite === 'net' ? '€ net' : '€ ' + (rem.unite || 'HT');
   if(rem.mode === 'pourcentage') return rem.pourcentage ? 'Rémunération : ' + rem.pourcentage + ' % du montant HT' : 'Rémunération non renseignée';
+  if(rem.mode === 'typologie'){
+    const parts = TYPOS_REM.map(([cle]) => [cle, ((rem.parTypo || {})[cle] || {}).simple]).filter(([, v]) => v !== '' && v != null).map(([cle, v]) => cle + ' ' + v + ' ' + unite);
+    return parts.length ? 'Rémunération par typologie : ' + parts.join(' · ') : 'Rémunération non renseignée';
+  }
   const lib = { entrant:'entrant', sortant:'sortant', simultane:'sortant+entrant', autre:'autre' };
   const parts = CHAMPS_REM_TYPE.filter(k => (rem.parType || {})[k] !== '' && (rem.parType || {})[k] != null).map(k => lib[k] + ' ' + rem.parType[k] + ' ' + unite);
   return parts.length ? 'Rémunération : ' + parts.join(' · ') : 'Rémunération non renseignée';

@@ -74,3 +74,31 @@ test('/api/agent-missions : renvoie la rémunération sans le montant facturé a
     process.env.SUPABASE_SERVICE_KEY = envOriginal;
   }
 });
+
+test('typologie : tarif selon T1…T7+ (studio = T1), colonne sortant + entrant, pré-état à part', () => {
+  const ref = normaliserReference({
+    mode: 'typologie',
+    parTypo: { T1: { simple: '35', double: '60' }, T2: { simple: '40', double: '70' }, T3: { simple: '45', double: '80' }, 'T7+': { simple: '90' } },
+    typoAutre: '30',
+  });
+  assert.equal(ref.configuree, true);
+  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'Studio' }, ref), 35);
+  assert.equal(montantMission({ type: 'EDL sortant', bienTypo: 'F3' }, ref), 45);
+  assert.equal(montantMission({ type: 'EDL Sortant / Entrant', bienTypo: 'T2' }, ref), 70);
+  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T9' }, ref), 90, 'T8, T9… rattachés au T7+');
+  assert.equal(montantMission({ type: 'Pré-état des lieux', bienTypo: 'T4' }, ref), 30);
+  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T4' }, ref), null, 'T4 sans tarif');
+  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: '' }, ref), null, 'typologie absente de la mission');
+});
+
+test('typologie : totaux et typologie renvoyée sur chaque ligne', () => {
+  const r = calculerRemuneration([
+    { id: 'a', type: 'EDL entrant', bienTypo: 'T2', statut: 'terminée', date: '2026-10-03T09:00:00' },
+    { id: 'b', type: 'EDL Sortant / Entrant', bienTypo: 'T3', statut: 'terminée', date: '2026-10-04T09:00:00' },
+    { id: 'c', type: 'EDL sortant', bienTypo: '', statut: 'terminée', date: '2026-10-05T09:00:00' },
+  ], { mode: 'typologie', parTypo: { T2: { simple: 40 }, T3: { double: 80 } } }, MAINTENANT);
+  assert.equal(r.moisCourant.acquis, 120);
+  assert.equal(r.nonCouvertes, 1);
+  assert.equal(r.lignes.find(l => l.id === 'a').typologie, 'T2');
+  assert.equal(r.reference.parType, null, 'en mode typologie, la grille par type n’est pas renvoyée');
+});

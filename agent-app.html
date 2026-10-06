@@ -1162,8 +1162,15 @@ function renderRemuneration(r){
   const ref = r.reference, u = ref.unite;
   const mc = r.moisCourant || {};
   const libMois = cle => { const [a, m] = String(cle).split('-').map(Number); const t = new Date(a, m - 1, 1).toLocaleDateString('fr-FR', { month:'long', year:'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const cellule = v => v === null || v === undefined ? '<span style="color:var(--text3);font-weight:400">—</span>' : esc(fmtEuros(v, u));
   const grille = ref.mode === 'pourcentage'
     ? `<div class="remu-ligne"><span>Part de chaque mission</span><b>${esc(String(ref.pourcentage).replace('.', ','))} % du montant HT</b></div>`
+    : ref.mode === 'typologie'
+    ? `<table class="remu-table remu-typo" style="min-width:0">
+        <thead><tr><th>Typologie</th><th style="text-align:right">Entrant ou sortant</th><th style="text-align:right">Sortant + entrant</th></tr></thead>
+        <tbody>${Object.keys(ref.parTypo || {}).map(t => `<tr><td>${t === 'T1' ? 'T1 / studio' : t === 'T7+' ? 'T7 et plus' : esc(t)}</td><td style="text-align:right;font-weight:600">${cellule(ref.parTypo[t].simple)}</td><td style="text-align:right;font-weight:600">${cellule(ref.parTypo[t].double)}</td></tr>`).join('')}</tbody>
+      </table>
+      <div class="remu-ligne" style="border-top:1px solid var(--border);margin-top:4px"><span>Autre / pré-état des lieux</span><b>${cellule(ref.typoAutre)}</b></div>`
     : Object.keys(LIBELLE_TYPE_REMU).map(k => `<div class="remu-ligne"><span>${esc(LIBELLE_TYPE_REMU[k])}</span><b>${ref.parType[k] === null ? '<span style="color:var(--text3);font-weight:400">Non défini</span>' : esc(fmtEuros(ref.parType[k], u))}</b></div>`).join('');
   const mois = (r.parMois || []);
   const max = Math.max(1, ...mois.map(x => x.total));
@@ -1200,11 +1207,12 @@ function renderRemuneration(r){
       <div class="card-head" id="remu-detail-titre"><i class="ti ti-list-details"></i>Détail des dernières missions</div>
       <div class="card-body" style="overflow-x:auto">
         <table class="remu-table">
-          <thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>État</th><th style="text-align:right">Montant</th></tr></thead>
+          <thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>Typologie</th><th>État</th><th style="text-align:right">Montant</th></tr></thead>
           <tbody>${recentes.map(l => `<tr>
             <td>${esc(l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—')}</td>
             <td>${esc(l.adresse || '—')}</td>
             <td>${esc(l.type || '—')}</td>
+            <td>${esc(l.typologie && l.typologie !== 'Non renseignée' ? l.typologie : '—')}</td>
             <td><span class="badge ${l.etat === 'acquise' ? 'badge-entrant' : 'badge-autre'}">${libEtat[l.etat] || ''}</span></td>
             <td style="text-align:right;font-weight:600">${esc(fmtEuros(l.montant, u))}</td>
           </tr>`).join('')}</tbody>
@@ -1285,7 +1293,7 @@ function renderHistorique(missions){
 <div id="app-version"></div>
 <script>
 (async function afficherVersionAgent(){
-  const APP_VERSION = '2.0.0-beta.3';
+  const APP_VERSION = '2.0.0-beta.4';
   const el = document.getElementById('app-version');
   if(el) el.textContent = 'v' + APP_VERSION;
   try {
