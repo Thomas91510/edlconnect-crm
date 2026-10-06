@@ -378,7 +378,7 @@
       <button class="nav-item active" data-page="accueil" onclick="allerA('accueil')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg></span> Tableau de bord</button>
       <button class="nav-item" data-page="edl" onclick="allerA('edl')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v16H3zM16 3v4M8 3v4M3 10h18"/></svg></span> États des lieux<span class="nav-badge" id="nav-badge-edl"></span></button>
       <button class="nav-item" data-page="messages" onclick="allerA('messages')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/></svg></span> Messages<span class="nav-badge" id="nav-badge-messages"></span></button>
-      <button class="nav-item" data-page="factures" onclick="allerA('factures')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg></span> Factures &amp; documents</button>
+      <button class="nav-item" data-page="factures" onclick="allerA('factures')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg></span> Documents</button>
       <button class="nav-item" data-page="statistiques" onclick="allerA('statistiques')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span> Statistiques</button>
     </nav>
     <div class="sidebar-foot">
@@ -438,13 +438,6 @@
                 <button type="button" class="msg-quick-btn" onclick="envoyerMessageAccueil()" aria-label="Envoyer"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
               </div>
             </section>
-            <section class="bloc" aria-labelledby="accueil-fac-titre">
-              <div class="bloc-head">
-                <h2 id="accueil-fac-titre">Dernières factures</h2>
-                <a href="#" onclick="allerA('factures');return false">Tout voir</a>
-              </div>
-              <div id="accueil-factures"><div class="bloc-vide">Chargement…</div></div>
-            </section>
           </div>
         </div>
       </section>
@@ -488,13 +481,10 @@
         </div>
       </section>
 
-      <!-- ───────── PAGE FACTURES & DOCUMENTS ───────── -->
+      <!-- ───────── PAGE DOCUMENTS (les factures ne sont plus affichées aux agences) ───────── -->
       <section class="page" id="page-factures">
-        <h1>Factures &amp; documents</h1>
-        <p class="lead">Les factures et documents (contrat, tarifs, conditions) transmis par votre expert.</p>
-        <div class="section-label">Factures</div>
-        <div id="factures-list"></div>
-        <div class="section-label" style="margin-top:26px">Documents</div>
+        <h1>Documents</h1>
+        <p class="lead">Les documents (contrat, tarifs, conditions) transmis par votre expert.</p>
         <div id="docs-list"></div>
       </section>
 
@@ -515,7 +505,7 @@
   <div class="more-sheet-backdrop" onclick="toggleMore(false)"></div>
   <div class="more-sheet-panel">
     <div class="more-sheet-handle"></div>
-    <button class="more-item" onclick="allerA('factures');toggleMore(false)"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg> Factures &amp; documents</button>
+    <button class="more-item" onclick="allerA('factures');toggleMore(false)"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg> Documents</button>
     <button class="more-item" onclick="allerA('statistiques');toggleMore(false)"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Statistiques</button>
     <button class="more-item" onclick="doLogout();toggleMore(false)"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg> Déconnexion</button>
   </div>
@@ -745,7 +735,7 @@ function allerA(page){
   window.scrollTo({top:0, behavior:'instant'});
   if (page === 'statistiques') renderStatistiques();
   if (page === 'messages') { loadMessages(); startMessagesPolling(); } else { stopMessagesPolling(); }
-  if (page === 'factures') { renderFactures(); renderDocs(); }
+  if (page === 'factures') renderDocs();
 }
 function toggleMore(force){
   const el = document.getElementById('more-sheet');
@@ -1001,7 +991,7 @@ function renderAccueil(){
     : `<div class="bloc-vide">Aucun état des lieux pour l'instant. Commandez le premier en un clic.</div>`;
 }
 
-// Aperçus "Messages" et "Dernières factures" du tableau de bord : en
+// Aperçu "Messages" du tableau de bord : en
 // lecture seule (ne marque aucun message comme lu, contrairement à la page
 // Messages).
 async function chargerApercusAccueil(){
@@ -1015,16 +1005,6 @@ async function chargerApercusAccueil(){
         ? `<div class="apercu-msg"><div>${esc(dernier.body)}</div><div class="apercu-msg-meta">${dernier.sender === 'client' ? 'Vous' : 'Votre expert'}${dernier.createdAt ? ' · ' + esc(new Date(dernier.createdAt).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})) : ''}</div></div>`
         : `<div class="bloc-vide">Aucun message. Une question ? Écrivez à votre expert.</div>`;
     } catch(e) { boxMsg.innerHTML = ''; }
-  }
-  const boxFac = document.getElementById('accueil-factures');
-  if(boxFac){
-    const factures = (await chargerDocsSiBesoin()).filter(d => d.type === 'facture').slice(0, 3);
-    boxFac.innerHTML = factures.length
-      ? factures.map(d => `<a href="#" class="ligne-facture" onclick="event.preventDefault();telechargerFacture('${esc(d.url)}',this)">
-          <span style="flex:1;min-width:0"><span class="ligne-adresse" style="display:block">${esc(d.nom)}</span>${d.deposeLe ? `<span class="ligne-meta">Déposée le ${esc(new Date(d.deposeLe).toLocaleDateString('fr-FR'))}</span>` : ''}</span>
-          <span class="doc-open">Télécharger</span>
-        </a>`).join('')
-      : `<div class="bloc-vide">Aucune facture pour l'instant.</div>`;
   }
 }
 async function envoyerMessageAccueil(){
@@ -1054,7 +1034,7 @@ async function loadOrders() {
   } catch(e) { if(listEl) listEl.innerHTML='<div style="color:#A32D2D;font-size:13px;padding:20px 0">Erreur de chargement.</div>'; }
 }
 
-// ─── Documents / Factures (type='document' vs type='facture') ──────────
+// ─── Documents (type='document' ; les 'facture' ne sont pas affichées) ──
 let _docsCache = null;
 async function chargerDocsSiBesoin(){
   if(_docsCache) return _docsCache;
@@ -1080,37 +1060,8 @@ async function renderDocs(){
   }).join('');
 }
 
-// Les factures sont dans un bucket Storage privé : le champ "url" du
-// document n'est qu'un CHEMIN de stockage, pas un lien direct — il faut
-// demander une URL signée de courte durée à /api/facture-download au clic.
-async function renderFactures(){
-  const docs = (await chargerDocsSiBesoin()).filter(d => d.type === 'facture');
-  const wrap = document.getElementById('factures-list');
-  if(!docs.length){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🧾</div><div class="t1">Aucune facture pour l'instant</div><div class="t2">Les factures émises par votre expert apparaîtront ici.</div></div>`; return; }
-  wrap.innerHTML = docs.map((d,i) => `
-    <a href="#" onclick="event.preventDefault();telechargerFacture('${esc(d.url)}',this)" class="doc-row">
-      <div class="doc-ic">🧾</div>
-      <div class="doc-info"><div class="doc-name">${esc(d.nom)}</div>${d.deposeLe?`<div class="doc-meta">Déposée le ${esc(new Date(d.deposeLe).toLocaleDateString('fr-FR'))}</div>`:''}</div>
-      <div class="doc-open">⬇ Télécharger</div>
-    </a>`).join('');
-}
-
-async function telechargerFacture(chemin, el){
-  const openEl = el.querySelector('.doc-open');
-  const texteInitial = openEl.textContent;
-  openEl.textContent = '…';
-  try {
-    const resp = await fetch('/api/facture-download', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body:JSON.stringify({ path: chemin }) });
-    const data = await resp.json();
-    const url = urlSure(data.url);
-    if(!resp.ok || !url) throw new Error(data.error||'Échec');
-    window.open(url, '_blank', 'noopener');
-  } catch(e) {
-    alert('Impossible de télécharger cette facture pour le moment.');
-  } finally {
-    openEl.textContent = texteInitial;
-  }
-}
+// Les factures émises par l'expert ne sont plus affichées dans l'extranet
+// des agences : seuls les documents (contrat, tarifs, conditions) le sont.
 
 // ═══════════════════════════════════════════════════════════
 // ─── STATISTIQUES (agrégation client-side depuis _ordersCache) ─────────
