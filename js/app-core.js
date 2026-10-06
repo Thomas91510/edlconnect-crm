@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.1';
+const APP_VERSION = '2.0.0-beta.2';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.2', titre:'Extranet agence et espace agent redessinés', texte:'Extranet : tableau de bord (prochain RDV, suivi des états des lieux, messages, factures), commande en 2 étapes dans un panneau latéral, factures et documents réunis. Espace agent : menu latéral, cartes de mission avec zone, itinéraire et appel du locataire.' },
   { v:'2.0.0-beta.1', titre:'Refonte de l\u2019interface (V1 de test)', texte:'Menu en 5 rubriques, accueil « Aujourd\u2019hui », réservations, missions et agenda réunis, emails regroupés, rôles administrateur / assistante, réglages par rubrique.' }
 ];
 let _versionDeploiement = { sha:'', env:'' };

@@ -202,6 +202,69 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .nav-btn.active i,.nav-btn.active .nav-label b{color:var(--blue)}
 .nav-btn.active .nav-label small{color:var(--text2)}
 .card{border-radius:14px}
+
+/* Coquille : menu blanc pleine hauteur à gauche (comme le CRM et l'extranet) */
+.header{display:none}
+.layout{max-width:none;margin:0;padding:0;gap:0;min-height:100vh}
+.side-nav{width:248px;position:sticky;top:0;height:100vh;min-height:0;background:var(--white);border-right:1px solid var(--border);padding:22px 14px 16px;gap:2px}
+.side-brand{display:flex;align-items:center;gap:10px;padding:0 6px 18px}
+.side-brand-nom{font-size:15px;font-weight:600}
+.side-brand-sous{font-size:12px;color:var(--text2)}
+.nav-btn{height:44px;min-height:0;padding:0 12px}
+.nav-btn .nav-label b{color:#3A3F4B}
+.side-logout{margin-top:8px;height:38px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);color:var(--text2);font-family:inherit;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.side-logout:hover{background:var(--bg)}
+.side-agent-name{font-size:13px;font-weight:600}
+.side-agent-email{font-size:12px}
+.layout > .main{padding:40px 44px 72px;max-width:1120px}
+.page-head{margin-bottom:28px}
+.page-kicker{font-size:14px;color:var(--text2);margin-bottom:6px}
+.page-h1{font-size:30px;font-weight:600;letter-spacing:-.02em;margin:0}
+.section-h2{font-size:15px;font-weight:600;margin:0 0 14px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.kpi-tile{background:var(--white);border:none;border-right:1px solid var(--border);border-radius:0;padding:20px 22px;text-align:left}
+.kpi-tile:last-child{border-right:none}
+.kpi-tile .n{font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--text)}
+.kpi-tile .l{font-size:13px;color:var(--text2);margin-top:4px}
+.typo-chips{margin-top:12px}
+.mission{display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px;padding:20px 24px;background:var(--white);border:1px solid var(--border);border-radius:14px;margin-bottom:12px}
+.mission-quand{width:84px;display:flex;flex-direction:column;gap:2px}
+.mission-quand span{font-size:12.5px;color:var(--text2)}
+.mission-quand b{font-family:'Geist Mono Variable',ui-monospace,monospace;font-size:15px;font-weight:500}
+.mission-corps{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px}
+.mission-adresse{font-size:15px;font-weight:600}
+.mission-meta{display:flex;gap:6px;flex-wrap:wrap}
+.mission-details{font-size:13px;color:#3A3F4B;line-height:1.6}
+.mission-actions{display:flex;gap:8px;flex-wrap:wrap}
+.mission-actions .btn-sm{height:40px;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.badge{border-radius:999px;font-size:12px;padding:3px 10px}
+.badge-zone-primaire{background:var(--blue-light);color:var(--blue)}
+.badge-zone-secondaire{background:var(--bg);color:#3A3F4B}
+.badge-zone-hors{background:var(--amber-bg);color:var(--amber)}
+.card{border-radius:14px}
+.card-head{font-size:15px;font-weight:600;padding:18px 22px 14px}
+.cp-chip{height:40px;min-width:76px;font-family:'Geist Mono Variable',ui-monospace,monospace;font-weight:500;font-size:13px}
+.cp-chip.primaire{background:var(--blue);color:#fff;border-color:var(--blue)}
+.cp-chip.secondaire{background:var(--blue-light);color:var(--blue-dark);border-color:#9EC0E8}
+.swatch.secondaire{background:#9EC0E8}
+.card-head{color:var(--text)}
+.card-head i{color:var(--text2)}
+.mois-titre{color:var(--text);text-transform:none;letter-spacing:0;font-size:14px}
+#login-screen .card{max-width:420px;margin:12vh auto 0}
+@media (max-width:720px){
+  .header{display:flex}
+  .layout{min-height:0}
+  .side-nav{width:auto;height:auto;position:sticky;top:var(--header-h);border-right:none;border-bottom:1px solid var(--border);padding:8px 4px;margin:0;gap:2px}
+  .side-brand,.side-logout{display:none}
+  .nav-btn{height:auto;padding:8px 10px}
+  .layout > .main{padding:20px 16px 60px}
+  .page-h1{font-size:24px}
+  .kpi-tile{border-bottom:1px solid var(--border)}
+  .mission{padding:16px}
+  .mission-actions{width:100%}
+  .mission-actions .btn-sm{flex:1;justify-content:center}
+  #app-version{position:static;text-align:center;padding:12px 0 20px}
+}
 #app-version{position:fixed;bottom:6px;right:10px;font-size:11px;color:var(--text3);font-family:'Geist Mono Variable',ui-monospace,monospace;pointer-events:none;z-index:5}
 </style>
 </head>
@@ -229,21 +292,25 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
   </div>
 
   <div class="layout">
-    <div class="side-nav">
+    <nav class="side-nav" aria-label="Navigation de l'espace agent">
+      <div class="side-brand">
+        <svg viewBox="0 0 120 120" width="32" height="32" style="flex-shrink:0" aria-hidden="true"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
+        <div><div class="side-brand-nom">EDL IDF</div><div class="side-brand-sous">Espace agent</div></div>
+      </div>
       <button class="nav-btn active" data-page="missions" onclick="allerAgentPage('missions')">
-        <i class="ti ti-calendar-event"></i><span class="nav-label"><b>Mes missions</b><small>Vos interventions prévues</small></span>
-      </button>
-      <button class="nav-btn" data-page="documents" onclick="allerAgentPage('documents')">
-        <i class="ti ti-file-text"></i><span class="nav-label"><b>Mes documents</b><small>Contrat & avenant</small></span>
+        <i class="ti ti-calendar-event"></i><span class="nav-label"><b>Mes missions</b></span>
       </button>
       <button class="nav-btn" data-page="historique" onclick="allerAgentPage('historique')">
-        <i class="ti ti-history"></i><span class="nav-label"><b>Historique</b><small>Missions réalisées</small></span>
+        <i class="ti ti-history"></i><span class="nav-label"><b>Historique</b></span>
       </button>
-      <button class="nav-btn" data-page="aide" onclick="allerAgentPage('aide')">
-        <i class="ti ti-help-circle"></i><span class="nav-label"><b>Aide & Tutos</b><small>Comment ça marche</small></span>
+      <button class="nav-btn" data-page="documents" onclick="allerAgentPage('documents')">
+        <i class="ti ti-file-text"></i><span class="nav-label"><b>Mes documents</b></span>
       </button>
       <button class="nav-btn" data-page="compte" onclick="allerAgentPage('compte')">
-        <i class="ti ti-user-circle"></i><span class="nav-label"><b>Mon compte</b><small>Photo & informations</small></span>
+        <i class="ti ti-map-pin"></i><span class="nav-label"><b>Mon compte &amp; zones</b></span>
+      </button>
+      <button class="nav-btn" data-page="aide" onclick="allerAgentPage('aide')">
+        <i class="ti ti-help-circle"></i><span class="nav-label"><b>Aide</b></span>
       </button>
 
       <div class="side-nav-spacer"></div>
@@ -255,31 +322,29 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
           <span class="side-agent-email" id="sidenav-email"></span>
         </span>
       </button>
-    </div>
+      <button class="side-logout" onclick="doLogout()"><i class="ti ti-logout"></i> Déconnexion</button>
+    </nav>
 
     <div class="main">
 
       <div id="page-missions" class="page active">
-        <div class="welcome-banner">
-          <div class="welcome-decor"></div>
-          <div class="welcome-decor welcome-decor2"></div>
-          <h2 id="welcome-titre">Bonjour 👋</h2>
-          <p>Bienvenue dans votre espace agent. Suivez vos missions et gérez votre profil en toute simplicité.</p>
+        <div class="page-head">
+          <div class="page-kicker" id="date-du-jour"></div>
+          <h1 class="page-h1" id="welcome-titre">Bonjour</h1>
         </div>
-        <div class="card">
-          <div class="card-head"><i class="ti ti-chart-bar"></i>Mes statistiques</div>
-          <div class="card-body">
-            <div class="kpi-grid" id="kpi-grid"></div>
-            <div id="kpi-typologies" class="typo-chips"></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-head"><i class="ti ti-calendar-event"></i>Mes missions</div>
-          <div class="card-body" id="missions-list"></div>
-        </div>
+        <section aria-labelledby="titre-stats" style="margin-bottom:32px">
+          <h2 class="section-h2" id="titre-stats">Mes statistiques</h2>
+          <div class="kpi-grid" id="kpi-grid"></div>
+          <div id="kpi-typologies" class="typo-chips"></div>
+        </section>
+        <section aria-labelledby="titre-missions">
+          <h2 class="section-h2" id="titre-missions">Mes missions</h2>
+          <div id="missions-list"></div>
+        </section>
       </div>
 
       <div id="page-documents" class="page">
+        <div class="page-head"><h1 class="page-h1">Mes documents</h1></div>
         <div class="card">
           <div class="card-head"><i class="ti ti-file-text"></i>Mes documents</div>
           <div class="card-body" id="documents-list"></div>
@@ -287,6 +352,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
       </div>
 
       <div id="page-historique" class="page">
+        <div class="page-head"><h1 class="page-h1">Historique</h1></div>
         <div class="card">
           <div class="card-head"><i class="ti ti-history"></i>Missions réalisées par mois</div>
           <div class="card-body" id="historique-list"></div>
@@ -294,6 +360,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
       </div>
 
       <div id="page-aide" class="page">
+        <div class="page-head"><h1 class="page-h1">Aide</h1></div>
         <div class="card">
           <div class="card-head"><i class="ti ti-help-circle"></i>Comment fonctionne ton espace</div>
           <div class="card-body">
@@ -330,6 +397,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
       </div>
 
       <div id="page-compte" class="page">
+        <div class="page-head"><h1 class="page-h1">Mon compte &amp; zones</h1></div>
         <div class="compte-layout">
           <div class="compte-main">
             <div class="card">
@@ -482,6 +550,8 @@ async function showDashboard(email){
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-shell').style.display = 'block';
   _agentEmail = email;
+  const dateJour = document.getElementById('date-du-jour');
+  if(dateJour){ const t = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); dateJour.textContent = t.charAt(0).toUpperCase() + t.slice(1); }
   await chargerMesMissions();
 }
 
@@ -639,7 +709,7 @@ function remplirCompte(agent){
   const nom = agent.nom || 'Mon espace';
   const prenom = extrairePrenom(nom);
 
-  document.getElementById('welcome-titre').textContent = 'Bonjour, ' + prenom + ' 👋';
+  document.getElementById('welcome-titre').textContent = 'Bonjour ' + prenom;
   document.getElementById('sidenav-nom').textContent = nom;
   document.getElementById('sidenav-email').textContent = _agentEmail;
   document.getElementById('compte-nom').textContent = nom;
@@ -1001,24 +1071,45 @@ function renderKpi(kpi){
     : '';
 }
 
+// Zone de la mission (primaire / secondaire / hors zone) d'après le code
+// postal de l'adresse — affichée seulement quand les zones de l'agent ont
+// été validées par l'agence (sinon l'information pourrait être fausse).
+const LIBELLE_ZONE = { primaire:'Zone primaire', secondaire:'Zone secondaire', hors:'Hors zone' };
+function zoneMission(m){
+  if(zoneStatut !== 'valide' || !Object.keys(assignments).length) return '';
+  const cp = (String(m.adresse || '').match(/\b(\d{5})\b/) || [])[1];
+  if(!cp) return '';
+  return assignments[cp] || 'hors';
+}
 function carteMission(m){
   const cat = categorieEdl(m.type);
-  return `<div class="mission">
-    <div class="mission-top">
+  const d = m.date ? new Date(m.date) : null;
+  const jour = d ? d.toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' }) : 'Date';
+  const heure = d ? d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : 'à confirmer';
+  const zone = zoneMission(m);
+  const itineraire = m.adresse ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(m.adresse) : '';
+  const tel = String(m.locataireTel || '').replace(/[^\d+]/g, '');
+  return `<article class="mission">
+    <div class="mission-quand"><span>${esc(jour)}</span><b>${esc(heure)}</b></div>
+    <div class="mission-corps">
       <div class="mission-adresse">${esc(m.adresse) || '—'}</div>
-      <div class="mission-date">${esc(fmtDateHeure(m.date))}</div>
+      <div class="mission-meta">
+        <span class="badge badge-${cat}">${esc(LABEL_CATEGORIE[cat] || m.type)}</span>
+        <span class="badge badge-autre">${esc(LABEL_STATUT[m.statut] || m.statut || 'Planifiée')}</span>
+        ${zone ? `<span class="badge badge-zone-${zone}">${LIBELLE_ZONE[zone]}</span>` : ''}
+      </div>
+      <div class="mission-details">
+        ${[m.bienType, m.bienTypo, m.bienMeuble].filter(Boolean).map(esc).join(' · ') || '—'}${m.superficie ? ' · ' + esc(m.superficie) + ' m²' : ''}
+        ${m.locataireNom ? '<br>Locataire : ' + esc(m.locataireNom) + (m.locataireTel ? ' · ' + esc(m.locataireTel) : '') : ''}
+        ${m.acces ? '<br>Accès : ' + esc(m.acces) : ''}
+        ${m.dureeEstimee ? '<br>Durée estimée : ' + esc(m.dureeEstimee) : ''}
+      </div>
     </div>
-    <div style="margin-bottom:6px">
-      <span class="badge badge-${cat}">${esc(LABEL_CATEGORIE[cat] || m.type)}</span>
-      <span class="badge badge-autre">${esc(LABEL_STATUT[m.statut] || m.statut || 'Planifiée')}</span>
+    <div class="mission-actions">
+      ${itineraire ? `<a class="btn-sm" href="${esc(itineraire)}" target="_blank" rel="noopener"><i class="ti ti-map-2"></i> Itinéraire</a>` : ''}
+      ${tel ? `<a class="btn-sm" href="tel:${esc(tel)}"><i class="ti ti-phone"></i> Locataire</a>` : ''}
     </div>
-    <div class="mission-meta">
-      ${[m.bienType, m.bienTypo, m.bienMeuble].filter(Boolean).map(esc).join(' · ') || '—'}${m.superficie ? ' · ' + esc(m.superficie) + ' m²' : ''}<br>
-      ${m.locataireNom ? '👤 ' + esc(m.locataireNom) + (m.locataireTel ? ' · ' + esc(m.locataireTel) : '') + '<br>' : ''}
-      ${m.acces ? '🔑 ' + esc(m.acces) + '<br>' : ''}
-      ${m.dureeEstimee ? '⏱️ Durée estimée : ' + esc(m.dureeEstimee) : ''}
-    </div>
-  </div>`;
+  </article>`;
 }
 
 function renderMissions(missions){
@@ -1093,7 +1184,7 @@ function renderHistorique(missions){
 <div id="app-version"></div>
 <script>
 (async function afficherVersionAgent(){
-  const APP_VERSION = '2.0.0-beta.1';
+  const APP_VERSION = '2.0.0-beta.2';
   const el = document.getElementById('app-version');
   if(el) el.textContent = 'v' + APP_VERSION;
   try {

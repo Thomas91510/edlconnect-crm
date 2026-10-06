@@ -356,7 +356,7 @@ test('remplirCompte : affiche le nom, le téléphone, l\'adresse et personnalise
   const w = chargerAgentApp();
   w.remplirCompte({ nom: 'Julie Berthier', tel: '0612345678', adresse: '3 rue de Rivoli, 75001 Paris', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
 
-  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Julie 👋');
+  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour Julie');
   assert.equal(w.document.getElementById('sidenav-nom').textContent, 'Julie Berthier');
   assert.equal(w.document.getElementById('compte-nom').textContent, 'Julie Berthier');
   assert.equal(w.document.getElementById('compte-champ-nom').value, 'Julie Berthier');
@@ -367,13 +367,13 @@ test('remplirCompte : affiche le nom, le téléphone, l\'adresse et personnalise
 test('remplirCompte : extrait le bon prénom même au format "NOM Prénom" (ex. LANGLADE Thomas)', () => {
   const w = chargerAgentApp();
   w.remplirCompte({ nom: 'LANGLADE Thomas', tel: '', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
-  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Thomas 👋');
+  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour Thomas');
 });
 
 test('remplirCompte : nom sur un seul mot → utilisé tel quel', () => {
   const w = chargerAgentApp();
   w.remplirCompte({ nom: 'Paul', tel: '', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
-  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Paul 👋');
+  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour Paul');
 });
 
 test('enregistrerAdresse : envoie l\'adresse saisie et met à jour le champ', async () => {
@@ -606,4 +606,22 @@ test('toggleTutoEdouard : charge le guide au premier clic, bascule ensuite sans 
   w.toggleTutoEdouard();
   assert.equal(frame.hidden, true, 'un second clic referme sans toucher au src déjà chargé');
   assert.equal(frame.src, 'https://exemple.fr/deja-charge.html');
+});
+
+// ─── Refonte V2 : carte mission (zone, itinéraire, appel) ─────────────
+test('carteMission : étiquette de zone seulement si les zones sont validées par l’agence', () => {
+  const w = chargerAgentApp();
+  const m = { adresse: '12 rue de Fontenay, 94300 Vincennes', type: 'EDL entrant', date: '2026-10-08T14:00:00' };
+  w.eval("assignments = { '94300': 'primaire' }; zoneStatut = 'attente';");
+  assert.ok(!w.carteMission(m).includes('Zone primaire'), 'zones non validées : pas d’étiquette');
+  w.eval("zoneStatut = 'valide';");
+  assert.ok(w.carteMission(m).includes('Zone primaire'));
+  assert.ok(w.carteMission({ ...m, adresse: '1 rue X, 75011 Paris' }).includes('Hors zone'));
+});
+
+test('carteMission : lien itinéraire encodé et appel du locataire', () => {
+  const w = chargerAgentApp();
+  const html = w.carteMission({ adresse: '12 rue de la Paix, 94300 Vincennes', type: 'EDL sortant', locataireNom: 'Jean', locataireTel: '06 12 34 56 78' });
+  assert.ok(html.includes('https://www.google.com/maps/search/?api=1&amp;query=12%20rue%20de%20la%20Paix'));
+  assert.ok(html.includes('href="tel:0612345678"'));
 });

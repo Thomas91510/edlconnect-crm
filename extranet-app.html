@@ -252,6 +252,83 @@
     .card{border-color:#E8E9EC;border-radius:14px}
     .kpi{background:#fff;border-color:#E8E9EC;border-radius:14px}
     input{border:1px solid #D5D8DE}
+    /* Accueil (tableau de bord) */
+    .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+    .ic-svg{flex-shrink:0;vertical-align:middle}
+    .nav-ic{display:flex;align-items:center;justify-content:center;width:20px}
+    .page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px}
+    .page-head h1{margin:0}
+    .page-head .cta-new{width:auto;margin:0;padding:0 22px;height:48px}
+    .hero-rdv{display:flex;flex-wrap:wrap;align-items:center;gap:24px;padding:24px 28px;border-radius:16px;margin-bottom:28px}
+    .hero-date{width:72px;height:72px;border-radius:14px;background:#EAF1FA;color:#1A5FA8;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;line-height:1.2}
+    .hero-date b{font-size:26px;font-weight:600;line-height:1}
+    .btn-secondaire{height:44px;padding:0 16px;border-radius:10px;border:1px solid #E8E9EC;background:#fff;color:#15171C;font-size:13.5px;font-weight:500;cursor:pointer}
+    .btn-secondaire:hover{background:#F6F7F9}
+    .accueil-grid{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+    .accueil-main{flex:999 1 440px;min-width:0}
+    .accueil-side{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:24px}
+    .bloc{background:#fff;border:1px solid #E8E9EC;border-radius:14px;padding:8px 24px 16px}
+    .bloc-head{display:flex;justify-content:space-between;align-items:center;padding:14px 0 6px}
+    .bloc-head h2{margin:0;font-size:15px;font-weight:600}
+    .bloc-head a{font-size:13px;font-weight:500;color:#1A5FA8;text-decoration:none}
+    .bloc-vide{padding:16px 0;color:#5B6170;font-size:13.5px}
+    .ligne-edl{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:16px 0;border-top:1px solid #F0F1F3;cursor:pointer}
+    .ligne-edl:hover .ligne-adresse{color:#1A5FA8}
+    .ligne-info{flex:1;min-width:200px}
+    .ligne-adresse{font-weight:500;font-size:14px}
+    .ligne-meta{font-size:13px;color:#5B6170;margin-top:2px}
+    .ligne-droite-col{flex:0 0 170px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+    .ligne-barres{display:flex;gap:4px;width:120px}
+    .ligne-barres span{flex:1;height:6px;border-radius:3px}
+    .ligne-droite{display:flex;justify-content:flex-end}
+    .sb-contact{flex-direction:column;align-items:stretch;gap:10px;padding:14px}
+    .sb-call{margin-bottom:0;display:flex;align-items:center;justify-content:center;gap:8px}
+    .sb-logout{display:flex;align-items:center;justify-content:center;gap:8px}
+    .hero-rdv-label{text-transform:none;letter-spacing:0;font-size:13px}
+    .ligne-etat{font-size:13px;color:#5B6170}
+    .ligne-action{height:36px;padding:0 12px;border-radius:8px;border:1px solid #E8E9EC;color:#1A5FA8;font-size:13px;font-weight:500;text-decoration:none;display:inline-flex;align-items:center}
+    .ligne-action:hover{background:#F6F7F9}
+    .apercu-msg{padding:12px 14px;border-radius:12px 12px 12px 4px;background:#F6F7F9;font-size:13.5px;line-height:1.45;margin:6px 0 12px}
+    .apercu-msg-meta{font-size:12px;color:#5B6170;margin-top:6px}
+    .msg-quick{display:flex;gap:8px}
+    .msg-quick input{height:44px;padding:0 14px}
+    .msg-quick-btn{width:44px;height:44px;flex-shrink:0;border:none;border-radius:10px;background:#1A5FA8;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .ligne-facture{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #F0F1F3;text-decoration:none;color:#15171C}
+    .ligne-facture:first-child{border-top:none}
+    .doc-ic{font-size:0}
+    .doc-ic::before{content:'';width:16px;height:18px;border:1.8px solid #5B6170;border-radius:3px}
+    .progress-label{font-size:11px}
+    .progress-dot.current{background:#8A5A00;box-shadow:0 0 0 3px #FDF1DC}
+    .progress-label.current{color:#8A5A00}
+
+    /* Panneau « Nouvelle commande » : tiroir à droite (plein écran sur mobile) */
+    #order-backdrop{display:none;position:fixed;inset:0;background:rgba(21,23,28,.4);z-index:70}
+    #order-backdrop.open{display:block}
+    #order-form{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:#fff;z-index:71;overflow-y:auto;padding:0 28px 32px;box-shadow:-20px 0 50px rgba(21,23,28,.15)}
+    body.panneau-ouvert{overflow:hidden}
+    .order-head{display:flex;align-items:center;gap:8px;position:sticky;top:0;background:#fff;padding:20px 0 12px;z-index:2}
+    .order-icon-btn{width:44px;height:44px;border:none;border-radius:10px;background:#F6F7F9;color:#15171C;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .order-bars{display:flex;gap:6px;margin-bottom:24px}
+    .order-bars span{flex:1;height:4px;border-radius:2px;background:#E8E9EC}
+    .order-bars span.on{background:#1A5FA8}
+    .order-step-title{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0 0 18px}
+    #order-form .form-section{border:none;padding:0;margin:0;background:none}
+    #order-form .form-label{font-size:13px;font-weight:500;color:#15171C;margin-top:4px}
+    .type-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .type-btn{display:flex;flex-direction:column;gap:4px;padding:16px;border:1.5px solid #E8E9EC;border-radius:12px;min-height:76px}
+    .type-btn b{font-size:14.5px;font-weight:600}
+    .type-btn span{font-size:12.5px;color:#5B6170}
+    .type-btn.selected{border-color:#1A5FA8;background:#F6F9FD;color:#15171C}
+    .type-btn:hover{border-color:#C9CCD3}
+    select,textarea{border:1px solid #D5D8DE}
+    @media (max-width:760px){
+      .page-head .cta-new{width:100%}
+      .ligne-droite-col{flex:1 1 100%;flex-direction:row;justify-content:space-between;align-items:center}
+      .hero-rdv{padding:20px}
+      #order-form{padding:0 16px 28px}
+      .type-grid{grid-template-columns:1fr}
+      .bloc{padding:6px 16px 12px}
+    }
     #app-version{font-family:'Geist Mono Variable',ui-monospace,monospace;color:#6E7483 !important}
   </style>
 </head>
@@ -297,57 +374,84 @@
         <div class="brand-sub">Espace client</div>
       </div>
     </div>
-    <nav class="nav">
-      <div class="nav-group-label">Activité</div>
-      <button class="nav-item active" data-page="accueil" onclick="allerA('accueil')"><span class="nav-ic">🏠</span> Tableau de bord</button>
-      <button class="nav-item" data-page="edl" onclick="allerA('edl')"><span class="nav-ic">🔑</span> États des lieux &amp; RDV<span class="nav-badge" id="nav-badge-edl"></span></button>
-      <button class="nav-item" data-page="statistiques" onclick="allerA('statistiques')"><span class="nav-ic">📊</span> Statistiques</button>
-      <button class="nav-item" data-page="messages" onclick="allerA('messages')"><span class="nav-ic">💬</span> Messages<span class="nav-badge" id="nav-badge-messages"></span></button>
-      <div class="nav-group-label">Administratif</div>
-      <button class="nav-item" data-page="factures" onclick="allerA('factures')"><span class="nav-ic">🧾</span> Factures</button>
-      <button class="nav-item" data-page="docs" onclick="allerA('docs')"><span class="nav-ic">📁</span> Mes documents</button>
+    <nav class="nav" aria-label="Navigation de l'espace client">
+      <button class="nav-item active" data-page="accueil" onclick="allerA('accueil')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg></span> Tableau de bord</button>
+      <button class="nav-item" data-page="edl" onclick="allerA('edl')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v16H3zM16 3v4M8 3v4M3 10h18"/></svg></span> États des lieux<span class="nav-badge" id="nav-badge-edl"></span></button>
+      <button class="nav-item" data-page="messages" onclick="allerA('messages')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/></svg></span> Messages<span class="nav-badge" id="nav-badge-messages"></span></button>
+      <button class="nav-item" data-page="factures" onclick="allerA('factures')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg></span> Factures &amp; documents</button>
+      <button class="nav-item" data-page="statistiques" onclick="allerA('statistiques')"><span class="nav-ic"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span> Statistiques</button>
     </nav>
     <div class="sidebar-foot">
       <div class="sb-contact">
-        <div class="sb-contact-ava">👨‍💼</div>
-        <div>
-          <div class="sb-contact-name">Thomas Langlade</div>
-          <div class="sb-contact-role">EDL IDF Expert</div>
+        <div style="font-size:12px;color:#5B6170">Votre expert</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="sb-contact-ava">TL</div>
+          <div>
+            <div class="sb-contact-name">Thomas Langlade</div>
+            <div class="sb-contact-role">EDL IDF Expert</div>
+          </div>
         </div>
+        <a href="tel:0189291429" class="sb-call"><svg class="ic-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg> 01 89 29 14 29</a>
       </div>
-      <a href="tel:0189291429" class="sb-call">📞 01 89 29 14 29</a>
-      <button class="sb-logout" onclick="doLogout()">↩ Déconnexion</button>
+      <button class="sb-logout" onclick="doLogout()"><svg class="ic-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg> Déconnexion</button>
     </div>
   </aside>
 
   <div class="main">
     <div class="topbar">
       <div class="topbar-brand">EDL IDF · Espace client</div>
-      <a href="tel:0189291429" style="font-size:16px">📞</a>
+      <a href="tel:0189291429" aria-label="Appeler votre expert" style="color:#15171C;display:flex"><svg class="ic-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></a>
     </div>
 
     <div class="content">
 
       <!-- ───────── PAGE ACCUEIL ───────── -->
       <section class="page active" id="page-accueil">
-        <h1>Bonjour 👋</h1>
-        <p class="lead" id="user-email-display"></p>
+        <div class="page-head">
+          <div>
+            <p class="lead" id="user-email-display" style="margin:0 0 4px"></p>
+            <h1>Bonjour</h1>
+          </div>
+          <button class="cta-new" onclick="showOrderForm()"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Commander un état des lieux</button>
+        </div>
 
         <div id="hero-rdv-wrap"></div>
 
-        <button class="cta-new" onclick="showOrderForm()"><i class="ti ti-plus"></i> Nouvelle commande d'état des lieux</button>
-
-        <div class="section-label" id="a-valider-label" style="margin-top:26px">À valider</div>
-        <div id="a-valider-list"></div>
-
-        <div style="font-size:11.5px;color:#6b6b6b;text-align:center;margin-top:4px">
-          <a href="#" onclick="allerA('edl');return false" style="color:#0C447C;font-weight:600;text-decoration:none">Voir tout l'historique →</a>
+        <div class="accueil-grid">
+          <section class="bloc accueil-main" aria-labelledby="accueil-edl-titre">
+            <div class="bloc-head">
+              <h2 id="accueil-edl-titre">Vos états des lieux</h2>
+              <a href="#" onclick="allerA('edl');return false">Tout voir</a>
+            </div>
+            <div id="accueil-edl-list"><div class="bloc-vide">Chargement…</div></div>
+          </section>
+          <div class="accueil-side">
+            <section class="bloc" aria-labelledby="accueil-msg-titre">
+              <div class="bloc-head">
+                <h2 id="accueil-msg-titre">Messages</h2>
+                <a href="#" onclick="allerA('messages');return false">Ouvrir</a>
+              </div>
+              <div id="accueil-msg"></div>
+              <div class="msg-quick">
+                <label for="accueil-msg-input" class="sr-only">Votre message</label>
+                <input type="text" id="accueil-msg-input" placeholder="Écrire à votre expert…" onkeydown="if(event.key==='Enter'){envoyerMessageAccueil()}">
+                <button type="button" class="msg-quick-btn" onclick="envoyerMessageAccueil()" aria-label="Envoyer"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+              </div>
+            </section>
+            <section class="bloc" aria-labelledby="accueil-fac-titre">
+              <div class="bloc-head">
+                <h2 id="accueil-fac-titre">Dernières factures</h2>
+                <a href="#" onclick="allerA('factures');return false">Tout voir</a>
+              </div>
+              <div id="accueil-factures"><div class="bloc-vide">Chargement…</div></div>
+            </section>
+          </div>
         </div>
       </section>
 
       <!-- ───────── PAGE ÉTATS DES LIEUX & RDV ───────── -->
       <section class="page" id="page-edl">
-        <h1>États des lieux &amp; RDV</h1>
+        <h1>États des lieux</h1>
         <p class="lead">L'historique complet de vos demandes, quel que soit leur statut.</p>
 
         <div class="filters-row">
@@ -384,17 +488,13 @@
         </div>
       </section>
 
-      <!-- ───────── PAGE FACTURES ───────── -->
+      <!-- ───────── PAGE FACTURES & DOCUMENTS ───────── -->
       <section class="page" id="page-factures">
-        <h1>Factures</h1>
-        <p class="lead">Les factures émises par votre expert, déposées ici au fur et à mesure.</p>
+        <h1>Factures &amp; documents</h1>
+        <p class="lead">Les factures et documents (contrat, tarifs, conditions) transmis par votre expert.</p>
+        <div class="section-label">Factures</div>
         <div id="factures-list"></div>
-      </section>
-
-      <!-- ───────── PAGE DOCUMENTS ───────── -->
-      <section class="page" id="page-docs">
-        <h1>Mes documents</h1>
-        <p class="lead">Contrat, tarifs et conditions transmis par votre expert.</p>
+        <div class="section-label" style="margin-top:26px">Documents</div>
         <div id="docs-list"></div>
       </section>
 
@@ -403,10 +503,11 @@
 </div>
 
 <!-- ═══════ MOBILE BOTTOM NAV ═══════ -->
-<nav class="mobile-nav" id="mobile-nav">
-  <button class="active" data-page="accueil" onclick="allerA('accueil')"><span class="ic">🏠</span>Accueil</button>
-  <button data-page="edl" onclick="allerA('edl')"><span class="ic">🔑</span>EDL &amp; RDV<span class="mbadge" id="mnav-badge-edl" style="display:none"></span></button>
-  <button id="mobile-more-btn" onclick="toggleMore()"><span class="ic">⋯</span>Plus</button>
+<nav class="mobile-nav" id="mobile-nav" aria-label="Navigation">
+  <button class="active" data-page="accueil" onclick="allerA('accueil')"><span class="ic"><svg class="ic-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg></span>Accueil</button>
+  <button data-page="edl" onclick="allerA('edl')"><span class="ic"><svg class="ic-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v16H3zM16 3v4M8 3v4M3 10h18"/></svg></span>États des lieux<span class="mbadge" id="mnav-badge-edl" style="display:none"></span></button>
+  <button data-page="messages" onclick="allerA('messages')"><span class="ic"><svg class="ic-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/></svg></span>Messages</button>
+  <button id="mobile-more-btn" onclick="toggleMore()"><span class="ic"><svg class="ic-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg></span>Plus</button>
 </nav>
 
 <!-- ═══════ MOBILE "PLUS" SHEET ═══════ -->
@@ -414,27 +515,38 @@
   <div class="more-sheet-backdrop" onclick="toggleMore(false)"></div>
   <div class="more-sheet-panel">
     <div class="more-sheet-handle"></div>
-    <button class="more-item" onclick="allerA('statistiques');toggleMore(false)">📊 Statistiques</button>
-    <button class="more-item" onclick="allerA('messages');toggleMore(false)">💬 Messages</button>
-    <button class="more-item" onclick="allerA('factures');toggleMore(false)">🧾 Factures</button>
-    <button class="more-item" onclick="allerA('docs');toggleMore(false)">📁 Mes documents</button>
+    <button class="more-item" onclick="allerA('factures');toggleMore(false)"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg> Factures &amp; documents</button>
+    <button class="more-item" onclick="allerA('statistiques');toggleMore(false)"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Statistiques</button>
+    <button class="more-item" onclick="doLogout();toggleMore(false)"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg> Déconnexion</button>
   </div>
 </div>
 
   <!-- FORMULAIRE NOUVELLE COMMANDE (plein écran, en dehors de la coquille sidebar) -->
-  <div id="order-form" style="display:none;max-width:600px;margin:0 auto;padding:28px 20px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-      <button onclick="hideOrderForm()" style="background:#F4F7FA;border:1px solid #e5e5e2;border-radius:8px;padding:8px 12px;color:#1a1a1a;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px"><i class="ti ti-arrow-left"></i> Retour</button>
-      <div style="font-size:16px;font-weight:600;color:#1a1a1a">Nouvelle commande</div>
-    </div>
-    <div class="form-section">
-      <div class="form-label">Type d'état des lieux *</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-        <button class="type-btn" onclick="selectType('EDL entrant',this)">🔑 EDL entrant<br><span style="font-size:10px;opacity:.6">État des lieux d'entrée</span></button>
-        <button class="type-btn" onclick="selectType('EDL sortant',this)">🏠 EDL sortant<br><span style="font-size:10px;opacity:.6">État des lieux de sortie</span></button>
-        <button class="type-btn" onclick="selectType('EDL Sortant / Entrant',this)">🔄 Sortant / Entrant<br><span style="font-size:10px;opacity:.6">Les deux le même jour</span></button>
-        <button class="type-btn" onclick="selectType('Pré-état des lieux',this)">📋 Pré-état des lieux<br><span style="font-size:10px;opacity:.6">Avant la sortie</span></button>
+  <div id="order-backdrop" onclick="hideOrderForm()"></div>
+  <div id="order-form" role="dialog" aria-modal="true" aria-labelledby="order-form-titre" style="display:none">
+    <div class="order-head">
+      <button type="button" class="order-icon-btn" id="order-back-btn" onclick="etapeCommande(1)" aria-label="Étape précédente" style="visibility:hidden"><svg class="ic-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div style="flex:1">
+        <div id="order-form-titre" style="font-size:17px;font-weight:600">Nouvelle commande</div>
+        <div id="order-step-label" style="font-size:12.5px;color:#5B6170">Étape 1 sur 2</div>
       </div>
+      <button type="button" class="order-icon-btn" onclick="hideOrderForm()" aria-label="Fermer"><svg class="ic-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="order-bars"><span class="on"></span><span id="order-bar-2"></span></div>
+    <div class="form-section">
+      <div id="order-step-1">
+      <h2 class="order-step-title">Quel état des lieux ?</h2>
+      <div class="type-grid">
+        <button type="button" class="type-btn" onclick="selectType('EDL entrant',this)"><b>EDL entrant</b><span>Arrivée du locataire</span></button>
+        <button type="button" class="type-btn" onclick="selectType('EDL sortant',this)"><b>EDL sortant</b><span>Départ du locataire</span></button>
+        <button type="button" class="type-btn" onclick="selectType('EDL Sortant / Entrant',this)"><b>Sortant + entrant</b><span>Les deux le même jour</span></button>
+        <button type="button" class="type-btn" onclick="selectType('Pré-état des lieux',this)"><b>Pré-état des lieux</b><span>Avant la sortie</span></button>
+      </div>
+      <div id="order-step1-error" class="msg-error" style="display:none;text-align:left">Choisissez un type d'état des lieux.</div>
+      <button type="button" class="btn-primary" style="margin-top:20px" onclick="etapeCommande(2)">Continuer</button>
+      </div>
+      <div id="order-step-2" style="display:none">
+      <h2 class="order-step-title">Le bien et le rendez-vous</h2>
       <div id="prefill-section" style="display:none;margin-bottom:14px">
         <div class="form-label">Réutiliser un bien déjà demandé</div>
         <select id="prefill-select" onchange="reutiliserAdresse(this.value)">
@@ -491,7 +603,7 @@
       <div id="entrants-section" style="display:none">
         <div class="form-label">Locataire(s) entrant(s) *</div>
         <div id="entrants-list"></div>
-        <button type="button" onclick="addEntrant()" style="background:#F4F7FA;border:1.5px dashed #1A5FA8;color:#1A5FA8;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:14px;width:100%">+ Ajouter un locataire entrant</button>
+        <button type="button" onclick="addEntrant()" style="background:#fff;border:1px dashed #1A5FA8;color:#1A5FA8;border-radius:10px;height:44px;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:14px;width:100%">+ Ajouter un locataire entrant</button>
       </div>
       <div class="form-label">Notes</div>
       <textarea id="f-notes" placeholder="Informations complémentaires…"></textarea>
@@ -499,10 +611,11 @@
       <input type="file" id="attachments-input" multiple onchange="onAttachmentsSelected(this)">
       <div style="font-size:10.5px;color:#6b6b6b;margin-top:4px">Tous formats acceptés · 25 Mo max par fichier · 10 fichiers max</div>
       <div id="attachments-list" style="margin-top:10px"></div>
+    <div id="form-error" style="display:none;background:#FCEBEB;color:#A32D2D;border-radius:8px;padding:10px 14px;font-size:12.5px;margin:14px 0 10px"></div>
+    <button class="btn-primary" id="form-submit-btn" style="margin-top:16px" onclick="submitOrder()">Envoyer la demande</button>
+    <div id="form-success" style="display:none;background:#E7F3EA;color:#25602F;border-radius:10px;padding:14px;text-align:center;margin-top:12px;font-size:14px">Demande envoyée. Votre expert confirme le créneau rapidement.</div>
+      </div>
     </div>
-    <div id="form-error" style="display:none;background:#FCEBEB;color:#A32D2D;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:10px"></div>
-    <button class="btn-primary" id="form-submit-btn" onclick="submitOrder()"><i class="ti ti-send"></i> Envoyer ma demande</button>
-    <div id="form-success" style="display:none;background:#EAF3DE;color:#27500A;border-radius:8px;padding:14px;text-align:center;margin-top:12px;font-size:13px">✅ Votre demande a bien été envoyée !</div>
   </div>
 
 <!-- MODAL DÉTAIL -->
@@ -606,7 +719,7 @@ function resetAttachments(){
 // utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
 // Numéro de version : aligné sur APP_VERSION (js/app-core.js), vérifié par
 // test/frontend-version-coherente.test.js.
-const APP_VERSION = '2.0.0-beta.1';
+const APP_VERSION = '2.0.0-beta.2';
 (async function afficherVersion(){
   const el0 = document.getElementById('app-version');
   if(el0) el0.textContent = 'v' + APP_VERSION;
@@ -621,8 +734,9 @@ const APP_VERSION = '2.0.0-beta.1';
 // ═══════════════════════════════════════════════════════════
 // ─── NAVIGATION SIDEBAR / PAGES ─────────────────────────────
 // ═══════════════════════════════════════════════════════════
-const PAGES_DANS_PLUS = ['statistiques', 'messages', 'factures', 'docs'];
+const PAGES_DANS_PLUS = ['statistiques', 'factures'];
 function allerA(page){
+  if (page === 'docs') page = 'factures'; // ancienne page, fusionnée avec Factures
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + page));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.page === page));
   document.querySelectorAll('.mobile-nav button[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === page));
@@ -631,8 +745,7 @@ function allerA(page){
   window.scrollTo({top:0, behavior:'instant'});
   if (page === 'statistiques') renderStatistiques();
   if (page === 'messages') { loadMessages(); startMessagesPolling(); } else { stopMessagesPolling(); }
-  if (page === 'factures') renderFactures();
-  if (page === 'docs') renderDocs();
+  if (page === 'factures') { renderFactures(); renderDocs(); }
 }
 function toggleMore(force){
   const el = document.getElementById('more-sheet');
@@ -678,6 +791,7 @@ async function showDashboard() {
   restoreDraft();
   await loadOrders();
   refreshUnreadMessagesBadge();
+  chargerApercusAccueil();
 }
 
 async function sendMagicLink() {
@@ -786,11 +900,11 @@ function carteCommandeHTML(o){
   return `<div class="card" onclick='openDetail(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
     <div style="padding:14px 16px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
-        <div style="font-weight:600;font-size:13px;color:#1a1a1a">${o.typeEdl||'État des lieux'}</div>
+        <div style="font-weight:600;font-size:14px;color:#15171C">${esc(o.typeEdl||'État des lieux')}</div>
         <div style="display:flex;align-items:center;gap:6px">${badge}<i class="ti ti-chevron-right" style="color:#ccc;font-size:13px"></i></div>
       </div>
-      <div style="font-size:12px;color:#6b6b6b;margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${o.adresse||'—'}</div>
-      ${dateRdv?`<div style="font-size:11px;color:#0C447C;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${dateRdv}${o.heure?' à '+o.heure:''}</div>`:''}
+      <div style="font-size:12px;color:#6b6b6b;margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> ${esc(o.adresse||'—')}</div>
+      ${dateRdv?`<div style="font-size:11px;color:#0C447C;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:11px"></i> ${esc(dateRdv)}${o.heure?' à '+esc(o.heure):''}</div>`:''}
       ${anciennete}
       <div style="font-size:11px;color:#999">Demandé le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR'):'—'}</div>
       ${boutonsDocs}
@@ -819,7 +933,38 @@ function appliquerFiltresCommandes(){
   renderOrdersList(filtres);
 }
 
-// ─── Accueil : hero prochain RDV + "à valider" ──────────────
+// ─── Accueil : prochain RDV + liste compacte des états des lieux ──────
+// Nombre d'étapes acquises (même règle que jaugeHTML) : 1 = demande,
+// 2 = confirmé, 3 = rapport disponible ; 0 pour un dossier annulé.
+function etapesAcquises(statut){
+  if(statut === 'annulee') return 0;
+  if(statut === 'rapport_dispo') return 3;
+  return (statut === 'confirmee' || statut === 'importee') ? 2 : 1;
+}
+const LIBELLE_ETAPE = { 0:'Annulé', 1:'Demande envoyée', 2:'Rendez-vous confirmé', 3:'Rapport disponible' };
+
+function ligneCommandeHTML(o){
+  const n = etapesAcquises(o.statut);
+  const termine = n === 3;
+  const barres = [1,2,3].map(i => `<span style="background:${i<=n ? (termine ? '#2F7A3E' : '#1A5FA8') : '#E8E9EC'}"></span>`).join('');
+  const date = o.dateSouhaitee ? new Date(o.dateSouhaitee).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}) + (o.heure ? ' · ' + o.heure : '') : '';
+  const lienRapport = urlSure(o.rapportUrl);
+  const action = lienRapport
+    ? `<a class="ligne-action" href="${lienRapport}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Télécharger le rapport</a>`
+    : `<span class="ligne-etat">${esc(LIBELLE_ETAPE[n])}</span>`;
+  const idx = _ordersCache.indexOf(o);
+  return `<div class="ligne-edl" role="button" tabindex="0" onclick="openDetail(_ordersCache[${idx}])" onkeydown="if(event.key==='Enter'){openDetail(_ordersCache[${idx}])}">
+    <div class="ligne-info">
+      <div class="ligne-adresse">${esc(o.adresse || 'Adresse non renseignée')}</div>
+      <div class="ligne-meta">${esc(o.typeEdl || 'État des lieux')}${date ? ' · ' + esc(date) : ''}</div>
+    </div>
+    <div class="ligne-droite-col">
+      <div class="ligne-barres" aria-label="${esc(LIBELLE_ETAPE[n])}">${barres}</div>
+      <div class="ligne-droite">${action}</div>
+    </div>
+  </div>`;
+}
+
 function renderAccueil(){
   const wrap = document.getElementById('hero-rdv-wrap');
   const maintenant = Date.now();
@@ -829,30 +974,68 @@ function renderAccueil(){
   const prochain = prochains[0];
   if(prochain){
     const d = new Date(prochain.dateSouhaitee);
-    wrap.innerHTML = `<div class="hero-rdv">
-      <div>
-        <div class="hero-rdv-label">Prochain rendez-vous confirmé</div>
-        <div class="hero-rdv-title">${esc(prochain.typeEdl||'État des lieux')} — ${esc(prochain.adresse||'')}</div>
-        <div class="hero-rdv-meta">
-          <span>📅 ${esc(d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))}</span>
-          ${prochain.heure?`<span>🕐 ${esc(prochain.heure)}</span>`:''}
-        </div>
+    wrap.innerHTML = `<section class="hero-rdv" aria-label="Prochain rendez-vous">
+      <div class="hero-date">
+        <span>${esc(d.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.','').toUpperCase())}</span>
+        <b>${d.getDate()}</b>
+        <span>${esc(d.toLocaleDateString('fr-FR',{month:'short'}))}</span>
       </div>
-      <div class="hero-rdv-icon">🔑</div>
-    </div>`;
+      <div style="flex:1;min-width:220px">
+        <div class="hero-rdv-label">Prochain rendez-vous${prochain.heure ? ' · ' + esc(prochain.heure) : ''}</div>
+        <div class="hero-rdv-title">${esc(prochain.typeEdl||'État des lieux')} · ${esc(prochain.adresse||'')}</div>
+        ${prochain.locataireNom ? `<div class="hero-rdv-meta">Locataire : ${esc(prochain.locataireNom)}</div>` : ''}
+      </div>
+      <button type="button" class="btn-secondaire" onclick="openDetail(_ordersCache[${_ordersCache.indexOf(prochain)}])">Voir le détail</button>
+    </section>`;
   } else {
     wrap.innerHTML = '';
   }
 
-  const enAttente = _ordersCache.filter(o => o.statut === 'en_attente');
-  const label = document.getElementById('a-valider-label');
-  const list = document.getElementById('a-valider-list');
-  label.textContent = 'À valider' + (enAttente.length ? ' — ' + enAttente.length : '');
-  if(!enAttente.length){
-    list.innerHTML = `<div class="empty-state"><div class="emoji">✅</div><div class="t1">Rien en attente</div><div class="t2">Toutes vos demandes sont confirmées ou terminées.</div></div>`;
-  } else {
-    list.innerHTML = enAttente.slice(0,3).map(carteCommandeHTML).join('');
+  // En cours d'abord (déjà triés par trierCommandes), puis les plus récents
+  // terminés — 5 lignes maximum, le reste dans "États des lieux".
+  const liste = document.getElementById('accueil-edl-list');
+  if(!liste) return;
+  const visibles = _ordersCache.filter(o => o.statut !== 'annulee').slice(0, 5);
+  liste.innerHTML = visibles.length
+    ? visibles.map(ligneCommandeHTML).join('')
+    : `<div class="bloc-vide">Aucun état des lieux pour l'instant. Commandez le premier en un clic.</div>`;
+}
+
+// Aperçus "Messages" et "Dernières factures" du tableau de bord : en
+// lecture seule (ne marque aucun message comme lu, contrairement à la page
+// Messages).
+async function chargerApercusAccueil(){
+  const boxMsg = document.getElementById('accueil-msg');
+  if(boxMsg){
+    try {
+      const resp = await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'list' }) });
+      const messages = await resp.json();
+      const dernier = Array.isArray(messages) && messages.length ? messages[messages.length - 1] : null;
+      boxMsg.innerHTML = dernier
+        ? `<div class="apercu-msg"><div>${esc(dernier.body)}</div><div class="apercu-msg-meta">${dernier.sender === 'client' ? 'Vous' : 'Votre expert'}${dernier.createdAt ? ' · ' + esc(new Date(dernier.createdAt).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})) : ''}</div></div>`
+        : `<div class="bloc-vide">Aucun message. Une question ? Écrivez à votre expert.</div>`;
+    } catch(e) { boxMsg.innerHTML = ''; }
   }
+  const boxFac = document.getElementById('accueil-factures');
+  if(boxFac){
+    const factures = (await chargerDocsSiBesoin()).filter(d => d.type === 'facture').slice(0, 3);
+    boxFac.innerHTML = factures.length
+      ? factures.map(d => `<a href="#" class="ligne-facture" onclick="event.preventDefault();telechargerFacture('${esc(d.url)}',this)">
+          <span style="flex:1;min-width:0"><span class="ligne-adresse" style="display:block">${esc(d.nom)}</span>${d.deposeLe ? `<span class="ligne-meta">Déposée le ${esc(new Date(d.deposeLe).toLocaleDateString('fr-FR'))}</span>` : ''}</span>
+          <span class="doc-open">Télécharger</span>
+        </a>`).join('')
+      : `<div class="bloc-vide">Aucune facture pour l'instant.</div>`;
+  }
+}
+async function envoyerMessageAccueil(){
+  const input = document.getElementById('accueil-msg-input');
+  const texte = (input.value || '').trim();
+  if(!texte) return;
+  input.value = '';
+  try {
+    await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'send', body: texte }) });
+    chargerApercusAccueil();
+  } catch(e) { alert('Message non envoyé — vérifiez votre connexion.'); }
 }
 
 async function loadOrders() {
@@ -1116,25 +1299,53 @@ function restoreDraft() {
     });
   }
   if (d.open) {
-    document.getElementById('app-shell').classList.remove('shown');
-    document.getElementById('order-form').style.display = 'block';
+    ouvrirPanneauCommande();
+    if (d.type) etapeCommande(2);
   }
   chargerCreneauxSiPossible(); // au cas où typologie/meublé étaient déjà remplis dans le brouillon
 }
 document.addEventListener('input', e => { if (e.target && e.target.closest && e.target.closest('#order-form')) saveDraft(); });
 document.addEventListener('change', e => { if (e.target && e.target.closest && e.target.closest('#order-form')) saveDraft(); });
 
+function ouvrirPanneauCommande(){
+  document.getElementById('order-form').style.display = 'block';
+  document.getElementById('order-backdrop').classList.add('open');
+  document.body.classList.add('panneau-ouvert');
+}
 function showOrderForm() {
-  document.getElementById('app-shell').classList.remove('shown');
-  document.getElementById('order-form').style.display='block';
+  ouvrirPanneauCommande();
   if (!loadDraft()) { _selectedType=''; document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected')}); }
+  // Repartir d'un formulaire prêt à envoyer (après un envoi réussi, le
+  // bouton était masqué et le message de succès restait affiché).
+  const btn = document.getElementById('form-submit-btn');
+  btn.style.display = ''; btn.disabled = false; btn.innerHTML = 'Envoyer la demande';
+  document.getElementById('form-success').style.display = 'none';
+  document.getElementById('form-error').style.display = 'none';
+  etapeCommande(1);
   // Les fichiers eux-mêmes ne survivent jamais à un rechargement de page
   // (contrairement au reste du brouillon) : repartir toujours d'une liste vide.
   resetAttachments();
   remplirBiensConnus();
   saveDraft(true);
 }
-function hideOrderForm() { document.getElementById('order-form').style.display='none'; document.getElementById('app-shell').classList.add('shown'); saveDraft(false); }
+function hideOrderForm() {
+  document.getElementById('order-form').style.display='none';
+  document.getElementById('order-backdrop').classList.remove('open');
+  document.body.classList.remove('panneau-ouvert');
+  document.getElementById('app-shell').classList.add('shown');
+  saveDraft(false);
+}
+// Étape 1 : type d'état des lieux. Étape 2 : bien, créneau, locataire.
+function etapeCommande(n){
+  if (n === 2 && !_selectedType) { document.getElementById('order-step1-error').style.display = 'block'; return; }
+  document.getElementById('order-step1-error').style.display = 'none';
+  document.getElementById('order-step-1').style.display = n === 1 ? '' : 'none';
+  document.getElementById('order-step-2').style.display = n === 2 ? '' : 'none';
+  document.getElementById('order-step-label').textContent = 'Étape ' + n + ' sur 2' + (n === 2 && _selectedType ? ' · ' + _selectedType : '');
+  document.getElementById('order-bar-2').classList.toggle('on', n === 2);
+  document.getElementById('order-back-btn').style.visibility = n === 2 ? 'visible' : 'hidden';
+  document.getElementById('order-form').scrollTop = 0;
+}
 
 // Un même bien revient souvent d'une prestation à l'autre (locataire qui
 // change, même adresse) : proposer de réutiliser les infos du logement
@@ -1491,9 +1702,9 @@ async function submitOrder() {
   try {
     const resp = await fetch('/api/booking-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const r = await resp.json();
-    if(r.success||resp.ok){clearDraft();resetAttachments();document.getElementById('form-success').style.display='block';btn.style.display='none';setTimeout(()=>{hideOrderForm();loadOrders();},2500);}
+    if(r.success||resp.ok){clearDraft();resetAttachments();document.getElementById('form-success').style.display='block';btn.style.display='none';setTimeout(()=>{hideOrderForm();loadOrders();chargerApercusAccueil();},2500);}
     else throw new Error(r.error||'Erreur');
-  } catch(e){errEl.textContent='Erreur : '+(e.message||'réessayez.');errEl.style.display='block';btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Envoyer ma demande';}
+  } catch(e){errEl.textContent='Erreur : '+(e.message||'réessayez.');errEl.style.display='block';btn.disabled=false;btn.innerHTML='Envoyer la demande';}
 }
 </script>
 </body>
