@@ -404,12 +404,14 @@ const CHAMPS_REM_TYPE = ['entrant','sortant','simultane','autre'];
 // (voir ligneCorrespondante dans api/_lib/agent-remuneration.js).
 const TYPOS_REM = ['T1','T2','T3','T4','T5','T6','T7+'];
 const BIENS_REM = ['Appartement','Maison','Studio','Local commercial','Parking'];
-const LIGNES_REM_DEFAUT = TYPOS_REM.map(t => ({ label: t === 'T1' ? 'T1 / studio' : t === 'T7+' ? 'T7 et plus' : t, typo: t, bien: '', meuble: '', simple: '', double: '' }));
+const LIGNES_REM_DEFAUT = TYPOS_REM.map(t => ({ label: t === 'T1' ? 'T1 / studio' : t === 'T7+' ? 'T7 et plus' : t, typos: [t], bien: '', meuble: '', simple: '', double: '' }));
+// Typologies cochées d'une ligne (ancien champ unique « typo » accepté).
+const typosLigne = l => Array.isArray(l.typos) ? l.typos : (l.typo ? [l.typo] : []);
 function htmlLigneRemuneration(l){
   const opt = (val, lib, actuel) => `<option value="${esc(val)}"${val === actuel ? ' selected' : ''}>${esc(lib)}</option>`;
   return `<div class="rem-ligne" data-rem-ligne>
     <input class="rem-l-label" value="${esc(l.label || '')}" placeholder="Ex : T2 meublé" aria-label="Libellé de la ligne">
-    <select class="rem-l-typo" aria-label="Typologie">${opt('', 'Toutes', l.typo || '')}${TYPOS_REM.map(t => opt(t, t === 'T7+' ? 'T7 et +' : t, l.typo)).join('')}</select>
+    <fieldset class="rem-l-typos"><legend class="sr-only">Typologies (aucune cochée = toutes)</legend>${TYPOS_REM.map(t => `<label class="rem-typo-chip"><input type="checkbox" value="${t}"${typosLigne(l).includes(t) ? ' checked' : ''}><span>${t === 'T7+' ? 'T7+' : t}</span></label>`).join('')}</fieldset>
     <select class="rem-l-bien" aria-label="Type de bien">${opt('', 'Tous', l.bien || '')}${BIENS_REM.map(b => opt(b, b, l.bien)).join('')}</select>
     <select class="rem-l-meuble" aria-label="Meublé ou nu">${opt('', 'Tous', l.meuble || '')}${opt('meuble', 'Meublé', l.meuble)}${opt('nu', 'Nu', l.meuble)}</select>
     <input class="rem-l-simple" inputmode="decimal" value="${esc(l.simple == null ? '' : l.simple)}" placeholder="€" aria-label="Montant entrant ou sortant">
@@ -439,7 +441,7 @@ function monterLigneRemuneration(btn){
 function lireLignesRemuneration(){
   return Array.from(document.querySelectorAll('#rem-typo-lignes [data-rem-ligne]')).map(r => ({
     label: r.querySelector('.rem-l-label').value.trim(),
-    typo: r.querySelector('.rem-l-typo').value,
+    typos: Array.from(r.querySelectorAll('.rem-l-typos input:checked')).map(c => c.value),
     bien: r.querySelector('.rem-l-bien').value,
     meuble: r.querySelector('.rem-l-meuble').value,
     simple: r.querySelector('.rem-l-simple').value.trim(),
@@ -449,7 +451,7 @@ function lireLignesRemuneration(){
 // Ancien format fixe (beta.4) → lignes.
 function lignesDepuisReference(r){
   if(Array.isArray(r.lignes)) return r.lignes;
-  if(r.parTypo) return TYPOS_REM.map(t => Object.assign({ label: t, typo: t, bien: '', meuble: '' }, r.parTypo[t] || {}));
+  if(r.parTypo) return TYPOS_REM.map(t => Object.assign({ label: t, typos: [t], bien: '', meuble: '' }, r.parTypo[t] || {}));
   return null;
 }
 function majFormulaireRemuneration(){
@@ -485,7 +487,7 @@ function resumeRemunerationAgent(rem){
   const unite = rem.unite === 'net' ? '€ net' : '€ ' + (rem.unite || 'HT');
   if(rem.mode === 'pourcentage') return rem.pourcentage ? 'Rémunération : ' + rem.pourcentage + ' % du montant HT' : 'Rémunération non renseignée';
   if(rem.mode === 'typologie'){
-    const parts = (lignesDepuisReference(rem) || []).filter(l => l.simple !== '' && l.simple != null).map(l => (l.label || l.typo || 'Ligne') + ' ' + l.simple + ' ' + unite);
+    const parts = (lignesDepuisReference(rem) || []).filter(l => l.simple !== '' && l.simple != null).map(l => (l.label || typosLigne(l).join(', ') || 'Ligne') + ' ' + l.simple + ' ' + unite);
     return parts.length ? 'Rémunération par grille : ' + parts.join(' · ') : 'Rémunération non renseignée';
   }
   const lib = { entrant:'entrant', sortant:'sortant', simultane:'sortant+entrant', autre:'autre' };

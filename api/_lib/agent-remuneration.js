@@ -7,8 +7,8 @@
 //                   sortant + entrant, autre) ;
 //   * typologie   : une grille de lignes LIBRES (libellé au choix de
 //                   l'agence : « T2 », « Maison », « T2 meublé »…), chacune
-//                   reliée aux missions par des critères (typologie, type
-//                   de bien, meublé/nu ; vide = tous) avec une colonne
+//                   reliée aux missions par des critères (une ou plusieurs
+//                   typologies, type de bien, meublé/nu ; vide = tous) avec une colonne
 //                   « entrant ou sortant » et une colonne « sortant +
 //                   entrant ». La PREMIÈRE ligne qui correspond s'applique.
 //                   Plus un montant pour les autres prestations (pré-état…) ;
@@ -36,11 +36,13 @@ const texte = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
 function normaliserLignes(r) {
   let brutes = Array.isArray(r.lignes) ? r.lignes : null;
   if (!brutes && r.parTypo && typeof r.parTypo === 'object') {
-    brutes = TYPOLOGIES.map((t) => ({ label: t, typo: t, ...(r.parTypo[t] || {}) }));
+    brutes = TYPOLOGIES.map((t) => ({ label: t, typos: [t], ...(r.parTypo[t] || {}) }));
   }
   return (brutes || []).slice(0, MAX_LIGNES).map((l) => ({
     label: texte(l && l.label, 60),
-    typo: TYPOLOGIES.includes(l && l.typo) ? l.typo : '',
+    // Plusieurs typologies par ligne (« T4 et T5 ») ; l'ancien champ
+    // unique « typo » (beta.5) reste accepté.
+    typos: TYPOLOGIES.filter((t) => (Array.isArray(l && l.typos) ? l.typos : [l && l.typo]).includes(t)),
     bien: BIENS.includes(l && l.bien) ? l.bien : '',
     meuble: ['meuble', 'nu'].includes(l && l.meuble) ? l.meuble : '',
     simple: nombre(l && l.simple),
@@ -50,7 +52,8 @@ function normaliserLignes(r) {
 
 // Libellé lisible des critères d'une ligne (« T2 · Maison · meublé »).
 export function criteresLigne(l) {
-  return [l.typo === 'T7+' ? 'T7 et plus' : l.typo, l.bien, l.meuble === 'meuble' ? 'meublé' : l.meuble === 'nu' ? 'nu' : '']
+  const typos = l.typos.length === TYPOLOGIES.length ? '' : l.typos.map((t) => (t === 'T7+' ? 'T7 et plus' : t)).join(', ');
+  return [typos, l.bien, l.meuble === 'meuble' ? 'meublé' : l.meuble === 'nu' ? 'nu' : '']
     .filter(Boolean).join(' · ') || 'Tous les biens';
 }
 
@@ -62,7 +65,7 @@ export function ligneCorrespondante(mission, lignes) {
   const m = String(mission.bienMeuble || '').toLowerCase();
   const meuble = m.includes('meubl') ? 'meuble' : m ? 'nu' : '';
   return (lignes || []).find((l) =>
-    (!l.typo || l.typo === typo) &&
+    (!l.typos.length || l.typos.includes(typo)) &&
     (!l.bien || bien.includes(l.bien.toLowerCase()) || (l.bien === 'Studio' && String(mission.bienTypo || '').toLowerCase().includes('studio'))) &&
     (!l.meuble || l.meuble === meuble)
   ) || null;

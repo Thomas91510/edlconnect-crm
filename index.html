@@ -595,13 +595,21 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 .settings-section{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 26px;margin-bottom:20px}
 .settings-title{font-size:15px;margin-bottom:14px}
 .settings-section[hidden]{display:none !important}
-.rem-lignes-entete,.rem-ligne{display:grid;grid-template-columns:minmax(110px,1.4fr) 100px 130px 110px minmax(90px,1fr) minmax(90px,1fr) 72px;gap:6px;align-items:center}
+.agent-remu{min-width:0;max-width:100%;overflow-x:auto}
+.rem-lignes-entete,.rem-ligne{display:grid;grid-template-columns:minmax(100px,1fr) 196px 112px 88px 70px 70px 72px;gap:6px;align-items:center;min-width:760px}
+.rem-l-typos{border:none;margin:0;padding:0;display:flex;flex-wrap:nowrap;gap:2px}
+.rem-typo-chip{margin:0;cursor:pointer}
+.rem-typo-chip input{position:absolute;opacity:0;width:1px;height:1px}
+.rem-typo-chip span{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:30px;padding:0 3px;border:1px solid var(--border2);border-radius:7px;font-size:12px;font-weight:500;color:var(--text2);background:#fff}
+.rem-typo-chip input:checked + span{background:var(--blue);border-color:var(--blue);color:#fff}
+.rem-typo-chip input:focus-visible + span{outline:2px solid var(--blue);outline-offset:1px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .rem-lignes-entete{font-size:11.5px;color:var(--text2);margin:12px 0 4px}
 .rem-ligne{margin-bottom:6px}
 .rem-ligne input,.rem-ligne select{height:38px;padding:0 8px;font-size:13px;margin:0}
 .rem-ligne-actions{display:flex;gap:4px}
 .rem-ligne-actions button{width:34px;height:34px;padding:0;justify-content:center}
-@media (max-width:900px){.rem-lignes-entete{display:none}.rem-ligne{grid-template-columns:1fr 1fr;padding:10px;border:1px solid var(--border);border-radius:10px}}
+@media (max-width:900px){.rem-lignes-entete{display:none}.rem-ligne{grid-template-columns:1fr 1fr;min-width:0;padding:10px;border:1px solid var(--border);border-radius:10px}.rem-l-typos{flex-wrap:wrap}}
 
 /* Accueil : tâches du jour */
 .todo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
@@ -1614,12 +1622,12 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
             <div><label for="new-agent-rem-autre">Autre / pré-état des lieux (€)</label><input id="new-agent-rem-autre" inputmode="decimal" placeholder="Ex : 35"></div>
           </div>
           <div id="agent-rem-typologie" style="display:none">
-            <div class="rem-lignes-entete" aria-hidden="true"><span>Libellé</span><span>Typologie</span><span>Type de bien</span><span>Meublé / nu</span><span>Entrant ou sortant (€)</span><span>Sortant + entrant (€)</span><span></span></div>
+            <div class="rem-lignes-entete" aria-hidden="true"><span>Libellé</span><span>Typologies (aucune = toutes)</span><span>Type de bien</span><span>Meublé / nu</span><span>Entrant ou sortant (€)</span><span>Sortant + entrant (€)</span><span></span></div>
             <div id="rem-typo-lignes"></div>
             <button type="button" class="btn btn-sm" style="margin-top:6px" onclick="ajouterLigneRemuneration()"><i class="ti ti-plus"></i> Ajouter une ligne</button>
             <label for="new-agent-rem-typo-autre">Autre / pré-état des lieux, toutes typologies (€)</label>
             <input id="new-agent-rem-typo-autre" inputmode="decimal" placeholder="Ex : 30" style="max-width:200px">
-            <div style="font-size:12px;color:var(--text2);margin-top:8px">Lignes libres : nommez-les comme vous voulez (« Maison », « T2 meublé », « Parking »…). Pour chaque mission, la <strong>première ligne</strong> dont les critères correspondent s'applique — placez les plus précises en haut (flèche ↑). Critère « Tous » = indifférent ; montant vide = pas de tarif (la mission est signalée à l'agent).</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:8px">Lignes libres : nommez-les comme vous voulez (« Maison », « T4 et T5 », « T2 meublé », « Parking »…) et cochez une ou plusieurs typologies par ligne. Pour chaque mission, la <strong>première ligne</strong> dont les critères correspondent s'applique — placez les plus précises en haut (flèche ↑). Critère « Tous » = indifférent ; montant vide = pas de tarif (la mission est signalée à l'agent).</div>
           </div>
           <div id="agent-rem-pourcentage" style="display:none">
             <label for="new-agent-rem-pct">Pourcentage du montant HT facturé (%)</label>

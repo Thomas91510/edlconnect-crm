@@ -132,3 +132,20 @@ test('grille libre : le libellé de la ligne appliquée est renvoyé pour chaque
   assert.equal(r.lignes[0].ligneGrille, 'Maison');
   assert.equal(r.lignes[0].montant, 90);
 });
+
+test('grille libre : plusieurs typologies cochées sur une même ligne', () => {
+  const ref = normaliserReference({ mode: 'typologie', lignes: [
+    { label: 'T4 et T5', typos: ['T4', 'T5'], simple: '55', double: '95' },
+    { label: 'Grands logements', typos: ['T6', 'T7+'], simple: '80' },
+    { label: 'Ancien format', typo: 'T2', simple: '40' },
+  ] });
+  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T4' }, ref), 55);
+  assert.equal(montantMission({ type: 'EDL sortant', bienTypo: 'T5' }, ref), 55);
+  assert.equal(montantMission({ type: 'EDL Sortant / Entrant', bienTypo: 'F5' }, ref), 95);
+  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T8' }, ref), 80);
+  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T2' }, ref), 40, 'ancien champ « typo » unique toujours lu');
+  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T3' }, ref), null);
+  assert.equal(ref.lignes[0].criteres, 'T4, T5');
+  assert.equal(ref.lignes[1].criteres, 'T6, T7 et plus');
+  assert.deepEqual(normaliserReference({ mode: 'typologie', lignes: [{ label: 'x', typos: ['T9', 'T2', 'bidon'], simple: 1 }] }).lignes[0].typos, ['T2'], 'valeurs inconnues ignorées');
+});

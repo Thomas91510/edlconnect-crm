@@ -420,3 +420,24 @@ test('sauvegarderBareme : aucune ligne valide → n\'écrase pas le barème exis
 
   assert.deepEqual(window.__getDB().baremeDeplacement, [{ label: 'Existant', montant: '9' }]);
 });
+
+// ─── Grille de rémunération : plusieurs typologies cochées par ligne ──
+test('grille de rémunération : les typologies cochées sont relues, l’ancien champ unique est converti', () => {
+  const w = chargerAgentsEDL();
+  const d = w.document;
+  const conteneur = d.createElement('div');
+  conteneur.id = 'rem-typo-lignes';
+  d.body.appendChild(conteneur);
+  w.renderLignesRemuneration([
+    { label: 'T4 et T5', typos: ['T4', 'T5'], simple: '55', double: '95' },
+    { label: 'Ancien', typo: 'T2', simple: '40' },
+  ]);
+  const lignes = d.querySelectorAll('#rem-typo-lignes [data-rem-ligne]');
+  assert.equal(lignes.length, 2);
+  // Coche T6 en plus sur la première ligne
+  lignes[0].querySelector('input[value="T6"]').checked = true;
+  const lues = w.lireLignesRemuneration();
+  assert.deepEqual(Array.from(lues[0].typos), ['T4', 'T5', 'T6']);
+  assert.deepEqual(Array.from(lues[1].typos), ['T2'], 'l’ancien champ « typo » est coché à l’ouverture');
+  assert.equal(lues[0].simple, '55');
+});
