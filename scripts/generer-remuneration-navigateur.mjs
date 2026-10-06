@@ -29,7 +29,7 @@ export function genererSource() {
 // noms globaux partagés par les autres scripts du CRM).
 (function(){
 ${corps}
-window.Remuneration = { calculerRemuneration, normaliserReference, montantMission, etatMission, LIBELLES_TYPE };
+window.Remuneration = { calculerRemuneration, normaliserReference, montantMission, etatMission, zoneMission, LIBELLES_TYPE, ZONES, GRILLE_CONTRAT_2026 };
 })();
 `;
 }

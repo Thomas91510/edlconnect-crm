@@ -439,7 +439,7 @@ test('grille de rémunération : les typologies cochées sont relues, l’ancien
   const lues = w.lireLignesRemuneration();
   assert.deepEqual(Array.from(lues[0].typos), ['T4', 'T5', 'T6']);
   assert.deepEqual(Array.from(lues[1].typos), ['T2'], 'l’ancien champ « typo » est coché à l’ouverture');
-  assert.equal(lues[0].simple, '55');
+  assert.equal(lues[0].nue, '55', 'ancien montant « simple » repris en tarif location nue');
 });
 
 // ─── Suivi des paiements des rémunérations ────────────────────────────

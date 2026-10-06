@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.7';
+const APP_VERSION = '2.0.0-beta.8';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.8', titre:'Grille du contrat 2026 et frais de déplacement par zone', texte:'Grille par bien sur le modèle de l\u2019annexe 2 du contrat (location nue / meublée, appartements, maisons, garages, locaux selon la surface), sortant + entrant = 2 interventions, frais de déplacement par zone, déplacement infructueux. Bouton « Charger la grille du contrat 2026 », tout reste modifiable.' },
   { v:'2.0.0-beta.7', titre:'Suivi payé / non payé des rémunérations', texte:'Réglages › Agents EDL : reste à payer par agent, case « Payée » par mission et « Tout marquer payé » par mois. L\u2019agent voit ce qu\u2019il lui reste à percevoir et la date de chaque paiement.' },
   { v:'2.0.0-beta.6', titre:'Plusieurs typologies par ligne', texte:'Dans la grille de rémunération, chaque ligne peut viser plusieurs typologies à cocher (ex. « T4 et T5 », « T6 et T7+ »).' },
   { v:'2.0.0-beta.5', titre:'Grille de rémunération modifiable', texte:'Lignes libres dans la fiche agent : libellé au choix (Maison, T2 meublé, Parking…), critères typologie / type de bien / meublé, ordre de priorité, ajout et suppression de lignes.' },

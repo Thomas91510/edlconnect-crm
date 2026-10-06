@@ -658,28 +658,31 @@ test('renderRemuneration : grille, totaux du mois et détail échappé', () => {
   assert.ok(!html.includes('<img src=x'), 'l’adresse doit être échappée');
 });
 
-test('renderRemuneration : grille libre (libellés et critères de l\u2019agence, sortant + entrant)', () => {
+test('renderRemuneration : grille par bien (nue / meublée), frais de zone, déplacement infructueux', () => {
   const w = chargerAgentApp();
   const box = avecConteneurRemu(w);
   const lignes = [
-    { label: 'Maison', criteres: 'Maison', simple: 90, double: 160 },
-    { label: 'T2 meublé', criteres: 'T2 · meublé', simple: 50, double: null },
-    { label: 'T1 / studio', criteres: 'T1', simple: 35, double: 60 },
+    { label: 'Maison T4', criteres: 'Maison · T4', nue: 75, meublee: 95 },
+    { label: 'Garage — 1 place', criteres: 'Garage', nue: 20, meublee: null },
   ];
   w.renderRemuneration({
-    reference: { configuree: true, mode: 'typologie', unite: 'HT', parType: null, lignes, typoAutre: 30, note: '' },
-    moisCourant: { mois: '2026-10', acquis: 90, prevu: 0, nbAcquises: 1 },
+    reference: { configuree: true, mode: 'typologie', unite: 'HT', parType: null, lignes, typoAutre: 30, coefSortantEntrant: 2,
+      fraisZone: { primaire: 0, secondaire: 10, hors: 25 }, deplacementInfructueux: 50, note: '' },
+    moisCourant: { mois: '2026-10', acquis: 85, prevu: 0, nbAcquises: 1, paye: 0 },
+    paiements: { resteAPayer: 85, nbAPayer: 1 },
     parMois: [], nonCouvertes: 0,
-    lignes: [{ id: 'm1', date: '2026-10-02T09:00:00', adresse: '1 rue A', type: 'EDL entrant', typologie: 'T4', ligneGrille: 'Maison', etat: 'acquise', montant: 90 }],
+    lignes: [{ id: 'm1', date: '2026-10-02T09:00:00', adresse: '1 rue A', type: 'EDL entrant', typologie: 'T4', ligneGrille: 'Maison T4', etat: 'acquise', prestation: 75, frais: 10, zone: 'secondaire', montant: 85, payee: false }],
   });
   const html = box.innerHTML;
-  assert.ok(html.includes('T2 meublé'));
-  assert.ok(html.includes('T2 · meublé'), 'critères affichés sous le libellé');
-  assert.ok(html.includes('160 € HT'), 'colonne sortant + entrant');
-  assert.ok(html.includes('30 € HT'), 'pré-état des lieux');
-  assert.ok(html.includes('<td>Maison</td>'), 'ligne de grille appliquée affichée dans le détail');
+  assert.ok(html.includes('Location meublée'));
+  assert.ok(html.includes('95 € HT'));
+  assert.ok(html.includes('Maison · T4'), 'critères affichés sous le libellé');
+  assert.ok(html.includes('2 interventions'), 'sortant + entrant');
+  assert.ok(html.includes('Zone secondaire') && html.includes('25 € HT'), 'frais de déplacement par zone');
+  assert.ok(html.includes('Déplacement infructueux') && html.includes('50 € HT'));
+  assert.ok(html.includes('dont 10 € HT dépl.'), 'détail : part déplacement');
+  assert.ok(html.includes('<td>Maison T4</td>'));
 });
-
 test('renderRemuneration : suivi des paiements (reste à percevoir, payée le…, à percevoir)', () => {
   const w = chargerAgentApp();
   const box = avecConteneurRemu(w);

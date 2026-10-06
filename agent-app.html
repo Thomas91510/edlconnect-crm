@@ -1167,10 +1167,11 @@ function renderRemuneration(r){
     ? `<div class="remu-ligne"><span>Part de chaque mission</span><b>${esc(String(ref.pourcentage).replace('.', ','))} % du montant HT</b></div>`
     : ref.mode === 'typologie'
     ? `<table class="remu-table remu-typo" style="min-width:0">
-        <thead><tr><th>Bien</th><th style="text-align:right">Entrant ou sortant</th><th style="text-align:right">Sortant + entrant</th></tr></thead>
-        <tbody>${(ref.lignes || []).map(l => `<tr><td><span style="font-weight:500">${esc(l.label || l.criteres)}</span>${l.label && l.criteres !== l.label ? `<br><span style="font-size:12px;color:var(--text2)">${esc(l.criteres)}</span>` : ''}</td><td style="text-align:right;font-weight:600">${cellule(l.simple)}</td><td style="text-align:right;font-weight:600">${cellule(l.double)}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>Bien</th><th style="text-align:right">Location nue</th><th style="text-align:right">Location meublée</th></tr></thead>
+        <tbody>${(ref.lignes || []).map(l => `<tr><td><span style="font-weight:500">${esc(l.label || l.criteres)}</span>${l.label && l.criteres !== l.label ? `<br><span style="font-size:12px;color:var(--text2)">${esc(l.criteres)}</span>` : ''}</td><td style="text-align:right;font-weight:600">${cellule(l.nue)}</td><td style="text-align:right;font-weight:600">${cellule(l.meublee === null ? l.nue : l.meublee)}</td></tr>`).join('')}</tbody>
       </table>
-      <div class="remu-ligne" style="border-top:1px solid var(--border);margin-top:4px"><span>Autre / pré-état des lieux</span><b>${cellule(ref.typoAutre)}</b></div>`
+      <div class="remu-ligne" style="border-top:1px solid var(--border);margin-top:4px"><span>Sortant + entrant</span><b>${esc(String(ref.coefSortantEntrant).replace('.', ','))} intervention${ref.coefSortantEntrant > 1 ? 's' : ''}</b></div>
+      <div class="remu-ligne"><span>Autre / pré-état des lieux</span><b>${cellule(ref.typoAutre)}</b></div>`
     : Object.keys(LIBELLE_TYPE_REMU).map(k => `<div class="remu-ligne"><span>${esc(LIBELLE_TYPE_REMU[k])}</span><b>${ref.parType[k] === null ? '<span style="color:var(--text3);font-weight:400">Non défini</span>' : esc(fmtEuros(ref.parType[k], u))}</b></div>`).join('');
   const mois = (r.parMois || []);
   const max = Math.max(1, ...mois.map(x => x.total));
@@ -1190,6 +1191,9 @@ function renderRemuneration(r){
         <div class="card-head" id="remu-grille-titre"><i class="ti ti-file-dollar"></i>Ma grille de rémunération</div>
         <div class="card-body">
           ${grille}
+          ${['primaire','secondaire','hors'].some(z => ref.fraisZone && ref.fraisZone[z] !== null) ? `<div style="margin-top:14px;font-weight:600;font-size:13.5px">Frais de déplacement</div>
+            ${['primaire','secondaire','hors'].map(z => `<div class="remu-ligne"><span>${({primaire:'Zone primaire', secondaire:'Zone secondaire', hors:'Hors zone'})[z]}</span><b>${cellule(ref.fraisZone[z])}</b></div>`).join('')}` : ''}
+          ${ref.deplacementInfructueux !== null && ref.deplacementInfructueux !== undefined ? `<div class="remu-ligne" style="border-top:1px solid var(--border)"><span>Déplacement infructueux</span><b>${cellule(ref.deplacementInfructueux)}</b></div>` : ''}
           <p class="compte-note" style="margin-top:12px">Référence fixée par l'agence dans votre fiche — lecture seule.${ref.note ? '<br>' + esc(ref.note) : ''}</p>
           ${r.nonCouvertes ? `<p class="compte-note" style="color:var(--amber)">${r.nonCouvertes} mission${r.nonCouvertes > 1 ? 's' : ''} sans tarif dans votre grille : rapprochez-vous de l'agence.</p>` : ''}
         </div>
@@ -1217,7 +1221,7 @@ function renderRemuneration(r){
             <td>${esc(l.type || '—')}</td>
             <td>${esc(l.ligneGrille || (l.typologie && l.typologie !== 'Non renseignée' ? l.typologie : '—'))}</td>
             <td>${etatHTML(l)}</td>
-            <td style="text-align:right;font-weight:600">${esc(fmtEuros(l.montant, u))}</td>
+            <td style="text-align:right;font-weight:600">${esc(fmtEuros(l.montant, u))}${l.frais ? `<div style="font-size:11.5px;font-weight:400;color:var(--text2)">dont ${esc(fmtEuros(l.frais, u))} dépl.</div>` : ''}</td>
           </tr>`).join('')}</tbody>
         </table>
       </div>
@@ -1296,7 +1300,7 @@ function renderHistorique(missions){
 <div id="app-version"></div>
 <script>
 (async function afficherVersionAgent(){
-  const APP_VERSION = '2.0.0-beta.7';
+  const APP_VERSION = '2.0.0-beta.8';
   const el = document.getElementById('app-version');
   if(el) el.textContent = 'v' + APP_VERSION;
   try {

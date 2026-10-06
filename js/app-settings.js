@@ -400,34 +400,46 @@ async function televerserDocumentAgent(agentId, type, inputEl){
 // Lue côté serveur par api/_lib/agent-remuneration.js pour l'onglet
 // « Rémunération » de l'espace agent. Champs vides = pas de tarif.
 const CHAMPS_REM_TYPE = ['entrant','sortant','simultane','autre'];
-// Grille par typologie : lignes libres (libellé + critères + 2 montants).
-// La première ligne dont les critères correspondent à la mission s'applique
-// (voir ligneCorrespondante dans api/_lib/agent-remuneration.js).
+// Grille par bien : lignes libres (libellé, typologies cochées, type de
+// bien, surface) avec un tarif « nue » et un tarif « meublée », sur le
+// modèle de l'annexe 2 du contrat. La première ligne dont les critères
+// correspondent à la mission s'applique (api/_lib/agent-remuneration.js).
 const TYPOS_REM = ['T1','T2','T3','T4','T5','T6','T7+'];
-const BIENS_REM = ['Appartement','Maison','Studio','Local commercial','Parking'];
-const LIGNES_REM_DEFAUT = TYPOS_REM.map(t => ({ label: t === 'T1' ? 'T1 / studio' : t === 'T7+' ? 'T7 et plus' : t, typos: [t], bien: '', meuble: '', simple: '', double: '' }));
-// Typologies cochées d'une ligne (ancien champ unique « typo » accepté).
+const BIENS_REM = ['Appartement','Maison','Studio','Garage','Parking','Local commercial'];
 const typosLigne = l => Array.isArray(l.typos) ? l.typos : (l.typo ? [l.typo] : []);
+const _valRem = v => v == null ? '' : v;
 function htmlLigneRemuneration(l){
   const opt = (val, lib, actuel) => `<option value="${esc(val)}"${val === actuel ? ' selected' : ''}>${esc(lib)}</option>`;
+  // Anciennes lignes bêta (simple / meuble) affichées dans les bonnes colonnes.
+  const nue = l.nue != null ? l.nue : (l.meuble !== 'meuble' ? l.simple : '');
+  const meublee = l.meublee != null ? l.meublee : (l.meuble === 'meuble' ? l.simple : '');
   return `<div class="rem-ligne" data-rem-ligne>
-    <input class="rem-l-label" value="${esc(l.label || '')}" placeholder="Ex : T2 meublé" aria-label="Libellé de la ligne">
-    <fieldset class="rem-l-typos"><legend class="sr-only">Typologies (aucune cochée = toutes)</legend>${TYPOS_REM.map(t => `<label class="rem-typo-chip"><input type="checkbox" value="${t}"${typosLigne(l).includes(t) ? ' checked' : ''}><span>${t === 'T7+' ? 'T7+' : t}</span></label>`).join('')}</fieldset>
+    <input class="rem-l-label" value="${esc(l.label || '')}" placeholder="Ex : Appartement T2" aria-label="Libellé de la ligne">
+    <fieldset class="rem-l-typos"><legend class="sr-only">Typologies (aucune cochée = toutes)</legend>${TYPOS_REM.map(t => `<label class="rem-typo-chip"><input type="checkbox" value="${t}"${typosLigne(l).includes(t) ? ' checked' : ''}><span>${t}</span></label>`).join('')}</fieldset>
     <select class="rem-l-bien" aria-label="Type de bien">${opt('', 'Tous', l.bien || '')}${BIENS_REM.map(b => opt(b, b, l.bien)).join('')}</select>
-    <select class="rem-l-meuble" aria-label="Meublé ou nu">${opt('', 'Tous', l.meuble || '')}${opt('meuble', 'Meublé', l.meuble)}${opt('nu', 'Nu', l.meuble)}</select>
-    <input class="rem-l-simple" inputmode="decimal" value="${esc(l.simple == null ? '' : l.simple)}" placeholder="€" aria-label="Montant entrant ou sortant">
-    <input class="rem-l-double" inputmode="decimal" value="${esc(l.double == null ? '' : l.double)}" placeholder="€" aria-label="Montant sortant + entrant">
+    <span class="rem-l-surface"><input class="rem-l-smin" inputmode="decimal" value="${esc(_valRem(l.surfaceMin))}" placeholder="de" aria-label="Surface minimale (m²)"><input class="rem-l-smax" inputmode="decimal" value="${esc(_valRem(l.surfaceMax))}" placeholder="à" aria-label="Surface maximale (m²)"></span>
+    <input class="rem-l-nue" inputmode="decimal" value="${esc(_valRem(nue))}" placeholder="€" aria-label="Tarif location nue">
+    <input class="rem-l-meublee" inputmode="decimal" value="${esc(_valRem(meublee))}" placeholder="€" aria-label="Tarif location meublée">
     <span class="rem-ligne-actions">
       <button type="button" class="btn btn-sm" title="Monter (priorité plus haute)" aria-label="Monter la ligne" onclick="monterLigneRemuneration(this)">↑</button>
       <button type="button" class="btn btn-sm" title="Supprimer la ligne" aria-label="Supprimer la ligne" style="color:#c0392b;border-color:#c0392b" onclick="this.closest('[data-rem-ligne]').remove()">✕</button>
     </span>
   </div>`;
 }
+// Grille de l'annexe 2 du contrat (définie dans api/_lib/agent-remuneration.js,
+// exposée par js/app-remuneration.js).
+function grilleContrat(){ return (window.Remuneration && window.Remuneration.GRILLE_CONTRAT_2026) || { mode:'typologie', lignes: [] }; }
 function renderLignesRemuneration(lignes){
   const wrap = document.getElementById('rem-typo-lignes');
   if(!wrap) return;
-  const liste = (lignes && lignes.length) ? lignes : LIGNES_REM_DEFAUT;
+  const liste = (lignes && lignes.length) ? lignes : grilleContrat().lignes;
   wrap.innerHTML = liste.map(htmlLigneRemuneration).join('');
+}
+// Pré-remplit tout le formulaire avec la grille de l'annexe 2 du contrat.
+function chargerGrilleContrat(){
+  const g = JSON.parse(JSON.stringify(grilleContrat()));
+  remplirFormulaireRemuneration(g);
+  notify('Grille du contrat 2026 chargée — vérifiez puis enregistrez');
 }
 function ajouterLigneRemuneration(){
   const wrap = document.getElementById('rem-typo-lignes');
@@ -444,15 +456,15 @@ function lireLignesRemuneration(){
     label: r.querySelector('.rem-l-label').value.trim(),
     typos: Array.from(r.querySelectorAll('.rem-l-typos input:checked')).map(c => c.value),
     bien: r.querySelector('.rem-l-bien').value,
-    meuble: r.querySelector('.rem-l-meuble').value,
-    simple: r.querySelector('.rem-l-simple').value.trim(),
-    double: r.querySelector('.rem-l-double').value.trim(),
-  })).filter(l => l.label || l.simple || l.double);
+    surfaceMin: r.querySelector('.rem-l-smin').value.trim(),
+    surfaceMax: r.querySelector('.rem-l-smax').value.trim(),
+    nue: r.querySelector('.rem-l-nue').value.trim(),
+    meublee: r.querySelector('.rem-l-meublee').value.trim(),
+  })).filter(l => l.label || l.nue || l.meublee);
 }
-// Ancien format fixe (beta.4) → lignes.
 function lignesDepuisReference(r){
   if(Array.isArray(r.lignes)) return r.lignes;
-  if(r.parTypo) return TYPOS_REM.map(t => Object.assign({ label: t, typos: [t], bien: '', meuble: '' }, r.parTypo[t] || {}));
+  if(r.parTypo) return TYPOS_REM.map(t => Object.assign({ label: t, typos: [t] }, r.parTypo[t] || {}));
   return null;
 }
 function majFormulaireRemuneration(){
@@ -468,12 +480,26 @@ function lireFormulaireRemuneration(){
   const val = id => ((document.getElementById(id)||{}).value || '').trim();
   const parType = {};
   CHAMPS_REM_TYPE.forEach(k => { parType[k] = val('new-agent-rem-' + k); });
-  return { mode: val('new-agent-rem-mode') || 'forfait', parType, lignes: lireLignesRemuneration(), typoAutre: val('new-agent-rem-typo-autre'), pourcentage: val('new-agent-rem-pct'), unite: val('new-agent-rem-unite') || 'HT', note: val('new-agent-rem-note') };
+  return {
+    mode: val('new-agent-rem-mode') || 'typologie', parType, lignes: lireLignesRemuneration(),
+    typoAutre: val('new-agent-rem-typo-autre'), coefSortantEntrant: val('new-agent-rem-coef'),
+    pourcentage: val('new-agent-rem-pct'), unite: val('new-agent-rem-unite') || 'HT', note: val('new-agent-rem-note'),
+    fraisZone: { primaire: val('new-agent-rem-zone-primaire'), secondaire: val('new-agent-rem-zone-secondaire'), hors: val('new-agent-rem-zone-hors') },
+    deplacementInfructueux: val('new-agent-rem-infructueux'),
+  };
 }
 function remplirFormulaireRemuneration(rem){
-  const r = rem || {};
+  // Agent sans référence : la grille du contrat est proposée d'office (elle
+  // n'est enregistrée qu'au clic sur « Enregistrer »), entièrement modifiable.
+  const r = rem || JSON.parse(JSON.stringify(grilleContrat()));
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v == null ? '' : v; };
-  set('new-agent-rem-mode', ['pourcentage','typologie'].includes(r.mode) ? r.mode : 'forfait');
+  set('new-agent-rem-mode', ['pourcentage','forfait'].includes(r.mode) ? r.mode : 'typologie');
+  set('new-agent-rem-coef', r.coefSortantEntrant);
+  const fz = r.fraisZone || {};
+  set('new-agent-rem-zone-primaire', fz.primaire);
+  set('new-agent-rem-zone-secondaire', fz.secondaire);
+  set('new-agent-rem-zone-hors', fz.hors);
+  set('new-agent-rem-infructueux', r.deplacementInfructueux);
   renderLignesRemuneration(lignesDepuisReference(r));
   set('new-agent-rem-typo-autre', r.typoAutre);
   set('new-agent-rem-unite', r.unite || 'HT');
@@ -488,8 +514,12 @@ function resumeRemunerationAgent(rem){
   const unite = rem.unite === 'net' ? '€ net' : '€ ' + (rem.unite || 'HT');
   if(rem.mode === 'pourcentage') return rem.pourcentage ? 'Rémunération : ' + rem.pourcentage + ' % du montant HT' : 'Rémunération non renseignée';
   if(rem.mode === 'typologie'){
-    const parts = (lignesDepuisReference(rem) || []).filter(l => l.simple !== '' && l.simple != null).map(l => (l.label || typosLigne(l).join(', ') || 'Ligne') + ' ' + l.simple + ' ' + unite);
-    return parts.length ? 'Rémunération par grille : ' + parts.join(' · ') : 'Rémunération non renseignée';
+    const lignes = (lignesDepuisReference(rem) || []).filter(l => [l.nue, l.meublee, l.simple].some(v => v !== '' && v != null));
+    if(!lignes.length) return 'Rémunération non renseignée';
+    const fz = rem.fraisZone || {};
+    const frais = ['primaire','secondaire','hors'].filter(z => fz[z] !== '' && fz[z] != null);
+    return 'Rémunération : grille par bien, ' + lignes.length + ' ligne' + (lignes.length > 1 ? 's' : '')
+      + (frais.length ? ' · déplacement ' + frais.map(z => ({primaire:'zone 1', secondaire:'zone 2', hors:'hors zone'})[z] + ' ' + fz[z] + ' ' + unite).join(', ') : '');
   }
   const lib = { entrant:'entrant', sortant:'sortant', simultane:'sortant+entrant', autre:'autre' };
   const parts = CHAMPS_REM_TYPE.filter(k => (rem.parType || {})[k] !== '' && (rem.parType || {})[k] != null).map(k => lib[k] + ' ' + rem.parType[k] + ' ' + unite);
@@ -512,6 +542,8 @@ function _libMoisRemu(cle){
   const t = new Date(a, m - 1, 1).toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
+// Secteurs de l'agent (zones validées) pour les frais de déplacement.
+function zonesAgent(a){ return { primaire: a.secteurPrimaire, secondaire: a.secteurSecondaire, statut: a.zoneStatut }; }
 function renderRemunerationsAgents(){
   const box = document.getElementById('remu-agents-contenu');
   const sel = document.getElementById('remu-agent-select');
@@ -523,9 +555,11 @@ function renderRemunerationsAgents(){
   const agent = agents.find(a => a.id === choisi);
   const filtre = (document.getElementById('remu-filtre') || {}).value || 'apayer';
   const missions = (DB.missions || []).filter(m => m.expertId === agent.id);
-  const r = window.Remuneration.calculerRemuneration(missions, agent.remuneration, new Date());
+  const r = window.Remuneration.calculerRemuneration(missions, agent.remuneration, new Date(), zonesAgent(agent));
+  const sansGrille = agents.filter(a => !a.remuneration).length;
+  const boutonContrat = sansGrille ? `<button type="button" class="btn btn-sm" style="margin-bottom:14px" onclick="appliquerGrilleContratAgentsSansGrille()"><i class="ti ti-file-text"></i> Appliquer la grille du contrat 2026 aux ${sansGrille} agent${sansGrille > 1 ? 's' : ''} sans grille</button>` : '';
   if(!r.reference.configuree){
-    box.innerHTML = `<div class="info-box warn">${esc(agent.nom)} n'a pas encore de référence financière : renseignez-la dans sa fiche (crayon ci-dessus).</div>`;
+    box.innerHTML = boutonContrat + `<div class="info-box warn">${esc(agent.nom)} n'a pas encore de référence financière : renseignez-la dans sa fiche (crayon ci-dessus) ou appliquez la grille du contrat.</div>`;
     return;
   }
   const u = r.reference.unite;
@@ -546,7 +580,7 @@ function renderRemunerationsAgents(){
         <td>${esc(l.adresse || '—')}</td>
         <td>${esc(l.type || '—')}</td>
         <td>${esc(l.ligneGrille || (l.typologie !== 'Non renseignée' ? l.typologie : '—'))}</td>
-        <td style="text-align:right;font-weight:600">${esc(_eurosRemu(l.montant, u))}</td>
+        <td style="text-align:right;font-weight:600">${esc(_eurosRemu(l.montant, u))}${l.frais ? `<div style="font-size:11.5px;font-weight:400;color:var(--text2)">dont ${esc(_eurosRemu(l.frais, u))} dépl. (${esc((window.Remuneration.ZONES || {})[l.zone] || '')})</div>` : ''}</td>
         <td><label class="remu-paye"${l.montant === null ? ' title="Pas de tarif dans la grille de l’agent"' : ''}>
           <input type="checkbox"${l.payee ? ' checked' : ''}${l.montant === null ? ' disabled' : ''} onchange="marquerRemuPayee('${esc(l.id)}', this.checked)">
           ${l.payee ? 'Payée' + (l.payeeLe ? ' le ' + esc(new Date(l.payeeLe).toLocaleDateString('fr-FR')) : '') : 'À payer'}
@@ -560,7 +594,45 @@ function renderRemunerationsAgents(){
     </div>
     ${r.nonCouvertes ? `<div class="info-box warn" style="margin-bottom:14px">${r.nonCouvertes} mission${r.nonCouvertes > 1 ? 's' : ''} sans tarif dans la grille de ${esc(agent.nom)}.</div>` : ''}
     ${acquises.length ? `<div style="overflow-x:auto"><table class="tbl tbl-remu"><thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>Bien</th><th style="text-align:right">Montant</th><th>Paiement</th></tr></thead><tbody>${lignesHTML}</tbody></table></div>`
-      : `<div class="empty">${filtre === 'apayer' ? 'Rien à payer : tout est à jour.' : 'Aucune mission terminée à afficher.'}</div>`}`;
+      : `<div class="empty">${filtre === 'apayer' ? 'Rien à payer : tout est à jour.' : 'Aucune mission terminée à afficher.'}</div>`}
+    ${blocAnnuleesRemu(agent, missions, u)}`;
+  if(boutonContrat) box.insertAdjacentHTML('afterbegin', boutonContrat);
+}
+// Missions annulées de l'agent : l'agence peut cocher « déplacement
+// infructueux » (l'agent s'est déplacé pour rien) — payé selon sa fiche.
+function blocAnnuleesRemu(agent, missions, u){
+  const annulees = missions.filter(m => String(m.statut || '').toLowerCase().includes('annul'))
+    .sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 20);
+  if(!annulees.length) return '';
+  const tarif = window.Remuneration.normaliserReference(agent.remuneration).deplacementInfructueux;
+  return `<details style="margin-top:18px"><summary style="cursor:pointer;font-weight:600;font-size:13.5px">Missions annulées (${annulees.length}) — déplacement infructueux</summary>
+    <div style="font-size:12.5px;color:var(--text2);margin:8px 0">Cochez si l'agent s'est déplacé pour rien${tarif !== null ? ' : ' + esc(_eurosRemu(tarif, u)) + ' lui sont dus' : ' (tarif à renseigner dans sa fiche)'}.</div>
+    ${annulees.map(m => `<label class="remu-paye" style="display:flex;padding:6px 0">
+      <input type="checkbox"${m.deplacementInfructueux ? ' checked' : ''} onchange="marquerDeplacementInfructueux('${esc(m.id)}', this.checked)">
+      ${esc(m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '—')} · ${esc(m.adresse || '—')} · ${esc(m.type || '')}
+    </label>`).join('')}
+  </details>`;
+}
+function marquerDeplacementInfructueux(missionId, oui){
+  const m = (DB.missions || []).find(x => String(x.id) === String(missionId));
+  if(!m) return;
+  m.deplacementInfructueux = !!oui;
+  if(!oui){ m.remuPayee = false; m.remuPayeeLe = ''; }
+  if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
+  saveToStorage();
+  renderRemunerationsAgents();
+  notify(oui ? 'Déplacement infructueux enregistré' : 'Déplacement infructueux retiré');
+}
+// Applique la grille de l'annexe 2 du contrat aux agents qui n'ont pas
+// encore de référence (jamais à ceux qui en ont une, pour ne rien écraser).
+function appliquerGrilleContratAgentsSansGrille(){
+  const cibles = (DB.agents || []).filter(a => !a.remuneration);
+  if(!cibles.length || !confirm(`Appliquer la grille du contrat 2026 à ${cibles.length} agent${cibles.length > 1 ? 's' : ''} (${cibles.map(a => a.nom).join(', ')}) ? Elle restera modifiable dans chaque fiche.`)) return;
+  cibles.forEach(a => { a.remuneration = JSON.parse(JSON.stringify(grilleContrat())); });
+  saveToStorage();
+  persistAgents();
+  renderAgentsSettings();
+  notify('✅ Grille du contrat appliquée à ' + cibles.length + ' agent' + (cibles.length > 1 ? 's' : ''));
 }
 function _enregistrerPaiementMission(m, payee){
   m.remuPayee = !!payee;
@@ -578,7 +650,7 @@ function marquerRemuPayee(missionId, payee){
 function marquerMoisRemuPaye(agentId, mois){
   const agent = (DB.agents || []).find(a => a.id === agentId);
   if(!agent || typeof window.Remuneration === 'undefined') return;
-  const r = window.Remuneration.calculerRemuneration((DB.missions || []).filter(m => m.expertId === agentId), agent.remuneration, new Date());
+  const r = window.Remuneration.calculerRemuneration((DB.missions || []).filter(m => m.expertId === agentId), agent.remuneration, new Date(), zonesAgent(agent));
   const ids = r.lignes.filter(l => l.etat === 'acquise' && !l.payee && l.montant !== null && String(l.date).slice(0, 7) === mois).map(l => String(l.id));
   if(!ids.length || !confirm(`Marquer ${ids.length} mission${ids.length > 1 ? 's' : ''} de ${_libMoisRemu(mois).toLowerCase()} comme payée${ids.length > 1 ? 's' : ''} ?`)) return;
   (DB.missions || []).filter(m => ids.includes(String(m.id))).forEach(m => _enregistrerPaiementMission(m, true));

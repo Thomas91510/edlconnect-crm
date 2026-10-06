@@ -110,7 +110,9 @@ export default async function handler(req) {
     kpi: calculerKpiAgent(missions),
     // Part de l'agent selon la référence financière de sa fiche (jamais le
     // montant facturé au client) — onglet « Rémunération » de son espace.
-    remuneration: calculerRemuneration(missions, agent.remuneration),
+    remuneration: calculerRemuneration(missions, agent.remuneration, new Date(), {
+      primaire: agent.secteurPrimaire, secondaire: agent.secteurSecondaire, statut: agent.zoneStatut,
+    }),
     // Couleur de marque choisie par l'agence (Paramètres) — recolore
     // l'espace agent pour qu'il reste cohérent avec l'identité de l'agence.
     couleurPrimaire: data.couleurPrimaire || '',

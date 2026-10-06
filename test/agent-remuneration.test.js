@@ -3,7 +3,7 @@
 // /api/agent-missions sans jamais révéler le montant facturé au client.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculerRemuneration, normaliserReference, montantMission } from '../api/_lib/agent-remuneration.js';
+import { calculerRemuneration, normaliserReference, montantMission, zoneMission, GRILLE_CONTRAT_2026 } from '../api/_lib/agent-remuneration.js';
 import handler from '../api/agent-missions.js';
 
 const MAINTENANT = new Date('2026-10-15T12:00:00Z');
@@ -75,81 +75,6 @@ test('/api/agent-missions : renvoie la rémunération sans le montant facturé a
   }
 });
 
-test('typologie : tarif selon T1…T7+ (studio = T1), colonne sortant + entrant, pré-état à part', () => {
-  const ref = normaliserReference({
-    mode: 'typologie',
-    parTypo: { T1: { simple: '35', double: '60' }, T2: { simple: '40', double: '70' }, T3: { simple: '45', double: '80' }, 'T7+': { simple: '90' } },
-    typoAutre: '30',
-  });
-  assert.equal(ref.configuree, true);
-  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'Studio' }, ref), 35);
-  assert.equal(montantMission({ type: 'EDL sortant', bienTypo: 'F3' }, ref), 45);
-  assert.equal(montantMission({ type: 'EDL Sortant / Entrant', bienTypo: 'T2' }, ref), 70);
-  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T9' }, ref), 90, 'T8, T9… rattachés au T7+');
-  assert.equal(montantMission({ type: 'Pré-état des lieux', bienTypo: 'T4' }, ref), 30);
-  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T4' }, ref), null, 'T4 sans tarif');
-  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: '' }, ref), null, 'typologie absente de la mission');
-});
-
-test('typologie : totaux et typologie renvoyée sur chaque ligne', () => {
-  const r = calculerRemuneration([
-    { id: 'a', type: 'EDL entrant', bienTypo: 'T2', statut: 'terminée', date: '2026-10-03T09:00:00' },
-    { id: 'b', type: 'EDL Sortant / Entrant', bienTypo: 'T3', statut: 'terminée', date: '2026-10-04T09:00:00' },
-    { id: 'c', type: 'EDL sortant', bienTypo: '', statut: 'terminée', date: '2026-10-05T09:00:00' },
-  ], { mode: 'typologie', parTypo: { T2: { simple: 40 }, T3: { double: 80 } } }, MAINTENANT);
-  assert.equal(r.moisCourant.acquis, 120);
-  assert.equal(r.nonCouvertes, 1);
-  assert.equal(r.lignes.find(l => l.id === 'a').typologie, 'T2');
-  assert.equal(r.reference.parType, null, 'en mode typologie, la grille par type n’est pas renvoyée');
-});
-
-test('grille libre : lignes personnalisées, critères combinés, première ligne qui correspond', () => {
-  const ref = normaliserReference({
-    mode: 'typologie',
-    lignes: [
-      { label: 'Maison', bien: 'Maison', simple: '90', double: '160' },
-      { label: 'T2 meublé', typo: 'T2', meuble: 'meuble', simple: '50' },
-      { label: 'T2', typo: 'T2', simple: '40', double: '70' },
-      { label: 'Parking', bien: 'Parking', simple: '15' },
-      { label: '', typo: '', simple: '' }, // ligne vide : ignorée
-    ],
-  });
-  assert.equal(ref.lignes.length, 4);
-  assert.equal(montantMission({ type: 'EDL entrant', bienType: 'Maison', bienTypo: 'T2' }, ref), 90, 'la ligne Maison passe avant T2');
-  assert.equal(montantMission({ type: 'EDL Sortant / Entrant', bienType: 'Maison', bienTypo: 'T5' }, ref), 160);
-  assert.equal(montantMission({ type: 'EDL entrant', bienType: 'Appartement', bienTypo: 'T2', bienMeuble: 'Meublé' }, ref), 50);
-  assert.equal(montantMission({ type: 'EDL entrant', bienType: 'Appartement', bienTypo: 'T2', bienMeuble: 'Nu' }, ref), 40);
-  assert.equal(montantMission({ type: 'EDL Sortant / Entrant', bienTypo: 'T2', bienMeuble: 'Meublé' }, ref), null, 'T2 meublé sans colonne sortant + entrant');
-  assert.equal(montantMission({ type: 'EDL sortant', bienType: 'Parking' }, ref), 15);
-  assert.equal(montantMission({ type: 'EDL sortant', bienTypo: 'T4' }, ref), null, 'aucune ligne pour un T4');
-  assert.equal(ref.lignes[1].criteres, 'T2 · meublé');
-});
-
-test('grille libre : le libellé de la ligne appliquée est renvoyé pour chaque mission', () => {
-  const r = calculerRemuneration(
-    [{ id: 'x', type: 'EDL entrant', bienType: 'Maison', statut: 'terminée', date: '2026-10-03T09:00:00' }],
-    { mode: 'typologie', lignes: [{ label: 'Maison', bien: 'Maison', simple: 90 }] }, MAINTENANT);
-  assert.equal(r.lignes[0].ligneGrille, 'Maison');
-  assert.equal(r.lignes[0].montant, 90);
-});
-
-test('grille libre : plusieurs typologies cochées sur une même ligne', () => {
-  const ref = normaliserReference({ mode: 'typologie', lignes: [
-    { label: 'T4 et T5', typos: ['T4', 'T5'], simple: '55', double: '95' },
-    { label: 'Grands logements', typos: ['T6', 'T7+'], simple: '80' },
-    { label: 'Ancien format', typo: 'T2', simple: '40' },
-  ] });
-  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T4' }, ref), 55);
-  assert.equal(montantMission({ type: 'EDL sortant', bienTypo: 'T5' }, ref), 55);
-  assert.equal(montantMission({ type: 'EDL Sortant / Entrant', bienTypo: 'F5' }, ref), 95);
-  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T8' }, ref), 80);
-  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T2' }, ref), 40, 'ancien champ « typo » unique toujours lu');
-  assert.equal(montantMission({ type: 'EDL entrant', bienTypo: 'T3' }, ref), null);
-  assert.equal(ref.lignes[0].criteres, 'T4, T5');
-  assert.equal(ref.lignes[1].criteres, 'T6, T7 et plus');
-  assert.deepEqual(normaliserReference({ mode: 'typologie', lignes: [{ label: 'x', typos: ['T9', 'T2', 'bidon'], simple: 1 }] }).lignes[0].typos, ['T2'], 'valeurs inconnues ignorées');
-});
-
 test('suivi des paiements : reste à payer, payé ce mois, totaux payés par mois', () => {
   const r = calculerRemuneration([
     { id: 'p1', type: 'EDL entrant', statut: 'terminée', date: '2026-09-10T09:00:00', remuPayee: true, remuPayeeLe: '2026-10-10T08:00:00' },
@@ -164,4 +89,76 @@ test('suivi des paiements : reste à payer, payé ce mois, totaux payés par moi
   const p4 = r.lignes.find(l => l.id === 'p4');
   assert.equal(p4.payee, false, 'une mission non terminée n’est jamais « payée »');
   assert.equal(r.lignes.find(l => l.id === 'p1').payeeLe, '2026-10-10T08:00:00');
+});
+
+// ─── Grille par bien (modèle de l'annexe 2 du contrat) ───────────────
+const CONTRAT = normaliserReference(GRILLE_CONTRAT_2026);
+const m = (o) => ({ type: 'EDL entrant', ...o });
+
+test('grille du contrat 2026 : appartements, maisons, nu / meublé', () => {
+  assert.equal(montantMission(m({ bienType: 'Appartement', bienTypo: 'Studio' }), CONTRAT), 42);
+  assert.equal(montantMission(m({ bienType: 'Appartement', bienTypo: 'T2' }), CONTRAT), 47);
+  assert.equal(montantMission(m({ bienType: 'Appartement', bienTypo: 'T2', bienMeuble: 'Meublé' }), CONTRAT), 57);
+  assert.equal(montantMission(m({ bienType: 'Appartement', bienTypo: 'T9' }), CONTRAT), 90, 'T7 et +');
+  assert.equal(montantMission(m({ bienType: 'Maison', bienTypo: 'T4' }), CONTRAT), 75);
+  assert.equal(montantMission(m({ bienType: 'Maison', bienTypo: 'T4', bienMeuble: 'Meublé' }), CONTRAT), 95);
+  assert.equal(montantMission(m({ bienType: '', bienTypo: 'T3' }), CONTRAT), 53, 'type non renseigné = appartement');
+  assert.equal(montantMission(m({ bienType: 'Maison', bienTypo: 'T1' }), CONTRAT), null, 'pas de maison T1 au contrat');
+});
+
+test('grille du contrat 2026 : garage et locaux commerciaux selon la surface', () => {
+  assert.equal(montantMission(m({ bienType: 'Parking' }), CONTRAT), 20);
+  assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '35' }), CONTRAT), 80);
+  assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '50' }), CONTRAT), 160);
+  assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '150' }), CONTRAT), 180);
+  assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '250' }), CONTRAT), null, 'au-delà de la grille');
+  assert.equal(montantMission(m({ bienType: 'Local commercial' }), CONTRAT), null, 'surface inconnue');
+});
+
+test('sortant + entrant = deux interventions (coefficient modifiable)', () => {
+  assert.equal(montantMission(m({ type: 'EDL Sortant / Entrant', bienTypo: 'T2' }), CONTRAT), 94);
+  const ref = normaliserReference({ ...GRILLE_CONTRAT_2026, coefSortantEntrant: '1,5' });
+  assert.equal(montantMission(m({ type: 'EDL Sortant / Entrant', bienTypo: 'T2' }), ref), 70.5);
+});
+
+test('tarif meublé vide : le tarif location nue s\u2019applique', () => {
+  const ref = normaliserReference({ mode: 'typologie', lignes: [{ label: 'Tout', nue: 40 }] });
+  assert.equal(montantMission(m({ bienMeuble: 'Meublé' }), ref), 40);
+});
+
+test('anciens formats bêta (simple / typo / meuble) toujours lus', () => {
+  const ref = normaliserReference({ mode: 'typologie', lignes: [
+    { label: 'T2 meublé', typo: 'T2', meuble: 'meuble', simple: '50' },
+    { label: 'T2', typos: ['T2'], simple: '40' },
+  ] });
+  assert.equal(ref.lignes[0].meublee, 50);
+  assert.equal(ref.lignes[1].nue, 40);
+});
+
+test('frais de déplacement par zone (secteurs validés uniquement)', () => {
+  const ref = { ...GRILLE_CONTRAT_2026, fraisZone: { primaire: 0, secondaire: 10, hors: 25 } };
+  const zones = { primaire: ['94300'], secondaire: ['94160'], statut: 'valide' };
+  const missions = [
+    { id: 'a', type: 'EDL entrant', bienTypo: 'T2', adresse: '1 rue A, 94300 Vincennes', statut: 'terminée', date: '2026-10-02T09:00:00' },
+    { id: 'b', type: 'EDL entrant', bienTypo: 'T2', adresse: '1 rue B, 94160 Saint-Mandé', statut: 'terminée', date: '2026-10-03T09:00:00' },
+    { id: 'c', type: 'EDL entrant', bienTypo: 'T2', adresse: '1 rue C, 75011 Paris', statut: 'terminée', date: '2026-10-04T09:00:00' },
+  ];
+  const r = calculerRemuneration(missions, ref, MAINTENANT, zones);
+  const l = id => r.lignes.find(x => x.id === id);
+  assert.deepEqual([l('a').zone, l('a').frais, l('a').montant], ['primaire', 0, 47]);
+  assert.deepEqual([l('b').zone, l('b').frais, l('b').montant], ['secondaire', 10, 57]);
+  assert.deepEqual([l('c').zone, l('c').frais, l('c').montant], ['hors', 25, 72]);
+  assert.equal(r.moisCourant.acquis, 176);
+  assert.equal(zoneMission(missions[0], { ...zones, statut: 'attente' }), '', 'zones non validées : pas de frais');
+});
+
+test('déplacement infructueux : mission annulée cochée comme telle = 50 €, acquise', () => {
+  const r = calculerRemuneration([
+    { id: 'x', type: 'EDL sortant', bienTypo: 'T3', statut: 'annulée', deplacementInfructueux: true, date: '2026-10-05T09:00:00', adresse: '1 rue, 75011 Paris' },
+    { id: 'y', type: 'EDL sortant', bienTypo: 'T3', statut: 'annulée', date: '2026-10-06T09:00:00' },
+  ], GRILLE_CONTRAT_2026, MAINTENANT, { primaire: ['94300'], statut: 'valide' });
+  assert.equal(r.lignes.length, 1, 'une annulation simple ne compte pas');
+  assert.equal(r.lignes[0].montant, 50, 'pas de frais de zone en plus');
+  assert.equal(r.lignes[0].ligneGrille, 'Déplacement infructueux');
+  assert.equal(r.paiements.resteAPayer, 50);
 });
