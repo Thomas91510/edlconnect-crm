@@ -12,8 +12,9 @@
 //                   critères (typologies cochées, type de bien, surface ;
 //                   vide = indifférent), avec un tarif « location nue » et
 //                   un tarif « location meublée ». La PREMIÈRE ligne qui
-//                   correspond s'applique. Un sortant + entrant compte pour
-//                   deux interventions (coefficient modifiable) ; tarif à
+//                   correspond s'applique. Un sortant + entrant est payé
+//                   comme UNE seule prestation de la typologie
+//                   (coefficient 1, modifiable) ; tarif à
 //                   part pour les autres prestations (pré-état…) ;
 //   * pourcentage : un pourcentage du montant HT facturé pour la mission.
 //
@@ -141,7 +142,7 @@ export function normaliserReference(ref) {
     parType: mode === 'forfait' ? parType : null,
     lignes: mode === 'typologie' ? lignes.map((l) => ({ ...l, criteres: criteresLigne(l) })) : null,
     typoAutre: mode === 'typologie' ? typoAutre : null,
-    coefSortantEntrant: mode === 'typologie' ? (coef && coef > 0 ? coef : 2) : null,
+    coefSortantEntrant: mode === 'typologie' ? (coef && coef > 0 ? coef : 1) : null,
     pourcentage: mode === 'pourcentage' ? pourcentage : null,
     fraisZone,
     deplacementInfructueux: nombre(r.deplacementInfructueux),
@@ -233,7 +234,8 @@ export function calculerRemuneration(missions, refBrute, maintenant = new Date()
     const payeeLe = payee ? String(m.remuPayeeLe || '') : '';
     lignes.push({
       id: m.id, date: m.date || '', adresse: m.adresse || '', type: m.type || '',
-      typologie: statTypologie(m.bienTypo),
+      typologie: statTypologie(m.bienTypo), bien: m.bienType || '',
+      locataire: m.locataireNom || '',
       ligneGrille: infructueux ? 'Déplacement infructueux' : (ligneGrille ? (ligneGrille.label || ligneGrille.criteres) : ''),
       infructueux, zone, prestation, frais, montant, etat, payee, payeeLe,
     });
@@ -272,7 +274,7 @@ export function calculerRemuneration(missions, refBrute, maintenant = new Date()
 export const GRILLE_CONTRAT_2026 = {
   mode: 'typologie',
   unite: 'HT',
-  coefSortantEntrant: 2,
+  coefSortantEntrant: 1,
   typoAutre: '',
   deplacementInfructueux: 50,
   fraisZone: { primaire: '', secondaire: '', hors: '' },

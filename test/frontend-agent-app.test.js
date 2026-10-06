@@ -677,7 +677,7 @@ test('renderRemuneration : grille par bien (nue / meublée), frais de zone, dép
   assert.ok(html.includes('Location meublée'));
   assert.ok(html.includes('95 € HT'));
   assert.ok(html.includes('Maison · T4'), 'critères affichés sous le libellé');
-  assert.ok(html.includes('2 interventions'), 'sortant + entrant');
+  assert.ok(html.includes('2 prestations'), 'sortant + entrant');
   assert.ok(html.includes('Zone secondaire') && html.includes('25 € HT'), 'frais de déplacement par zone');
   assert.ok(html.includes('Déplacement infructueux') && html.includes('50 € HT'));
   assert.ok(html.includes('dont 10 € HT dépl.'), 'détail : part déplacement');
@@ -702,4 +702,91 @@ test('renderRemuneration : suivi des paiements (reste à percevoir, payée le…
   assert.ok(html.includes('Payée le 10/10/2026'));
   assert.ok(html.includes('À percevoir'));
   assert.ok(html.includes('45 € HT payé'), 'part payée du mois');
+});
+
+// ─── Facturation (l'agent génère, édite et envoie sa facture) ───
+function avecFacturation(w, { infos = {}, factures = [], lignes } = {}) {
+  const div = w.document.createElement('div');
+  div.id = 'facturation-contenu';
+  w.document.body.appendChild(div);
+  w.__remu = { reference: { configuree: true, unite: 'HT' }, parMois: [{ mois: '2026-09', nb: 2, total: 132 }, { mois: '2026-10', nb: 1, total: 47 }],
+    lignes: lignes || [
+      { id: 'a', date: '2026-09-12T09:00:00', adresse: '3 rue <b>B</b>', type: 'EDL entrant', bien: 'Appartement', typologie: 'T2', ligneGrille: 'Appartement T2', locataire: 'M. <i>Martin</i>', etat: 'acquise', montant: 57, frais: 10 },
+      { id: 'b', date: '2026-09-02T09:00:00', adresse: '1 rue A', type: 'EDL Sortant / Entrant', bien: 'Maison', typologie: 'T4', ligneGrille: 'Maison T4', locataire: 'Mme Durand', etat: 'acquise', montant: 75, frais: null },
+      { id: 'c', date: '2026-09-20T09:00:00', adresse: 'Prévue', type: 'EDL entrant', etat: 'prevue', montant: 47 },
+      { id: 'd', date: '2026-10-01T09:00:00', adresse: 'Octobre', type: 'EDL entrant', etat: 'acquise', montant: 47 },
+    ] };
+  w.__infos = infos; w.__factures = factures;
+  w.eval("_remuneration = window.__remu; _infosLegales = window.__infos; _factures = window.__factures; _destinataireFacture = { nom: 'EDL IDF SAS', adresse: '18 Grande Rue, 91510 Lardy', rcs: 'RCS Evry 943 093 781' };");
+  return div;
+}
+const INFOS_OK = { raisonSociale: 'Jean Dupont EI', statut: 'Micro-entrepreneur', adresse: '1 rue A', siret: '123 456 789 00012', regimeTva: 'franchise', iban: 'FR76 1234' };
+
+test('facturation : infos juridiques incomplètes signalées, envoi bloqué', () => {
+  const w = chargerAgentApp();
+  const box = avecFacturation(w, { infos: { raisonSociale: 'X' } });
+  w.renderFacturation();
+  assert.ok(box.textContent.includes('adresse, SIRET'));
+  w.preparerFacture('2026-09');
+  assert.ok(box.querySelector('#btn-envoyer-facture').disabled);
+});
+
+test('facturation : pré-remplie avec les missions acquises du mois (date, adresse, typologie, locataire), échappées', () => {
+  const w = chargerAgentApp();
+  const box = avecFacturation(w, { infos: INFOS_OK, factures: [{ numero: 'F2026-004', mois: '2026-08', totalHT: 100, nbLignes: 2 }] });
+  w.renderFacturation();
+  assert.equal(box.querySelector('#fac-mois').value, '2026-10', 'mois le plus récent proposé');
+  w.preparerFacture('2026-09');
+  const lignes = [...box.querySelectorAll('.fac-table tbody tr')];
+  assert.equal(lignes.length, 2, 'ni la mission prévue ni celle d’octobre');
+  const valeurs = lignes.map(tr => [...tr.querySelectorAll('input')].map(i => i.value));
+  assert.deepEqual(valeurs[0], ['2026-09-02', '1 rue A', 'Maison T4', 'EDL Sortant / Entrant', 'Mme Durand', '75']);
+  assert.equal(valeurs[1][4], 'M. <i>Martin</i>');
+  assert.equal(valeurs[1][3], 'EDL entrant + dépl.');
+  assert.ok(!box.querySelector('.fac-table i:not(.ti), .fac-table b'), 'adresse et nom du locataire échappés');
+  assert.equal(box.querySelector('#fac-numero').value, 'F' + new Date().getFullYear() + '-' + (new Date().getFullYear() === 2026 ? '005' : '001'));
+  assert.ok(box.querySelector('#fac-destinataire').value.startsWith('EDL IDF SAS\n18 Grande Rue'));
+  assert.ok(box.textContent.includes('TVA non applicable, art. 293 B du CGI'));
+  assert.ok(box.querySelector('#fac-totaux').textContent.includes('132,00 €'));
+  assert.ok(box.textContent.includes('F2026-004'), 'historique des factures envoyées');
+});
+
+test('facturation : lignes modifiables, ajout / suppression, totaux et TVA recalculés', () => {
+  const w = chargerAgentApp();
+  const box = avecFacturation(w, { infos: { ...INFOS_OK, regimeTva: 'assujetti', tauxTva: 20 } });
+  w.preparerFacture('2026-09');
+  w.majLigneFacture(0, 'montant', '80,5');
+  assert.ok(box.querySelector('#fac-totaux').textContent.includes('137,50 €'));
+  w.ajouterLigneFacture();
+  w.majLigneFacture(2, 'montant', '-150');
+  w.majLigneFacture(2, 'prestation', 'Formation (art. 9)');
+  const t = box.querySelector('#fac-totaux').textContent;
+  assert.ok(t.includes('-12,50 €') && t.includes('TVA 20 %') && t.includes('-15,00 €'), t);
+  w.supprimerLigneFacture(2);
+  assert.equal(box.querySelectorAll('.fac-table tbody tr').length, 2);
+  assert.ok(!box.textContent.includes('293 B'), 'pas de mention de franchise si assujetti');
+});
+
+test('facturation : numéro suivant de l’année, quel que soit l’ordre', () => {
+  const w = chargerAgentApp();
+  assert.equal(w.prochainNumeroFacture([], 2026), 'F2026-001');
+  assert.equal(w.prochainNumeroFacture([{ numero: 'F2026-009' }, { numero: 'F2026-012' }, { numero: 'F2025-040' }, { numero: 'perso' }], 2026), 'F2026-013');
+});
+
+test('facturation : l’envoi transmet la facture éditée et le PDF, puis met à jour l’historique', async () => {
+  const w = chargerAgentApp();
+  const box = avecFacturation(w, { infos: INFOS_OK });
+  w.preparerFacture('2026-09');
+  w.majChampFacture('numero', 'F2026-100');
+  let corps = null;
+  w.jspdf = { jsPDF: function () { return { output: () => 'data:application/pdf;base64,JVBERi0x', save() {} }; } };
+  w.eval('genererPdfFacture = async () => new window.jspdf.jsPDF();');
+  w.fetch = async (url, opts) => { corps = { url, body: JSON.parse(opts.body) }; return { ok: true, json: async () => ({ destinataire: 'contact@edl-idf.com', factures: [{ numero: 'F2026-100', mois: '2026-09', totalHT: 132, nbLignes: 2 }] }) }; };
+  await w.envoyerFacture();
+  assert.equal(corps.url, '/api/agent-facture-envoyer');
+  assert.equal(corps.body.pdfBase64, 'JVBERi0x');
+  assert.equal(corps.body.facture.numero, 'F2026-100');
+  assert.equal(corps.body.facture.lignes[0].locataire, 'Mme Durand');
+  assert.ok(!box.querySelector('#facture-editeur'), 'éditeur refermé après envoi');
+  assert.ok(box.textContent.includes('F2026-100'));
 });

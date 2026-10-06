@@ -559,7 +559,7 @@ function renderRemunerationsAgents(){
   const sansGrille = agents.filter(a => !a.remuneration).length;
   const boutonContrat = sansGrille ? `<button type="button" class="btn btn-sm" style="margin-bottom:14px" onclick="appliquerGrilleContratAgentsSansGrille()"><i class="ti ti-file-text"></i> Appliquer la grille du contrat 2026 aux ${sansGrille} agent${sansGrille > 1 ? 's' : ''} sans grille</button>` : '';
   if(!r.reference.configuree){
-    box.innerHTML = boutonContrat + `<div class="info-box warn">${esc(agent.nom)} n'a pas encore de référence financière : renseignez-la dans sa fiche (crayon ci-dessus) ou appliquez la grille du contrat.</div>`;
+    box.innerHTML = boutonContrat + `<div class="info-box warn">${esc(agent.nom)} n'a pas encore de référence financière : renseignez-la dans sa fiche (crayon ci-dessus) ou appliquez la grille du contrat.</div>` + blocFacturesAgent(agent);
     return;
   }
   const u = r.reference.unite;
@@ -595,8 +595,43 @@ function renderRemunerationsAgents(){
     ${r.nonCouvertes ? `<div class="info-box warn" style="margin-bottom:14px">${r.nonCouvertes} mission${r.nonCouvertes > 1 ? 's' : ''} sans tarif dans la grille de ${esc(agent.nom)}.</div>` : ''}
     ${acquises.length ? `<div style="overflow-x:auto"><table class="tbl tbl-remu"><thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>Bien</th><th style="text-align:right">Montant</th><th>Paiement</th></tr></thead><tbody>${lignesHTML}</tbody></table></div>`
       : `<div class="empty">${filtre === 'apayer' ? 'Rien à payer : tout est à jour.' : 'Aucune mission terminée à afficher.'}</div>`}
-    ${blocAnnuleesRemu(agent, missions, u)}`;
+    ${blocAnnuleesRemu(agent, missions, u)}
+    ${blocFacturesAgent(agent)}`;
   if(boutonContrat) box.insertAdjacentHTML('afterbegin', boutonContrat);
+}
+// Factures envoyées par l'agent depuis son espace (onglet « Facturation »,
+// api/agent-facture-envoyer.js) et ses informations juridiques — lecture
+// seule ici : c'est l'agent qui les saisit et qui émet la facture.
+function blocFacturesAgent(agent){
+  const factures = Array.isArray(agent.factures) ? agent.factures : [];
+  const i = agent.infosLegales || {};
+  const juridique = [i.raisonSociale, i.statut, i.siret ? 'SIRET ' + i.siret : '', i.rcs, i.tvaIntra ? 'TVA ' + i.tvaIntra : '', i.regimeTva === 'franchise' ? 'TVA non applicable (art. 293 B)' : (i.regimeTva === 'assujetti' ? 'TVA ' + (i.tauxTva || 20) + ' %' : '')].filter(Boolean);
+  return `<div style="margin-top:22px">
+    <div style="font-weight:600;font-size:14px;margin-bottom:6px"><i class="ti ti-file-invoice"></i> Factures de ${esc(agent.nom)}</div>
+    <div style="font-size:12.5px;color:var(--text2);margin-bottom:10px">${juridique.length ? esc(juridique.join(' · ')) : 'Informations juridiques non renseignées par l’agent (il les complète dans son espace, « Mon compte »).'}</div>
+    ${factures.length ? `<div style="overflow-x:auto"><table class="tbl tbl-remu"><thead><tr><th>N°</th><th>Mois</th><th>Missions</th><th style="text-align:right">HT</th><th style="text-align:right">TTC</th><th>Reçue le</th><th></th></tr></thead><tbody>${factures.map(f => `<tr>
+      <td style="font-weight:600">${esc(f.numero)}</td>
+      <td>${esc(f.mois ? _libMoisRemu(f.mois) : '—')}</td>
+      <td>${esc(f.nbLignes || 0)}</td>
+      <td style="text-align:right">${esc(_eurosRemu(f.totalHT, 'HT'))}</td>
+      <td style="text-align:right;font-weight:600">${esc(_eurosRemu(f.totalTTC, 'HT').replace(' HT', ''))}</td>
+      <td>${esc(f.envoyeeLe ? new Date(f.envoyeeLe).toLocaleDateString('fr-FR') : '—')}</td>
+      <td>${f.chemin ? `<button type="button" class="btn btn-sm" onclick="telechargerFactureAgent('${esc(agent.id)}','${esc(f.numero)}')"><i class="ti ti-download"></i> PDF</button>` : ''}</td>
+    </tr>`).join('')}</tbody></table></div>` : '<div class="empty" style="padding:12px 0">Aucune facture reçue pour l’instant.</div>'}
+  </div>`;
+}
+async function telechargerFactureAgent(agentId, numero){
+  try{
+    const token = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const resp = await fetch('/api/agent-facture-download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ agentId, numero }),
+    });
+    const data = await resp.json();
+    if(!resp.ok){ notify(data.error || 'Téléchargement impossible', 'error'); return; }
+    window.open(data.url, '_blank', 'noopener');
+  }catch(e){ notify('Erreur réseau', 'error'); }
 }
 // Missions annulées de l'agent : l'agence peut cocher « déplacement
 // infructueux » (l'agent s'est déplacé pour rien) — payé selon sa fiche.
@@ -772,6 +807,11 @@ function loadSettingsForm(){
   _set('set-name',CFG.userName);
   _set('set-email',CFG.userEmail);
   _set('set-company',CFG.companyName);
+  _set('set-legal-raison',CFG.legalRaisonSociale);
+  _set('set-legal-adresse',CFG.legalAdresse);
+  _set('set-legal-rcs',CFG.legalRcs);
+  _set('set-legal-siret',CFG.legalSiret);
+  _set('set-legal-tva',CFG.legalTvaIntra);
   _set('set-exp-nom',CFG.expediteurNom);
   _set('set-exp-email',CFG.expediteurEmail);
   _set('set-exp-tel',CFG.expediteurTel);
@@ -797,6 +837,11 @@ function saveSettings(){
   CFG.userName=_get('set-name');
   CFG.userEmail=_get('set-email');
   CFG.companyName=_get('set-company')||CFG.companyName;
+  CFG.legalRaisonSociale=_get('set-legal-raison');
+  CFG.legalAdresse=_get('set-legal-adresse');
+  CFG.legalRcs=_get('set-legal-rcs');
+  CFG.legalSiret=_get('set-legal-siret');
+  CFG.legalTvaIntra=_get('set-legal-tva');
   CFG.expediteurNom=_get('set-exp-nom');
   CFG.expediteurEmail=_get('set-exp-email');
   CFG.expediteurTel=_get('set-exp-tel');
@@ -817,6 +862,11 @@ function saveSettings(){
    // Nom de societe : champ "Societe" (set-company), pas le nom personnel
     // (set-name). Cette valeur sert de nom d'expediteur cote serveur.
     companyName:CFG.companyName,
+    legalRaisonSociale:CFG.legalRaisonSociale||'',
+    legalAdresse:CFG.legalAdresse||'',
+    legalRcs:CFG.legalRcs||'',
+    legalSiret:CFG.legalSiret||'',
+    legalTvaIntra:CFG.legalTvaIntra||'',
     userName:CFG.userName||'',
     userEmail:CFG.userEmail||'',
     expediteurNom:CFG.expediteurNom||'',

@@ -1644,7 +1644,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
             <div id="rem-typo-lignes"></div>
             <button type="button" class="btn btn-sm" style="margin-top:6px" onclick="ajouterLigneRemuneration()"><i class="ti ti-plus"></i> Ajouter une ligne</button>
             <div class="form-grid" style="margin-top:4px">
-              <div><label for="new-agent-rem-coef">Sortant + entrant = combien d'interventions ?</label><input id="new-agent-rem-coef" inputmode="decimal" placeholder="2" style="max-width:120px"></div>
+              <div><label for="new-agent-rem-coef">Sortant + entrant = combien de prestations ? (1 = une seule, selon la typologie)</label><input id="new-agent-rem-coef" inputmode="decimal" placeholder="1" style="max-width:120px"></div>
               <div><label for="new-agent-rem-typo-autre">Autre / pré-état des lieux (€)</label><input id="new-agent-rem-typo-autre" inputmode="decimal" placeholder="Ex : 30" style="max-width:200px"></div>
             </div>
             <div style="font-size:12px;color:var(--text2);margin-top:8px">Lignes libres : libellé au choix, une ou plusieurs typologies cochées, type de bien et surface (pour les locaux). Pour chaque mission, la <strong>première ligne</strong> dont les critères correspondent s'applique — placez les plus précises en haut (↑). Bien meublé : tarif « meublée », à défaut « nue ». Type de bien non renseigné sur la mission = appartement.</div>
@@ -1688,6 +1688,14 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <label>Nom</label><input id="set-name" placeholder="Votre nom">
         <label>Email</label><input id="set-email" placeholder="contact@votre-cabinet.fr">
         <label>Société</label><input id="set-company" placeholder="Nom de votre société">
+        <div style="font-size:12px;color:var(--muted);margin:14px 0 6px;line-height:1.5">
+          Identité légale — reprise comme destinataire sur les factures que vos agents génèrent dans leur espace.
+        </div>
+        <label>Raison sociale</label><input id="set-legal-raison" placeholder="EDL IDF SAS">
+        <label>Adresse du siège</label><input id="set-legal-adresse" placeholder="18 Grande Rue, 91510 Lardy">
+        <label>RCS</label><input id="set-legal-rcs" placeholder="RCS Evry 943 093 781">
+        <label>SIRET</label><input id="set-legal-siret" placeholder="943 093 781 00010">
+        <label>N° TVA intracommunautaire</label><input id="set-legal-tva" placeholder="FR00943093781">
       </div>
       <div class="settings-section" data-rubrique="identite">
         <div class="settings-title"><i class="ti ti-mail-forward" style="font-size:18px"></i>Identité de vos emails</div>

@@ -115,8 +115,9 @@ test('grille du contrat 2026 : garage et locaux commerciaux selon la surface', (
   assert.equal(montantMission(m({ bienType: 'Local commercial' }), CONTRAT), null, 'surface inconnue');
 });
 
-test('sortant + entrant = deux interventions (coefficient modifiable)', () => {
-  assert.equal(montantMission(m({ type: 'EDL Sortant / Entrant', bienTypo: 'T2' }), CONTRAT), 94);
+test('sortant + entrant = une seule prestation selon la typologie (coefficient modifiable)', () => {
+  assert.equal(montantMission(m({ type: 'EDL Sortant / Entrant', bienTypo: 'T2' }), CONTRAT), 47);
+  assert.equal(montantMission(m({ type: 'EDL Sortant / Entrant', bienType: 'Maison', bienTypo: 'T4', bienMeuble: 'Meublé' }), CONTRAT), 95);
   const ref = normaliserReference({ ...GRILLE_CONTRAT_2026, coefSortantEntrant: '1,5' });
   assert.equal(montantMission(m({ type: 'EDL Sortant / Entrant', bienTypo: 'T2' }), ref), 70.5);
 });

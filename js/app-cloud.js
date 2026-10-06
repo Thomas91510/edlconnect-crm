@@ -78,6 +78,12 @@ async function loadSettingsFromSupabase(){
     if(s.expediteurPartenaire){localStorage.setItem('edl_exp_partenaire',s.expediteurPartenaire);}
     if(s.avisGoogleLien){localStorage.setItem('edl_avis_google_lien',s.avisGoogleLien);}
     if(s.couleurPrimaire){localStorage.setItem('edl_couleur_primaire',s.couleurPrimaire);}
+    // Identité légale (destinataire des factures des agents)
+    if(typeof s.legalRaisonSociale==='string'){localStorage.setItem('edl_legal_raison',s.legalRaisonSociale);}
+    if(typeof s.legalAdresse==='string'){localStorage.setItem('edl_legal_adresse',s.legalAdresse);}
+    if(typeof s.legalRcs==='string'){localStorage.setItem('edl_legal_rcs',s.legalRcs);}
+    if(typeof s.legalSiret==='string'){localStorage.setItem('edl_legal_siret',s.legalSiret);}
+    if(typeof s.legalTvaIntra==='string'){localStorage.setItem('edl_legal_tva',s.legalTvaIntra);}
     // typeof (pas juste truthy) : une chaîne vide signifie "logo retiré", il
     // faut aussi synchroniser ce cas, pas seulement quand un logo est présent.
     if(typeof s.logoPath==='string'){localStorage.setItem('edl_logo_path',s.logoPath);}

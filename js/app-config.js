@@ -45,6 +45,17 @@ const CFG={
   // aucun logo déposé, auquel cas le logo Lokentia par défaut reste affiché.
   get logoPath(){return localStorage.getItem('edl_logo_path')||'';},
   set logoPath(v){localStorage.setItem('edl_logo_path',v);},
+  // Identité légale de l'agence — destinataire des factures des agents.
+  get legalRaisonSociale(){return localStorage.getItem('edl_legal_raison')||'';},
+  set legalRaisonSociale(v){localStorage.setItem('edl_legal_raison',v);},
+  get legalAdresse(){return localStorage.getItem('edl_legal_adresse')||'';},
+  set legalAdresse(v){localStorage.setItem('edl_legal_adresse',v);},
+  get legalRcs(){return localStorage.getItem('edl_legal_rcs')||'';},
+  set legalRcs(v){localStorage.setItem('edl_legal_rcs',v);},
+  get legalSiret(){return localStorage.getItem('edl_legal_siret')||'';},
+  set legalSiret(v){localStorage.setItem('edl_legal_siret',v);},
+  get legalTvaIntra(){return localStorage.getItem('edl_legal_tva')||'';},
+  set legalTvaIntra(v){localStorage.setItem('edl_legal_tva',v);},
   proxy:'https://api.allorigins.win/raw?url='
 };
 

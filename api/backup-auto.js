@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY as SUPA_ANON } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
+import { configDrive, sauvegarderSurDrive } from './_lib/google-drive.js';
 
 const BUCKET = 'sauvegardes';
 const TABLES = ['contacts', 'missions', 'prospects', 'deals', 'rdvs', 'campagnes', 'trackings', 'invoices', 'settings'];
@@ -113,6 +114,19 @@ export default async function handler(req) {
       }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
     journal.fichier = chemin;
+
+    // ── 2 bis. Copie sur Google Drive (si configurée) — un échec ici est
+    // consigné dans le journal sans annuler la sauvegarde du bucket. ──
+    const cfgDrive = configDrive();
+    if (cfgDrive) {
+      try {
+        journal.drive = await sauvegarderSurDrive(chemin, corps, cfgDrive, { maintenant });
+      } catch (e) {
+        journal.erreurs.push('Google Drive : ' + String(e && e.message || e));
+      }
+    } else {
+      journal.drive = 'non configuré';
+    }
 
     // ── 3. Purger les sauvegardes de plus de 30 jours ──
     try {
