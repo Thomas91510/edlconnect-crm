@@ -149,3 +149,19 @@ test('grille libre : plusieurs typologies cochées sur une même ligne', () => {
   assert.equal(ref.lignes[1].criteres, 'T6, T7 et plus');
   assert.deepEqual(normaliserReference({ mode: 'typologie', lignes: [{ label: 'x', typos: ['T9', 'T2', 'bidon'], simple: 1 }] }).lignes[0].typos, ['T2'], 'valeurs inconnues ignorées');
 });
+
+test('suivi des paiements : reste à payer, payé ce mois, totaux payés par mois', () => {
+  const r = calculerRemuneration([
+    { id: 'p1', type: 'EDL entrant', statut: 'terminée', date: '2026-09-10T09:00:00', remuPayee: true, remuPayeeLe: '2026-10-10T08:00:00' },
+    { id: 'p2', type: 'EDL sortant', statut: 'terminée', date: '2026-09-20T09:00:00' },
+    { id: 'p3', type: 'EDL entrant', statut: 'terminée', date: '2026-10-03T09:00:00' },
+    { id: 'p4', type: 'EDL sortant', statut: 'planifiée', date: '2026-10-25T09:00:00', remuPayee: true },
+  ], FORFAIT, MAINTENANT);
+  assert.equal(r.paiements.resteAPayer, 90, 'p2 + p3 non payées');
+  assert.equal(r.paiements.nbAPayer, 2);
+  assert.equal(r.moisCourant.paye, 45, 'p1 payée en octobre');
+  assert.deepEqual(r.parMois.map(m => [m.mois, m.total, m.paye]), [['2026-10', 45, 0], ['2026-09', 90, 45]]);
+  const p4 = r.lignes.find(l => l.id === 'p4');
+  assert.equal(p4.payee, false, 'une mission non terminée n’est jamais « payée »');
+  assert.equal(r.lignes.find(l => l.id === 'p1').payeeLe, '2026-10-10T08:00:00');
+});

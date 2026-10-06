@@ -595,6 +595,18 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 .settings-section{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 26px;margin-bottom:20px}
 .settings-title{font-size:15px;margin-bottom:14px}
 .settings-section[hidden]{display:none !important}
+.remu-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px}
+.remu-tuiles > div{padding:16px 18px;border-right:1px solid var(--border)}
+.remu-tuiles > div:last-child{border-right:none}
+.remu-tuiles b{display:block;font-size:22px;font-weight:600;letter-spacing:-.02em}
+.remu-tuiles span{font-size:12.5px;color:var(--text2)}
+.remu-mois-entete td{background:var(--bg2) !important;font-weight:600}
+.tbl-remu td{white-space:normal;max-width:none;padding:12px 10px}
+.tbl-remu th{padding:12px 10px}
+.tbl-remu td:last-child{white-space:nowrap;min-width:150px}
+.tbl-remu td:nth-child(5),.tbl-remu td:first-child{white-space:nowrap}
+.remu-paye{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--text);cursor:pointer}
+.remu-paye input{width:18px;height:18px}
 .agent-remu{min-width:0;max-width:100%;overflow-x:auto}
 .rem-lignes-entete,.rem-ligne{display:grid;grid-template-columns:minmax(100px,1fr) 196px 112px 88px 70px 70px 72px;gap:6px;align-items:center;min-width:760px}
 .rem-l-typos{border:none;margin:0;padding:0;display:flex;flex-wrap:nowrap;gap:2px}
@@ -1740,6 +1752,20 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         </div>
       </div>
 
+      <div class="settings-section" data-rubrique="agents" data-perm="agents" id="reglages-remunerations">
+        <div class="settings-title"><i class="ti ti-coin-euro" style="font-size:18px"></i>Rémunérations des agents</div>
+        <div class="info-box" style="margin-bottom:16px">Montants calculés avec la référence financière de chaque fiche agent, sur les missions terminées. Cochez « Payée » une fois le règlement effectué : l'agent le voit aussitôt dans son espace.</div>
+        <div class="form-grid" style="margin-bottom:16px">
+          <div><label for="remu-agent-select">Agent</label><select id="remu-agent-select" onchange="renderRemunerationsAgents()"></select></div>
+          <div><label for="remu-filtre">Afficher</label>
+            <select id="remu-filtre" onchange="renderRemunerationsAgents()">
+              <option value="apayer">À payer</option>
+              <option value="payees">Payées</option>
+              <option value="toutes">Toutes les missions terminées</option>
+            </select></div>
+        </div>
+        <div id="remu-agents-contenu"></div>
+      </div>
       <div class="settings-section" data-rubrique="equipe" id="reglages-equipe"></div>
       <div class="settings-section" data-rubrique="sauvegarde" data-perm="export">
         <div class="settings-title"><i class="ti ti-device-floppy" style="font-size:18px"></i>Sauvegarde</div>
@@ -2175,6 +2201,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 <script src="/js/app-settings.js"></script>
 <script src="/js/app-extranet.js"></script>
 <script src="/js/app-reservations.js"></script>
+<script src="/js/app-remuneration.js"></script>
 <script src="/js/app-equipe.js"></script>
 
 <!-- NAV BAR MOBILE -->

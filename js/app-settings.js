@@ -250,6 +250,7 @@ function renderAgentsSettings(){
   if(lignesRem && !lignesRem.children.length && !_editingAgentId) renderLignesRemuneration(null);
   const wrap = document.getElementById('agents-list');
   if(!wrap) return;
+  renderRemunerationsAgents();
   if(!DB.agents || !DB.agents.length){
     wrap.innerHTML = '<div style="font-size:11px;color:var(--text3)">Aucun agent enregistré pour l\'instant.</div>';
     return;
@@ -493,6 +494,97 @@ function resumeRemunerationAgent(rem){
   const lib = { entrant:'entrant', sortant:'sortant', simultane:'sortant+entrant', autre:'autre' };
   const parts = CHAMPS_REM_TYPE.filter(k => (rem.parType || {})[k] !== '' && (rem.parType || {})[k] != null).map(k => lib[k] + ' ' + rem.parType[k] + ' ' + unite);
   return parts.length ? 'Rémunération : ' + parts.join(' · ') : 'Rémunération non renseignée';
+}
+
+// ─── Suivi des paiements des rémunérations (Réglages › Agents EDL) ───
+// Montants calculés par window.Remuneration (js/app-remuneration.js, généré
+// depuis le calcul du serveur : mêmes montants que dans l'espace agent).
+// Le statut est stocké sur la mission (remuPayee, remuPayeeLe) et
+// synchronisé comme toute modification de mission.
+function _eurosRemu(n, unite){
+  if(n === null || n === undefined) return '—';
+  const u = unite === 'net' ? '€ net' : '€ ' + (unite || 'HT');
+  return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' ' + u;
+}
+function _libMoisRemu(cle){
+  const [a, m] = String(cle).split('-').map(Number);
+  if(!a || !m) return 'Date inconnue';
+  const t = new Date(a, m - 1, 1).toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+function renderRemunerationsAgents(){
+  const box = document.getElementById('remu-agents-contenu');
+  const sel = document.getElementById('remu-agent-select');
+  if(!box || !sel || typeof window.Remuneration === 'undefined') return;
+  const agents = DB.agents || [];
+  if(!agents.length){ sel.innerHTML = ''; box.innerHTML = '<div class="empty">Aucun agent enregistré.</div>'; return; }
+  const choisi = agents.some(a => a.id === sel.value) ? sel.value : agents[0].id;
+  sel.innerHTML = agents.map(a => `<option value="${esc(a.id)}"${a.id === choisi ? ' selected' : ''}>${esc(a.nom)}</option>`).join('');
+  const agent = agents.find(a => a.id === choisi);
+  const filtre = (document.getElementById('remu-filtre') || {}).value || 'apayer';
+  const missions = (DB.missions || []).filter(m => m.expertId === agent.id);
+  const r = window.Remuneration.calculerRemuneration(missions, agent.remuneration, new Date());
+  if(!r.reference.configuree){
+    box.innerHTML = `<div class="info-box warn">${esc(agent.nom)} n'a pas encore de référence financière : renseignez-la dans sa fiche (crayon ci-dessus).</div>`;
+    return;
+  }
+  const u = r.reference.unite;
+  const acquises = r.lignes.filter(l => l.etat === 'acquise')
+    .filter(l => filtre === 'toutes' || (filtre === 'payees' ? l.payee : !l.payee));
+  const parMois = {};
+  acquises.forEach(l => { const k = String(l.date).slice(0, 7) || 'inconnu'; (parMois[k] = parMois[k] || []).push(l); });
+  const mois = Object.keys(parMois).sort().reverse();
+  const lignesHTML = mois.map(k => {
+    const ls = parMois[k];
+    const total = ls.reduce((s, l) => s + (l.montant || 0), 0);
+    const aPayer = ls.filter(l => !l.payee && l.montant !== null).length;
+    return `<tr class="remu-mois-entete"><td colspan="4">${esc(_libMoisRemu(k))} · ${ls.length} mission${ls.length > 1 ? 's' : ''}</td>
+        <td style="text-align:right">${esc(_eurosRemu(Math.round(total * 100) / 100, u))}</td>
+        <td>${aPayer ? `<button type="button" class="btn btn-sm" onclick="marquerMoisRemuPaye('${esc(agent.id)}','${esc(k)}')">Tout marquer payé</button>` : ''}</td></tr>`
+      + ls.map(l => `<tr>
+        <td>${esc(l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—')}</td>
+        <td>${esc(l.adresse || '—')}</td>
+        <td>${esc(l.type || '—')}</td>
+        <td>${esc(l.ligneGrille || (l.typologie !== 'Non renseignée' ? l.typologie : '—'))}</td>
+        <td style="text-align:right;font-weight:600">${esc(_eurosRemu(l.montant, u))}</td>
+        <td><label class="remu-paye"${l.montant === null ? ' title="Pas de tarif dans la grille de l’agent"' : ''}>
+          <input type="checkbox"${l.payee ? ' checked' : ''}${l.montant === null ? ' disabled' : ''} onchange="marquerRemuPayee('${esc(l.id)}', this.checked)">
+          ${l.payee ? 'Payée' + (l.payeeLe ? ' le ' + esc(new Date(l.payeeLe).toLocaleDateString('fr-FR')) : '') : 'À payer'}
+        </label></td></tr>`).join('');
+  }).join('');
+  box.innerHTML = `
+    <div class="remu-tuiles">
+      <div><b>${esc(_eurosRemu(r.paiements.resteAPayer, u))}</b><span>Reste à payer (${r.paiements.nbAPayer} mission${r.paiements.nbAPayer > 1 ? 's' : ''})</span></div>
+      <div><b>${esc(_eurosRemu(r.moisCourant.paye, u))}</b><span>Payé ce mois-ci</span></div>
+      <div><b>${esc(_eurosRemu(r.moisCourant.acquis, u))}</b><span>Acquis ce mois-ci</span></div>
+    </div>
+    ${r.nonCouvertes ? `<div class="info-box warn" style="margin-bottom:14px">${r.nonCouvertes} mission${r.nonCouvertes > 1 ? 's' : ''} sans tarif dans la grille de ${esc(agent.nom)}.</div>` : ''}
+    ${acquises.length ? `<div style="overflow-x:auto"><table class="tbl tbl-remu"><thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>Bien</th><th style="text-align:right">Montant</th><th>Paiement</th></tr></thead><tbody>${lignesHTML}</tbody></table></div>`
+      : `<div class="empty">${filtre === 'apayer' ? 'Rien à payer : tout est à jour.' : 'Aucune mission terminée à afficher.'}</div>`}`;
+}
+function _enregistrerPaiementMission(m, payee){
+  m.remuPayee = !!payee;
+  m.remuPayeeLe = payee ? new Date().toISOString() : '';
+  if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
+}
+function marquerRemuPayee(missionId, payee){
+  const m = (DB.missions || []).find(x => String(x.id) === String(missionId));
+  if(!m) return;
+  _enregistrerPaiementMission(m, payee);
+  saveToStorage();
+  renderRemunerationsAgents();
+  notify(payee ? '✅ Mission marquée payée' : 'Mission repassée « à payer »');
+}
+function marquerMoisRemuPaye(agentId, mois){
+  const agent = (DB.agents || []).find(a => a.id === agentId);
+  if(!agent || typeof window.Remuneration === 'undefined') return;
+  const r = window.Remuneration.calculerRemuneration((DB.missions || []).filter(m => m.expertId === agentId), agent.remuneration, new Date());
+  const ids = r.lignes.filter(l => l.etat === 'acquise' && !l.payee && l.montant !== null && String(l.date).slice(0, 7) === mois).map(l => String(l.id));
+  if(!ids.length || !confirm(`Marquer ${ids.length} mission${ids.length > 1 ? 's' : ''} de ${_libMoisRemu(mois).toLowerCase()} comme payée${ids.length > 1 ? 's' : ''} ?`)) return;
+  (DB.missions || []).filter(m => ids.includes(String(m.id))).forEach(m => _enregistrerPaiementMission(m, true));
+  saveToStorage();
+  renderRemunerationsAgents();
+  notify('✅ ' + ids.length + ' mission' + (ids.length > 1 ? 's' : '') + ' marquée' + (ids.length > 1 ? 's' : '') + ' payée' + (ids.length > 1 ? 's' : ''));
 }
 
 function editerAgent(id){

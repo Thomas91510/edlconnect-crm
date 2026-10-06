@@ -679,3 +679,24 @@ test('renderRemuneration : grille libre (libellés et critères de l\u2019agence
   assert.ok(html.includes('30 € HT'), 'pré-état des lieux');
   assert.ok(html.includes('<td>Maison</td>'), 'ligne de grille appliquée affichée dans le détail');
 });
+
+test('renderRemuneration : suivi des paiements (reste à percevoir, payée le…, à percevoir)', () => {
+  const w = chargerAgentApp();
+  const box = avecConteneurRemu(w);
+  w.renderRemuneration({
+    reference: { configuree: true, mode: 'forfait', unite: 'HT', parType: { entrant: 45, sortant: 45, simultane: 80, autre: null }, note: '' },
+    moisCourant: { mois: '2026-10', acquis: 90, prevu: 0, nbAcquises: 2, paye: 45 },
+    paiements: { resteAPayer: 45, nbAPayer: 1 },
+    parMois: [{ mois: '2026-10', nb: 2, total: 90, paye: 45 }],
+    lignes: [
+      { id: 'a', date: '2026-10-02T09:00:00', adresse: 'A', type: 'EDL entrant', etat: 'acquise', montant: 45, payee: true, payeeLe: '2026-10-10T08:00:00' },
+      { id: 'b', date: '2026-10-03T09:00:00', adresse: 'B', type: 'EDL sortant', etat: 'acquise', montant: 45, payee: false },
+    ],
+    nonCouvertes: 0,
+  });
+  const html = box.innerHTML;
+  assert.ok(html.includes('Reste à percevoir (1 mission)'));
+  assert.ok(html.includes('Payée le 10/10/2026'));
+  assert.ok(html.includes('À percevoir'));
+  assert.ok(html.includes('45 € HT payé'), 'part payée du mois');
+});

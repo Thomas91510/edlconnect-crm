@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.6';
+const APP_VERSION = '2.0.0-beta.7';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.7', titre:'Suivi payé / non payé des rémunérations', texte:'Réglages › Agents EDL : reste à payer par agent, case « Payée » par mission et « Tout marquer payé » par mois. L\u2019agent voit ce qu\u2019il lui reste à percevoir et la date de chaque paiement.' },
   { v:'2.0.0-beta.6', titre:'Plusieurs typologies par ligne', texte:'Dans la grille de rémunération, chaque ligne peut viser plusieurs typologies à cocher (ex. « T4 et T5 », « T6 et T7+ »).' },
   { v:'2.0.0-beta.5', titre:'Grille de rémunération modifiable', texte:'Lignes libres dans la fiche agent : libellé au choix (Maison, T2 meublé, Parking…), critères typologie / type de bien / meublé, ordre de priorité, ajout et suppression de lignes.' },
   { v:'2.0.0-beta.4', titre:'Rémunération par typologie', texte:'Nouveau mode de calcul dans la fiche agent : un tarif par typologie (T1/studio à T7 et plus), colonnes « entrant ou sortant » et « sortant + entrant », tarif à part pour les pré-états des lieux.' },

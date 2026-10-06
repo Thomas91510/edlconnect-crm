@@ -441,3 +441,39 @@ test('grille de rémunération : les typologies cochées sont relues, l’ancien
   assert.deepEqual(Array.from(lues[1].typos), ['T2'], 'l’ancien champ « typo » est coché à l’ouverture');
   assert.equal(lues[0].simple, '55');
 });
+
+// ─── Suivi des paiements des rémunérations ────────────────────────────
+test('suivi des paiements : reste à payer, cocher « payée » enregistre la mission', () => {
+  const html = `<div id="notif"></div><select id="remu-agent-select"></select><select id="remu-filtre"><option value="apayer" selected>À payer</option><option value="payees">Payées</option><option value="toutes">Toutes</option></select><div id="remu-agents-contenu"></div>`;
+  const setup = `
+    window._EXTRANET_MODE = true;
+    window.__getDB = function(){ return DB; };
+    window.__pousses = [];
+    pushToSupabase = async function(cle, item){ window.__pousses.push([cle, item.id]); return true; };
+    confirm = () => true;
+    DB.agents = [{ id: 'ag1', nom: 'Julien', remuneration: { mode: 'forfait', parType: { entrant: '45', sortant: '50' } } }];
+    DB.missions = [
+      { id: 'm1', expertId: 'ag1', type: 'EDL entrant', statut: 'terminée', date: '2026-09-02T09:00:00' },
+      { id: 'm2', expertId: 'ag1', type: 'EDL sortant', statut: 'terminée', date: '2026-09-05T09:00:00' },
+      { id: 'm3', expertId: 'ag2', type: 'EDL sortant', statut: 'terminée', date: '2026-09-05T09:00:00' },
+      { id: 'm4', expertId: 'ag1', type: 'EDL sortant', statut: 'planifiée', date: '2026-12-05T09:00:00' },
+    ];
+  `;
+  const { window: w, document: d } = chargerScripts(['app-cloud.js', 'app-settings.js', 'app-remuneration.js'], html, setup);
+  w.renderRemunerationsAgents();
+  const contenu = d.getElementById('remu-agents-contenu');
+  assert.ok(contenu.textContent.includes('95 € HT'), 'reste à payer = 45 + 50 (missions terminées de cet agent uniquement)');
+  assert.equal(contenu.querySelectorAll('tbody input[type=checkbox]').length, 2);
+
+  w.marquerRemuPayee('m1', true);
+  const m1 = w.__getDB().missions.find(m => m.id === 'm1');
+  assert.equal(m1.remuPayee, true);
+  assert.ok(m1.remuPayeeLe, 'date de paiement enregistrée');
+  assert.deepEqual(Array.from(w.__pousses[0]), ['missions', 'm1'], 'mission synchronisée');
+  assert.ok(contenu.textContent.includes('50 € HT'), 'reste à payer mis à jour');
+
+  w.marquerMoisRemuPaye('ag1', '2026-09');
+  assert.equal(w.__getDB().missions.find(m => m.id === 'm2').remuPayee, true);
+  assert.equal(w.__getDB().missions.find(m => m.id === 'm4').remuPayee, undefined, 'une mission planifiée n’est jamais marquée payée');
+  assert.ok(contenu.textContent.includes('Rien à payer'));
+});

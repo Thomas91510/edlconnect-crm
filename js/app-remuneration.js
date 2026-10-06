@@ -1,3 +1,9 @@
+// === Lokentia CRM — app-remuneration.js ===
+// FICHIER GÉNÉRÉ par scripts/generer-remuneration-navigateur.mjs à partir de
+// api/_lib/agent-remuneration.js — ne pas modifier à la main.
+// Exposé en window.Remuneration (dans une fonction pour ne pas polluer les
+// noms globaux partagés par les autres scripts du CRM).
+(function(){
 // Rémunération d'un agent EDL, calculée côté serveur à partir de la
 // référence financière saisie par l'agence dans sa fiche (CRM › Réglages ›
 // Agents EDL › « Rémunération »). L'agent ne peut que la consulter.
@@ -20,17 +26,37 @@
 // (CRM › Réglages › Agents EDL › Rémunérations), stocké sur la mission
 // (remuPayee, remuPayeeLe) ; l'agent voit ce qui lui reste à percevoir. Le montant
 // facturé au client n'est jamais renvoyé, seulement la part de l'agent.
-import { categorieEdl, statTypologie } from './agent-kpi.js';
+function categorieEdl(type) {
+  const t = String(type || '').toLowerCase();
+  if (t.includes('sortant') && t.includes('entrant')) return 'simultane';
+  if (t.includes('sortant')) return 'sortant';
+  if (t.includes('entrant')) return 'entrant';
+  return 'autre';
+}
 
-export const LIBELLES_TYPE = {
+function statTypologie(bienTypo) {
+  const v = String(bienTypo || '').trim().toLowerCase();
+  if (!v) return 'Non renseignée';
+  if (v.includes('studio')) return 'T1';
+  const found = v.match(/[tf]\s*(\d+)/);
+  if (found) {
+    const n = parseInt(found[1], 10);
+    if (n >= 7) return 'T7+';
+    if (n >= 1) return 'T' + n;
+  }
+  return 'Non renseignée';
+}
+
+
+const LIBELLES_TYPE = {
   entrant: 'EDL entrant',
   sortant: 'EDL sortant',
   simultane: 'Sortant + entrant',
   autre: 'Autre (pré-état des lieux…)',
 };
-export const TYPOLOGIES = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7+'];
+const TYPOLOGIES = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7+'];
 const MODES = ['forfait', 'typologie', 'pourcentage'];
-export const BIENS = ['Appartement', 'Maison', 'Studio', 'Local commercial', 'Parking'];
+const BIENS = ['Appartement', 'Maison', 'Studio', 'Local commercial', 'Parking'];
 const MAX_LIGNES = 30;
 const texte = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
 
@@ -54,7 +80,7 @@ function normaliserLignes(r) {
 }
 
 // Libellé lisible des critères d'une ligne (« T2 · Maison · meublé »).
-export function criteresLigne(l) {
+function criteresLigne(l) {
   const typos = l.typos.length === TYPOLOGIES.length ? '' : l.typos.map((t) => (t === 'T7+' ? 'T7 et plus' : t)).join(', ');
   return [typos, l.bien, l.meuble === 'meuble' ? 'meublé' : l.meuble === 'nu' ? 'nu' : '']
     .filter(Boolean).join(' · ') || 'Tous les biens';
@@ -62,7 +88,7 @@ export function criteresLigne(l) {
 
 // Première ligne de la grille dont tous les critères renseignés
 // correspondent à la mission (critère vide = indifférent).
-export function ligneCorrespondante(mission, lignes) {
+function ligneCorrespondante(mission, lignes) {
   const typo = statTypologie(mission.bienTypo);
   const bien = String(mission.bienType || '').toLowerCase();
   const m = String(mission.bienMeuble || '').toLowerCase();
@@ -83,7 +109,7 @@ function nombre(v) {
 const arrondi = (n) => Math.round(n * 100) / 100;
 
 // Référence nettoyée (valeurs numériques ou null), sûre à renvoyer à l'agent.
-export function normaliserReference(ref) {
+function normaliserReference(ref) {
   const r = ref && typeof ref === 'object' ? ref : {};
   const mode = MODES.includes(r.mode) ? r.mode : 'forfait';
   const parType = {};
@@ -109,7 +135,7 @@ export function normaliserReference(ref) {
 }
 
 // Part de l'agent pour une mission (null si la référence ne la couvre pas).
-export function montantMission(mission, ref) {
+function montantMission(mission, ref) {
   if (!ref.configuree) return null;
   if (ref.mode === 'pourcentage') {
     const base = nombre(mission.montant);
@@ -132,7 +158,7 @@ function cleMois(iso) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
 
-export function etatMission(statut) {
+function etatMission(statut) {
   const s = String(statut || '').toLowerCase();
   if (s.includes('annul')) return 'annulee';
   if (s.includes('termin')) return 'acquise';
@@ -140,7 +166,7 @@ export function etatMission(statut) {
 }
 
 // maintenant : injectable pour les tests.
-export function calculerRemuneration(missions, refBrute, maintenant = new Date()) {
+function calculerRemuneration(missions, refBrute, maintenant = new Date()) {
   const ref = normaliserReference(refBrute);
   const moisCourant = cleMois(maintenant.toISOString());
   const lignes = [];
@@ -185,3 +211,6 @@ export function calculerRemuneration(missions, refBrute, maintenant = new Date()
     nonCouvertes,
   };
 }
+
+window.Remuneration = { calculerRemuneration, normaliserReference, montantMission, etatMission, LIBELLES_TYPE };
+})();

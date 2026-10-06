@@ -274,7 +274,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .remu-mois-lib{width:130px;flex-shrink:0}
 .remu-barre{flex:1;height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
 .remu-barre span{display:block;height:100%;background:var(--blue);border-radius:4px}
-.remu-mois-nb{width:90px;color:var(--text2);text-align:right;flex-shrink:0}
+.remu-mois-nb{width:150px;color:var(--text2);text-align:right;flex-shrink:0}
 .remu-mois b{width:90px;text-align:right;flex-shrink:0}
 .remu-table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
 .remu-table th{text-align:left;font-weight:500;color:var(--text2);font-size:12px;padding:0 10px 10px 0}
@@ -1175,12 +1175,15 @@ function renderRemuneration(r){
   const mois = (r.parMois || []);
   const max = Math.max(1, ...mois.map(x => x.total));
   const recentes = (r.lignes || []).slice(0, 12);
-  const libEtat = { acquise:'Réalisée', prevue:'Prévue' };
+  const etatHTML = l => l.etat === 'prevue' ? '<span class="badge badge-autre">Prévue</span>'
+    : l.payee ? `<span class="badge badge-entrant">Payée${l.payeeLe ? ' le ' + esc(new Date(l.payeeLe).toLocaleDateString('fr-FR')) : ''}</span>`
+    : '<span class="badge badge-zone-hors">À percevoir</span>';
   box.innerHTML = `
     <div class="kpi-grid" style="margin-bottom:28px">
       <div class="kpi-tile"><div class="n">${esc(fmtEuros(mc.acquis, u))}</div><div class="l">Acquis en ${esc(libMois(mc.mois).toLowerCase())}</div></div>
       <div class="kpi-tile"><div class="n">${esc(fmtEuros(mc.prevu, u))}</div><div class="l">Prévu (missions planifiées)</div></div>
-      <div class="kpi-tile"><div class="n">${mc.nbAcquises || 0}</div><div class="l">Missions réalisées ce mois</div></div>
+      <div class="kpi-tile"><div class="n">${esc(fmtEuros((r.paiements || {}).resteAPayer || 0, u))}</div><div class="l">Reste à percevoir (${(r.paiements || {}).nbAPayer || 0} mission${((r.paiements || {}).nbAPayer || 0) > 1 ? 's' : ''})</div></div>
+      <div class="kpi-tile"><div class="n">${esc(fmtEuros(mc.paye || 0, u))}</div><div class="l">Payé ce mois-ci</div></div>
     </div>
     <div class="remu-grid">
       <section class="card" aria-labelledby="remu-grille-titre">
@@ -1197,7 +1200,7 @@ function renderRemuneration(r){
           ${mois.length ? mois.map(x => `<div class="remu-mois">
             <span class="remu-mois-lib">${esc(libMois(x.mois))}</span>
             <span class="remu-barre"><span style="width:${Math.round(x.total / max * 100)}%"></span></span>
-            <span class="remu-mois-nb">${x.nb} mission${x.nb > 1 ? 's' : ''}</span>
+            <span class="remu-mois-nb">${x.nb} mission${x.nb > 1 ? 's' : ''}${x.paye >= x.total && x.total > 0 ? ' · payé' : x.paye ? ' · ' + esc(fmtEuros(x.paye, u)) + ' payé' : ''}</span>
             <b>${esc(fmtEuros(x.total, u))}</b>
           </div>`).join('') : '<div class="empty">Aucune mission réalisée pour l’instant.</div>'}
         </div>
@@ -1213,7 +1216,7 @@ function renderRemuneration(r){
             <td>${esc(l.adresse || '—')}</td>
             <td>${esc(l.type || '—')}</td>
             <td>${esc(l.ligneGrille || (l.typologie && l.typologie !== 'Non renseignée' ? l.typologie : '—'))}</td>
-            <td><span class="badge ${l.etat === 'acquise' ? 'badge-entrant' : 'badge-autre'}">${libEtat[l.etat] || ''}</span></td>
+            <td>${etatHTML(l)}</td>
             <td style="text-align:right;font-weight:600">${esc(fmtEuros(l.montant, u))}</td>
           </tr>`).join('')}</tbody>
         </table>
@@ -1293,7 +1296,7 @@ function renderHistorique(missions){
 <div id="app-version"></div>
 <script>
 (async function afficherVersionAgent(){
-  const APP_VERSION = '2.0.0-beta.6';
+  const APP_VERSION = '2.0.0-beta.7';
   const el = document.getElementById('app-version');
   if(el) el.textContent = 'v' + APP_VERSION;
   try {
