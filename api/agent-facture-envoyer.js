@@ -17,9 +17,10 @@ const euros = (n) => (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionD
 
 // L'agent envoie la facture qu'il a générée et éditée dans son espace
 // (onglet « Facturation ») : le PDF (produit dans son navigateur) part par
-// email à l'agence, en copie à l'agent, et est conservé dans le stockage
+// email au titulaire du CRM (la société donneuse d'ordre, ex. EDL IDF —
+// jamais les agences clientes de l'extranet), en copie à l'agent, et est conservé dans le stockage
 // privé « agent-documents » ; la fiche agent garde l'historique (numéro,
-// mois, montants) que l'agence consulte dans le CRM. Les totaux sont
+// mois, montants) que la société consulte dans le CRM. Les totaux sont
 // recalculés ici à partir des lignes, jamais repris du navigateur.
 export default async function handler(req) {
   const headers = {
@@ -79,7 +80,7 @@ export default async function handler(req) {
   });
   if (!up.ok) return reponse({ error: 'Échec de l\'enregistrement du PDF' }, 500);
 
-  // 2. Email à l'agence (copie à l'agent), PDF en pièce jointe
+  // 2. Email au titulaire du CRM (copie à l'agent), PDF en pièce jointe
   const ident = await identiteAbonne(SUPABASE_URL, serviceKey, ownerId);
   const emetteur = infos.raisonSociale || agent.nom || 'Agent';
   const html = `<p>Bonjour,</p>
@@ -104,7 +105,7 @@ ${facture.note ? '<p>' + echapper(facture.note) + '</p>' : ''}
   });
   if (!envoi.ok) return reponse({ error: 'L\'email n\'a pas pu être envoyé (Brevo ' + envoi.status + ')' }, 502);
 
-  // 3. Historique sur la fiche agent (vu par l'agence dans le CRM)
+  // 3. Historique sur la fiche agent (vu dans le CRM)
   const settingsResp = await fetch(
     `${SUPABASE_URL}/rest/v1/settings?select=data&user_id=eq.${encodeURIComponent(ownerId)}`,
     { headers: supaHeaders }

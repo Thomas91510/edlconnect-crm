@@ -1,4 +1,5 @@
-// Factures des agents sous-traitants (espace agent → agence).
+// Factures des agents sous-traitants (espace agent → titulaire du CRM, ex. EDL IDF ;
+// ne concerne jamais les agences clientes de l'extranet).
 //
 // L'agent saisit lui-même ses informations juridiques (raison sociale,
 // SIRET, RCS, régime de TVA, IBAN…) dans « Mon compte », puis génère depuis
@@ -92,7 +93,7 @@ export function nomFichierFacture(numero) {
 }
 
 // Enregistre (ou remplace, même numéro) la facture dans l'historique de la
-// fiche agent — c'est ce que l'agence voit dans le CRM.
+// fiche agent — c'est ce que la société voit dans le CRM.
 export function ajouterFactureHistorique(historique, facture, extra = {}) {
   const liste = (Array.isArray(historique) ? historique : []).filter(f => f && f.numero !== facture.numero);
   liste.unshift({

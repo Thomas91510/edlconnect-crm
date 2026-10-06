@@ -441,7 +441,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
               <ol>
                 <li>Connecte-toi avec ton email — tu reçois un lien à usage unique, aucun mot de passe à retenir.</li>
                 <li><strong>Mes missions</strong> : tes états des lieux à venir, avec adresse, horaire, coordonnées du locataire et code d'accès.</li>
-                <li><strong>Facturation</strong> : complète tes informations juridiques dans « Mon compte », puis choisis le mois — la facture est pré-remplie, modifiable, téléchargeable en PDF et envoyée par email à l'agence en un clic.</li>
+                <li><strong>Facturation</strong> : complète tes informations juridiques dans « Mon compte », puis choisis le mois — la facture est pré-remplie, modifiable, téléchargeable en PDF et envoyée par email à EDL IDF en un clic (jamais aux agences clientes).</li>
                 <li><strong>Mes documents</strong> : ton contrat signé et un éventuel avenant, déposés par l'agence.</li>
                 <li><strong>Historique</strong> : tes missions déjà réalisées, regroupées mois par mois.</li>
               </ol>
@@ -1315,7 +1315,8 @@ function renderRemuneration(r){
 // montant (frais de déplacement compris). Tout reste modifiable : numéro,
 // date, destinataire, lignes (ajout / suppression, ex. formation à déduire).
 // Le PDF est produit dans le navigateur (jsPDF, chargé à la demande) puis
-// téléchargé ou envoyé à l'agence par api/agent-facture-envoyer.js, qui
+// téléchargé ou envoyé au titulaire du CRM (EDL IDF — jamais aux agences
+// clientes) par api/agent-facture-envoyer.js, qui
 // recalcule les totaux et garde l'historique sur la fiche agent.
 let _infosLegales = {};
 let _factures = [];
@@ -1523,7 +1524,7 @@ function renderFacturation(){
     <section class="card"><div class="card-body">
       <div class="field"><label for="fac-note">Message joint à l'email (facultatif)</label><input id="fac-note" value="${esc(f.note)}" oninput="majChampFacture('note', this.value)" placeholder="Bonjour, voici ma facture du mois…"></div>
       <div class="fac-actions">
-        <span class="compte-note" style="margin-right:auto">Envoyée à ${esc((_destinataireFacture && _destinataireFacture.nom) || 'l’agence')}, avec toi en copie.</span>
+        <span class="compte-note" style="margin-right:auto">Envoyée à ${esc((_destinataireFacture && _destinataireFacture.nom) || 'EDL IDF')} (ton donneur d’ordre), avec toi en copie — jamais aux agences clientes.</span>
         <button class="btn-sm" style="height:42px" onclick="telechargerFacturePdf()"><i class="ti ti-download"></i> Télécharger le PDF</button>
         <button class="btn-primary" id="btn-envoyer-facture" onclick="envoyerFacture()"${manquants.length ? ' disabled title="Informations juridiques incomplètes"' : ''}><i class="ti ti-send"></i> Envoyer par email</button>
       </div>
@@ -1647,7 +1648,7 @@ async function envoyerFacture(){
     if(Array.isArray(data.factures)) _factures = data.factures;
     _facture = null;
     renderFacturation();
-    showToast('✅ Facture envoyée à ' + (data.destinataire || 'l’agence'));
+    showToast('✅ Facture envoyée à ' + ((_destinataireFacture && _destinataireFacture.nom) || 'EDL IDF'));
   }catch(e){
     showToast('❌ ' + (e.message || 'Erreur réseau, réessaie.'));
   }finally{
