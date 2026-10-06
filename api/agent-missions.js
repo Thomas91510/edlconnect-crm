@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { resolverAgentParEmail } from './_lib/agent-lookup.js';
 import { calculerKpiAgent } from './_lib/agent-kpi.js';
+import { calculerRemuneration } from './_lib/agent-remuneration.js';
 
 const BAREME_PAR_DEFAUT = [
   { label: 'Secteur primaire', montant: '0' },
@@ -107,6 +108,9 @@ export default async function handler(req) {
     },
     missions: missionsPubliques,
     kpi: calculerKpiAgent(missions),
+    // Part de l'agent selon la référence financière de sa fiche (jamais le
+    // montant facturé au client) — onglet « Rémunération » de son espace.
+    remuneration: calculerRemuneration(missions, agent.remuneration),
     // Couleur de marque choisie par l'agence (Paramètres) — recolore
     // l'espace agent pour qu'il reste cohérent avec l'identité de l'agence.
     couleurPrimaire: data.couleurPrimaire || '',

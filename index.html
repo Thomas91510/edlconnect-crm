@@ -1586,6 +1586,33 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
           <div><label>Email agenda Google</label><input id="new-agent-email" type="email" placeholder="jean.dupont@gmail.com"></div>
           <div><label>Secteurs (codes postaux, optionnel)</label><input id="new-agent-secteurs" placeholder="75018,75019,92 — vide = partout"></div>
         </div>
+        <!-- Référence financière : sert au calcul de l'onglet « Rémunération »
+             de l'espace agent (api/_lib/agent-remuneration.js). -->
+        <fieldset class="agent-remu" style="border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-top:14px">
+          <legend style="font-size:13px;font-weight:600;padding:0 6px">Rémunération (référence financière)</legend>
+          <div class="form-grid">
+            <div><label for="new-agent-rem-mode">Mode de calcul</label>
+              <select id="new-agent-rem-mode" onchange="majFormulaireRemuneration()">
+                <option value="forfait">Forfait par type d'état des lieux</option>
+                <option value="pourcentage">Pourcentage du montant de la mission</option>
+              </select></div>
+            <div><label for="new-agent-rem-unite">Montants exprimés en</label>
+              <select id="new-agent-rem-unite"><option value="HT">€ HT</option><option value="TTC">€ TTC</option><option value="net">€ net</option></select></div>
+          </div>
+          <div id="agent-rem-forfait" class="form-grid">
+            <div><label for="new-agent-rem-entrant">EDL entrant (€)</label><input id="new-agent-rem-entrant" inputmode="decimal" placeholder="Ex : 45"></div>
+            <div><label for="new-agent-rem-sortant">EDL sortant (€)</label><input id="new-agent-rem-sortant" inputmode="decimal" placeholder="Ex : 45"></div>
+            <div><label for="new-agent-rem-simultane">Sortant + entrant (€)</label><input id="new-agent-rem-simultane" inputmode="decimal" placeholder="Ex : 80"></div>
+            <div><label for="new-agent-rem-autre">Autre / pré-état des lieux (€)</label><input id="new-agent-rem-autre" inputmode="decimal" placeholder="Ex : 35"></div>
+          </div>
+          <div id="agent-rem-pourcentage" style="display:none">
+            <label for="new-agent-rem-pct">Pourcentage du montant HT facturé (%)</label>
+            <input id="new-agent-rem-pct" inputmode="decimal" placeholder="Ex : 40" style="max-width:200px">
+            <div class="info-box warn" style="margin-top:10px">L'agent ne voit que sa part, mais pourra en déduire le prix facturé au client.</div>
+          </div>
+          <label for="new-agent-rem-note">Note visible par l'agent (facultatif)</label>
+          <input id="new-agent-rem-note" placeholder="Ex : paiement le 10 du mois suivant, sur facture">
+        </fieldset>
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="btn btn-sm" id="agent-submit-btn" onclick="addAgent()"><i class="ti ti-user-plus"></i> Ajouter cet agent</button>
           <button class="btn btn-sm" id="agent-cancel-btn" onclick="annulerEditionAgent()" style="display:none">Annuler</button>

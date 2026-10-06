@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.2';
+const APP_VERSION = '2.0.0-beta.3';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.3', titre:'Rémunération des agents', texte:'Référence financière dans la fiche agent (forfait par type d\u2019état des lieux ou pourcentage), onglet « Rémunération » dans l\u2019espace agent : acquis et prévu du mois, totaux par mois, détail par mission.' },
   { v:'2.0.0-beta.2', titre:'Extranet agence et espace agent redessinés', texte:'Extranet : tableau de bord (prochain RDV, suivi des états des lieux, messages, factures), commande en 2 étapes dans un panneau latéral, factures et documents réunis. Espace agent : menu latéral, cartes de mission avec zone, itinéraire et appel du locataire.' },
   { v:'2.0.0-beta.1', titre:'Refonte de l\u2019interface (V1 de test)', texte:'Menu en 5 rubriques, accueil « Aujourd\u2019hui », réservations, missions et agenda réunis, emails regroupés, rôles administrateur / assistante, réglages par rubrique.' }
 ];

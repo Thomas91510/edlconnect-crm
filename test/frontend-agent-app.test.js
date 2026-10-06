@@ -625,3 +625,35 @@ test('carteMission : lien itinéraire encodé et appel du locataire', () => {
   assert.ok(html.includes('https://www.google.com/maps/search/?api=1&amp;query=12%20rue%20de%20la%20Paix'));
   assert.ok(html.includes('href="tel:0612345678"'));
 });
+
+// ─── Onglet Rémunération ─────────────────────────────────────────────
+function avecConteneurRemu(w) {
+  const div = w.document.createElement('div');
+  div.id = 'remuneration-contenu';
+  w.document.body.appendChild(div);
+  return div;
+}
+
+test('renderRemuneration : message clair si l’agence n’a pas saisi de grille', () => {
+  const w = chargerAgentApp();
+  const box = avecConteneurRemu(w);
+  w.renderRemuneration({ reference: { configuree: false } });
+  assert.ok(box.textContent.includes('pas encore renseigné'));
+});
+
+test('renderRemuneration : grille, totaux du mois et détail échappé', () => {
+  const w = chargerAgentApp();
+  const box = avecConteneurRemu(w);
+  w.renderRemuneration({
+    reference: { configuree: true, mode: 'forfait', unite: 'HT', parType: { entrant: 45, sortant: 45, simultane: 80, autre: null }, note: '' },
+    moisCourant: { mois: '2026-10', acquis: 125, prevu: 45, nbAcquises: 2 },
+    parMois: [{ mois: '2026-10', nb: 2, total: 125 }],
+    lignes: [{ id: 'm1', date: '2026-10-02T09:00:00', adresse: '<img src=x onerror=alert(1)>', type: 'EDL entrant', etat: 'acquise', montant: 45 }],
+    nonCouvertes: 0,
+  });
+  const html = box.innerHTML;
+  assert.ok(html.includes('125 € HT'));
+  assert.ok(html.includes('80 € HT'));
+  assert.ok(html.includes('Non défini'), 'un type sans tarif est signalé');
+  assert.ok(!html.includes('<img src=x'), 'l’adresse doit être échappée');
+});

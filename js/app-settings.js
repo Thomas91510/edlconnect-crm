@@ -258,6 +258,7 @@ function renderAgentsSettings(){
       <div style="flex:1;min-width:160px">
         <div style="font-size:12px;font-weight:600">${esc(a.nom)}</div>
         <div style="font-size:11px;color:var(--text2)">📱 ${esc(a.tel) || '—'}${a.email ? ' · 📅 ' + esc(a.email) : ''}${a.adresse ? ' · 🏠 ' + esc(a.adresse) : ''}${a.secteurs ? ' · 📍 ' + esc(a.secteurs) : ''}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px"><i class="ti ti-coin-euro"></i> ${esc(resumeRemunerationAgent(a.remuneration))}</div>
       </div>
       <label class="btn btn-sm" style="cursor:pointer" title="${a.contratPath ? 'Remplacer le contrat déposé' : 'Déposer le contrat signé (PDF)'}">
         <i class="ti ${a.contratPath ? 'ti-file-check' : 'ti-file-upload'}"></i> Contrat
@@ -390,6 +391,43 @@ async function televerserDocumentAgent(agentId, type, inputEl){
   }catch(e){ notify('❌ Erreur réseau lors du dépôt', 'err'); }
 }
 
+// ─── Rémunération (référence financière de la fiche agent) ──
+// Lue côté serveur par api/_lib/agent-remuneration.js pour l'onglet
+// « Rémunération » de l'espace agent. Champs vides = pas de tarif.
+const CHAMPS_REM_TYPE = ['entrant','sortant','simultane','autre'];
+function majFormulaireRemuneration(){
+  const mode = (document.getElementById('new-agent-rem-mode')||{}).value || 'forfait';
+  const f = document.getElementById('agent-rem-forfait');
+  const p = document.getElementById('agent-rem-pourcentage');
+  if(f) f.style.display = mode === 'forfait' ? '' : 'none';
+  if(p) p.style.display = mode === 'pourcentage' ? '' : 'none';
+}
+function lireFormulaireRemuneration(){
+  const val = id => ((document.getElementById(id)||{}).value || '').trim();
+  const parType = {};
+  CHAMPS_REM_TYPE.forEach(k => { parType[k] = val('new-agent-rem-' + k); });
+  return { mode: val('new-agent-rem-mode') || 'forfait', parType, pourcentage: val('new-agent-rem-pct'), unite: val('new-agent-rem-unite') || 'HT', note: val('new-agent-rem-note') };
+}
+function remplirFormulaireRemuneration(rem){
+  const r = rem || {};
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v == null ? '' : v; };
+  set('new-agent-rem-mode', r.mode === 'pourcentage' ? 'pourcentage' : 'forfait');
+  set('new-agent-rem-unite', r.unite || 'HT');
+  CHAMPS_REM_TYPE.forEach(k => set('new-agent-rem-' + k, (r.parType || {})[k]));
+  set('new-agent-rem-pct', r.pourcentage);
+  set('new-agent-rem-note', r.note);
+  majFormulaireRemuneration();
+}
+// Résumé affiché dans la liste des agents.
+function resumeRemunerationAgent(rem){
+  if(!rem) return 'Rémunération non renseignée';
+  const unite = rem.unite === 'net' ? '€ net' : '€ ' + (rem.unite || 'HT');
+  if(rem.mode === 'pourcentage') return rem.pourcentage ? 'Rémunération : ' + rem.pourcentage + ' % du montant HT' : 'Rémunération non renseignée';
+  const lib = { entrant:'entrant', sortant:'sortant', simultane:'sortant+entrant', autre:'autre' };
+  const parts = CHAMPS_REM_TYPE.filter(k => (rem.parType || {})[k] !== '' && (rem.parType || {})[k] != null).map(k => lib[k] + ' ' + rem.parType[k] + ' ' + unite);
+  return parts.length ? 'Rémunération : ' + parts.join(' · ') : 'Rémunération non renseignée';
+}
+
 function editerAgent(id){
   const agent = (DB.agents || []).find(a => a.id === id);
   if(!agent) return;
@@ -400,6 +438,7 @@ function editerAgent(id){
   const secteursEl = document.getElementById('new-agent-secteurs');
   if(emailEl) emailEl.value = agent.email || '';
   if(secteursEl) secteursEl.value = agent.secteurs || '';
+  remplirFormulaireRemuneration(agent.remuneration);
   const submitBtn = document.getElementById('agent-submit-btn');
   if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-check"></i> Enregistrer les modifications';
   const cancelBtn = document.getElementById('agent-cancel-btn');
@@ -415,6 +454,7 @@ function annulerEditionAgent(){
   const secteursEl = document.getElementById('new-agent-secteurs');
   if(emailEl) emailEl.value = '';
   if(secteursEl) secteursEl.value = '';
+  remplirFormulaireRemuneration(null);
   const submitBtn = document.getElementById('agent-submit-btn');
   if(submitBtn) submitBtn.innerHTML = '<i class="ti ti-user-plus"></i> Ajouter cet agent';
   const cancelBtn = document.getElementById('agent-cancel-btn');
@@ -431,6 +471,7 @@ function addAgent(){
   const email = (emailEl ? emailEl.value : '').trim();
   const secteurs = (secteursEl ? secteursEl.value : '').trim();
   if(!nom){ notify('⚠️ Le nom de l\'agent est requis', 'warn'); return; }
+  const remuneration = lireFormulaireRemuneration();
   if(!DB.agents) DB.agents = [];
 
   // Note : "adresse" n'est jamais écrit ici — c'est l'agent qui la renseigne
@@ -439,10 +480,10 @@ function addAgent(){
   const estUneCreation = !_editingAgentId;
   if(_editingAgentId){
     const agent = DB.agents.find(a => a.id === _editingAgentId);
-    if(agent){ Object.assign(agent, { nom, tel, email, secteurs }); }
+    if(agent){ Object.assign(agent, { nom, tel, email, secteurs, remuneration }); }
     _editingAgentId = null;
   } else {
-    DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, secteurs });
+    DB.agents.push({ id: 'agent_' + Date.now(), nom, tel, email, secteurs, remuneration });
   }
 
   saveToStorage();
