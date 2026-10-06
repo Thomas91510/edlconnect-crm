@@ -5,10 +5,13 @@
 // Trois modes :
 //   * forfait     : un montant par type d'état des lieux (entrant, sortant,
 //                   sortant + entrant, autre) ;
-//   * typologie   : un montant par typologie du bien (T1 à T7+, studio = T1),
-//                   avec une colonne « entrant ou sortant » et une colonne
-//                   « sortant + entrant », plus un montant pour les autres
-//                   prestations (pré-état des lieux…) ;
+//   * typologie   : une grille de lignes LIBRES (libellé au choix de
+//                   l'agence : « T2 », « Maison », « T2 meublé »…), chacune
+//                   reliée aux missions par des critères (typologie, type
+//                   de bien, meublé/nu ; vide = tous) avec une colonne
+//                   « entrant ou sortant » et une colonne « sortant +
+//                   entrant ». La PREMIÈRE ligne qui correspond s'applique.
+//                   Plus un montant pour les autres prestations (pré-état…) ;
 //   * pourcentage : un pourcentage du montant HT facturé pour la mission.
 //
 // Seules les missions TERMINÉES sont « acquises » ; les missions planifiées
@@ -24,6 +27,46 @@ export const LIBELLES_TYPE = {
 };
 export const TYPOLOGIES = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7+'];
 const MODES = ['forfait', 'typologie', 'pourcentage'];
+export const BIENS = ['Appartement', 'Maison', 'Studio', 'Local commercial', 'Parking'];
+const MAX_LIGNES = 30;
+const texte = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+
+// Lignes de la grille par typologie. Accepte aussi l'ancien format fixe
+// { parTypo: { T1: {simple, double}, … } } (beta.4), converti en lignes.
+function normaliserLignes(r) {
+  let brutes = Array.isArray(r.lignes) ? r.lignes : null;
+  if (!brutes && r.parTypo && typeof r.parTypo === 'object') {
+    brutes = TYPOLOGIES.map((t) => ({ label: t, typo: t, ...(r.parTypo[t] || {}) }));
+  }
+  return (brutes || []).slice(0, MAX_LIGNES).map((l) => ({
+    label: texte(l && l.label, 60),
+    typo: TYPOLOGIES.includes(l && l.typo) ? l.typo : '',
+    bien: BIENS.includes(l && l.bien) ? l.bien : '',
+    meuble: ['meuble', 'nu'].includes(l && l.meuble) ? l.meuble : '',
+    simple: nombre(l && l.simple),
+    double: nombre(l && l.double),
+  })).filter((l) => l.label || l.simple !== null || l.double !== null);
+}
+
+// Libellé lisible des critères d'une ligne (« T2 · Maison · meublé »).
+export function criteresLigne(l) {
+  return [l.typo === 'T7+' ? 'T7 et plus' : l.typo, l.bien, l.meuble === 'meuble' ? 'meublé' : l.meuble === 'nu' ? 'nu' : '']
+    .filter(Boolean).join(' · ') || 'Tous les biens';
+}
+
+// Première ligne de la grille dont tous les critères renseignés
+// correspondent à la mission (critère vide = indifférent).
+export function ligneCorrespondante(mission, lignes) {
+  const typo = statTypologie(mission.bienTypo);
+  const bien = String(mission.bienType || '').toLowerCase();
+  const m = String(mission.bienMeuble || '').toLowerCase();
+  const meuble = m.includes('meubl') ? 'meuble' : m ? 'nu' : '';
+  return (lignes || []).find((l) =>
+    (!l.typo || l.typo === typo) &&
+    (!l.bien || bien.includes(l.bien.toLowerCase()) || (l.bien === 'Studio' && String(mission.bienTypo || '').toLowerCase().includes('studio'))) &&
+    (!l.meuble || l.meuble === meuble)
+  ) || null;
+}
 const UNITES = ['HT', 'TTC', 'net'];
 
 function nombre(v) {
@@ -39,22 +82,18 @@ export function normaliserReference(ref) {
   const mode = MODES.includes(r.mode) ? r.mode : 'forfait';
   const parType = {};
   for (const cle of Object.keys(LIBELLES_TYPE)) parType[cle] = nombre(r.parType && r.parType[cle]);
-  const parTypo = {};
-  for (const t of TYPOLOGIES) {
-    const v = (r.parTypo && r.parTypo[t]) || {};
-    parTypo[t] = { simple: nombre(v.simple), double: nombre(v.double) };
-  }
+  const lignes = normaliserLignes(r);
   const typoAutre = nombre(r.typoAutre);
   const pourcentage = nombre(r.pourcentage);
   const unite = UNITES.includes(r.unite) ? r.unite : 'HT';
   let configuree;
   if (mode === 'pourcentage') configuree = pourcentage !== null && pourcentage > 0;
-  else if (mode === 'typologie') configuree = typoAutre !== null || TYPOLOGIES.some((t) => parTypo[t].simple !== null || parTypo[t].double !== null);
+  else if (mode === 'typologie') configuree = typoAutre !== null || lignes.some((l) => l.simple !== null || l.double !== null);
   else configuree = Object.values(parType).some((v) => v !== null);
   return {
     mode,
     parType: mode === 'forfait' ? parType : null,
-    parTypo: mode === 'typologie' ? parTypo : null,
+    lignes: mode === 'typologie' ? lignes.map((l) => ({ ...l, criteres: criteresLigne(l) })) : null,
     typoAutre: mode === 'typologie' ? typoAutre : null,
     pourcentage: mode === 'pourcentage' ? pourcentage : null,
     unite,
@@ -73,9 +112,8 @@ export function montantMission(mission, ref) {
   const cat = categorieEdl(mission.type);
   if (ref.mode === 'typologie') {
     if (cat === 'autre') return ref.typoAutre;
-    const typo = statTypologie(mission.bienTypo);
-    const ligne = ref.parTypo[typo];
-    if (!ligne) return null; // typologie non renseignée sur la mission
+    const ligne = ligneCorrespondante(mission, ref.lignes);
+    if (!ligne) return null; // aucune ligne de la grille ne couvre ce bien
     return cat === 'simultane' ? ligne.double : ligne.simple;
   }
   const v = ref.parType[cat];
@@ -109,7 +147,8 @@ export function calculerRemuneration(missions, refBrute, maintenant = new Date()
     const montant = montantMission(m, ref);
     if (montant === null && ref.configuree) nonCouvertes++;
     const mois = cleMois(m.date);
-    lignes.push({ id: m.id, date: m.date || '', adresse: m.adresse || '', type: m.type || '', typologie: statTypologie(m.bienTypo), etat, montant });
+    const ligneGrille = ref.mode === 'typologie' && categorieEdl(m.type) !== 'autre' ? ligneCorrespondante(m, ref.lignes) : null;
+    lignes.push({ id: m.id, date: m.date || '', adresse: m.adresse || '', type: m.type || '', typologie: statTypologie(m.bienTypo), ligneGrille: ligneGrille ? (ligneGrille.label || ligneGrille.criteres) : '', etat, montant });
     if (montant === null) continue;
     if (etat === 'acquise' && mois) {
       if (!parMois[mois]) parMois[mois] = { mois, nb: 0, total: 0 };

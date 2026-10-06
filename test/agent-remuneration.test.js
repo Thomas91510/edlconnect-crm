@@ -102,3 +102,33 @@ test('typologie : totaux et typologie renvoyée sur chaque ligne', () => {
   assert.equal(r.lignes.find(l => l.id === 'a').typologie, 'T2');
   assert.equal(r.reference.parType, null, 'en mode typologie, la grille par type n’est pas renvoyée');
 });
+
+test('grille libre : lignes personnalisées, critères combinés, première ligne qui correspond', () => {
+  const ref = normaliserReference({
+    mode: 'typologie',
+    lignes: [
+      { label: 'Maison', bien: 'Maison', simple: '90', double: '160' },
+      { label: 'T2 meublé', typo: 'T2', meuble: 'meuble', simple: '50' },
+      { label: 'T2', typo: 'T2', simple: '40', double: '70' },
+      { label: 'Parking', bien: 'Parking', simple: '15' },
+      { label: '', typo: '', simple: '' }, // ligne vide : ignorée
+    ],
+  });
+  assert.equal(ref.lignes.length, 4);
+  assert.equal(montantMission({ type: 'EDL entrant', bienType: 'Maison', bienTypo: 'T2' }, ref), 90, 'la ligne Maison passe avant T2');
+  assert.equal(montantMission({ type: 'EDL Sortant / Entrant', bienType: 'Maison', bienTypo: 'T5' }, ref), 160);
+  assert.equal(montantMission({ type: 'EDL entrant', bienType: 'Appartement', bienTypo: 'T2', bienMeuble: 'Meublé' }, ref), 50);
+  assert.equal(montantMission({ type: 'EDL entrant', bienType: 'Appartement', bienTypo: 'T2', bienMeuble: 'Nu' }, ref), 40);
+  assert.equal(montantMission({ type: 'EDL Sortant / Entrant', bienTypo: 'T2', bienMeuble: 'Meublé' }, ref), null, 'T2 meublé sans colonne sortant + entrant');
+  assert.equal(montantMission({ type: 'EDL sortant', bienType: 'Parking' }, ref), 15);
+  assert.equal(montantMission({ type: 'EDL sortant', bienTypo: 'T4' }, ref), null, 'aucune ligne pour un T4');
+  assert.equal(ref.lignes[1].criteres, 'T2 · meublé');
+});
+
+test('grille libre : le libellé de la ligne appliquée est renvoyé pour chaque mission', () => {
+  const r = calculerRemuneration(
+    [{ id: 'x', type: 'EDL entrant', bienType: 'Maison', statut: 'terminée', date: '2026-10-03T09:00:00' }],
+    { mode: 'typologie', lignes: [{ label: 'Maison', bien: 'Maison', simple: 90 }] }, MAINTENANT);
+  assert.equal(r.lignes[0].ligneGrille, 'Maison');
+  assert.equal(r.lignes[0].montant, 90);
+});

@@ -244,6 +244,10 @@ function blocZonesAgent(a){
 }
 
 function renderAgentsSettings(){
+  // Grille de rémunération par défaut (T1 à T7+) tant qu'aucun agent n'est
+  // en cours d'édition et que le formulaire n'a pas encore été rempli.
+  const lignesRem = document.getElementById('rem-typo-lignes');
+  if(lignesRem && !lignesRem.children.length && !_editingAgentId) renderLignesRemuneration(null);
   const wrap = document.getElementById('agents-list');
   if(!wrap) return;
   if(!DB.agents || !DB.agents.length){
@@ -395,8 +399,59 @@ async function televerserDocumentAgent(agentId, type, inputEl){
 // Lue côté serveur par api/_lib/agent-remuneration.js pour l'onglet
 // « Rémunération » de l'espace agent. Champs vides = pas de tarif.
 const CHAMPS_REM_TYPE = ['entrant','sortant','simultane','autre'];
-// Clés stockées (T7+) et suffixes d'identifiants HTML (T7) des typologies.
-const TYPOS_REM = [['T1','T1'],['T2','T2'],['T3','T3'],['T4','T4'],['T5','T5'],['T6','T6'],['T7+','T7']];
+// Grille par typologie : lignes libres (libellé + critères + 2 montants).
+// La première ligne dont les critères correspondent à la mission s'applique
+// (voir ligneCorrespondante dans api/_lib/agent-remuneration.js).
+const TYPOS_REM = ['T1','T2','T3','T4','T5','T6','T7+'];
+const BIENS_REM = ['Appartement','Maison','Studio','Local commercial','Parking'];
+const LIGNES_REM_DEFAUT = TYPOS_REM.map(t => ({ label: t === 'T1' ? 'T1 / studio' : t === 'T7+' ? 'T7 et plus' : t, typo: t, bien: '', meuble: '', simple: '', double: '' }));
+function htmlLigneRemuneration(l){
+  const opt = (val, lib, actuel) => `<option value="${esc(val)}"${val === actuel ? ' selected' : ''}>${esc(lib)}</option>`;
+  return `<div class="rem-ligne" data-rem-ligne>
+    <input class="rem-l-label" value="${esc(l.label || '')}" placeholder="Ex : T2 meublé" aria-label="Libellé de la ligne">
+    <select class="rem-l-typo" aria-label="Typologie">${opt('', 'Toutes', l.typo || '')}${TYPOS_REM.map(t => opt(t, t === 'T7+' ? 'T7 et +' : t, l.typo)).join('')}</select>
+    <select class="rem-l-bien" aria-label="Type de bien">${opt('', 'Tous', l.bien || '')}${BIENS_REM.map(b => opt(b, b, l.bien)).join('')}</select>
+    <select class="rem-l-meuble" aria-label="Meublé ou nu">${opt('', 'Tous', l.meuble || '')}${opt('meuble', 'Meublé', l.meuble)}${opt('nu', 'Nu', l.meuble)}</select>
+    <input class="rem-l-simple" inputmode="decimal" value="${esc(l.simple == null ? '' : l.simple)}" placeholder="€" aria-label="Montant entrant ou sortant">
+    <input class="rem-l-double" inputmode="decimal" value="${esc(l.double == null ? '' : l.double)}" placeholder="€" aria-label="Montant sortant + entrant">
+    <span class="rem-ligne-actions">
+      <button type="button" class="btn btn-sm" title="Monter (priorité plus haute)" aria-label="Monter la ligne" onclick="monterLigneRemuneration(this)">↑</button>
+      <button type="button" class="btn btn-sm" title="Supprimer la ligne" aria-label="Supprimer la ligne" style="color:#c0392b;border-color:#c0392b" onclick="this.closest('[data-rem-ligne]').remove()">✕</button>
+    </span>
+  </div>`;
+}
+function renderLignesRemuneration(lignes){
+  const wrap = document.getElementById('rem-typo-lignes');
+  if(!wrap) return;
+  const liste = (lignes && lignes.length) ? lignes : LIGNES_REM_DEFAUT;
+  wrap.innerHTML = liste.map(htmlLigneRemuneration).join('');
+}
+function ajouterLigneRemuneration(){
+  const wrap = document.getElementById('rem-typo-lignes');
+  if(!wrap) return;
+  wrap.insertAdjacentHTML('beforeend', htmlLigneRemuneration({}));
+  wrap.lastElementChild.querySelector('.rem-l-label').focus();
+}
+function monterLigneRemuneration(btn){
+  const ligne = btn.closest('[data-rem-ligne]');
+  if(ligne && ligne.previousElementSibling) ligne.parentNode.insertBefore(ligne, ligne.previousElementSibling);
+}
+function lireLignesRemuneration(){
+  return Array.from(document.querySelectorAll('#rem-typo-lignes [data-rem-ligne]')).map(r => ({
+    label: r.querySelector('.rem-l-label').value.trim(),
+    typo: r.querySelector('.rem-l-typo').value,
+    bien: r.querySelector('.rem-l-bien').value,
+    meuble: r.querySelector('.rem-l-meuble').value,
+    simple: r.querySelector('.rem-l-simple').value.trim(),
+    double: r.querySelector('.rem-l-double').value.trim(),
+  })).filter(l => l.label || l.simple || l.double);
+}
+// Ancien format fixe (beta.4) → lignes.
+function lignesDepuisReference(r){
+  if(Array.isArray(r.lignes)) return r.lignes;
+  if(r.parTypo) return TYPOS_REM.map(t => Object.assign({ label: t, typo: t, bien: '', meuble: '' }, r.parTypo[t] || {}));
+  return null;
+}
 function majFormulaireRemuneration(){
   const mode = (document.getElementById('new-agent-rem-mode')||{}).value || 'forfait';
   const f = document.getElementById('agent-rem-forfait');
@@ -410,19 +465,13 @@ function lireFormulaireRemuneration(){
   const val = id => ((document.getElementById(id)||{}).value || '').trim();
   const parType = {};
   CHAMPS_REM_TYPE.forEach(k => { parType[k] = val('new-agent-rem-' + k); });
-  const parTypo = {};
-  TYPOS_REM.forEach(([cle, id]) => { parTypo[cle] = { simple: val('new-agent-rem-typo-' + id + '-simple'), double: val('new-agent-rem-typo-' + id + '-double') }; });
-  return { mode: val('new-agent-rem-mode') || 'forfait', parType, parTypo, typoAutre: val('new-agent-rem-typo-autre'), pourcentage: val('new-agent-rem-pct'), unite: val('new-agent-rem-unite') || 'HT', note: val('new-agent-rem-note') };
+  return { mode: val('new-agent-rem-mode') || 'forfait', parType, lignes: lireLignesRemuneration(), typoAutre: val('new-agent-rem-typo-autre'), pourcentage: val('new-agent-rem-pct'), unite: val('new-agent-rem-unite') || 'HT', note: val('new-agent-rem-note') };
 }
 function remplirFormulaireRemuneration(rem){
   const r = rem || {};
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v == null ? '' : v; };
   set('new-agent-rem-mode', ['pourcentage','typologie'].includes(r.mode) ? r.mode : 'forfait');
-  TYPOS_REM.forEach(([cle, id]) => {
-    const l = (r.parTypo || {})[cle] || {};
-    set('new-agent-rem-typo-' + id + '-simple', l.simple);
-    set('new-agent-rem-typo-' + id + '-double', l.double);
-  });
+  renderLignesRemuneration(lignesDepuisReference(r));
   set('new-agent-rem-typo-autre', r.typoAutre);
   set('new-agent-rem-unite', r.unite || 'HT');
   CHAMPS_REM_TYPE.forEach(k => set('new-agent-rem-' + k, (r.parType || {})[k]));
@@ -436,8 +485,8 @@ function resumeRemunerationAgent(rem){
   const unite = rem.unite === 'net' ? '€ net' : '€ ' + (rem.unite || 'HT');
   if(rem.mode === 'pourcentage') return rem.pourcentage ? 'Rémunération : ' + rem.pourcentage + ' % du montant HT' : 'Rémunération non renseignée';
   if(rem.mode === 'typologie'){
-    const parts = TYPOS_REM.map(([cle]) => [cle, ((rem.parTypo || {})[cle] || {}).simple]).filter(([, v]) => v !== '' && v != null).map(([cle, v]) => cle + ' ' + v + ' ' + unite);
-    return parts.length ? 'Rémunération par typologie : ' + parts.join(' · ') : 'Rémunération non renseignée';
+    const parts = (lignesDepuisReference(rem) || []).filter(l => l.simple !== '' && l.simple != null).map(l => (l.label || l.typo || 'Ligne') + ' ' + l.simple + ' ' + unite);
+    return parts.length ? 'Rémunération par grille : ' + parts.join(' · ') : 'Rémunération non renseignée';
   }
   const lib = { entrant:'entrant', sortant:'sortant', simultane:'sortant+entrant', autre:'autre' };
   const parts = CHAMPS_REM_TYPE.filter(k => (rem.parType || {})[k] !== '' && (rem.parType || {})[k] != null).map(k => lib[k] + ' ' + rem.parType[k] + ' ' + unite);
