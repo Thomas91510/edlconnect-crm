@@ -1302,7 +1302,7 @@ async function onAuthSuccess(user){
   const dot=document.getElementById('sync-dot');
   const txt=document.getElementById('sync-text');
   if(dot)dot.style.background='#22c55e';
-  if(txt){txt.textContent='Sync cloud active';txt.style.color='rgba(255,255,255,0.25)';}
+  if(txt){txt.textContent='Synchronisé';txt.style.color='';}
   document.getElementById('auth-screen').classList.remove('show');
   document.querySelector('.crm').style.display='flex';
   const footerEl=document.querySelector('.sidebar-footer div:last-child');

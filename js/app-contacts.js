@@ -538,13 +538,77 @@ function updateEmailStatus(contactId,emailId,newStatut){
 }
 
 // ─── NAV ──────────────────────────────────────────────────
+// Refonte V2 : le menu ne compte plus que 5 rubriques. Une rubrique peut
+// regrouper plusieurs vues historiques (ex. Missions = Réservations +
+// Missions + Agenda), présentées alors comme des onglets en tête de page.
+// Les vues gardent leurs identifiants (view-xxx) : seule la navigation change.
+const SECTIONS_NAV = {
+  aujourdhui : { vues:[{v:'dashboard',  label:"Aujourd'hui"}] },
+  missions   : { vues:[{v:'reservations',label:'Réservations', badge:'resa-nav-badge', perm:'reservations'},
+                       {v:'missions',   label:'Missions', perm:'missions'},
+                       {v:'agenda',     label:'Agenda', perm:'missions'}] },
+  clients    : { vues:[{v:'contacts',   label:'Clients'}] },
+  prospection: { vues:[{v:'prospection',label:'Prospection'}] },
+  emails     : { vues:[{v:'compose',    label:'Écrire', perm:'emails'},
+                       {v:'campaigns',  label:'Campagnes', perm:'campagnes'},
+                       {v:'brevo',      label:'Synchronisation Brevo', siVisible:'nav-brevo'}] },
+  reglages   : { vues:[{v:'settings',   label:'Réglages'}] },
+  aide       : { vues:[{v:'help',       label:'Aide'}] },
+  admin      : { vues:[{v:'admin',      label:'Plateforme'}] }
+};
+function sectionDeVue(v){
+  for(const cle in SECTIONS_NAV){
+    if(SECTIONS_NAV[cle].vues.some(x=>x.v===v)) return cle;
+  }
+  return null;
+}
+// Onglets visibles d'une rubrique : ceux autorisés par le rôle courant
+// (peut(), js/app-equipe.js — absent des tests : tout est alors autorisé)
+// et, pour Brevo, seulement si le compte y a droit (bouton #nav-brevo affiché).
+function ongletsVisibles(section){
+  const def=SECTIONS_NAV[section];
+  if(!def) return [];
+  return def.vues.filter(x=>{
+    if(x.perm && typeof peut==='function' && !peut(x.perm)) return false;
+    if(x.siVisible){
+      const el=document.getElementById(x.siVisible);
+      if(!el || el.style.display==='none') return false;
+    }
+    return true;
+  });
+}
+function renderSectionTabs(v){
+  const barre=document.getElementById('section-tabs-bar');
+  const conteneur=document.getElementById('section-tabs');
+  if(!barre||!conteneur) return;
+  const onglets=ongletsVisibles(sectionDeVue(v));
+  if(onglets.length<2){ barre.classList.remove('show'); conteneur.innerHTML=''; return; }
+  barre.classList.add('show');
+  conteneur.innerHTML=onglets.map(o=>{
+    const actif=o.v===v;
+    let badge='';
+    if(o.badge){
+      const b=document.getElementById(o.badge);
+      if(b && b.style.display!=='none' && b.textContent) badge=` <span class="nav-badge nb-red">${esc(b.textContent)}</span>`;
+    }
+    return `<button type="button" role="tab" class="section-tab${actif?' active':''}" aria-selected="${actif}" onclick="nav('${o.v}')">${esc(o.label)}${badge}</button>`;
+  }).join('');
+}
 function nav(v){
+  // Une rubrique interdite au rôle courant renvoie vers l'accueil (le menu
+  // la masque déjà ; ceci couvre les accès par lien ou raccourci).
+  if(typeof vueAutorisee==='function' && !vueAutorisee(v)) v='dashboard';
   // Fermer toute fenêtre modale restée ouverte pour éviter qu'elle ne bloque l'affichage d'une future fenêtre
   document.querySelectorAll('.modal-bg.open').forEach(el=>el.classList.remove('open'));
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(el=>{if(el.getAttribute('onclick')&&el.getAttribute('onclick').includes("'"+v+"'"))el.classList.add('active');});
+  const section=sectionDeVue(v);
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    const s=el.getAttribute('data-section');
+    if(s ? s===section : (el.getAttribute('onclick')||'').includes("'"+v+"'")) el.classList.add('active');
+  });
+  renderSectionTabs(v);
   if(v==='dashboard')renderDashboard();
   if(v==='contacts'){detectDuplicates();renderContacts();}
   if(v==='prospection'){
@@ -561,13 +625,12 @@ function nav(v){
   if(v==='agenda')renderCalendar();
   if(v==='reservations')loadReservations();
   if(v!=='reservations' && _resaAutoRefreshInterval) silentRefreshReservations();
-  if(v==='settings')loadSettingsForm();
+  if(v==='settings'){loadSettingsForm(); if(typeof renderReglagesV2==='function') renderReglagesV2();}
   if(v==='help'){}
-  // Synchronise la barre mobile même quand la navigation vient du tiroir
-  // complet (ex. Contacts, Composer) : les vues absentes du raccourci
-  // rapide allument "Plus" plutôt que de laisser un ancien onglet actif.
-  const vuesRaccourcis=['dashboard','reservations','missions','agenda'];
-  updateMobileNav(vuesRaccourcis.includes(v)?v:'plus');
+  // Barre mobile : les rubriques sans raccourci allument "Plus".
+  const raccourcis={aujourdhui:'dashboard',missions:'missions',clients:'contacts',emails:'compose'};
+  updateMobileNav(raccourcis[section]||'plus');
+  const main=document.querySelector('.main'); if(main) main.scrollTop=0;
   closeMobileSidebar(); // ferme le menu mobile après navigation
 }
 
@@ -673,6 +736,13 @@ function filterByMonth(arr, dateField){
 
 function renderDashboard(){
   document.getElementById('today-label').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  // Accueil personnalisé : "Bonjour Thomas" (prénom tiré du nom saisi dans
+  // Réglages › Profil), à défaut le simple titre de la rubrique.
+  const titreAccueil=document.getElementById('dash-greeting');
+  if(titreAccueil){
+    const prenom=((typeof CFG!=='undefined'&&CFG&&CFG.userName)||'').trim().split(/\s+/)[0];
+    titreAccueil.textContent=prenom?'Bonjour '+prenom:"Aujourd'hui";
+  }
   detectDuplicates();
   buildMonthOptions();
   renderAujourdhui();
@@ -742,9 +812,10 @@ function renderDashboard(){
   document.getElementById('k-no-reply').textContent=noReply||'—';
   document.getElementById('k-no-reply-pct').textContent=noReply>0?`${Math.round(noReply/total*100)}% des envois`:'Aucun';
 
-  const stageCounts={};PROSP_STAGES.forEach(s=>stageCounts[s.key]=DB.prospects.filter(p=>p.etape===s.key).length);
-  const maxC=Math.max(...Object.values(stageCounts),1);
-  document.getElementById('dash-pipeline').innerHTML=PROSP_STAGES.map(s=>`<div class="stat-row"><span style="font-size:11px;width:80px;color:var(--text2);flex-shrink:0">${s.label}</span><div class="progress-bar"><div class="progress-fill" style="width:${Math.round(stageCounts[s.key]/maxC*100)}%;background:${s.color}"></div></div><span style="font-size:11px;min-width:16px;text-align:right">${stageCounts[s.key]}</span></div>`).join('');
+  // Mêmes 5 colonnes que le tableau de prospection (COLONNES_PIPELINE).
+  const colCounts=COLONNES_PIPELINE.map(c=>({label:c.label,n:DB.prospects.filter(p=>c.etapes.includes(p.etape)).length}));
+  const maxC=Math.max(...colCounts.map(c=>c.n),1);
+  document.getElementById('dash-pipeline').innerHTML=colCounts.map(c=>`<div class="stat-row" style="margin-bottom:14px"><span style="font-size:13px;width:150px;flex-shrink:0">${c.label}</span><div class="progress-bar" style="height:8px;border-radius:4px;background:#F0F1F3"><div class="progress-fill" style="width:${Math.round(c.n/maxC*100)}%"></div></div><span style="font-size:13px;min-width:24px;text-align:right;color:var(--text2)">${c.n}</span></div>`).join('');
 
   // Missions dans le tableau — filtrées
   document.getElementById('dash-missions').innerHTML=missions.slice(-5).reverse().map(m=>`<tr><td>${esc(m.agence)}</td><td style="font-size:10px">${esc(m.type)}</td><td>${m.montant} €</td><td>${statusBadge(m.statut)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Aucune</td></tr>';

@@ -6,7 +6,9 @@
   <title>Espace client — EDL IDF Expert en État des Lieux</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@5/index.css">
+<style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;min-height:100vh;color:#1a1a1a;font-size:14px}
     input{width:100%;background:#fff;border:1.5px solid #e5e5e2;border-radius:10px;color:#1a1a1a;padding:12px 14px;font-size:13px;font-family:inherit;outline:none}
@@ -214,6 +216,43 @@
       .topbar-brand{font-size:12.5px;font-weight:700}
       .hero-rdv{flex-direction:column;align-items:flex-start}
     }
+  
+    /* ═══ REFONTE V2 — même langage visuel que le CRM (menu clair, sans dégradés) ═══ */
+    body{font-family:'Geist Variable','Geist',system-ui,-apple-system,'Segoe UI',sans-serif;background:#F6F7F9;color:#15171C;-webkit-font-smoothing:antialiased}
+    .sidebar{width:248px;background:#fff;border-right:1px solid #E8E9EC}
+    .brand{border-bottom:none;padding:22px 18px 14px}
+    .brand-name{color:#15171C;font-size:15px;font-weight:600}
+    .brand-sub{color:#5B6170;font-size:12px}
+    .nav-group-label{color:#6E7483;font-size:11px;font-weight:600}
+    .nav-item{color:#3A3F4B;font-size:14px;height:42px;padding:0 12px}
+    .nav-item:hover{background:#F6F7F9;color:#15171C}
+    .nav-item.active{background:#EAF1FA;color:#1A5FA8;font-weight:600}
+    .nav-item.active .nav-ic{color:#1A5FA8}
+    .nav-badge{background:#1A5FA8}
+    .sidebar-foot{border-top:1px solid #E8E9EC}
+    .sb-contact{background:#F6F7F9}
+    .sb-contact-ava{background:#EAF1FA;color:#1A5FA8}
+    .sb-contact-name{color:#15171C;font-size:13px}
+    .sb-contact-role{color:#5B6170;font-size:12px}
+    .sb-call{height:40px;font-size:13px;border-radius:10px}
+    .sb-logout{border-color:#E8E9EC;color:#5B6170;font-size:12.5px;height:36px}
+    .content{max-width:960px;padding:40px 40px 72px}
+    h1{font-size:27px;font-weight:600;letter-spacing:-.02em}
+    .lead{color:#5B6170;font-size:14px}
+    .hero-rdv{background:#fff;color:#15171C;border:1px solid #E8E9EC;box-shadow:none}
+    .hero-rdv-label{color:#5B6170;opacity:1}
+    .hero-rdv-title{font-size:19px;font-weight:600}
+    .hero-rdv-meta{color:#5B6170;opacity:1}
+    .hero-rdv-icon{background:#EAF1FA;color:#1A5FA8}
+    .cta-new,.btn-primary{background:#1A5FA8;box-shadow:none;border-radius:12px;font-size:14px;font-weight:500;min-height:48px}
+    .modal-header{background:#fff;border-bottom:1px solid #E8E9EC}
+    .modal-header *{color:#15171C}
+    .modal-close{background:#F6F7F9;color:#15171C}
+    .modal-overlay{background:rgba(21,23,28,.4)}
+    .card{border-color:#E8E9EC;border-radius:14px}
+    .kpi{background:#fff;border-color:#E8E9EC;border-radius:14px}
+    input{border:1px solid #D5D8DE}
+    #app-version{font-family:'Geist Mono Variable',ui-monospace,monospace;color:#6E7483 !important}
   </style>
 </head>
 <body>
@@ -565,12 +604,17 @@ function resetAttachments(){
 
 // Affiche le commit réellement déployé, indépendamment de la connexion —
 // utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
+// Numéro de version : aligné sur APP_VERSION (js/app-core.js), vérifié par
+// test/frontend-version-coherente.test.js.
+const APP_VERSION = '2.0.0-beta.1';
 (async function afficherVersion(){
+  const el0 = document.getElementById('app-version');
+  if(el0) el0.textContent = 'v' + APP_VERSION;
   try {
     const resp = await fetch('/api/version');
     const data = await resp.json();
     const el = document.getElementById('app-version');
-    if(el && data.sha) el.textContent = (data.env === 'production' ? '' : data.env + ' · ') + data.sha;
+    if(el) el.textContent = ['v' + APP_VERSION, data.env && data.env !== 'production' ? data.env : '', data.sha || ''].filter(Boolean).join(' · ');
   } catch(e) {}
 })();
 

@@ -45,16 +45,34 @@ function ajustementsPourMois(mois){
   }, { nb: 0, ca: 0 });
 }
 
-// Affiche le commit réellement déployé (api/version.js expose
-// VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement, aucune maintenance
-// manuelle) — utile pour vérifier en un coup d'œil qu'un déploiement a
-// bien pris effet, comme sur l'extranet.
+// ─── VERSION ──────────────────────────────────────────────
+// Numéro de version lisible (majeure.mineure.correctif), à incrémenter à
+// chaque mise en production avec une entrée dans NOUVEAUTES ci-dessous.
+// Il est complété par le commit réellement déployé (api/version.js expose
+// VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
+// en un coup d'œil qu'un déploiement a bien pris effet.
+const APP_VERSION = '2.0.0-beta.1';
+const NOUVEAUTES = [
+  { v:'2.0.0-beta.1', titre:'Refonte de l\u2019interface (V1 de test)', texte:'Menu en 5 rubriques, accueil « Aujourd\u2019hui », réservations, missions et agenda réunis, emails regroupés, rôles administrateur / assistante, réglages par rubrique.' }
+];
+let _versionDeploiement = { sha:'', env:'' };
+// "v2.0.0-beta.1 · preview · a3f9c21" — l'environnement n'est affiché que
+// hors production, pour repérer d'un coup d'œil une version de test.
+function libelleVersion(info){
+  const morceaux = ['v' + APP_VERSION];
+  if(info && info.env && info.env !== 'production') morceaux.push(info.env);
+  if(info && info.sha) morceaux.push(info.sha);
+  return morceaux.join(' · ');
+}
 (async function afficherVersionCrm(){
+  const el = document.getElementById('app-version');
+  if(el) el.textContent = libelleVersion(null);
   try {
     const resp = await fetch('/api/version');
     const data = await resp.json();
-    const el = document.getElementById('app-version');
-    if(el && data.sha) el.textContent = (data.env === 'production' ? '' : data.env + ' · ') + data.sha;
+    _versionDeploiement = { sha: data.sha || '', env: data.env || '' };
+    const elApres = document.getElementById('app-version');
+    if(elApres) elApres.textContent = libelleVersion(_versionDeploiement);
   } catch(e) {}
 })();
 
@@ -558,20 +576,22 @@ function renderAujourdhui(){
   const stagnants = typeof prospectsStagnants === 'function' ? prospectsStagnants() : [];
 
   const items = [
-    { label:"RDV aujourd'hui / demain", count: rdvProches.length, icone:'ti-calendar-event', couleur:'var(--blue)', action:"nav('missions')" },
-    { label:'Réservations non traitées', count:'—', id:'dash-today-resa', icone:'ti-inbox', couleur:'var(--red-text, #A32D2D)', action:"nav('reservations')" },
-    { label:'Avis à relancer', count: avisAttente.length, icone:'ti-star', couleur:'var(--green)', action:"nav('missions')" },
-    { label:'Prospects qui stagnent', count: stagnants.length, icone:'ti-clock-pause', couleur:'var(--red-text, #A32D2D)', action:"nav('prospection')" }
-  ];
+    { kicker:'Réservations en ligne', label:'à confirmer', count:'—', id:'dash-today-resa', dot:'var(--violet)', cta:'Confirmer', action:"nav('reservations')", perm:'reservations' },
+    { kicker:'Planning', label:"RDV aujourd'hui et demain", count: rdvProches.length, dot:'var(--blue)', cta:'Voir le planning', action:"nav('agenda')", perm:'missions' },
+    { kicker:'Avis Google', label:'demandes en attente', count: avisAttente.length, dot:'var(--green)', cta:'Voir les missions', action:"nav('missions')", perm:'missions' },
+    { kicker:'Prospection', label:'prospects qui stagnent', count: stagnants.length, dot:'var(--amber)', cta:'Relancer', action:"nav('prospection')", perm:'prospection' }
+  ].filter(it=>typeof peut!=='function' || peut(it.perm));
 
+  // Cartes cliquables (vrais <button> : accessibles au clavier).
   box.innerHTML = items.map(it=>`
-    <div onclick="${it.action}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border2);cursor:pointer;background:var(--bg2)">
-      <i class="ti ${it.icone}" style="font-size:20px;color:${it.couleur};flex-shrink:0"></i>
-      <div style="min-width:0">
-        <div style="font-size:18px;font-weight:700"${it.id?` id="${it.id}"`:''}>${it.count}</div>
-        <div style="font-size:10.5px;color:var(--text2)">${it.label}</div>
-      </div>
-    </div>`).join('');
+    <button type="button" class="todo-card" onclick="${it.action}">
+      <span class="todo-kicker"><span class="todo-dot" style="background:${it.dot}"></span>${it.kicker}</span>
+      <span style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <span class="todo-count"${it.id?` id="${it.id}"`:''}>${it.count}</span>
+        <span style="font-size:14px;font-weight:500">${it.label}</span>
+      </span>
+      <span class="todo-cta">${it.cta} →</span>
+    </button>`).join('');
 
   chargerResaPendingCount();
 }

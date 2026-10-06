@@ -7,21 +7,26 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="alternate icon" href="/favicon.ico">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@5/index.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#ffffff;--bg2:#f8f8f6;--bg3:#f2f1ee;
-  --text:#1a1a1a;--text2:#6b6b6b;--text3:#767676;
-  --border:#e5e5e2;--border2:#d0d0cc;
-  --blue:#1A5FA8;--blue-bg:#F4F7FA;--blue-text:#0C447C;
-  --green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;
-  --amber:#854F0B;--amber-bg:#FAEEDA;--amber-text:#633806;
+  --bg:#ffffff;--bg2:#F6F7F9;--bg3:#F6F7F9;
+  --text:#15171C;--text2:#5B6170;--text3:#6E7483;
+  --border:#E8E9EC;--border2:#D5D8DE;
+  --blue:#1A5FA8;--blue-bg:#EAF1FA;--blue-text:#124577;
+  --green:#2F7A3E;--green-bg:#E7F3EA;--green-text:#25602F;
+  --amber:#8A5A00;--amber-bg:#FDF1DC;--amber-text:#6B4600;
   --red:#A32D2D;--red-bg:#FCEBEB;--red-text:#791F1F;
   --teal:#0F6E56;--teal-bg:#E1F5EE;--teal-text:#085041;
-  --radius:8px;--radius-lg:12px;
+  --violet:#5B3FB8;--violet-bg:#EFEBFB;
+  --radius:10px;--radius-lg:14px;
+  --font:'Geist Variable','Geist',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'Geist Mono Variable','Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);height:100vh;overflow:hidden}
+body{font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;color:var(--text);background:var(--bg3);height:100vh;overflow:hidden}
 .crm{display:none;height:100vh}
 /* SIDEBAR — Design SaaS Lokentia */
 .sidebar{width:220px;min-width:220px;background:#0F1E2E;border-right:none;display:flex;flex-direction:column;overflow-y:auto}
@@ -447,6 +452,216 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 .auth-error.show{display:block}
 .auth-success{background:var(--green-bg);color:var(--green-text);padding:10px 14px;border-radius:var(--radius);font-size:12px;margin-bottom:12px;display:none}
 .auth-success.show{display:block}
+
+/* ═══════════════════════════════════════════════════════════
+   REFONTE V2 — interface aérée (menu clair, 5 rubriques)
+   Placé en fin de feuille : surcharge les styles historiques
+   ci-dessus sans toucher aux identifiants utilisés par js/*.js.
+   ═══════════════════════════════════════════════════════════ */
+button,input,select,textarea{font-family:inherit}
+.mono{font-family:var(--font-mono)}
+
+/* Menu latéral clair */
+.sidebar{width:248px;min-width:248px;background:#fff;border-right:1px solid var(--border)}
+.logo{padding:22px 18px 14px;border-bottom:none}
+.logo-top{margin-bottom:0;gap:12px}
+.logo-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+.logo-sub{font-size:12px;color:var(--text2)}
+.logo-badges{display:none}
+.lbadge-green{background:var(--blue-bg);color:var(--blue);border:none}
+.sidebar-search{display:flex;align-items:center;gap:10px;width:100%;height:40px;padding:0 12px;margin:4px 0 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:13.5px;cursor:pointer;text-align:left}
+.sidebar-search:hover{border-color:var(--border2)}
+.sidebar-search kbd{font-family:var(--font-mono);font-size:11px;padding:1px 6px;border-radius:5px;border:1px solid var(--border);background:#fff;color:var(--text2)}
+.nav-section{display:none}
+.nav-item{height:42px;padding:0 12px;margin:1px 0;font-size:14px;font-weight:500;color:#3A3F4B;border-radius:var(--radius)}
+.nav-item:hover{background:var(--bg2);color:var(--text)}
+.nav-item.active{background:var(--blue-bg);color:var(--blue);font-weight:600}
+.nav-icon{width:20px;height:20px;margin-right:12px;background:none !important;font-size:18px}
+.nav-item i{font-size:18px;color:inherit !important}
+.nav-badge{font-size:11px;min-width:20px;height:20px;padding:0 6px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.nb-red{background:var(--blue);color:#fff;border:none}
+.nb-amber{background:var(--amber-bg);color:var(--amber-text);border:none}
+.nav-secondary{margin-top:auto;padding-top:10px;display:flex;flex-direction:column}
+.nav-secondary .nav-item{height:38px;font-size:13.5px;color:var(--text2)}
+.sidebar-footer{padding:12px 16px 16px;border-top:1px solid var(--border)}
+.sidebar-footer div{font-size:12px;color:var(--text2)}
+.sidebar-user{display:flex;align-items:center;gap:10px}
+.sidebar-user-avatar{width:34px;height:34px;border-radius:50%;background:var(--blue-bg);color:var(--blue) !important;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px !important;flex-shrink:0}
+.sidebar-user-name{font-size:13px !important;font-weight:600;color:var(--text) !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-logout{background:none;border:none;cursor:pointer;color:var(--text2);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.sidebar-logout:hover{background:var(--bg2);color:var(--text)}
+.sidebar-meta{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.sidebar-meta .sync-row{margin:0}
+.role-pill{font-size:11px !important;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--bg2);color:var(--text2) !important}
+.role-pill.apercu{background:var(--violet-bg);color:var(--violet) !important}
+#app-version{font-family:var(--font-mono);font-size:11px !important;color:var(--text3) !important}
+
+/* Zone principale */
+.main{background:var(--bg2)}
+.view{padding:36px 44px 72px;max-width:1480px}
+.page-header{margin-bottom:28px;gap:16px;flex-wrap:wrap;align-items:flex-end}
+.page-title{font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.page-kicker{font-size:14px;color:var(--text2);margin-bottom:6px}
+.section-title{font-size:15px;font-weight:600;margin:0 0 14px}
+
+/* Onglets de rubrique (Missions : Réservations · Missions · Agenda, etc.) */
+.section-tabs-bar{display:none;padding:28px 44px 0;max-width:1480px}
+.section-tabs-bar.show{display:block}
+.section-tabs-bar + .view{padding-top:22px}
+.section-tabs{display:inline-flex;gap:2px;padding:4px;border-radius:12px;background:#ECEDF0}
+.section-tab{height:36px;padding:0 16px;border:none;border-radius:9px;background:transparent;color:var(--text2);font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.section-tab:hover{color:var(--text)}
+.section-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(21,23,28,.08)}
+.section-tab .nav-badge{height:18px;min-width:18px;font-size:10.5px}
+
+/* Boutons */
+.btn{height:40px;padding:0 16px;border-radius:var(--radius);border:1px solid var(--border);font-size:13.5px;font-weight:500;gap:8px;background:#fff}
+.btn:hover{background:var(--bg2);border-color:var(--border2)}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:var(--blue-text);border-color:var(--blue-text)}
+.btn-sm{height:34px;padding:0 12px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.sans-ca #dash-stats-edl{display:none !important}
+label.btn{margin:0}
+.filters-row{gap:8px;margin-bottom:20px}
+.filters-row .btn{border-radius:999px;height:36px}
+.filters-row .btn.active,#contact-filter-btns .btn.active,#mission-filter-btns .btn.active{background:var(--text);color:#fff;border-color:var(--text)}
+
+/* Indicateurs */
+.kpi-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0;margin-bottom:32px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.kpi{background:#fff;border:none;border-right:1px solid var(--border);border-radius:0;padding:22px 24px}
+.kpi:last-child{border-right:none}
+.kpi-label{font-size:13px;color:var(--text2);margin-bottom:8px}
+.kpi-value{font-size:27px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:12.5px;margin-top:6px}
+
+/* Cartes */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:24px}
+.card-head{padding:18px 22px 14px;border-bottom:1px solid #F0F1F3;font-size:15px;font-weight:600}
+.card-body{padding:20px 22px}
+
+/* Tableaux */
+.tbl{font-size:13.5px}
+.tbl th{padding:13px 16px;font-size:12px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text2);border-bottom:1px solid var(--border)}
+.tbl td{padding:15px 16px;border-bottom:1px solid #F0F1F3;max-width:240px}
+.tbl tr:hover td{background:#F9FAFB}
+
+/* Pastilles de statut */
+.badge{padding:4px 10px;border-radius:999px;font-size:12px}
+.b-green{background:var(--green-bg);color:var(--green-text)}
+.b-amber{background:var(--amber-bg);color:var(--amber-text)}
+.b-gray{background:#F0F1F3;color:#3A3F4B}
+.b-purple{background:var(--violet-bg);color:var(--violet)}
+
+/* Formulaires */
+input,select,textarea{padding:10px 12px;font-size:13.5px;border-radius:var(--radius);border-color:var(--border2)}
+input[type=checkbox],input[type=radio]{width:auto}
+label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
+.search-wrap{margin-bottom:18px}
+.search-wrap input{height:44px;padding-left:40px}
+.search-wrap i{left:14px}
+
+/* Modales */
+.modal-bg{background:rgba(21,23,28,.4)}
+.modal{border-radius:16px;padding:28px;box-shadow:0 24px 64px rgba(21,23,28,.18)}
+.modal-title{font-size:19px;letter-spacing:-.01em;margin-bottom:18px}
+
+/* Onglets internes */
+.tabs{margin-bottom:20px;gap:20px}
+.tab{padding:12px 0;font-size:13.5px;font-weight:500}
+.tab.active{color:var(--text);border-bottom-color:var(--blue)}
+
+/* Prospection */
+#prosp-board{gap:12px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));align-items:start}
+.prosp-col{background:#EEF0F3;border:none;border-radius:var(--radius-lg);padding:12px}
+.prosp-col-title{font-size:12.5px;text-transform:none;letter-spacing:0;padding:2px 4px 8px}
+.prosp-card{border-radius:var(--radius);padding:12px;margin-bottom:8px}
+.prosp-card-name{font-size:13px}
+.prosp-card-email{font-size:12px}
+.prosp-card-date{font-size:11px}
+
+/* Agenda */
+.cal-day{border-radius:var(--radius);min-height:86px;padding:6px;background:#fff}
+.cal-day-num{font-size:12px}
+.cal-ev{font-size:11px;padding:2px 6px;border-radius:5px}
+
+/* Réglages : rubriques à gauche, contenu à droite */
+.settings-layout{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+.settings-nav{flex:0 0 220px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0}
+.settings-nav button{height:40px;padding:0 12px;border:none;border-radius:8px;background:transparent;text-align:left;font-size:13.5px;font-weight:500;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:10px}
+.settings-nav button:hover{color:var(--text);background:#ECEDF0}
+.settings-nav button.active{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(21,23,28,.08)}
+.settings-content{flex:999 1 560px;min-width:0}
+.settings-section{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 26px;margin-bottom:20px}
+.settings-title{font-size:15px;margin-bottom:14px}
+.settings-section[hidden]{display:none !important}
+
+/* Accueil : tâches du jour */
+.todo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.todo-card{display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:var(--radius-lg);border:1px solid var(--border);background:#fff;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .12s,box-shadow .12s}
+.todo-card:hover{border-color:var(--border2);box-shadow:0 2px 10px rgba(21,23,28,.06)}
+.todo-kicker{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+.todo-dot{width:8px;height:8px;border-radius:50%}
+.todo-count{font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.todo-cta{font-size:13px;font-weight:500;color:var(--blue)}
+.page-kicker::first-letter{text-transform:uppercase}
+
+/* Droits et version (Réglages) */
+.perm-group-title{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);margin:18px 0 4px}
+.perm-row{display:flex;align-items:center;gap:16px;padding:12px 0;border-top:1px solid #F0F1F3}
+.perm-row-label{flex:1;font-size:13.5px}
+.perm-row-note{display:block;font-size:12px;color:var(--text2);margin-top:2px}
+.switch{width:44px;height:26px;padding:3px;border:none;border-radius:13px;background:#C9CCD3;cursor:pointer;display:flex;justify-content:flex-start;flex-shrink:0;transition:background .15s}
+.switch::after{content:'';width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.switch[aria-checked="true"]{background:var(--blue);justify-content:flex-end}
+.switch:disabled{opacity:.5;cursor:not-allowed}
+.seg{display:inline-flex;gap:2px;padding:4px;border-radius:10px;background:#ECEDF0}
+.seg button{height:34px;padding:0 14px;border:none;border-radius:7px;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer}
+.seg button.active{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(21,23,28,.08)}
+.info-box{padding:14px 16px;border-radius:var(--radius);background:var(--bg2);color:#3A3F4B;font-size:13px;line-height:1.5}
+.info-box.warn{background:var(--amber-bg);color:var(--amber-text)}
+.version-big{font-size:34px;font-weight:600;letter-spacing:-.02em;font-family:var(--font-mono)}
+.changelog-row{display:flex;gap:20px;padding:14px 0;border-top:1px solid #F0F1F3}
+.changelog-row .v{width:110px;flex-shrink:0;font-family:var(--font-mono);font-weight:500}
+
+/* Bandeau aperçu de rôle */
+#apercu-role-bandeau{display:none;position:sticky;top:0;z-index:50;padding:10px 44px;background:var(--violet-bg);color:var(--violet);font-size:13px;font-weight:500;align-items:center;gap:12px;flex-wrap:wrap}
+#apercu-role-bandeau.show{display:flex}
+#apercu-role-bandeau button{margin-left:auto;height:32px;padding:0 12px;border-radius:8px;border:1px solid currentColor;background:#fff;color:var(--violet);font-weight:500;cursor:pointer}
+[data-perm-masque]{display:none !important}
+
+/* Connexion */
+#auth-screen{background:var(--bg2)}
+.auth-card{border-radius:18px;padding:40px;box-shadow:0 1px 2px rgba(21,23,28,.06),0 20px 50px rgba(21,23,28,.08);border:1px solid var(--border)}
+.auth-logo{color:var(--text);font-size:26px;letter-spacing:-.02em}
+.auth-card .btn-primary{height:46px}
+.auth-card input{height:44px}
+
+/* Barre mobile */
+#mobile-nav-bar{background:#fff}
+#mobile-nav-bar button{font-size:11px;font-weight:500;min-height:44px}
+
+@media (min-width:681px) and (max-width:1024px){
+  .sidebar{width:68px;min-width:68px}
+  .nav-icon{margin-right:0}
+  .sidebar-search kbd,.sidebar-meta,.sidebar-user > div:not(.sidebar-user-avatar),.sidebar-logout{display:none !important}
+  .sidebar-footer{padding:12px 0;display:flex;justify-content:center}
+  .view,.section-tabs-bar{padding-left:28px;padding-right:28px}
+}
+@media (max-width:680px){
+  .sidebar{width:270px;min-width:270px}
+  .view{padding:16px 16px 90px}
+  .section-tabs-bar{padding:12px 16px 0}
+  .section-tabs{display:flex;width:100%;overflow-x:auto}
+  .section-tab{flex:1;justify-content:center;padding:0 10px}
+  .page-title{font-size:22px}
+  .kpi-grid{grid-template-columns:1fr 1fr !important}
+  .kpi{border-bottom:1px solid var(--border)}
+  .settings-nav{flex:1 1 100%;flex-direction:row;overflow-x:auto;position:static}
+  .settings-nav button{white-space:nowrap}
+  .btn{height:42px}
+  #apercu-role-bandeau{padding:10px 16px}
+}
 </style>
 </head>
 <body>
@@ -473,140 +688,119 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       </div>
     </div>
 
-    <div style="padding:8px 10px;flex:1;display:flex;flex-direction:column;overflow-y:auto">
+    <nav aria-label="Navigation principale" style="padding:0 14px 12px;flex:1;display:flex;flex-direction:column;overflow-y:auto">
 
-      <button class="sidebar-search" onclick="openGlobalSearch()" title="Rechercher (⌘K)" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;margin-bottom:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);font-size:12px;cursor:pointer;text-align:left">
-        <i class="ti ti-search" style="font-size:14px"></i>
-        <span class="nav-label" style="flex:1">Rechercher…</span>
-        <span class="nav-label" style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,0.08)">⌘K</span>
-      </button>
-
-      <button class="nav-item active" onclick="nav('dashboard')" title="Accueil">
-        <div class="nav-icon" style="background:rgba(24,95,165,0.2)"><i class="ti ti-layout-dashboard" style="color:#7bb8ef"></i></div>
-        <span class="nav-label">Accueil</span>
+      <button class="sidebar-search" onclick="openGlobalSearch()" title="Rechercher (⌘K)">
+        <i class="ti ti-search" style="font-size:16px"></i>
+        <span class="nav-label" style="flex:1">Rechercher</span>
+        <kbd class="nav-label">⌘K</kbd>
       </button>
 
-      <span class="nav-section">Activité</span>
-      <button class="nav-item" onclick="nav('reservations')" title="Réservations">
-        <div class="nav-icon" style="background:rgba(229,62,62,0.12)"><i class="ti ti-inbox" style="color:#fc8181"></i></div>
-        <span class="nav-label">Réservations</span>
-        <span class="nav-badge nb-red" id="resa-nav-badge" style="display:none"></span>
+      <!-- 5 rubriques. data-section relie chaque entrée aux vues qu'elle
+           regroupe (voir SECTIONS_NAV dans js/app-contacts.js) ; data-perm
+           au droit nécessaire pour l'afficher (js/app-equipe.js). -->
+      <button class="nav-item active" data-section="aujourdhui" data-perm="dashboard" onclick="nav('dashboard')" title="Aujourd'hui">
+        <span class="nav-icon"><i class="ti ti-home"></i></span>
+        <span class="nav-label">Aujourd'hui</span>
       </button>
-      <button class="nav-item" onclick="nav('missions')" title="Missions EDL">
-        <div class="nav-icon" style="background:rgba(56,161,105,0.12)"><i class="ti ti-clipboard-list" style="color:#68d391"></i></div>
-        <span class="nav-label">Missions EDL</span>
+      <button class="nav-item" data-section="missions" data-perm="missions" onclick="nav('missions')" title="Missions">
+        <span class="nav-icon"><i class="ti ti-calendar-event"></i></span>
+        <span class="nav-label" style="flex:1">Missions</span>
+        <span class="nav-badge nb-red" id="resa-nav-badge" style="display:none" title="Réservations à confirmer"></span>
       </button>
-      <button class="nav-item" onclick="nav('agenda')" title="Agenda">
-        <div class="nav-icon" style="background:rgba(55,138,221,0.12)"><i class="ti ti-calendar" style="color:#7bb8ef"></i></div>
-        <span class="nav-label">Agenda</span>
+      <button class="nav-item" data-section="clients" data-perm="clients" onclick="nav('contacts')" title="Clients">
+        <span class="nav-icon"><i class="ti ti-users"></i></span>
+        <span class="nav-label" style="flex:1">Clients</span>
+        <span class="nav-badge nb-amber" id="dup-nav-badge" style="display:none" title="Doublons détectés"></span>
       </button>
-
-      <span class="nav-section">Commercial</span>
-      <button class="nav-item" onclick="nav('contacts')" title="Contacts & Agences">
-        <div class="nav-icon" style="background:rgba(24,95,165,0.15)"><i class="ti ti-building-store" style="color:#7bb8ef"></i></div>
-        <span class="nav-label">Contacts &amp; Agences</span>
-        <span class="nav-badge nb-amber" id="dup-nav-badge" style="display:none"></span>
-      </button>
-      <button class="nav-item" onclick="nav('prospection')" title="Prospection">
-        <div class="nav-icon" style="background:rgba(186,117,23,0.12)"><i class="ti ti-target" style="color:#f6c05e"></i></div>
-        <span class="nav-label">Prospection</span>
+      <button class="nav-item" data-section="prospection" data-perm="prospection" onclick="nav('prospection')" title="Prospection">
+        <span class="nav-icon"><i class="ti ti-target"></i></span>
+        <span class="nav-label" style="flex:1">Prospection</span>
         <span class="nav-badge nb-amber" id="prosp-badge" style="display:none"></span>
       </button>
+      <button class="nav-item" data-section="emails" data-perm="emails" onclick="nav('compose')" title="Emails">
+        <span class="nav-icon"><i class="ti ti-mail"></i></span>
+        <span class="nav-label">Emails</span>
+      </button>
+      <!-- Sync Brevo : n'apparaît plus dans le menu mais comme onglet de la
+           rubrique Emails ; le bouton reste dans le DOM car app-settings.js
+           l'affiche/masque pour signaler que le compte y a droit. -->
+      <div style="display:none"><button class="nav-item" id="nav-brevo" style="display:none" onclick="nav('brevo')">Sync Brevo</button></div>
 
-      <span class="nav-section">Communication</span>
-      <button class="nav-item" onclick="nav('compose')" title="Composer">
-        <div class="nav-icon" style="background:rgba(24,95,165,0.15)"><i class="ti ti-send" style="color:#7bb8ef"></i></div>
-        <span class="nav-label">Composer</span>
-      </button>
-      <button class="nav-item" onclick="nav('campaigns')" title="Campagnes">
-        <div class="nav-icon" style="background:rgba(55,138,221,0.1)"><i class="ti ti-speakerphone" style="color:#7bb8ef"></i></div>
-        <span class="nav-label">Campagnes</span>
-      </button>
-
-      <span class="nav-section">Outils</span>
-      <button class="nav-item" id="nav-brevo" style="display:none" onclick="nav('brevo')" title="Sync Brevo">
-        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-refresh" style="color:rgba(255,255,255,0.72)"></i></div>
-        <span class="nav-label">Sync Brevo</span>
-      </button>
-      <button class="nav-item" onclick="nav('settings')" title="Paramètres">
-        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-settings" style="color:rgba(255,255,255,0.72)"></i></div>
-        <span class="nav-label">Paramètres</span>
-      </button>
-      <button class="nav-item" onclick="nav('help')" title="Guide & Aide">
-        <div class="nav-icon" style="background:rgba(255,255,255,0.05)"><i class="ti ti-help-circle" style="color:rgba(255,255,255,0.72)"></i></div>
-        <span class="nav-label">Guide &amp; Aide</span>
-      </button>
-      <button class="nav-item" id="nav-admin" style="display:none" onclick="nav('admin')" title="Admin">
-        <div class="nav-icon" style="background:rgba(186,117,23,0.12)"><i class="ti ti-shield-lock" style="color:#f6c05e"></i></div>
-        <span class="nav-label">Admin</span>
-      </button>
-
-    </div>
+      <div class="nav-secondary">
+        <button class="nav-item" data-section="reglages" data-perm="reglages" onclick="nav('settings')" title="Réglages">
+          <span class="nav-icon"><i class="ti ti-adjustments-horizontal"></i></span>
+          <span class="nav-label">Réglages</span>
+        </button>
+        <button class="nav-item" data-section="aide" onclick="nav('help')" title="Aide">
+          <span class="nav-icon"><i class="ti ti-help-circle"></i></span>
+          <span class="nav-label">Aide</span>
+        </button>
+        <button class="nav-item" data-section="admin" id="nav-admin" style="display:none" onclick="nav('admin')" title="Administration de la plateforme">
+          <span class="nav-icon"><i class="ti ti-shield-lock"></i></span>
+          <span class="nav-label">Plateforme</span>
+        </button>
+      </div>
+    </nav>
 
     <div class="sidebar-footer" id="sidebar-footer-full">
-      <div style="display:flex;gap:5px;margin-bottom:8px">
-        <button class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;background:rgba(24,95,165,0.15);border:0.5px solid rgba(55,138,221,0.25);color:rgba(255,255,255,0.75);border-radius:8px" onclick="saveBackup()" title="Sauvegarder">
-          <i class="ti ti-device-floppy"></i>Sauvegarder
-        </button>
-        <label class="btn btn-sm" style="flex:1;justify-content:center;font-size:11px;cursor:pointer;margin:0;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);border-radius:8px" title="Restaurer">
-          <i class="ti ti-upload"></i>Restaurer
-          <input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none">
-        </label>
-      </div>
-      <div id="last-backup-date" style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:8px;padding:0 2px"></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:6px 6px 2px">
-        <div style="width:28px;height:28px;border-radius:50%;background:#1A5FA8;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600;flex-shrink:0" id="sidebar-avatar">TL</div>
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar" id="sidebar-avatar">—</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:11px;color:rgba(255,255,255,0.9);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-name">Thomas Langlade</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-footer-email"></div>
+          <div class="sidebar-user-name" id="sidebar-footer-name">—</div>
+          <div id="sidebar-footer-email" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
         </div>
-        <button onclick="supabaseClient&&supabaseClient.auth.signOut()" style="background:none;border:none;cursor:pointer;padding:4px" title="Déconnexion">
-          <i class="ti ti-logout" style="font-size:14px;color:rgba(255,255,255,0.55)"></i>
-        </button>
+        <button class="sidebar-logout" id="logout-btn" onclick="doLogout()" title="Déconnexion" aria-label="Déconnexion"><i class="ti ti-logout"></i></button>
       </div>
-      <div class="sync-row" style="padding:4px 6px 0">
-        <div class="sync-dot" id="sync-dot"></div>
-        <span id="sync-text" style="font-size:10px;color:rgba(255,255,255,0.6)">Synchronisé</span>
+      <div class="sidebar-meta">
+        <span class="role-pill" id="sidebar-role">Admin</span>
+        <div class="sync-row"><div class="sync-dot" id="sync-dot"></div><span id="sync-text">Synchronisé</span></div>
+        <span id="app-version"></span>
       </div>
-      <div id="app-version" style="font-size:9.5px;color:rgba(255,255,255,0.35);padding:4px 6px 0"></div>
     </div>
   </div>
-
   <!-- MAIN -->
   <div class="main">
+    <div id="apercu-role-bandeau" role="status">
+      <i class="ti ti-eye"></i><span id="apercu-role-texte">Aperçu en tant qu'assistante</span>
+      <button type="button" onclick="quitterApercuRole()">Revenir à mon compte</button>
+    </div>
+    <div class="section-tabs-bar" id="section-tabs-bar"><div class="section-tabs" role="tablist" id="section-tabs"></div></div>
 
     <!-- DASHBOARD -->
     <div class="view active" id="view-dashboard">
       <div class="page-header">
-        <div class="page-title">Dashboard</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div>
+          <div class="page-kicker" id="today-label"></div>
+          <h1 class="page-title" id="dash-greeting">Aujourd'hui</h1>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-sm" onclick="setDashMonth('all')" id="dash-btn-all" style="background:var(--blue);color:#fff;border-color:var(--blue)">Tout</button>
-          <select id="dash-month-select" onchange="setDashMonth(this.value)" style="font-size:12px;padding:5px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);cursor:pointer">
+          <select id="dash-month-select" onchange="setDashMonth(this.value)" aria-label="Mois affiché" style="width:auto;height:34px;padding:0 10px;font-size:12.5px;cursor:pointer">
             <option value="all">— Choisir un mois —</option>
           </select>
-          <button class="btn btn-sm" onclick="syncAll()"><i class="ti ti-refresh"></i>Sync tout</button>
-          <span style="font-size:11px;color:var(--text2)" id="today-label"></span>
+          <button class="btn btn-sm" onclick="syncAll()"><i class="ti ti-refresh"></i>Synchroniser</button>
+          <button class="btn btn-primary" data-perm="missions" onclick="nav('missions');openNewMissionModal()"><i class="ti ti-plus"></i>Nouvelle mission</button>
         </div>
       </div>
-      <div id="dash-period-banner" style="display:none;background:var(--blue-bg);color:var(--blue-text);padding:6px 14px;border-radius:var(--radius);margin-bottom:12px;font-size:12px;font-weight:500"></div>
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-head">📌 Aujourd'hui</div>
-        <div id="dash-today-content" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:12px"></div>
-      </div>
-      <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+      <div id="dash-period-banner" style="display:none;background:var(--blue-bg);color:var(--blue-text);padding:10px 16px;border-radius:var(--radius);margin-bottom:20px;font-size:13px;font-weight:500"></div>
+      <h2 class="section-title">À traiter</h2>
+      <div id="dash-today-content" class="todo-grid" style="margin-bottom:36px"></div>
+      <h2 class="section-title">Chiffres clés</h2>
+      <div class="kpi-grid">
         <div class="kpi"><div class="kpi-label">Contacts totaux</div><div class="kpi-value" id="k-contacts">—</div><div class="kpi-sub" id="k-contacts-sub"></div></div>
         <div class="kpi"><div class="kpi-label">Missions</div><div class="kpi-value" id="k-missions">—</div><div class="kpi-sub">ce mois</div></div>
         <div class="kpi"><div class="kpi-label">États des lieux <span style="font-size:9px;color:var(--text3);font-weight:400">total</span></div><div class="kpi-value" id="k-edl-total" style="color:var(--green)">—</div><div class="kpi-sub" id="k-edl-total-sub"></div></div>
-        <div class="kpi"><div class="kpi-label">CA total <span id="ca-mode-label" style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="toggleTaxMode()" title="Cliquer pour basculer HT/TTC">HT</span></div><div class="kpi-value" id="k-ca">—</div><div class="kpi-sub" id="k-ca-sub"></div></div>
-        <div class="kpi"><div class="kpi-label">Doublons</div><div class="kpi-value" id="k-dups" style="color:var(--amber)">—</div><div class="kpi-sub warn" id="k-dups-sub"></div></div>
+        <div class="kpi" data-perm="ca"><div class="kpi-label">CA total <span id="ca-mode-label" style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="toggleTaxMode()" title="Cliquer pour basculer HT/TTC">HT</span></div><div class="kpi-value" id="k-ca">—</div><div class="kpi-sub" id="k-ca-sub"></div></div>
+        <div class="kpi" data-perm="clients"><div class="kpi-label">Doublons</div><div class="kpi-value" id="k-dups" style="color:var(--amber)">—</div><div class="kpi-sub warn" id="k-dups-sub"></div></div>
       </div>
       <!-- KPIs Email Tracking : repliés par défaut (moins consultés au quotidien
            que les KPI principaux), état mémorisé dans localStorage -->
-      <button onclick="toggleEmailKpis()" id="email-kpis-toggle" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text2);padding:4px 2px;margin-top:-2px">
+      <button data-perm="emails" onclick="toggleEmailKpis()" id="email-kpis-toggle" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text2);padding:4px 2px;margin-top:-2px">
         <i class="ti ti-chevron-right" id="email-kpis-chevron" style="font-size:13px;transition:transform .15s"></i>
-        📧 Stats email tracking
+        Statistiques emails
       </button>
-      <div class="kpi-grid" id="email-kpis-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:6px;display:none">
+      <div class="kpi-grid" data-perm="emails" id="email-kpis-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:6px;display:none">
         <div class="kpi" style="border-left:3px solid #888780">
           <div class="kpi-label">📤 Emails envoyés</div>
           <div class="kpi-value" id="k-sent-total">—</div>
@@ -634,9 +828,9 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px">
-        <div class="card">
+        <div class="card" data-perm="prospection">
           <div class="card-head">Pipeline commercial</div>
-          <div style="padding:12px" id="dash-pipeline"></div>
+          <div style="padding:20px 22px 8px" id="dash-pipeline"></div>
         </div>
         <div class="card">
           <div class="card-head">Dernières missions</div>
@@ -656,10 +850,10 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <!-- CONTACTS -->
     <div class="view" id="view-contacts">
       <div class="page-header">
-        <div class="page-title">Contacts & Agences</div>
+        <h1 class="page-title">Clients</h1>
         <div style="display:flex;gap:7px">
-          <button class="btn btn-sm" onclick="filterContactsTab('dups')" id="btn-dups"><i class="ti ti-alert-triangle"></i>Doublons <span id="dup-count-btn"></span></button>
-          <button class="btn btn-primary" onclick="openModal('modal-contact')"><i class="ti ti-plus"></i>Nouveau contact</button>
+          <button class="btn btn-sm" data-perm="fusion" onclick="filterContactsTab('dups')" id="btn-dups"><i class="ti ti-alert-triangle"></i>Doublons <span id="dup-count-btn"></span></button>
+          <button class="btn btn-primary" onclick="openModal('modal-contact')"><i class="ti ti-plus"></i>Nouveau client</button>
         </div>
       </div>
       <div class="filters-row" id="contact-filter-btns">
@@ -668,7 +862,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         <button class="btn btn-sm" onclick="filterContactsTab('Cible potentielle',this)">Cibles</button>
         <button class="btn btn-sm" onclick="filterContactsTab('brevo',this)">Brevo</button>
         <button class="btn btn-sm" onclick="filterContactsTab('notion',this)">Notion</button>
-        <button class="btn btn-sm" onclick="filterContactsTab('dups',this)">Doublons</button>
+        <button class="btn btn-sm" data-perm="fusion" onclick="filterContactsTab('dups',this)">Doublons</button>
       </div>
       <div class="search-wrap"><i class="ti ti-search"></i><input type="text" placeholder="Rechercher…" oninput="searchContacts(this.value)"></div>
       <div class="card">
@@ -692,16 +886,16 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <!-- PROSPECTION -->
     <div class="view" id="view-prospection">
       <div class="page-header">
-        <div class="page-title">Pipeline de prospection</div>
+        <h1 class="page-title">Prospection</h1>
         <div style="display:flex;gap:7px">
-          <button class="btn btn-sm" onclick="toggleCAPanel()"><i class="ti ti-chart-bar"></i>Analyse CA</button>
+          <button class="btn btn-sm" data-perm="ca" onclick="toggleCAPanel()"><i class="ti ti-chart-bar"></i>Analyse CA</button>
           <button class="btn btn-sm" onclick="syncFromBrevoSender()"><i class="ti ti-wand"></i>Sync contacts</button>
           <button class="btn btn-primary" onclick="quickAddProspect('a_contacter')"><i class="ti ti-plus"></i>Ajouter un prospect</button>
         </div>
       </div>
 
       <!-- PANEL CA ANALYTICS -->
-      <div id="ca-panel" style="display:none;margin-bottom:16px">
+      <div id="ca-panel" data-perm="ca" style="display:none;margin-bottom:16px">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
           <!-- CA Mensuel -->
           <div class="card" style="padding:14px">
@@ -794,7 +988,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
       </div>
 
       <!-- Stats rapides -->
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap" id="prosp-stats"></div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap" id="prosp-stats"></div>
 
       <!-- Barre de recherche + filtre étape -->
       <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
@@ -824,11 +1018,12 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
       <!-- Kanban : grille qui s'enroule sur plusieurs lignes (9 étapes toujours visibles, sans scroll) -->
       <div id="prosp-board"></div>
+      <button type="button" id="prosp-perdus-toggle" class="btn btn-sm" style="display:none;margin-top:16px" onclick="basculerProspectsPerdus()"></button>
     </div>
 
     <div class="view" id="view-missions">
       <div class="page-header">
-        <div class="page-title">Missions EDL</div>
+        <h1 class="page-title">Missions</h1>
         <div style="display:flex;gap:8px;align-items:center">
           <span id="edouard-sync-status" style="font-size:11px;color:var(--text2)"></span>
           <button class="btn btn-sm" id="edouard-sync-btn" onclick="syncEdouardMaintenant()" title="Va chercher immédiatement les rapports d'état des lieux terminés dans Edouard, sans attendre la synchro automatique du soir"><i class="ti ti-refresh"></i>Sync Edouard</button>
@@ -855,7 +1050,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <!-- CAMPAGNES -->
     <div class="view" id="view-campaigns">
       <div class="page-header">
-        <div class="page-title">Campagnes email</div>
+        <h1 class="page-title">Campagnes</h1>
         <button class="btn btn-primary" onclick="nav('compose')"><i class="ti ti-plus"></i>Nouvelle campagne</button>
       </div>
       <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -873,7 +1068,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 
     <!-- COMPOSE -->
     <div class="view" id="view-compose">
-      <div class="page-header"><div class="page-title">Composer un email</div></div>
+      <div class="page-header"><h1 class="page-title">Écrire un email</h1></div>
       <div class="compose-grid">
         <div class="card" style="padding:16px">
           <div class="tabs">
@@ -963,7 +1158,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <!-- BREVO SYNC -->
     <div class="view" id="view-brevo">
       <div class="page-header">
-        <div class="page-title">Synchronisation Brevo</div>
+        <h1 class="page-title">Synchronisation Brevo</h1>
         <button class="btn btn-primary" onclick="loadBrevo()"><i class="ti ti-refresh"></i>Lancer la sync</button>
       </div>
       <div class="kpi-grid">
@@ -993,7 +1188,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <!-- AGENDA -->
     <div class="view" id="view-agenda">
       <div class="page-header">
-        <div class="page-title">Agenda</div>
+        <h1 class="page-title">Agenda</h1>
         <button class="btn btn-primary" onclick="openModal('modal-rdv')"><i class="ti ti-plus"></i>Nouveau RDV</button>
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
@@ -1019,7 +1214,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     </div>
     <!-- AIDE -->
     <div class="view" id="view-help">
-  <div class="page-header"><div class="page-title">📚 Guide & Aide</div></div>
+  <div class="page-header"><h1 class="page-title">Aide</h1></div>
   <div class="search-wrap" style="margin-bottom:18px">
     <i class="ti ti-search"></i>
     <input type="text" placeholder="Rechercher dans l'aide…" oninput="searchHelp(this.value)" id="help-search">
@@ -1209,7 +1404,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <!-- ADMIN -->
     <div class="view" id="view-admin">
       <div class="page-header">
-        <div class="page-title">🛡️ Panneau Admin</div>
+        <h1 class="page-title">Plateforme</h1>
         <div style="display:flex;gap:8px">
           <button class="btn btn-sm" onclick="loadAdminData()"><i class="ti ti-refresh"></i>Actualiser</button>
           <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-plan')"><i class="ti ti-plus"></i>Ajouter un client</button>
@@ -1272,7 +1467,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     <!-- RÉSERVATIONS -->
     <div class="view" id="view-reservations">
       <div class="page-header">
-        <div class="page-title">📥 Réservations entrantes</div>
+        <h1 class="page-title">Réservations</h1>
         <div style="display:flex;gap:8px">
           <button class="btn btn-sm" onclick="openManualReservationModal()"><i class="ti ti-plus"></i> Saisie manuelle</button>
           <button class="btn btn-primary" onclick="loadReservations()"><i class="ti ti-refresh"></i>Actualiser</button>
@@ -1362,23 +1557,26 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     </div>
 
     <div class="view" id="view-settings">
-      <div class="page-header"><div class="page-title">Paramètres</div></div>
-      <div class="settings-section">
+      <div class="page-header"><h1 class="page-title">Réglages</h1></div>
+      <div class="settings-layout">
+      <nav class="settings-nav" id="settings-nav" aria-label="Rubriques des réglages"></nav>
+      <div class="settings-content">
+      <div class="settings-section" data-rubrique="integrations">
         <div class="settings-title"><i class="ti ti-brand-notion" style="font-size:18px"></i>Notion</div>
         <label>Token d'intégration</label><input type="password" id="set-notion-token" placeholder="ntn_...">
         <label>Page ID</label><input id="set-notion-page" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
       </div>
-      <div class="settings-section">
+      <div class="settings-section" data-rubrique="integrations">
         <div class="settings-title"><i class="ti ti-mail" style="font-size:18px"></i>Brevo</div>
         <label>Clé API</label><input type="password" id="set-brevo-key" placeholder="xkeysib-...">
       </div>
-      <div class="settings-section">
+      <div class="settings-section" data-rubrique="integrations">
         <div class="settings-title"><i class="ti ti-sparkles" style="font-size:18px"></i>IA — Rédaction emails</div>
         <label>Clé API Mistral IA <span style="font-size:10px;color:var(--text2)">(gratuit — modèle mistral-small)</span></label>
         <input type="password" id="set-claude-key" placeholder="...">
         <div style="font-size:11px;color:var(--text2);margin-top:4px">Obtenir une clé gratuite : <a href="https://console.mistral.ai/api-keys" target="_blank" style="color:var(--blue)">console.mistral.ai</a> → "API Keys" → "Create new key"</div>
       </div>
-      <div class="settings-section">
+      <div class="settings-section" data-rubrique="agents">
         <div class="settings-title"><i class="ti ti-users" style="font-size:18px"></i>Agents EDL</div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Les agents ajoutés ici apparaissent dans le menu déroulant "Agent qui se déplace" lors de la confirmation d'un RDV, et leurs coordonnées sont insérées automatiquement dans la convocation envoyée au locataire. L'email (optionnel) sert à proposer ses vrais créneaux libres sur le formulaire de réservation en ligne — après qu'il ait partagé son agenda Google en "Voir uniquement le libre/occupé" avec le compte de service de l'agence. Les secteurs (optionnel) limitent les créneaux proposés aux biens dont le code postal commence par l'un des préfixes indiqués — laisser vide pour un agent disponible partout. Le contrat signé et l'avenant que tu déposes ici apparaissent dans "Mes documents" de son espace agent.</div>
         <div id="agents-list" style="margin-bottom:12px"></div>
@@ -1393,7 +1591,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
           <button class="btn btn-sm" id="agent-cancel-btn" onclick="annulerEditionAgent()" style="display:none">Annuler</button>
         </div>
       </div>
-      <div class="settings-section">
+      <div class="settings-section" data-rubrique="agents">
         <div class="settings-title"><i class="ti ti-map-pin" style="font-size:18px"></i>Barème frais de déplacement</div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Seule l'agence renseigne ce barème — chaque agent le voit en lecture seule dans son espace. Les cases sont libres : ajoutez, renommez ou supprimez-les selon vos besoins (secteur primaire/secondaire, hors secteurs, etc.).</div>
         <div id="bareme-rows" style="margin-bottom:8px"></div>
@@ -1402,13 +1600,13 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
           <button class="btn btn-sm" onclick="sauvegarderBareme()"><i class="ti ti-check"></i> Enregistrer le barème</button>
         </div>
       </div>
-      <div class="settings-section">
+      <div class="settings-section" data-rubrique="identite">
         <div class="settings-title"><i class="ti ti-user" style="font-size:18px"></i>Profil</div>
         <label>Nom</label><input id="set-name" placeholder="Votre nom">
         <label>Email</label><input id="set-email" placeholder="contact@votre-cabinet.fr">
         <label>Société</label><input id="set-company" placeholder="Nom de votre société">
       </div>
-      <div class="settings-section">
+      <div class="settings-section" data-rubrique="identite">
         <div class="settings-title"><i class="ti ti-mail-forward" style="font-size:18px"></i>Identité de vos emails</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">
           Ces informations apparaissent dans les emails envoyés à vos agences et locataires
@@ -1429,7 +1627,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         <input id="set-exp-avis-google" placeholder="https://g.page/r/.../review — laisser vide pour ne pas demander d'avis">
         <div style="font-size:11px;color:var(--text2);margin-top:-8px;margin-bottom:10px">Sans ce lien, aucune demande d'avis n'est envoyée à vos locataires après leur état des lieux.</div>
       </div>
-      <div class="settings-section">
+      <div class="settings-section" data-rubrique="identite">
         <div class="settings-title"><i class="ti ti-palette" style="font-size:18px"></i>Identité visuelle</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">
           Votre couleur et votre logo remplacent ceux de Lokentia dans ce CRM, l'espace agent et votre page publique de demande d'état des lieux.
@@ -1462,7 +1660,7 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         </div>
       </div>
 
-      <div class="settings-section" id="securite-section" style="display:none">
+      <div class="settings-section" data-rubrique="securite" id="securite-section" style="display:none">
         <div class="settings-title"><i class="ti ti-shield-lock" style="font-size:18px"></i>Sécurité</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">
           Double authentification (2FA) — une fois activée, un code généré par une application d'authentification (Google Authenticator, Authy…) vous sera demandé en plus du mot de passe à chaque connexion.
@@ -1491,7 +1689,23 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
         </div>
       </div>
 
-      <button class="btn btn-primary" onclick="saveSettings()"><i class="ti ti-check"></i>Enregistrer les paramètres</button>
+      <div class="settings-section" data-rubrique="equipe" id="reglages-equipe"></div>
+      <div class="settings-section" data-rubrique="sauvegarde" data-perm="export">
+        <div class="settings-title"><i class="ti ti-device-floppy" style="font-size:18px"></i>Sauvegarde</div>
+        <div class="info-box" style="margin-bottom:16px">Vos données sont synchronisées dans le cloud. Une sauvegarde manuelle (fichier .json) reste utile avant une opération importante.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn" onclick="saveBackup()"><i class="ti ti-download"></i>Télécharger une sauvegarde</button>
+          <label class="btn" title="Restaurer">
+            <i class="ti ti-upload"></i>Restaurer un fichier
+            <input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none">
+          </label>
+          <span id="last-backup-date" style="font-size:12.5px;color:var(--text2)"></span>
+        </div>
+      </div>
+      <div class="settings-section" data-rubrique="version" id="reglages-version"></div>
+      <button class="btn btn-primary" id="settings-save-btn" onclick="saveSettings()"><i class="ti ti-check"></i>Enregistrer les réglages</button>
+      </div>
+      </div>
     </div>
 
   </div>
@@ -1910,26 +2124,27 @@ html, body { overflow-x: hidden !important; max-width: 100vw !important; }
 <script src="/js/app-settings.js"></script>
 <script src="/js/app-extranet.js"></script>
 <script src="/js/app-reservations.js"></script>
+<script src="/js/app-equipe.js"></script>
 
 <!-- NAV BAR MOBILE -->
 <div id="mobile-nav-bar">
-  <div class="mnav-items">
-    <button onclick="nav('dashboard');closeMobileSidebar();updateMobileNav('dashboard')" id="mnav-dashboard" class="active">
-      <i class="ti ti-layout-dashboard"></i>Accueil
+  <nav class="mnav-items" aria-label="Navigation rapide">
+    <button onclick="nav('dashboard')" id="mnav-dashboard" class="active">
+      <i class="ti ti-home"></i>Aujourd'hui
     </button>
-    <button onclick="nav('reservations');closeMobileSidebar();updateMobileNav('reservations')" id="mnav-reservations">
-      <i class="ti ti-inbox"></i>Réservations
+    <button onclick="nav('missions')" id="mnav-missions" data-perm="missions">
+      <i class="ti ti-calendar-event"></i>Missions
     </button>
-    <button onclick="nav('missions');closeMobileSidebar();updateMobileNav('missions')" id="mnav-missions">
-      <i class="ti ti-file-check"></i>Missions
+    <button onclick="nav('contacts')" id="mnav-contacts" data-perm="clients">
+      <i class="ti ti-users"></i>Clients
     </button>
-    <button onclick="nav('agenda');closeMobileSidebar();updateMobileNav('agenda')" id="mnav-agenda">
-      <i class="ti ti-calendar"></i>Agenda
+    <button onclick="nav('compose')" id="mnav-compose" data-perm="emails">
+      <i class="ti ti-mail"></i>Emails
     </button>
     <button onclick="toggleMobileSidebar();updateMobileNav('plus')" id="mnav-plus">
       <i class="ti ti-menu-2"></i>Plus
     </button>
-  </div>
+  </nav>
 </div>
 
 <div id="auth-screen">

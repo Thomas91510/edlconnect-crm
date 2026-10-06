@@ -82,6 +82,23 @@ const PROSP_STAGES=[
   {key:'perdu',label:'Perdu ❌',color:'#A32D2D',bg:'#FCEBEB',proba:0}
 ];
 
+// Colonnes affichées dans le tableau de prospection (refonte V2) : chaque
+// colonne regroupe une ou plusieurs étapes de PROSP_STAGES.
+const COLONNES_PIPELINE=[
+  {key:'a_contacter', label:'À contacter',          etapes:['a_contacter']},
+  {key:'discussion',  label:'En discussion',        etapes:['email_envoye','email_ouvert','reponse_recue']},
+  {key:'rdv',         label:'RDV planifié',         etapes:['rdv_planifie']},
+  {key:'devis',       label:'Devis & négociation',  etapes:['devis_envoye','negociation']},
+  {key:'gagne',       label:'Gagné',                etapes:['gagne']}
+];
+const COLONNE_PERDUS={key:'perdu',label:'Perdu',etapes:['perdu']};
+let _afficherPerdus=false;
+function colonneSuivante(cle){
+  const i=COLONNES_PIPELINE.findIndex(c=>c.key===cle);
+  return i>=0&&i<COLONNES_PIPELINE.length-1?COLONNES_PIPELINE[i+1]:null;
+}
+function basculerProspectsPerdus(){ _afficherPerdus=!_afficherPerdus; renderProspection(); }
+
 // Nombre de jours sans action au-delà duquel une carte active (pas
 // Gagné/Perdu) est considérée comme stagnante (alerte dashboard + badge kanban).
 const STAGNATION_JOURS=14;
@@ -119,12 +136,9 @@ function renderProspection(){
   const actifs=DB.prospects.filter(p=>!['gagne','perdu'].includes(p.etape)).length;
   const taux=total>0?Math.round(gagnes/total*100):0;
   const caTotal=DB.prospects.filter(p=>p.etape==='gagne'&&p.ca).reduce((s,p)=>s+(p.ca||0),0);
-  stats.innerHTML=`
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px">${total}</span> prospects</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#1A5FA8">${actifs}</span> en cours</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#3B6D11">${gagnes}</span> gagnés</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#854F0B">${taux}%</span> taux conversion</div>
-    ${caTotal>0?`<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:var(--green)">${caTotal.toLocaleString('fr-FR')} €</span>/mois CA gagné</div>`:''}`;
+  const chip=(val,lib,coul)=>`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 16px;font-size:13px;color:var(--text2)"><span style="font-weight:600;font-size:18px;color:${coul||'var(--text)'};margin-right:6px">${val}</span>${lib}</div>`;
+  stats.innerHTML=chip(total,'prospects')+chip(actifs,'en cours','var(--blue)')+chip(gagnes,'gagnés','var(--green)')+chip(taux+' %','de conversion')
+    +(caTotal>0?chip(caTotal.toLocaleString('fr-FR')+' €','/ mois gagnés','var(--green)'):'');
 
   // Kanban
   const board=document.getElementById('prosp-board');
@@ -148,48 +162,57 @@ function renderProspection(){
     if(clearBtn)clearBtn.style.display='none';
     if(countEl)countEl.textContent='';
   }
-  board.innerHTML=PROSP_STAGES.map(stage=>{
-    const cards=_filtered.filter(p=>p.etape===stage.key);
-    return `<div class="prosp-col" style="border-top:3px solid ${stage.color}">
-      <div class="prosp-col-title" style="color:${stage.color}">
-        <span>${stage.label}</span>
-        <span style="background:${stage.bg};color:${stage.color};padding:1px 6px;border-radius:8px;font-size:10px">${cards.length}</span>
+  // Refonte V2 : 5 colonnes au lieu de 9. Les étapes détaillées restent
+  // enregistrées telles quelles (p.etape, cron de relance, CA pondéré) ;
+  // seules les colonnes les regroupent, l'étape précise s'affichant en
+  // étiquette sur la carte. "Perdu" est replié sous le tableau.
+  const colonnes = COLONNES_PIPELINE.concat(_pStage==='perdu'||_afficherPerdus ? [COLONNE_PERDUS] : []);
+  board.innerHTML=colonnes.map(col=>{
+    const cards=_filtered.filter(p=>col.etapes.includes(p.etape));
+    const suivante=colonneSuivante(col.key);
+    return `<section class="prosp-col" aria-label="${esc(col.label)}">
+      <div class="prosp-col-title">
+        <span style="color:var(--text)">${esc(col.label)}</span>
+        <span style="color:var(--text2);font-weight:500">${cards.length}</span>
       </div>
       ${cards.map(p=>{
         const jStagnation=['gagne','perdu'].includes(p.etape)?null:joursDepuis(p.lastAction||p.createdAt);
         const stagnant=jStagnation!==null&&jStagnation>=STAGNATION_JOURS;
-        return `<div class="prosp-card" onclick="openProspCard('${p.id}')" style="${stagnant?'border:1px solid var(--red)':''}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
-          <div class="prosp-card-name" style="flex:1">${p.agence}</div>
-          <button onclick="event.stopPropagation();deleteProspect('${p.id}')" title="Supprimer ce prospect"
-            style="background:none;border:none;cursor:pointer;color:var(--red);font-size:13px;padding:0;line-height:1;flex-shrink:0;opacity:0.6"
-            onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">✕</button>
+        const st=PROSP_STAGES.find(x=>x.key===p.etape)||PROSP_STAGES[0];
+        return `<article class="prosp-card" onclick="openProspCard('${esc(p.id)}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+          <div class="prosp-card-name" style="flex:1">${esc(p.agence)}</div>
+          <button type="button" onclick="event.stopPropagation();deleteProspect('${esc(p.id)}')" title="Supprimer ce prospect" aria-label="Supprimer ${esc(p.agence)}"
+            style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 2px;line-height:1;flex-shrink:0"><i class="ti ti-x"></i></button>
         </div>
-        ${p.contact?`<div style="font-size:10px;color:var(--text2)">${p.contact}</div>`:''}
-        <div class="prosp-card-email">${p.email||p.tel||'—'}</div>
-        ${p.ca?`<div style="font-size:11px;font-weight:600;color:#3B6D11;margin-top:2px">${p.ca.toLocaleString('fr-FR')} €/mois</div>`:''}
-        ${stagnant?`<div style="font-size:10px;font-weight:600;color:var(--red);margin-top:2px">⏱ ${jStagnation}j sans action</div>`:''}
-        <div class="prosp-card-date">${p.lastAction?'Dernier : '+fmtDate(p.lastAction):'Aucun contact'}</div>
-        <div style="display:flex;gap:3px;margin-top:5px;flex-wrap:wrap">
-          ${PROSP_STAGES.filter(s=>s.key!==stage.key).slice(0,3).map(s=>`
-            <button onclick="event.stopPropagation();moveProspect('${p.id}','${s.key}')" 
-              title="Déplacer vers ${s.label}"
-              style="font-size:9px;padding:2px 5px;border:0.5px solid ${s.color};background:${s.bg};color:${s.color};border-radius:3px;cursor:pointer;white-space:nowrap">
-              → ${s.label.substring(0,10)}
-            </button>`).join('')}
-          <button onclick="event.stopPropagation();emailProspect('${p.id}')"
-            style="font-size:9px;padding:2px 5px;border:0.5px solid var(--blue);background:var(--blue-bg);color:var(--blue-text);border-radius:3px;cursor:pointer">
-            ✉️ Email
-          </button>
+        ${p.contact?`<div style="font-size:12px;color:var(--text2)">${esc(p.contact)}</div>`:''}
+        <div class="prosp-card-email">${esc(p.email||p.tel||'—')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          ${col.etapes.length>1?`<span class="badge" style="background:var(--blue-bg);color:var(--blue)">${esc(st.label)}</span>`:''}
+          ${stagnant?`<span class="badge" style="background:var(--amber-bg);color:var(--amber-text)">${jStagnation} j sans action</span>`:''}
+          ${p.ca?`<span class="badge b-green">${p.ca.toLocaleString('fr-FR')} €/mois</span>`:''}
         </div>
-      </div>`;
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid #F0F1F3">
+          <span class="prosp-card-date">${p.lastAction?'Dernier contact : '+fmtDate(p.lastAction):'Aucun contact'}</span>
+          <span style="display:flex;gap:4px">
+            <button type="button" onclick="event.stopPropagation();emailProspect('${esc(p.id)}')" title="Écrire un email" aria-label="Écrire à ${esc(p.agence)}" class="btn btn-sm" style="height:28px;padding:0 8px"><i class="ti ti-mail"></i></button>
+            ${suivante?`<button type="button" onclick="event.stopPropagation();moveProspect('${esc(p.id)}','${suivante.etapes[0]}')" title="Passer à : ${esc(suivante.label)}" class="btn btn-sm" style="height:28px;padding:0 8px"><i class="ti ti-arrow-right"></i></button>`:''}
+          </span>
+        </div>
+      </article>`;
       }).join('')}
-      <button onclick="quickAddProspect('${stage.key}')" 
-        style="width:100%;font-size:10px;padding:5px;border:1px dashed var(--border2);background:none;border-radius:var(--radius);cursor:pointer;color:var(--text2);margin-top:2px">
+      <button type="button" onclick="quickAddProspect('${col.etapes[0]}')"
+        style="width:100%;font-size:12.5px;height:36px;border:1px dashed var(--border2);background:none;border-radius:var(--radius);cursor:pointer;color:var(--text2);margin-top:2px">
         + Ajouter
       </button>
-    </div>`;
+    </section>`;
   }).join('');
+  const nbPerdus=DB.prospects.filter(p=>p.etape==='perdu').length;
+  const lienPerdus=document.getElementById('prosp-perdus-toggle');
+  if(lienPerdus){
+    lienPerdus.style.display=nbPerdus&&_pStage!=='perdu'?'':'none';
+    lienPerdus.textContent=_afficherPerdus?'Masquer les prospects perdus':`Afficher les prospects perdus (${nbPerdus})`;
+  }
 
   // Badge nav : nombre de prospects qui stagnent (alerte actionnable), pas le
   // total des prospects actifs (devenu illisible et sans utilité depuis la
