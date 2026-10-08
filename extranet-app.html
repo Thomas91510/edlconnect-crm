@@ -224,6 +224,7 @@
     .brand{border-bottom:none;padding:22px 18px 14px}
     .brand-name{color:#15171C;font-size:15px;font-weight:600}
     .brand-sub{color:#5B6170;font-size:12px}
+    .brand-accroche{color:#1A5FA8;font-size:11.5px;font-weight:600;letter-spacing:.01em;margin:1px 0 2px}
     .nav-group-label{color:#6E7483;font-size:11px;font-weight:600}
     .nav-item{color:#3A3F4B;font-size:14px;height:42px;padding:0 12px}
     .nav-item:hover{background:#F6F7F9;color:#15171C}
@@ -375,6 +376,7 @@
       <svg viewBox="0 0 120 120" width="30" height="30" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
       <div>
         <div class="brand-name">EDL IDF</div>
+        <div class="brand-accroche">Expert en État des Lieux</div>
         <div class="brand-sub">Espace client</div>
       </div>
     </div>
@@ -392,7 +394,7 @@
           <div class="sb-contact-ava">TL</div>
           <div>
             <div class="sb-contact-name">Thomas Langlade</div>
-            <div class="sb-contact-role">EDL IDF Expert</div>
+            <div class="sb-contact-role">EDL IDF — Expert en État des Lieux</div>
           </div>
         </div>
         <a href="tel:0189291429" class="sb-call"><svg class="ic-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg> 01 89 29 14 29</a>
@@ -403,7 +405,7 @@
 
   <div class="main">
     <div class="topbar">
-      <div class="topbar-brand">EDL IDF · Espace client</div>
+      <div class="topbar-brand">EDL IDF <span style="font-weight:400;color:#5B6170">· Expert en État des Lieux</span></div>
       <a href="tel:0189291429" aria-label="Appeler votre expert" style="color:#15171C;display:flex"><svg class="ic-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></a>
     </div>
 
@@ -726,7 +728,7 @@ function resetAttachments(){
 // utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
 // Numéro de version : aligné sur APP_VERSION (js/app-core.js), vérifié par
 // test/frontend-version-coherente.test.js.
-const APP_VERSION = '2.0.0-beta.19';
+const APP_VERSION = '2.0.0-beta.20';
 (async function afficherVersion(){
   const el0 = document.getElementById('app-version');
   if(el0) el0.textContent = 'v' + APP_VERSION;

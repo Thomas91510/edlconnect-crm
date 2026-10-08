@@ -210,6 +210,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 .side-brand{display:flex;align-items:center;gap:10px;padding:0 6px 18px}
 .side-brand-nom{font-size:15px;font-weight:600}
 .side-brand-sous{font-size:12px;color:var(--text2)}
+.side-brand-accroche{font-size:11.5px;font-weight:600;color:var(--blue);margin:1px 0 2px}
 .nav-btn{height:44px;min-height:0;padding:0 12px}
 .nav-btn .nav-label b{color:#3A3F4B}
 .side-logout{margin-top:8px;height:38px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);color:var(--text2);font-family:inherit;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -327,7 +328,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
 
 <div id="login-screen">
   <div class="card">
-    <div class="card-head"><i class="ti ti-user-circle"></i>Espace agent</div>
+    <div class="card-head"><i class="ti ti-user-circle"></i>Espace agent <span style="font-weight:400;color:var(--text2);font-size:12.5px;margin-left:auto">EDL IDF — Expert en État des Lieux</span></div>
     <div class="card-body">
       <label>Ton adresse email</label>
       <input type="email" id="login-email" placeholder="jean.dupont@gmail.com" autocomplete="email">
@@ -341,7 +342,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
   <div class="header">
     <div class="logo-box">
       <div class="logo-icon">EDL</div>
-      <div style="font-size:13px;font-weight:700;color:var(--text2)">Espace agent</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2)">Espace agent <span style="font-weight:400">· EDL IDF, Expert en État des Lieux</span></div>
     </div>
     <button class="btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Déconnexion</button>
   </div>
@@ -350,7 +351,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
     <nav class="side-nav" aria-label="Navigation de l'espace agent">
       <div class="side-brand">
         <svg viewBox="0 0 120 120" width="32" height="32" style="flex-shrink:0" aria-hidden="true"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
-        <div><div class="side-brand-nom">EDL IDF</div><div class="side-brand-sous">Espace agent</div></div>
+        <div><div class="side-brand-nom">EDL IDF</div><div class="side-brand-accroche">Expert en État des Lieux</div><div class="side-brand-sous">Espace agent</div></div>
       </div>
       <button class="nav-btn active" data-page="missions" onclick="allerAgentPage('missions')">
         <i class="ti ti-calendar-event"></i><span class="nav-label"><b>Mes missions</b></span>
@@ -1742,7 +1743,7 @@ function renderHistorique(missions){
 <div id="app-version"></div>
 <script>
 (async function afficherVersionAgent(){
-  const APP_VERSION = '2.0.0-beta.19';
+  const APP_VERSION = '2.0.0-beta.20';
   const el = document.getElementById('app-version');
   if(el) el.textContent = 'v' + APP_VERSION;
   try {
