@@ -23,3 +23,14 @@ test('fusionnerSuiviEmails : met à jour statut, ouvertures et clics des emails 
   w.fusionnerSuiviEmails([{ id: 'a', email: 'x@y.fr', statut: 'Envoyé', date: '2026-10-03T09:00:00Z' }]);
   assert.equal(DB.trackings.find(t => t.id === 'a').statut, 'Cliqué');
 });
+
+test('rdvSeptJours (extranet) : seulement les rendez-vous des 7 prochains jours, triés', async () => {
+  const fs = await import('node:fs');
+  const html = fs.readFileSync(new URL('../extranet-app.html', import.meta.url), 'utf8');
+  const src = html.slice(html.indexOf('function rdvSeptJours'), html.indexOf('function renderAccueil'));
+  const rdvSeptJours = new Function(src + '; return rdvSeptJours;')();
+  const now = new Date('2026-10-08T10:00:00').getTime();
+  const o = (id, j, statut = 'confirmee') => ({ id, statut, dateSouhaitee: new Date(now + j * 86400000).toISOString() });
+  const res = rdvSeptJours([o('loin', 9), o('demain', 1), o('annule', 2, 'annulee'), o('passe', -2), o('j6', 6), o('fait', 3, 'rapport_dispo')], now);
+  assert.deepEqual(res.map(x => x.id), ['demain', 'j6']);
+});

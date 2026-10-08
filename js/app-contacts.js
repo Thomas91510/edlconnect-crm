@@ -100,6 +100,7 @@ function retirerTelAutre(id,index){
 function openFiche(id){
   const c=DB.contacts.find(x=>x.id===id);if(!c)return;
   currentFicheId=id;
+  const _cbEspace=document.getElementById('fiche-espace-actif'); if(_cbEspace) _cbEspace.checked=!!c.espaceActif;
   document.getElementById('fiche-avatar').textContent=initials(c.entreprise||c.contact||'?');
   document.getElementById('fiche-name').textContent=c.entreprise||c.contact||'—';
   document.getElementById('fiche-sub').textContent=[c.contact,c.source].filter(Boolean).join(' · ')||'';
@@ -466,9 +467,10 @@ function renderFicheCommandes(c){
           ${m.statut==='annulée'?'❌':m.statut==='terminée'?'🏁':m.statut==='en cours'?'⏳':'📅'}
         </div>
         <div style="flex:1">
-          <div style="font-size:12px;font-weight:600;margin-bottom:2px">${m.type||'EDL'}</div>
-          <div style="font-size:11px;color:var(--text2)">${m.adresse||'Adresse non renseignée'}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">${fmtDT(m.date)}</div>
+          <div style="font-size:12px;font-weight:600;margin-bottom:2px">${esc(m.type||'EDL')}</div>
+          <div style="font-size:11px;color:var(--text2)">${esc(m.adresse||'Adresse non renseignée')}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${fmtDT(m.date)}${m.locataireNom?' · '+esc(m.locataireNom):''}</div>
+          ${rapportsDeMission(m).length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${rapportsDeMission(m).map(r => { const href = _urlSureApercuExtranet(r.url); return href ? `<a href="${href}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#0F6E56;background:#E3F5EF;padding:3px 9px;border-radius:20px;text-decoration:none"><i class="ti ti-file-download"></i>Rapport${r.type === 1 ? ' d’entrée' : r.type === 2 ? ' de sortie' : ''}</a>` : ''; }).join('')}</div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:14px;font-weight:700;color:var(--green)">${(m.montant||0)} €</div>
@@ -1131,18 +1133,53 @@ function agencesAvecEspace(){
 }
 // Ancien point d'entrée (fenêtre) : ouvre désormais la page « Espaces agences ».
 function ouvrirEspacesAgences(){ nav('espaces'); }
-// Page « Espaces agences » (bouton du menu de gauche)
+// Page « Espaces agences » (bouton du menu de gauche) : seulement les
+// clients dont l'espace extranet est ACTIVÉ (interrupteur dans la fiche
+// client ou ici) ; les autres s'activent depuis « Activer l'espace d'un
+// autre client ».
+function espaceActif(c){ return !!(c && c.espaceActif); }
+function basculerEspaceAgence(id, oui){
+  const c = (DB.contacts || []).find(x => x.id === id);
+  if(!c) return;
+  if(oui && !String(c.email || '').includes('@')){
+    notify("⚠️ Renseignez d'abord l'email de ce client : c'est son identifiant de connexion à l'extranet.", 'warn');
+    const cb = document.getElementById('fiche-espace-actif'); if(cb && currentFicheId === id) cb.checked = false;
+    renderBlocEspacesAgences();
+    return;
+  }
+  quickUpdateContact(id, 'espaceActif', !!oui);
+  // Enregistré tout de suite dans le cloud (pas seulement dans le navigateur).
+  if(typeof pushToSupabase === 'function') pushToSupabase('contacts', c);
+  renderBlocEspacesAgences();
+}
 function renderBlocEspacesAgences(){
   const box = document.getElementById('dash-espaces-liste');
   if(!box) return;
   const q = String((document.getElementById('dash-espaces-recherche') || {}).value || '').trim().toLowerCase();
-  const toutes = agencesAvecEspace();
-  const liste = toutes.filter(c => !q || [c.entreprise, c.contact, c.email, c.ville].some(v => String(v || '').toLowerCase().includes(q)));
+  const correspond = c => !q || [c.entreprise, c.contact, c.email, c.ville].some(v => String(v || '').toLowerCase().includes(q));
+  const tous = agencesAvecEspace();
+  const actifs = tous.filter(espaceActif);
   const compte = document.getElementById('espaces-agences-compte');
-  if(compte) compte.textContent = toutes.length + ' agence' + (toutes.length > 1 ? 's' : '');
-  box.innerHTML = liste.length ? liste.map(c => `<button type="button" class="espaces-agences-carte" onclick="ouvrirEspaceAgence('${esc(c.email)}')" title="Ouvrir l'espace de ${esc(c.entreprise || c.email)} (lecture seule)">
-      <span style="min-width:0;flex:1"><b>${esc(c.entreprise || c.contact || c.email)}</b><span>${esc(c.email)}</span></span><i class="ti ti-external-link"></i></button>`).join('')
-    : `<div class="espaces-agences-vide">${q ? 'Aucune agence ne correspond.' : 'Aucune agence avec un email.'}</div>`;
+  if(compte) compte.textContent = actifs.length + ' espace' + (actifs.length > 1 ? 's' : '') + ' activé' + (actifs.length > 1 ? 's' : '');
+  const liste = actifs.filter(correspond);
+  box.innerHTML = liste.length ? liste.map(c => `<div class="espaces-agences-carte-wrap">
+      <button type="button" class="espaces-agences-carte" onclick="ouvrirEspaceAgence('${esc(c.email)}')" title="Ouvrir l'espace de ${esc(c.entreprise || c.email)} (lecture seule)">
+        <span style="min-width:0;flex:1"><b>${esc(c.entreprise || c.contact || c.email)}</b><span>${esc(c.email)}</span></span><i class="ti ti-external-link"></i></button>
+      <button type="button" class="espaces-agences-off" title="Désactiver l'espace de ${esc(c.entreprise || c.email)}" aria-label="Désactiver l'espace" onclick="basculerEspaceAgence('${esc(c.id)}', false)">Désactiver</button>
+    </div>`).join('')
+    : `<div class="espaces-agences-vide">${q ? 'Aucun espace activé ne correspond.' : 'Aucun espace activé pour l’instant : activez-en un ci-dessous ou depuis la fiche du client.'}</div>`;
+  const inactifs = tous.filter(c => !espaceActif(c));
+  const nbI = document.getElementById('espaces-inactifs-compte');
+  if(nbI) nbI.textContent = '(' + inactifs.length + ')';
+  const boxI = document.getElementById('espaces-inactifs-liste');
+  if(boxI){
+    const vus = inactifs.filter(correspond).slice(0, 60);
+    boxI.innerHTML = vus.length ? vus.map(c => `<div class="espaces-agences-inactif"><span><b style="color:#F4F7FA">${esc(c.entreprise || c.contact || c.email)}</b> · ${esc(c.email)}</span>
+        <button type="button" onclick="basculerEspaceAgence('${esc(c.id)}', true)">Activer</button></div>`).join('')
+      + (inactifs.filter(correspond).length > vus.length ? '<div class="espaces-agences-vide" style="padding:8px 4px">Affinez la recherche pour voir les autres.</div>' : '')
+      : '<div class="espaces-agences-vide" style="padding:8px 4px">Aucun autre client avec un email.</div>';
+    if(q && vus.length) document.getElementById('espaces-inactifs').open = true;
+  }
 }
 function ouvrirEspaceFicheCourante(){
   const c = (DB.contacts || []).find(x => x.id === currentFicheId);

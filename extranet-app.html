@@ -289,6 +289,11 @@
     .ligne-etat{font-size:13px;color:#5B6170}
     .ligne-action{height:36px;padding:0 12px;border-radius:8px;border:1px solid #E8E9EC;color:#1A5FA8;font-size:13px;font-weight:500;text-decoration:none;display:inline-flex;align-items:center}
     .ligne-action:hover{background:#F6F7F9}
+.rdv-ligne{display:flex;align-items:center;gap:16px;padding:12px 0;border-top:1px solid #F0F1F3;cursor:pointer}
+    .rdv-ligne:first-child{border-top:none}
+    .rdv-ligne:hover .rdv-titre{color:#1A5FA8}
+    .rdv-date{width:56px;height:60px;flex-shrink:0}
+    .rdv-titre{font-weight:600;font-size:14.5px;margin:2px 0}
     .apercu-msg{padding:12px 14px;border-radius:12px 12px 12px 4px;background:#F6F7F9;font-size:13.5px;line-height:1.45;margin:6px 0 12px}
     .apercu-msg-meta{font-size:12px;color:#5B6170;margin-top:6px}
     .msg-quick{display:flex;gap:8px}
@@ -414,15 +419,13 @@
           <button class="cta-new" onclick="showOrderForm()"><svg class="ic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Commander un état des lieux</button>
         </div>
 
-        <div id="hero-rdv-wrap"></div>
-
         <div class="accueil-grid">
-          <section class="bloc accueil-main" aria-labelledby="accueil-edl-titre">
+          <section class="bloc accueil-main" aria-labelledby="accueil-rdv-titre">
             <div class="bloc-head">
-              <h2 id="accueil-edl-titre">Vos états des lieux</h2>
-              <a href="#" onclick="allerA('edl');return false">Tout voir</a>
+              <h2 id="accueil-rdv-titre">Prochains rendez-vous <span style="font-weight:400;color:#5B6170;font-size:13px">· 7 jours</span></h2>
+              <a href="#" onclick="allerA('edl');return false">Tous les états des lieux</a>
             </div>
-            <div id="accueil-edl-list"><div class="bloc-vide">Chargement…</div></div>
+            <div id="accueil-rdv-list"><div class="bloc-vide">Chargement…</div></div>
           </section>
           <div class="accueil-side">
             <section class="bloc" aria-labelledby="accueil-msg-titre">
@@ -723,7 +726,7 @@ function resetAttachments(){
 // utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
 // Numéro de version : aligné sur APP_VERSION (js/app-core.js), vérifié par
 // test/frontend-version-coherente.test.js.
-const APP_VERSION = '2.0.0-beta.13';
+const APP_VERSION = '2.0.0-beta.14';
 (async function afficherVersion(){
   const el0 = document.getElementById('app-version');
   if(el0) el0.textContent = 'v' + APP_VERSION;
@@ -977,40 +980,35 @@ function ligneCommandeHTML(o){
   </div>`;
 }
 
+// Accueil : les rendez-vous des 7 prochains jours (la liste complète des
+// états des lieux reste dans le menu « États des lieux »).
+function rdvSeptJours(commandes, maintenant = Date.now()){
+  const debut = new Date(maintenant); debut.setHours(0, 0, 0, 0);
+  const fin = debut.getTime() + 7 * 86400000;
+  return (commandes || [])
+    .filter(o => (o.statut === 'confirmee' || o.statut === 'importee' || o.statut === 'en_attente') && o.dateSouhaitee)
+    .filter(o => { const t = new Date(o.dateSouhaitee).getTime(); return t >= debut.getTime() && t < fin; })
+    .sort((a, b) => new Date(a.dateSouhaitee) - new Date(b.dateSouhaitee));
+}
 function renderAccueil(){
-  const wrap = document.getElementById('hero-rdv-wrap');
-  const maintenant = Date.now();
-  const prochains = _ordersCache
-    .filter(o => (o.statut === 'confirmee' || o.statut === 'importee') && o.dateSouhaitee && new Date(o.dateSouhaitee).getTime() >= maintenant - 86400000)
-    .sort((a,b) => new Date(a.dateSouhaitee) - new Date(b.dateSouhaitee));
-  const prochain = prochains[0];
-  if(prochain){
-    const d = new Date(prochain.dateSouhaitee);
-    wrap.innerHTML = `<section class="hero-rdv" aria-label="Prochain rendez-vous">
-      <div class="hero-date">
+  const box = document.getElementById('accueil-rdv-list');
+  if(!box) return;
+  const rdv = rdvSeptJours(_ordersCache);
+  box.innerHTML = rdv.length ? rdv.map(o => {
+    const d = new Date(o.dateSouhaitee);
+    return `<div class="rdv-ligne" role="button" tabindex="0" onclick="openDetail(_ordersCache[${_ordersCache.indexOf(o)}])" onkeydown="if(event.key==='Enter'){this.click()}">
+      <div class="hero-date rdv-date">
         <span>${esc(d.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.','').toUpperCase())}</span>
         <b>${d.getDate()}</b>
         <span>${esc(d.toLocaleDateString('fr-FR',{month:'short'}))}</span>
       </div>
-      <div style="flex:1;min-width:220px">
-        <div class="hero-rdv-label">Prochain rendez-vous${prochain.heure ? ' · ' + esc(prochain.heure) : ''}</div>
-        <div class="hero-rdv-title">${esc(prochain.typeEdl||'État des lieux')} · ${esc(prochain.adresse||'')}</div>
-        ${prochain.locataireNom ? `<div class="hero-rdv-meta">Locataire : ${esc(prochain.locataireNom)}</div>` : ''}
+      <div style="flex:1;min-width:0">
+        <div class="hero-rdv-label">${o.heure ? esc(o.heure) : 'Heure à confirmer'}${o.statut === 'en_attente' ? ' · demande en attente de confirmation' : ''}</div>
+        <div class="rdv-titre">${esc(o.typeEdl||'État des lieux')} · ${esc(o.adresse||'')}</div>
+        ${o.locataireNom ? `<div class="hero-rdv-meta">Locataire : ${esc(o.locataireNom)}</div>` : ''}
       </div>
-      <button type="button" class="btn-secondaire" onclick="openDetail(_ordersCache[${_ordersCache.indexOf(prochain)}])">Voir le détail</button>
-    </section>`;
-  } else {
-    wrap.innerHTML = '';
-  }
-
-  // En cours d'abord (déjà triés par trierCommandes), puis les plus récents
-  // terminés — 5 lignes maximum, le reste dans "États des lieux".
-  const liste = document.getElementById('accueil-edl-list');
-  if(!liste) return;
-  const visibles = _ordersCache.filter(o => o.statut !== 'annulee').slice(0, 5);
-  liste.innerHTML = visibles.length
-    ? visibles.map(ligneCommandeHTML).join('')
-    : `<div class="bloc-vide">Aucun état des lieux pour l'instant. Commandez le premier en un clic.</div>`;
+    </div>`;
+  }).join('') : `<div class="bloc-vide">Aucun rendez-vous dans les 7 prochains jours.</div>`;
 }
 
 // Aperçu "Messages" du tableau de bord : en
@@ -1235,7 +1233,11 @@ function openDetail(o) {
   const rows = [['📋 Type',esc(o.typeEdl)||'—'],['📍 Adresse',esc(o.adresse)||'—'],['🏠 Bien',[o.bienType,o.bienTypo,o.meuble].filter(Boolean).map(esc).join(' · ')||'—'],['📅 Date souhaitée',o.dateSouhaitee?new Date(o.dateSouhaitee).toLocaleDateString('fr-FR'):'—'],['🕐 Heure',esc(o.heure)||'—'],['🧑 Locataire',esc(o.locataireNom)||'—'],['📱 Téléphone',esc(o.locataireTel)||'—'],['🔑 Entrant(s)',(o.locatairesEntrants||[]).map(e=>[e.prenom,e.nom].filter(Boolean).map(esc).join(' ')+(e.tel?' · '+esc(e.tel):'')).join('<br>')||'—'],['🏠 Propriétaire',esc(o.proprietaire)||'—']].filter(([,v])=>v&&v!=='—');
   const lienRapportDetail = urlSure(o.rapportUrl);
   const lienAvenantDetail = urlSure(o.avenantUrl);
-  const boutonRapportDetail = lienRapportDetail ? `<a href="${lienRapportDetail}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#0F6E56;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;margin-bottom:10px;box-sizing:border-box"><i class="ti ti-file-download"></i> Ouvrir mon rapport</a>` : '';
+  // Plusieurs rapports possibles (sortant + entrant le même jour) : un bouton chacun.
+  const listeRapports = (Array.isArray(o.rapports) && o.rapports.length ? o.rapports : (lienRapportDetail ? [{ url: o.rapportUrl }] : []))
+    .map(r => ({ href: urlSure(r.url), libelle: r.type === 1 ? 'Ouvrir le rapport d’entrée' : r.type === 2 ? 'Ouvrir le rapport de sortie' : 'Ouvrir mon rapport' }))
+    .filter(r => r.href);
+  const boutonRapportDetail = listeRapports.map(r => `<a href="${r.href}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#0F6E56;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;margin-bottom:10px;box-sizing:border-box"><i class="ti ti-file-download"></i> ${esc(r.libelle)}</a>`).join('');
   const boutonAvenantDetail = lienAvenantDetail ? `<a href="${lienAvenantDetail}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#F1ECF9;color:#5B3E8C;border:1px solid #dccdec;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;margin-bottom:10px;box-sizing:border-box"><i class="ti ti-paperclip"></i> Avenant disponible</a>` : '';
   document.getElementById('detail-body').innerHTML = `<div style="text-align:center;margin-bottom:20px">${badge}</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #f0f0f0"><td style="color:#6b6b6b;padding:10px 0;width:40%;vertical-align:top">${k}</td><td style="font-weight:500;padding:10px 0">${v}</td></tr>`).join('')}</table><div style="font-size:11px;color:#999;text-align:center;margin-bottom:16px">Commande reçue le ${o.createdAt?new Date(o.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'—'}</div>${boutonRapportDetail}${boutonAvenantDetail}<button onclick="closeDetail()" style="width:100%;padding:12px;background:#1A5FA8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button>`;
   document.getElementById('detail-modal').classList.add('open');
