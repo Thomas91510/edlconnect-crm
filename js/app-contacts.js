@@ -100,7 +100,8 @@ function retirerTelAutre(id,index){
 function openFiche(id){
   const c=DB.contacts.find(x=>x.id===id);if(!c)return;
   currentFicheId=id;
-  const _cbEspace=document.getElementById('fiche-espace-actif'); if(_cbEspace) _cbEspace.checked=!!c.espaceActif;
+  const _cbEspace=document.getElementById('fiche-espace-actif'); if(_cbEspace) _cbEspace.checked=espaceActif(c);
+  if(typeof chargerEspacesHistoriques==='function') chargerEspacesHistoriques();
   document.getElementById('fiche-avatar').textContent=initials(c.entreprise||c.contact||'?');
   document.getElementById('fiche-name').textContent=c.entreprise||c.contact||'—';
   document.getElementById('fiche-sub').textContent=[c.contact,c.source].filter(Boolean).join(' · ')||'';
@@ -625,7 +626,7 @@ function nav(v){
   }
   if(v==='missions')renderMissions();
   if(v==='rapports')renderRapports();
-  if(v==='espaces')renderBlocEspacesAgences();
+  if(v==='espaces'){renderBlocEspacesAgences();chargerEspacesHistoriques();}
   if(v==='campaigns')renderCampaigns();
   if(v==='compose'){renderTracking();rafraichirSuiviEmails();}
   if(v==='agenda')renderCalendar();
@@ -1137,7 +1138,31 @@ function ouvrirEspacesAgences(){ nav('espaces'); }
 // clients dont l'espace extranet est ACTIVÉ (interrupteur dans la fiche
 // client ou ici) ; les autres s'activent depuis « Activer l'espace d'un
 // autre client ».
-function espaceActif(c){ return !!(c && c.espaceActif); }
+// Agences qui utilisaient déjà leur extranet avant l'interrupteur
+// (api/espaces-agences-statuts.js) : activées tant qu'on ne les désactive
+// pas — même règle que le serveur (api/_lib/espace-agence.js).
+let _espacesHistoriques = new Set();
+let _espacesHistoriquesCharges = false;
+async function chargerEspacesHistoriques(){
+  if(_espacesHistoriquesCharges) return;
+  _espacesHistoriquesCharges = true;
+  try{
+    const r = await fetch('/api/espaces-agences-statuts', { headers: await _authHeaders() });
+    if(!r.ok) return;
+    const d = await r.json();
+    _espacesHistoriques = new Set((d.historiques || []).map(e => String(e).toLowerCase()));
+    renderBlocEspacesAgences();
+    const cb = document.getElementById('fiche-espace-actif');
+    const c = (DB.contacts || []).find(x => x.id === currentFicheId);
+    if(cb && c) cb.checked = espaceActif(c);
+  }catch(e){ _espacesHistoriquesCharges = false; }
+}
+function espaceActif(c){
+  if(!c) return false;
+  if(c.espaceActif === true) return true;
+  if(c.espaceActif === false) return false;
+  return _espacesHistoriques.has(String(c.email || '').toLowerCase());
+}
 function basculerEspaceAgence(id, oui){
   const c = (DB.contacts || []).find(x => x.id === id);
   if(!c) return;

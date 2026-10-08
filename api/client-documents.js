@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { escapeIlike } from './_lib/ilike.js';
+import { statutEspace, MESSAGE_ESPACE_INACTIF } from './_lib/espace-agence.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -63,6 +64,18 @@ export default async function handler(req) {
       try { body = await req.json(); } catch (_) {}
       const clientEmail = (body && body.clientEmail || '').toLowerCase().trim();
       if (clientEmail) email = clientEmail;
+    }
+
+    // Espace extranet non activé (CRM › fiche client) : accès refusé
+    // (api/_lib/espace-agence.js). L'administrateur n'est jamais concerné.
+    if (!ADMIN_EMAILS.includes(String(callerEmail || '').toLowerCase().trim())) {
+      const statut = await statutEspace(callerEmail, user, SUPABASE_SERVICE_KEY);
+      if (!statut.actif) {
+        return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
+        });
+      }
     }
 
     if (!email) {

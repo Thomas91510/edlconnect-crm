@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.14';
+const APP_VERSION = '2.0.0-beta.15';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.15', titre:'Extranet réservé aux espaces activés', texte:'Une agence dont l\u2019espace n\u2019est pas activé ne peut plus accéder à son extranet (message l\u2019invitant à contacter son expert). Les agences qui utilisaient déjà leur extranet restent activées ; désactiver l\u2019interrupteur bloque l\u2019accès.' },
   { v:'2.0.0-beta.14', titre:'Rapports dans les fiches et l\u2019extranet, espaces activés, accueil agence', texte:'Rapports d\u2019état des lieux visibles dans la fiche client (onglet Commandes) et dans l\u2019extranet de l\u2019agence, y compris pour les missions saisies dans le CRM et les anciennes réservations. Interrupteur « Espace extranet activé » par client : seuls les espaces activés apparaissent dans « Espaces agences ». Extranet : l\u2019accueil montre les rendez-vous des 7 prochains jours, la liste complète reste dans « États des lieux ».' },
   { v:'2.0.0-beta.13', titre:'Page « Espaces agences »', texte:'Le bouton « Espaces agences » du menu ouvre maintenant sa propre page (bleu nuit et or) avec toutes les agences ; l\u2019accueil « Aujourd\u2019hui » ne l\u2019affiche plus.' },
   { v:'2.0.0-beta.12', titre:'Rapports par client, relève Edouard horaire, suivi des emails corrigé', texte:'Clients › Rapports : tous les rapports d\u2019état des lieux de toutes les agences, classés par client, ajoutés dès que l\u2019état des lieux est terminé dans Edouard (relève toutes les heures). Encart « Espaces agences » bleu nuit et or juste après les chiffres clés. Fiche client agrandie. Suivi des emails : rafraîchi automatiquement, statuts ouvert / cliqué mis à jour, emails automatiques (confirmations, rappels, rapports) désormais suivis.' },

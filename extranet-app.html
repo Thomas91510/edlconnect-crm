@@ -726,7 +726,7 @@ function resetAttachments(){
 // utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
 // Numéro de version : aligné sur APP_VERSION (js/app-core.js), vérifié par
 // test/frontend-version-coherente.test.js.
-const APP_VERSION = '2.0.0-beta.14';
+const APP_VERSION = '2.0.0-beta.15';
 (async function afficherVersion(){
   const el0 = document.getElementById('app-version');
   if(el0) el0.textContent = 'v' + APP_VERSION;
@@ -790,6 +790,16 @@ function showLogin() {
   stopMessagesPolling();
 }
 
+// Espace non activé par l'expert (CRM) : on l'explique et on déconnecte.
+async function afficherEspaceInactif(message){
+  stopMessagesPolling();
+  document.getElementById('app-shell').classList.remove('shown');
+  document.getElementById('order-form').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'block';
+  const msg = document.getElementById('login-msg');
+  if(msg){ msg.className = 'msg-error'; msg.textContent = message || 'Votre espace extranet n’est pas activé. Contactez votre expert pour l’activer.'; }
+  try{ await sb.auth.signOut(); }catch(e){}
+}
 async function showDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('order-form').style.display = 'none';
@@ -1044,6 +1054,7 @@ async function loadOrders() {
   if(listEl) listEl.innerHTML = '<div style="color:#6b6b6b;font-size:13px;padding:20px 0">Chargement…</div>';
   try {
     const resp = await fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: corpsClient({}) });
+    if(resp.status === 403){ const d = await resp.json().catch(() => ({})); if(d.code === 'espace_inactif'){ afficherEspaceInactif(d.error); return; } }
     _ordersCache = trierCommandes(await resp.json());
     const nbAttente = _ordersCache.filter(o=>o.statut==='en_attente').length;
     const badgeTxt = nbAttente > 0 ? String(nbAttente) : '';

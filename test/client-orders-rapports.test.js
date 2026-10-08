@@ -12,7 +12,7 @@ test('rapports et missions CRM visibles par l’agence', async () => {
   let urlMissions = '';
   global.fetch = async (url) => {
     const u = String(url);
-    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ id: 'u1', email: 'agence@x.fr' }) };
+    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', id: 'u1', email: 'agence@x.fr' }) };
     if (u.includes('/rest/v1/bookings')) return { ok: true, json: async () => [
       { id: 'b1', created_at: '2026-07-01', data: { email: 'agence@x.fr', adresse: '4 rue de l’Ancienne Gare, 91120 Palaiseau', dateSouhaitee: '2026-07-22', typeEdl: 'EDL entrant', statut: 'confirmee' } },
     ] };

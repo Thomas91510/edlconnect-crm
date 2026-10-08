@@ -23,7 +23,7 @@ function mockFetchOrders(callerEmail) {
   global.fetch = async (url) => {
     urlsAppelees.push(String(url));
     if (String(url).includes('/auth/v1/user')) {
-      return { ok: true, json: async () => ({ email: callerEmail }) };
+      return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: callerEmail }) };
     }
     if (String(url).includes('/rest/v1/bookings')) {
       return { ok: true, json: async () => [] };
@@ -70,7 +70,7 @@ function mockFetchDocs(callerEmail) {
   global.fetch = async (url) => {
     urlsAppelees.push(String(url));
     if (String(url).includes('/auth/v1/user')) {
-      return { ok: true, json: async () => ({ email: callerEmail }) };
+      return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: callerEmail }) };
     }
     return { ok: true, json: async () => [] };
   };
