@@ -27,11 +27,24 @@ function ilYA(jours) { const d = new Date(); d.setDate(d.getDate() - jours); ret
 // qu'un unique upsert accumulé en fin de run (voir prospection-cron.js) :
 // `ecritures` empile donc les lignes de CHAQUE appel, et `derniereLigne`
 // retrouve l'état le plus à jour d'un id donné, comme le ferait Supabase.
-function mockComplet({ prospectionRows = [], listes = {}, brevoOk = true } = {}) {
+function mockComplet({ prospectionRows = [], listes = {}, brevoOk = true, contacts = [], contactsOk = true, stock = [] } = {}) {
   const envois = [];
   const ecritures = [];
+  const patchsPipeline = [];
   const fetchMock = async (url, opts) => {
     const u = String(url);
+    if (u.includes('/rest/v1/contacts')) {
+      if (!contactsOk) return { ok: false, json: async () => ({}) };
+      return { ok: true, json: async () => (u.includes('offset=0') ? contacts : []) };
+    }
+    if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ user_id: 'admin-1' }] };
+    if (u.includes('/rest/v1/prospects') && u.includes('etape=eq.a_contacter')) {
+      return { ok: true, json: async () => (u.includes('offset=0') ? stock.map(data => ({ data })) : []) };
+    }
+    if (u.includes('/rest/v1/prospects') && opts && opts.method === 'PATCH') {
+      patchsPipeline.push(JSON.parse(opts.body));
+      return { ok: true };
+    }
     if (u.includes('/rest/v1/prospection') && (!opts || opts.method !== 'POST')) {
       return { ok: true, json: async () => prospectionRows };
     }
@@ -54,6 +67,7 @@ function mockComplet({ prospectionRows = [], listes = {}, brevoOk = true } = {})
     fetchMock,
     envois,
     ecritures,
+    patchsPipeline,
     derniereLigne(id) { return ecritures.filter(l => l.id === id).pop(); }
   };
 }
@@ -166,6 +180,20 @@ test('prospection-cron : ne relance jamais un prospect ayant déjà cliqué', as
   assert.equal(mock.envois.length, 0);
 });
 
+test('prospection-cron : ne relance jamais un prospect dont la séquence a été stoppée (réponse ou désinscription)', async () => {
+  const mock = mockComplet({
+    prospectionRows: [
+      { id: 'desinscrit@agence.fr', data: { email: 'desinscrit@agence.fr', stage: 1, sentAt1: ilYA(10), stoppedAt: ilYA(1), stopReason: 'desinscription' } },
+      { id: 'a-repondu@agence.fr', data: { email: 'a-repondu@agence.fr', stage: 2, sentAt1: ilYA(12), sentAt2: ilYA(8), stoppedAt: ilYA(1), stopReason: 'reponse' } }
+    ],
+    listes: { '45': ['desinscrit@agence.fr', 'a-repondu@agence.fr'] }
+  });
+  global.fetch = mock.fetchMock;
+
+  await handler(requete('test-cron-secret'));
+  assert.equal(mock.envois.length, 0);
+});
+
 test('prospection-cron : relance en J+6 un prospect stage 2 non cliqué, envoyé il y a plus de 6 jours', async () => {
   const mock = mockComplet({
     prospectionRows: [{ id: 'stage2@agence.fr', data: { email: 'stage2@agence.fr', stage: 2, sentAt1: ilYA(10), sentAt2: ilYA(7) } }]
@@ -258,4 +286,98 @@ test('prospection-cron : un échec Brevo sur un envoi est rapporté sans bloquer
   assert.equal(body.envoyes.nouveauxProspects, 1, 'le 2e envoi réussi doit être compté');
   assert.equal(body.erreurs.length, 1);
   assert.equal(body.erreurs[0].email, 'echoue@agence.fr');
+});
+
+// ── Fiches "À contacter" du pipeline, exclusions, clics robots ──
+
+function fiche(email, extra = {}) {
+  return { id: 'p_' + email, email, agence: 'Agence ' + email.split('@')[0].toUpperCase() + ' Immobilier', dept: '94', etape: 'a_contacter', ...extra };
+}
+
+function avecPipelineActif(fn) {
+  return async () => {
+    process.env.PROSPECTION_PIPELINE_ACTIF = 'true';
+    try { await fn(); } finally { delete process.env.PROSPECTION_PIPELINE_ACTIF; }
+  };
+}
+
+test('prospection-cron : sans PROSPECTION_PIPELINE_ACTIF=true, aucune fiche du pipeline n\'est contactée', async () => {
+  const mock = mockComplet({ stock: [fiche('vitry@agence-test.fr')] });
+  global.fetch = mock.fetchMock;
+
+  const res = await handler(requete('test-cron-secret'));
+  const body = await res.json();
+  assert.equal(body.envoyes.dontPipeline, 0);
+  assert.equal(mock.envois.length, 0);
+});
+
+test('prospection-cron : contacte les vraies agences "À contacter" du pipeline une fois les listes Brevo épuisées', avecPipelineActif(async () => {
+  const mock = mockComplet({ stock: [fiche('vitry@agence-test.fr')] });
+  global.fetch = mock.fetchMock;
+
+  const res = await handler(requete('test-cron-secret'));
+  const body = await res.json();
+
+  assert.equal(body.envoyes.dontPipeline, 1);
+  assert.equal(mock.envois.length, 1);
+  assert.equal(mock.envois[0].to[0].email, 'vitry@agence-test.fr');
+  assert.equal(mock.envois[0].templateId, 53);
+  assert.equal(mock.derniereLigne('vitry@agence-test.fr').data.stage, 1);
+}));
+
+test('prospection-cron : ne contacte pas les fiches du pipeline hors cible (mandataire, nom auto, sans département, interne)', avecPipelineActif(async () => {
+  const mock = mockComplet({
+    stock: [
+      fiche('jean.dupont@efficity.com'),
+      { id: 'p2', email: 'bernard@agence-x.fr', agence: 'bernard', dept: '94', etape: 'a_contacter' },
+      fiche('sansdept@agence-y.fr', { dept: '' }),
+      fiche('test@edl-idf.com')
+    ]
+  });
+  global.fetch = mock.fetchMock;
+
+  await handler(requete('test-cron-secret'));
+  assert.equal(mock.envois.length, 0);
+}));
+
+test('prospection-cron : ne prospecte jamais un client, un partenaire ou une adresse blacklistée (listes Brevo comme pipeline)', avecPipelineActif(async () => {
+  const mock = mockComplet({
+    listes: { '45': ['client@agence.fr', 'blacklist@agence.fr'] },
+    stock: [fiche('partenaire@agence.fr'), fiche('Client@Agence.fr')],
+    contacts: [
+      { email: 'client@agence.fr', bl: null, statut: 'Client actif' },
+      { email: 'blacklist@agence.fr', bl: 'true', statut: null },
+      { email: 'partenaire@agence.fr', bl: null, statut: 'Partenaire' }
+    ]
+  });
+  global.fetch = mock.fetchMock;
+
+  await handler(requete('test-cron-secret'));
+  assert.equal(mock.envois.length, 0);
+}));
+
+test('prospection-cron : si la liste d\'exclusion est illisible, aucun nouveau prospect n\'est contacté mais les relances continuent', avecPipelineActif(async () => {
+  const mock = mockComplet({
+    contactsOk: false,
+    prospectionRows: [{ id: 'stage1@agence.fr', data: { email: 'stage1@agence.fr', stage: 1, sentAt1: ilYA(5) } }],
+    listes: { '45': ['nouveau@agence.fr'] },
+    stock: [fiche('stock@agence.fr')]
+  });
+  global.fetch = mock.fetchMock;
+
+  const res = await handler(requete('test-cron-secret'));
+  const body = await res.json();
+  assert.equal(body.envoyes.nouveauxProspects, 0);
+  assert.equal(body.envoyes.relanceJ4, 1);
+  assert.deepEqual(mock.envois.map(e => e.to[0].email), ['stage1@agence.fr']);
+}));
+
+test('prospection-cron : la relance J+6 enregistre sa date d\'envoi (sentAt3), pour reconnaître les clics de robots qui suivent', async () => {
+  const mock = mockComplet({
+    prospectionRows: [{ id: 'stage2@agence.fr', data: { email: 'stage2@agence.fr', stage: 2, sentAt1: ilYA(10), sentAt2: ilYA(7) } }]
+  });
+  global.fetch = mock.fetchMock;
+
+  await handler(requete('test-cron-secret'));
+  assert.ok(mock.derniereLigne('stage2@agence.fr').data.sentAt3);
 });

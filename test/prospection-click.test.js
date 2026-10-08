@@ -148,3 +148,30 @@ test('prospection-click : renvoie 500 si l\'écriture Supabase échoue', async (
   const res = await handler(requete({ event: 'click', email: 'x@agence.fr' }));
   assert.equal(res.status, 500);
 });
+
+test('prospection-click : un clic dans les 3 minutes suivant un envoi (antivirus d\'entreprise) ne compte pas comme un clic humain', async () => {
+  let ecriture = null;
+  let pipelineTouche = false;
+  const envoiRecent = new Date(Date.now() - 20 * 1000).toISOString();
+  global.fetch = async (url, opts) => {
+    const u = String(url);
+    if (u.includes('/rest/v1/prospection') && (!opts || opts.method !== 'POST')) {
+      return { ok: true, json: async () => [{ id: 'prospect@agence.fr', data: { email: 'prospect@agence.fr', stage: 2, sentAt1: '2026-09-10T10:00:00.000Z', sentAt2: envoiRecent } }] };
+    }
+    if (u.includes('/rest/v1/prospection') && opts && opts.method === 'POST') {
+      ecriture = JSON.parse(opts.body);
+      return { ok: true };
+    }
+    if (u.includes('/rest/v1/prospects') || u.includes('/rest/v1/settings')) pipelineTouche = true;
+    return { ok: true, json: async () => [] };
+  };
+
+  const res = await handler(requete({ event: 'click', email: 'prospect@agence.fr' }));
+  const body = await res.json();
+  assert.equal(res.status, 200);
+  assert.equal(body.robot, true);
+  assert.equal(ecriture[0].data.clickedAt, undefined, 'ne doit pas stopper les relances');
+  assert.ok(ecriture[0].data.clickSuspectAt, 'garde une trace du clic suspect');
+  assert.equal(ecriture[0].data.stage, 2);
+  assert.equal(pipelineTouche, false, 'ne doit pas passer la carte en "Email ouvert"');
+});

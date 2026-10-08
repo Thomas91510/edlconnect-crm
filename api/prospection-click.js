@@ -1,12 +1,17 @@
 export const config = { runtime: 'edge' };
 
 import { resoudreAdminUserId, avancerEtapeProspect } from './_lib/prospects-sync.js';
+import { clicDeRobot } from './_lib/prospection-regles.js';
 
 // Webhook Brevo (événement "click") pour la séquence de prospection EDL IDF.
 // Remplace le scénario Make "Séquence prospection — Capture clics" — même
 // logique minimale (marquer clickedAt sur le contact), mais persistée dans
 // la table Supabase "prospection" plutôt que le data store Make, pour rester
 // cohérent avec prospection-cron.js qui lit cet état.
+//
+// Un clic arrivé moins de 3 minutes après un envoi est attribué à un
+// antivirus d'entreprise (voir api/_lib/prospection-regles.js) : gardé pour
+// trace (clickSuspectAt) mais sans effet sur les relances ni le pipeline.
 //
 // Un clic fait aussi avancer la carte du prospect dans le pipeline commercial
 // (table "prospects") jusqu'à l'étape "Email ouvert" — voir
@@ -58,6 +63,8 @@ export default async function handler(req) {
     if (!getResp.ok) throw new Error('Erreur lecture Supabase');
     const existant = await getResp.json();
     const donneesExistantes = (existant && existant[0] && existant[0].data) || { email };
+    const robot = clicDeRobot(donneesExistantes);
+    const marqueClic = robot ? { clickSuspectAt: new Date().toISOString() } : { clickedAt: new Date().toISOString() };
 
     const upsertResp = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=id`, {
       method: 'POST',
@@ -69,13 +76,19 @@ export default async function handler(req) {
       },
       body: JSON.stringify([{
         id: email,
-        data: { ...donneesExistantes, clickedAt: new Date().toISOString() },
+        data: { ...donneesExistantes, ...marqueClic },
         updated_at: new Date().toISOString()
       }])
     });
     if (!upsertResp.ok) {
       const err = await upsertResp.text();
       return new Response(JSON.stringify({ error: 'Supabase: ' + err }), { status: 500 });
+    }
+
+    if (robot) {
+      return new Response(JSON.stringify({ ok: true, robot: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const adminUserId = await resoudreAdminUserId(SUPABASE_URL, SUPABASE_SERVICE_KEY);
