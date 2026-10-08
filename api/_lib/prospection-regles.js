@@ -62,3 +62,23 @@ export function estCandidatStock(p) {
   if (!agence || agence === email.split('@')[0]) return false;
   return String(p.dept || '').trim() !== '';
 }
+
+// Nom d'agence affiché dans les emails de la séquence ("Chez Laforêt Meaux,
+// est-ce un sujet..."). Renvoie '' quand le nom n'est pas présentable (vide,
+// recopie automatique de l'email, adresse) : le modèle Brevo retombe alors
+// sur "chez vous" / "votre agence". Les noms tout en majuscules, fréquents
+// dans les imports (LAFORET AGENCE DE FONTAINEBLEAU), sont remis en casse
+// normale, sauf les sigles courts (ERA, ORPI, IDF...).
+export function nomAgencePourEmail(nom, email) {
+  const brut = String(nom || '').replace(/\s+/g, ' ').trim();
+  if (!brut || brut.length < 3 || brut.length > 60 || brut.includes('@')) return '';
+  const local = String(email || '').toLowerCase().split('@')[0];
+  if (brut.toLowerCase() === local) return '';
+  const lettres = brut.replace(/[^A-Za-zÀ-ÿ]/g, '');
+  if (lettres && lettres === lettres.toUpperCase()) {
+    return brut.toLowerCase().replace(/(^|[\s\-'’(])([a-zà-ÿ])/g, (m, sep, c) => sep + c.toUpperCase())
+      .replace(/\b(Era|Orpi|Idf|Sci|Sarl|Sas|Sasu|Adb|Edl)\b/g, s => s.toUpperCase())
+      .replace(/(?!^)\b(De|Du|Des|La|Le|Les|Et|Sur|Sous|En|Aux?)\b(?=\s)/g, s => s.toLowerCase());
+  }
+  return brut;
+}

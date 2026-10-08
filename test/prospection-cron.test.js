@@ -33,7 +33,7 @@ function ilYA(jours) { const d = new Date(); d.setDate(d.getDate() - jours); ret
 // qu'un unique upsert accumulé en fin de run (voir prospection-cron.js) :
 // `ecritures` empile donc les lignes de CHAQUE appel, et `derniereLigne`
 // retrouve l'état le plus à jour d'un id donné, comme le ferait Supabase.
-function mockComplet({ prospectionRows = [], listes = {}, brevoOk = true, contacts = [], contactsOk = true, stock = [] } = {}) {
+function mockComplet({ prospectionRows = [], listes = {}, brevoOk = true, contacts = [], contactsOk = true, stock = [], noms = [] } = {}) {
   const envois = [];
   const ecritures = [];
   const patchsPipeline = [];
@@ -44,6 +44,9 @@ function mockComplet({ prospectionRows = [], listes = {}, brevoOk = true, contac
       return { ok: true, json: async () => (u.includes('offset=0') ? contacts : []) };
     }
     if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ user_id: 'admin-1' }] };
+    if (u.includes('/rest/v1/prospects') && u.includes('select=email:')) {
+      return { ok: true, json: async () => (u.includes('offset=0') ? noms : []) };
+    }
     if (u.includes('/rest/v1/prospects') && u.includes('etape=eq.a_contacter')) {
       return { ok: true, json: async () => (u.includes('offset=0') ? stock.map(data => ({ data })) : []) };
     }
@@ -101,7 +104,7 @@ test('prospection-cron : envoie le premier email aux nouveaux prospects des list
   assert.equal(res.status, 200);
   assert.equal(body.envoyes.nouveauxProspects, 1);
   assert.equal(mock.envois.length, 1);
-  assert.equal(mock.envois[0].templateId, 53);
+  assert.equal(mock.envois[0].templateId, 59);
   assert.equal(mock.envois[0].to[0].email, 'nouveau@agence.fr');
 
   const ligneProspect = mock.derniereLigne('nouveau@agence.fr');
@@ -159,7 +162,7 @@ test('prospection-cron : relance en J+4 un prospect stage 1 non cliqué, envoyé
   const body = await res.json();
 
   assert.equal(body.envoyes.relanceJ4, 1);
-  assert.equal(mock.envois[0].templateId, 54);
+  assert.equal(mock.envois[0].templateId, 57);
   const ligne = mock.derniereLigne('ancien@agence.fr');
   assert.equal(ligne.data.stage, 2);
   assert.ok(ligne.data.sentAt2);
@@ -210,7 +213,7 @@ test('prospection-cron : relance en J+6 un prospect stage 2 non cliqué, envoyé
   const body = await res.json();
 
   assert.equal(body.envoyes.relanceJ6, 1);
-  assert.equal(mock.envois[0].templateId, 55);
+  assert.equal(mock.envois[0].templateId, 58);
   const ligne = mock.derniereLigne('stage2@agence.fr');
   assert.equal(ligne.data.stage, 3);
 });
@@ -360,7 +363,7 @@ test('prospection-cron : contacte les vraies agences "À contacter" du pipeline 
   assert.equal(body.envoyes.dontPipeline, 1);
   assert.equal(mock.envois.length, 1);
   assert.equal(mock.envois[0].to[0].email, 'vitry@agence-test.fr');
-  assert.equal(mock.envois[0].templateId, 53);
+  assert.equal(mock.envois[0].templateId, 59);
   assert.equal(mock.derniereLigne('vitry@agence-test.fr').data.stage, 1);
 }));
 
@@ -419,4 +422,38 @@ test('prospection-cron : la relance J+6 enregistre sa date d\'envoi (sentAt3), p
 
   await handler(requete('test-cron-secret'));
   assert.ok(mock.derniereLigne('stage2@agence.fr').data.sentAt3);
+});
+
+// ── Personnalisation : nom de l'agence transmis au modèle Brevo (AGENCE) ──
+
+test('prospection-cron : transmet le nom de l\'agence au modèle Brevo pour un premier email issu du pipeline', async () => {
+  const mock = mockComplet({ stock: [fiche('meaux@laforet.com', { agence: 'LAFORET MEAUX' })] });
+  global.fetch = mock.fetchMock;
+
+  await handler(requete('test-cron-secret'));
+  assert.deepEqual(mock.envois[0].params, { AGENCE: 'Laforet Meaux' });
+});
+
+test('prospection-cron : personnalise les relances avec le nom connu dans le CRM', async () => {
+  const mock = mockComplet({
+    prospectionRows: [{ id: 'paris4@sixiemeavenue.com', data: { email: 'paris4@sixiemeavenue.com', stage: 1, sentAt1: ilYA(5) } }],
+    noms: [{ email: 'Paris4@sixiemeavenue.com', agence: 'Sixième Avenue Paris 4' }]
+  });
+  global.fetch = mock.fetchMock;
+
+  await handler(requete('test-cron-secret'));
+  assert.equal(mock.envois[0].templateId, 57);
+  assert.deepEqual(mock.envois[0].params, { AGENCE: 'Sixième Avenue Paris 4' });
+});
+
+test('prospection-cron : sans nom d\'agence présentable, n\'envoie aucun paramètre (le modèle affiche "chez vous")', async () => {
+  const mock = mockComplet({
+    listes: { '45': ['bernard@agence-x.fr'] },
+    noms: [{ email: 'bernard@agence-x.fr', agence: 'bernard' }]
+  });
+  global.fetch = mock.fetchMock;
+
+  await handler(requete('test-cron-secret'));
+  assert.equal(mock.envois.length, 1);
+  assert.equal(mock.envois[0].params, undefined);
 });
