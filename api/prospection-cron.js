@@ -44,6 +44,12 @@ const REPLY_TO = 'contact@edl-idf.com';
 // Listes Brevo sources des nouveaux prospects (mêmes IDs que le scénario Make).
 const LISTES_PROSPECTS = [45, 43, 44, 51, 50, 52, 48];
 
+// Un prospect qui a répondu (intéressé ou non) ou demandé sa désinscription
+// ne doit plus recevoir les relances automatiques J+4/J+6. Posé par l'agent
+// IA de prospection (agents/prospection/INSTRUCTIONS.md) dans la ligne
+// "prospection" du contact : { stoppedAt, stopReason }.
+function sequenceStoppee(d) { return !!(d && d.stoppedAt); }
+
 function fmtJour(d) { return d.toISOString().split('T')[0]; }
 function ilYA(jours) { const d = new Date(); d.setDate(d.getDate() - jours); return d; }
 
@@ -134,7 +140,7 @@ export default async function handler(req) {
     // ── Route 1 : relance J+4 (stage 1 → 2) ──
     for (const [id, d] of etat) {
       if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
-      if (!d || d.stage !== 1 || d.clickedAt) continue;
+      if (!d || d.stage !== 1 || d.clickedAt || sequenceStoppee(d)) continue;
       if (!d.sentAt1 || new Date(d.sentAt1) > seuilStage1) continue;
       try {
         const ok = await envoyerTemplate(BREVO_KEY, d.email || id, TEMPLATES[2]);
@@ -155,7 +161,7 @@ export default async function handler(req) {
     // ── Route 2 : relance J+6 (stage 2 → 3) ──
     for (const [id, d] of etat) {
       if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
-      if (!d || d.stage !== 2 || d.clickedAt) continue;
+      if (!d || d.stage !== 2 || d.clickedAt || sequenceStoppee(d)) continue;
       if (!d.sentAt2 || new Date(d.sentAt2) > seuilStage2) continue;
       try {
         const ok = await envoyerTemplate(BREVO_KEY, d.email || id, TEMPLATES[3]);

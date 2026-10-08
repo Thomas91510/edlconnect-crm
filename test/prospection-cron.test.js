@@ -166,6 +166,20 @@ test('prospection-cron : ne relance jamais un prospect ayant déjà cliqué', as
   assert.equal(mock.envois.length, 0);
 });
 
+test('prospection-cron : ne relance jamais un prospect dont la séquence a été stoppée (réponse ou désinscription)', async () => {
+  const mock = mockComplet({
+    prospectionRows: [
+      { id: 'desinscrit@agence.fr', data: { email: 'desinscrit@agence.fr', stage: 1, sentAt1: ilYA(10), stoppedAt: ilYA(1), stopReason: 'desinscription' } },
+      { id: 'a-repondu@agence.fr', data: { email: 'a-repondu@agence.fr', stage: 2, sentAt1: ilYA(12), sentAt2: ilYA(8), stoppedAt: ilYA(1), stopReason: 'reponse' } }
+    ],
+    listes: { '45': ['desinscrit@agence.fr', 'a-repondu@agence.fr'] }
+  });
+  global.fetch = mock.fetchMock;
+
+  await handler(requete('test-cron-secret'));
+  assert.equal(mock.envois.length, 0);
+});
+
 test('prospection-cron : relance en J+6 un prospect stage 2 non cliqué, envoyé il y a plus de 6 jours', async () => {
   const mock = mockComplet({
     prospectionRows: [{ id: 'stage2@agence.fr', data: { email: 'stage2@agence.fr', stage: 2, sentAt1: ilYA(10), sentAt2: ilYA(7) } }]
