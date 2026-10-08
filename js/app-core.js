@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.18';
+const APP_VERSION = '2.0.0-beta.19';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.19', titre:'En-tête des emails : blanc, logo et trait bleu', texte:'Les emails s\u2019ouvrent sur un en-tête blanc avec votre logo (ou votre nom), l\u2019accroche, et un trait aux couleurs de l\u2019agence juste en dessous.' },
   { v:'2.0.0-beta.18', titre:'« Expert en État des Lieux » et emojis dans les emails', texte:'Accroche « Expert en État des Lieux » (modifiable dans Réglages › Profil) dans le bandeau, la signature et les modèles d\u2019emails ; emojis ajoutés aux objets et intertitres des modèles, et demandés à la rédaction IA.' },
   { v:'2.0.0-beta.17', titre:'Emails : modèles retravaillés, rédaction par Claude, suivi des envois clarifié', texte:'Modèles rapides réécrits et classés (Prospection, Missions, Fidélisation) ; emails envoyés avec une mise en page professionnelle aux couleurs de l\u2019agence, et bouton « Aperçu » avant envoi. « Rédiger avec IA » est désormais assuré par Claude. Le panneau « Suivi des envois » affiche les chiffres des 30 derniers jours et les derniers emails, sans menu inutile.' },
   { v:'2.0.0-beta.16', titre:'Espaces agences épurés, suivi des emails automatique dans la fiche', texte:'« Espaces agences » montre par défaut les espaces activés (recherche affichée quand ils deviennent nombreux) ; l\u2019activation d\u2019un autre client se fait par recherche. Fiche client : ouvertures et clics mis à jour automatiquement (à l\u2019ouverture puis toutes les 2 minutes), statut de chaque email affiché sans menu à régler à la main.' },
