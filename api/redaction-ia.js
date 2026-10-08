@@ -44,28 +44,51 @@ export function decouperEmail(texte) {
   return { objet, corps };
 }
 
+// Offre gratuite : le modèle principal renvoie souvent 429 (capacité de
+// l'offre gratuite dépassée, ~1 requête/s). On réessaie après une courte
+// pause puis on bascule sur d'autres modèles gratuits.
+const MODELES_MISTRAL_SECOURS = ['open-mistral-nemo', 'ministral-8b-latest'];
+export const PAUSE_MISTRAL_MS = { valeur: 1200 };
+const pause = (ms) => new Promise(r => setTimeout(r, ms));
+
 async function redigerAvecMistral(system, demande, reponse) {
+  const essais = [MODELE_MISTRAL, MODELE_MISTRAL, ...MODELES_MISTRAL_SECOURS];
+  let dernierStatut = 0, detail = '';
   try {
-    const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.MISTRAL_API_KEY}` },
-      body: JSON.stringify({
-        model: MODELE_MISTRAL,
-        messages: [{ role: 'system', content: system }, { role: 'user', content: demande }],
-        max_tokens: 1500,
-        temperature: 0.7,
-      }),
-    });
-    if (r.status === 429) return reponse({ error: 'IA momentanément saturée, réessayez dans un instant.' }, 429);
-    if (r.status === 401) return reponse({ error: 'Clé MISTRAL_API_KEY invalide.' }, 503);
-    if (!r.ok) return reponse({ error: 'Erreur de l’IA (' + r.status + ')' }, 502);
-    const data = await r.json();
-    const texte = String(data?.choices?.[0]?.message?.content || '').trim();
-    if (!texte) return reponse({ error: 'Réponse vide de l’IA' }, 502);
-    return reponse(decouperEmail(texte), 200);
+    for (let i = 0; i < essais.length; i++) {
+      if (i > 0) await pause(PAUSE_MISTRAL_MS.valeur);
+      const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.MISTRAL_API_KEY}` },
+        body: JSON.stringify({
+          model: essais[i],
+          messages: [{ role: 'system', content: system }, { role: 'user', content: demande }],
+          max_tokens: 1500,
+          temperature: 0.7,
+        }),
+      });
+      dernierStatut = r.status;
+      if (r.status === 401) return reponse({ error: 'Clé MISTRAL_API_KEY invalide.' }, 503);
+      if (r.status === 429 || r.status >= 500) {
+        detail = String((await r.text().catch(() => '')) || '').slice(0, 200);
+        continue;
+      }
+      if (!r.ok) return reponse({ error: 'Erreur de l’IA (' + r.status + ')' }, 502);
+      const data = await r.json();
+      const texte = String(data?.choices?.[0]?.message?.content || '').trim();
+      if (!texte) return reponse({ error: 'Réponse vide de l’IA' }, 502);
+      return reponse(decouperEmail(texte), 200);
+    }
   } catch (_) {
     return reponse({ error: 'Erreur réseau vers l’IA' }, 502);
   }
+  console.warn('redaction-ia mistral', dernierStatut, detail);
+  if (dernierStatut === 429) {
+    return reponse({ error: /month|mensuel|quota|limit/i.test(detail)
+      ? 'Quota gratuit de l’IA atteint pour le moment. Réessayez plus tard.'
+      : 'IA gratuite saturée, réessayez dans une minute.' }, 429);
+  }
+  return reponse({ error: 'Erreur de l’IA (' + dernierStatut + ')' }, 502);
 }
 
 export default async function handler(req) {

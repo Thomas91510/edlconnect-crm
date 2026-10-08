@@ -81,3 +81,31 @@ test('sans clé Anthropic : rédige avec Mistral (gratuit), même format', async
     delete process.env.MISTRAL_API_KEY;
   }
 });
+
+test('Mistral saturé (429) : réessaie puis bascule sur un modèle gratuit de secours', async () => {
+  const cle = process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
+  process.env.MISTRAL_API_KEY = 'test-mistral-key';
+  const { PAUSE_MISTRAL_MS } = await import('../api/redaction-ia.js');
+  PAUSE_MISTRAL_MS.valeur = 0;
+  const modeles = [];
+  mock();
+  const base = global.fetch;
+  global.fetch = async (url, opts = {}) => {
+    if (String(url).includes('api.mistral.ai')) {
+      const m = JSON.parse(opts.body).model;
+      modeles.push(m);
+      if (m === 'mistral-small-latest') return new Response('{"message":"Service tier capacity exceeded for this model."}', { status: 429 });
+      return new Response(JSON.stringify({ choices: [{ message: { content: 'Objet: Relance\n\nCorps.' } }] }), { status: 200 });
+    }
+    return base(url, opts);
+  };
+  try {
+    const r = await handler(req({ consigne: 'Relance' }));
+    assert.equal(r.status, 200);
+    assert.deepEqual(modeles, ['mistral-small-latest', 'mistral-small-latest', 'open-mistral-nemo']);
+  } finally {
+    process.env.ANTHROPIC_API_KEY = cle;
+    delete process.env.MISTRAL_API_KEY;
+  }
+});
