@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.23';
+const APP_VERSION = '2.0.0-beta.24';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.24', titre:'Relève Edouard toutes les heures, sans réglage', texte:'La relève horaire des rapports Edouard s\u2019authentifie toute seule auprès du serveur (jeton signé par GitHub) : plus aucun secret à configurer. Elle démarre dès la mise en production.' },
   { v:'2.0.0-beta.23', titre:'Rédaction IA plus fiable', texte:'Quand l\u2019IA gratuite est saturée, « Rédiger avec IA » réessaie automatiquement puis passe sur un autre modèle gratuit, au lieu d\u2019afficher une erreur.' },
   { v:'2.0.0-beta.22', titre:'Rédaction IA gratuite', texte:'« Rédiger avec IA » fonctionne avec Mistral (offre gratuite) tant qu\u2019aucune clé Anthropic n\u2019est configurée ; Claude prend le relais automatiquement dès qu\u2019une clé ANTHROPIC_API_KEY est ajoutée.' },
   { v:'2.0.0-beta.21', titre:'Relecture du code : corrections', texte:'Les factures et infos légales envoyées par les agents ne peuvent plus être effacées par un enregistrement depuis le CRM. Espaces agences : liste figée des agences déjà utilisatrices, un espace désactivé reste bloqué (toutes les fiches du même email basculent ensemble). Rémunérations : « Non meublé » payé au tarif nu, surfaces décimales bien rattachées à leur tranche. Rapports : plus de rattachement d\u2019une réservation à une mission sans date commune. Purge des anciennes factures limitée aux fiches de l\u2019abonné, fichiers PDF bien supprimés. Facture agent : taille maximale alignée sur la limite d\u2019envoi.' },

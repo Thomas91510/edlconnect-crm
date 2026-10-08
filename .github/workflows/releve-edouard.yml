@@ -7,14 +7,19 @@ name: Relève des rapports Edouard (toutes les heures)
 # Planifié ici plutôt que dans vercel.json : les crons Vercel du forfait
 # actuel sont limités à une exécution par jour.
 #
-# Prérequis (une fois) : secret de dépôt CRON_SECRET = même valeur que la
-# variable CRON_SECRET de Vercel (Settings › Secrets and variables › Actions).
-# Les planifications GitHub ne tournent que depuis la branche par défaut.
+# Aucun secret à configurer : le workflow demande à GitHub un jeton OIDC
+# signé, que le serveur vérifie (dépôt Thomas91510/edlconnect-crm, branche
+# main — api/_lib/github-oidc.js). Les planifications GitHub ne tournent que
+# depuis la branche par défaut.
 
 on:
   schedule:
     - cron: '7 * * * *'
   workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   releve:
@@ -22,13 +27,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Relever les rapports Edouard
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::warning::Secret CRON_SECRET absent : relève ignorée."
-            exit 0
-          fi
+          JETON=$(curl -fsS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=lokentia-edouard-cron" | jq -r '.value')
           curl -fsS --max-time 120 \
-            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Authorization: Bearer $JETON" \
             https://app.lokentia.fr/api/edouard-cron | head -c 2000

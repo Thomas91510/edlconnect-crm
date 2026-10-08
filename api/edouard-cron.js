@@ -67,12 +67,21 @@ async function edouardGet(path, apiKey) {
 
 import { SUPABASE_URL as SUPA_URL, SUPABASE_ANON_KEY as SUPA_ANON } from './_lib/supabase.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
+import { verifierJetonGithub } from './_lib/github-oidc.js';
+
+export const AUDIENCE_RELEVE = 'lokentia-edouard-cron';
 
 export default async function handler(req) {
-  // Accès autorisé : (1) le cron Vercel, (2) un administrateur connecté
+  // Accès autorisé : (1) le cron Vercel, (2) la relève horaire GitHub
+  // Actions (jeton OIDC signé par GitHub, sans secret à configurer),
+  // (3) un administrateur connecté
   const authHeader = req.headers.get('authorization') || '';
-  let autorise = (authHeader === `Bearer ${process.env.CRON_SECRET}`);
+  let autorise = !!process.env.CRON_SECRET && (authHeader === `Bearer ${process.env.CRON_SECRET}`);
   let declencheur = 'cron';
+  if (!autorise && authHeader.startsWith('Bearer ey')) {
+    const revendications = await verifierJetonGithub(authHeader.slice(7).trim(), AUDIENCE_RELEVE);
+    if (revendications) { autorise = true; declencheur = 'github'; }
+  }
 
   if (!autorise) {
     const token = authHeader.replace('Bearer ', '').trim();
