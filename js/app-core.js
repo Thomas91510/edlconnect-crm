@@ -51,9 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.25';
+const APP_VERSION = '2.0.0-beta.26';
 const NOUVEAUTES = [
-  { v:'2.0.0-beta.25', titre:'Rapports volumineux', texte:'Les rapports d\u2019état des lieux très lourds (beaucoup de photos, plus de 45 Mo) ne sont plus perdus : le bouton « Rapport » ouvre directement le PDF chez Edouard, dans le CRM comme dans l\u2019extranet.' },
+  { v:'2.0.0-beta.26', titre:'Rapports ajoutés à la main', texte:'La relève automatique des rapports Edouard (toutes les heures et le soir) est désactivée : ajoutez les rapports vous-même dans la fiche client › Documents (nom + lien). Le bouton « Relever maintenant » de Clients › Rapports reste disponible si besoin.' },
   { v:'2.0.0-beta.24', titre:'Relève Edouard toutes les heures, sans réglage', texte:'La relève horaire des rapports Edouard s\u2019authentifie toute seule auprès du serveur (jeton signé par GitHub) : plus aucun secret à configurer. Elle démarre dès la mise en production.' },
   { v:'2.0.0-beta.23', titre:'Rédaction IA plus fiable', texte:'Quand l\u2019IA gratuite est saturée, « Rédiger avec IA » réessaie automatiquement puis passe sur un autre modèle gratuit, au lieu d\u2019afficher une erreur.' },
   { v:'2.0.0-beta.22', titre:'Rédaction IA gratuite', texte:'« Rédiger avec IA » fonctionne avec Mistral (offre gratuite) tant qu\u2019aucune clé Anthropic n\u2019est configurée ; Claude prend le relais automatiquement dès qu\u2019une clé ANTHROPIC_API_KEY est ajoutée.' },

@@ -14,6 +14,7 @@ process.env.CRON_SECRET = process.env.CRON_SECRET || 'test-cron-secret';
 process.env.EDOUARD_API_KEY = process.env.EDOUARD_API_KEY || 'test-edouard-key';
 process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key';
 process.env.BREVO_API_KEY = process.env.BREVO_API_KEY || 'test-brevo-key';
+process.env.EDOUARD_RELEVE_AUTO = 'true';
 
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });
@@ -24,7 +25,7 @@ function requete() {
 
 // mission : ligne Supabase `missions` ; situations : EDL renvoyes par Edouard
 // pour l'accommodation `accId`.
-function mockComplet({ mission, situations = [], accId = 'acc-1', pdfTaille = 0, stockage413 = false }) {
+function mockComplet({ mission, situations = [], accId = 'acc-1' }) {
   const patchs = [];
   const emails = [];
   const fetchMock = async (url, opts) => {
@@ -49,13 +50,12 @@ function mockComplet({ mission, situations = [], accId = 'acc-1', pdfTaille = 0,
       return { ok: true, json: async () => [] };
     }
     if (u.includes('rapport.pdf')) {
-      return { ok: true, headers: new Headers(pdfTaille ? { 'content-length': String(pdfTaille) } : {}), arrayBuffer: async () => new ArrayBuffer(4) };
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(4) };
     }
     if (u.includes('/storage/v1/object/sign/')) {
       return { ok: true, json: async () => ({ signedURL: '/signed/rapport.pdf' }) };
     }
     if (u.includes('/storage/v1/object/rapports/')) {
-      if (stockage413) return { ok: false, status: 400, text: async () => '{"statusCode":"413","error":"Payload too large","message":"The object exceeded the maximum allowed size"}' };
       return { ok: true };
     }
     if (u.includes('/v3/smtp/email')) {
@@ -156,20 +156,15 @@ test('edouard-cron : type de mission non reconnu (ex. pre-etat des lieux) garde 
   assert.equal(body.journal.rapportsRecuperes, 1, 'seul celui proche de la date doit etre rapatrie');
 });
 
-// Rapport trop lourd pour Supabase Storage (~50 Mo) : lien permanent signé
-// vers /api/rapport-edouard au lieu d'une erreur (missions jamais terminées).
-for (const [cas, opts] of [['taille annoncée > 45 Mo', { pdfTaille: 60 * 1024 * 1024 }], ['refus 413 du stockage', { stockage413: true }]]) {
-  test('edouard-cron : rapport volumineux (' + cas + ') → lien direct Edouard', async () => {
-    const mock = mockComplet({
-      mission: { type: 'EDL sortant', date: '2026-10-02T15:00:00', adresse: '10 rue de la Paix 75002 Paris', edouardAccommodationId: 'acc-1', emailClient: 'agence@test.fr' },
-      situations: [{ id: 'sit-lourde', type: 2, date: '2026-10-03T09:00:00.000Z' }],
-      ...opts,
-    });
-    global.fetch = mock.fetchMock;
+test('edouard-cron : relève automatique désactivée par défaut (rapports ajoutés à la main)', async () => {
+  delete process.env.EDOUARD_RELEVE_AUTO;
+  let appelsEdouard = 0;
+  global.fetch = async (url) => { if (String(url).includes('edouard')) appelsEdouard++; return { ok: true, json: async () => [] }; };
+  try {
     const body = await (await handler(requete())).json();
-    assert.equal(body.journal.rapportsRecuperes, 1);
-    assert.deepEqual(body.journal.erreurs, []);
-    const url = mock.patchs[0].data.rapports.at(-1).url;
-    assert.match(url, /^https:\/\/app\.lokentia\.fr\/api\/rapport-edouard\?s=sit-lourde&t=[0-9a-f]{40}$/);
-  });
-}
+    assert.equal(body.desactivee, true);
+    assert.equal(appelsEdouard, 0, 'aucun appel à Edouard, aucun email');
+  } finally {
+    process.env.EDOUARD_RELEVE_AUTO = 'true';
+  }
+});
