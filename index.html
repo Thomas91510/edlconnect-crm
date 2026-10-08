@@ -987,10 +987,9 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <h1 class="page-title">Rapports</h1>
         <div style="display:flex;gap:7px;align-items:center">
           <span id="rapports-releve" style="font-size:12px;color:var(--text2)"></span>
-          <button class="btn btn-sm" onclick="releverRapportsMaintenant()"><i class="ti ti-refresh"></i>Relever maintenant</button>
         </div>
       </div>
-      <p style="font-size:13px;color:var(--text2);margin:-6px 0 14px">Rapports d'état des lieux de toutes les agences, classés par client — ajoutés automatiquement dès que l'état des lieux est terminé dans Edouard (relève toutes les heures).</p>
+      <p style="font-size:13px;color:var(--text2);margin:-6px 0 14px">Rapports d'état des lieux déjà enregistrés, classés par client. Pour transmettre un nouveau rapport à une agence, ajoutez-le à la main dans sa fiche client › Documents (nom + lien).</p>
       <div class="search-wrap"><i class="ti ti-search"></i><input type="text" id="rapports-recherche" placeholder="Rechercher un client, une adresse, un locataire…" oninput="renderRapports()"></div>
       <div id="rapports-contenu"></div>
     </div>
@@ -1172,8 +1171,6 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <div class="page-header">
         <h1 class="page-title">Missions</h1>
         <div style="display:flex;gap:8px;align-items:center">
-          <span id="edouard-sync-status" style="font-size:11px;color:var(--text2)"></span>
-          <button class="btn btn-sm" id="edouard-sync-btn" onclick="syncEdouardMaintenant()" title="Va chercher immédiatement les rapports d'état des lieux terminés dans Edouard, sans attendre la relève automatique (toutes les heures)"><i class="ti ti-refresh"></i>Sync Edouard</button>
           <button class="btn btn-primary" onclick="openNewMissionModal()"><i class="ti ti-plus"></i>Nouvelle mission</button>
         </div>
       </div>

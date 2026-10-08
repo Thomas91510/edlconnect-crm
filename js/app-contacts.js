@@ -1103,9 +1103,10 @@ async function chargerApercuExtranet(email){
 
 
 // ─── Rapports par client ────────────────────────────────────
-// Tous les rapports d'état des lieux récupérés d'Edouard (api/edouard-cron.js,
-// relève horaire : .github/workflows/releve-edouard.yml) — m.rapports, ou
-// l'ancien champ unique m.rapportUrl — regroupés par client (agence).
+// Rapports d'état des lieux déjà enregistrés sur les missions (anciennes
+// relèves Edouard — désactivées, les rapports s'ajoutent désormais à la main
+// dans la fiche client › Documents) — m.rapports, ou l'ancien champ unique
+// m.rapportUrl — regroupés par client (agence).
 function rapportsDeMission(m){
   const liste = Array.isArray(m.rapports) && m.rapports.length ? m.rapports
     : (m.rapportUrl ? [{ nom: 'Rapport EDL', url: m.rapportUrl, date: m.rapportRecupereAt || '' }] : []);
@@ -1136,7 +1137,7 @@ function renderRapports(){
   });
   if(releve) releve.textContent = derniere ? 'Dernier rapport reçu : ' + new Date(derniere).toLocaleString('fr-FR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
   const liste = Object.values(groupes).sort((a, b) => String(a.nom).localeCompare(String(b.nom), 'fr'));
-  if(!liste.length){ box.innerHTML = '<div class="empty">' + (q ? 'Aucun rapport ne correspond.' : 'Aucun rapport pour l’instant : ils apparaissent ici dès qu’un état des lieux est terminé dans Edouard.') + '</div>'; return; }
+  if(!liste.length){ box.innerHTML = '<div class="empty">' + (q ? 'Aucun rapport ne correspond.' : 'Aucun rapport enregistré. Ajoutez les rapports à la main dans la fiche client › Documents.') + '</div>'; return; }
   box.innerHTML = liste.map(g => {
     g.missions.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
     const nb = g.missions.reduce((n, m) => n + rapportsDeMission(m).length, 0);
@@ -1156,10 +1157,6 @@ function renderRapports(){
       </tbody></table></div>
     </details>`;
   }).join('');
-}
-async function releverRapportsMaintenant(){
-  if(typeof syncEdouardMaintenant === 'function') await syncEdouardMaintenant();
-  renderRapports();
 }
 
 // ─── Espaces agences (menu de gauche) ────────────────────────
