@@ -12,8 +12,14 @@ process.env.CRON_SECRET = process.env.CRON_SECRET || 'test-cron-secret';
 process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key';
 process.env.BREVO_API_KEY = process.env.BREVO_API_KEY || 'test-brevo-key';
 
+// Les premiers emails sont coupés en production tant que cette variable ne
+// vaut pas "true" (voir nouveauxProspectsActifs). La plupart des tests
+// ci-dessous exercent l'envoi lui-même : on l'active par défaut et on la
+// retire explicitement pour tester l'interrupteur.
+process.env.PROSPECTION_PIPELINE_ACTIF = 'true';
+
 const fetchOriginal = global.fetch;
-test.after(() => { global.fetch = fetchOriginal; });
+test.after(() => { global.fetch = fetchOriginal; delete process.env.PROSPECTION_PIPELINE_ACTIF; });
 
 function requete(secret) {
   return { headers: new Headers(secret !== undefined ? { authorization: `Bearer ${secret}` } : {}) };
@@ -294,21 +300,54 @@ function fiche(email, extra = {}) {
   return { id: 'p_' + email, email, agence: 'Agence ' + email.split('@')[0].toUpperCase() + ' Immobilier', dept: '94', etape: 'a_contacter', ...extra };
 }
 
-function avecPipelineActif(fn) {
-  return async () => {
+function avecPipelineActif(fn) { return fn; }
+
+test('prospection-cron : sans PROSPECTION_PIPELINE_ACTIF=true, aucun nouveau prospect n\'est contacté (listes Brevo comme pipeline) mais les relances continuent', async () => {
+  delete process.env.PROSPECTION_PIPELINE_ACTIF;
+  try {
+    const mock = mockComplet({
+      prospectionRows: [{ id: 'stage1@agence.fr', data: { email: 'stage1@agence.fr', stage: 1, sentAt1: ilYA(5) } }],
+      listes: { '45': ['nouveau@agence.fr'] },
+      stock: [fiche('vitry@agence-test.fr')]
+    });
+    global.fetch = mock.fetchMock;
+
+    const res = await handler(requete('test-cron-secret'));
+    const body = await res.json();
+    assert.equal(body.envoyes.nouveauxProspects, 0);
+    assert.equal(body.envoyes.relanceJ4, 1);
+    assert.deepEqual(mock.envois.map(e => e.to[0].email), ['stage1@agence.fr']);
+  } finally {
     process.env.PROSPECTION_PIPELINE_ACTIF = 'true';
-    try { await fn(); } finally { delete process.env.PROSPECTION_PIPELINE_ACTIF; }
+  }
+});
+
+test('prospection-cron : lit les listes Brevo par pages de 500 maximum (au-delà, Brevo rejette la requête)', async () => {
+  const contacts = Array.from({ length: 520 }, (_, i) => `agence${i}@liste.fr`);
+  const urls = [];
+  const envois = [];
+  global.fetch = async (url, opts) => {
+    const u = String(url);
+    if (u.includes('/v3/contacts/lists/')) {
+      urls.push(u);
+      const q = new URL(u).searchParams;
+      const limit = Number(q.get('limit')), offset = Number(q.get('offset') || 0);
+      if (limit > 500) return { ok: false, json: async () => ({ message: 'limit exceeds 500' }) };
+      const page = u.includes('/lists/45/') ? contacts.slice(offset, offset + limit) : [];
+      return { ok: true, json: async () => ({ contacts: page.map(email => ({ email })) }) };
+    }
+    if (u.includes('/rest/v1/prospection') && (!opts || opts.method !== 'POST')) {
+      // Les 500 premiers sont déjà contactés : seul le 2e page fait apparaître du nouveau.
+      return { ok: true, json: async () => contacts.slice(0, 500).map(e => ({ id: e, data: { email: e, stage: 3 } })) };
+    }
+    if (u.includes('/v3/smtp/email')) { envois.push(JSON.parse(opts.body)); return { ok: true }; }
+    return { ok: true, json: async () => [] };
   };
-}
 
-test('prospection-cron : sans PROSPECTION_PIPELINE_ACTIF=true, aucune fiche du pipeline n\'est contactée', async () => {
-  const mock = mockComplet({ stock: [fiche('vitry@agence-test.fr')] });
-  global.fetch = mock.fetchMock;
-
-  const res = await handler(requete('test-cron-secret'));
-  const body = await res.json();
-  assert.equal(body.envoyes.dontPipeline, 0);
-  assert.equal(mock.envois.length, 0);
+  await handler(requete('test-cron-secret'));
+  assert.ok(urls.some(u => u.includes('offset=500')), 'doit demander la page suivante');
+  assert.ok(urls.every(u => Number(new URL(u).searchParams.get('limit')) <= 500));
+  assert.equal(envois[0].to[0].email, 'agence500@liste.fr');
 });
 
 test('prospection-cron : contacte les vraies agences "À contacter" du pipeline une fois les listes Brevo épuisées', avecPipelineActif(async () => {

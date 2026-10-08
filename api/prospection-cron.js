@@ -42,8 +42,18 @@ const MAX_ENVOIS_PAR_RUN = 60;
 const TEMPLATES = { 1: 53, 2: 54, 3: 55 };
 const REPLY_TO = 'contact@edl-idf.com';
 
-// Listes Brevo sources des nouveaux prospects (mêmes IDs que le scénario Make).
-const LISTES_PROSPECTS = [45, 43, 44, 51, 50, 52, 48];
+// Listes Brevo sources des nouveaux prospects : une liste "Agence <département>"
+// par département d'Île-de-France (75, 91, 92, 93, 94, 95, 78, 77). La 49
+// (Seine-et-Marne) manquait depuis la reprise du scénario Make ; Eure (47) et
+// Oise (46) sont hors zone et vidées le 08/10.
+const LISTES_PROSPECTS = [45, 43, 44, 51, 50, 52, 48, 49];
+
+// Premiers emails à de nouveaux prospects (listes Brevo comme pipeline CRM) :
+// coupés tant que la variable Vercel PROSPECTION_PIPELINE_ACTIF ne vaut pas
+// "true". Thomas veut relire le modèle Brevo n°53 et assainir les bases avant
+// tout envoi ; les relances J+4/J+6 des prospects déjà contactés, elles,
+// continuent.
+function nouveauxProspectsActifs() { return process.env.PROSPECTION_PIPELINE_ACTIF === 'true'; }
 
 // Un prospect qui a répondu (intéressé ou non) ou demandé sa désinscription
 // ne doit plus recevoir les relances automatiques J+4/J+6. Posé par l'agent
@@ -111,13 +121,24 @@ async function envoyerTemplate(BREVO_KEY, email, templateId) {
   return resp.ok;
 }
 
+// Brevo plafonne cette route à 500 contacts par page. L'ancien appel en
+// limit=1000 était rejeté par Brevo et lu comme une liste vide : du 14/09 au
+// 08/10, aucun des ~980 contacts des listes n'a reçu de premier email, seules
+// les relances partaient. On pagine désormais par tranches de 500.
 async function listerContactsBrevo(BREVO_KEY, listId) {
-  const resp = await fetch(`https://api.brevo.com/v3/contacts/lists/${listId}/contacts?limit=1000`, {
-    headers: { 'api-key': BREVO_KEY }
-  });
-  if (!resp.ok) return [];
-  const body = await resp.json();
-  return (body.contacts || []).map(c => c.email).filter(Boolean);
+  const PAGE = 500;
+  const emails = [];
+  for (let offset = 0; offset < 10000; offset += PAGE) {
+    const resp = await fetch(`https://api.brevo.com/v3/contacts/lists/${listId}/contacts?limit=${PAGE}&offset=${offset}`, {
+      headers: { 'api-key': BREVO_KEY }
+    });
+    if (!resp.ok) break;
+    const body = await resp.json();
+    const page = body.contacts || [];
+    emails.push(...page.map(c => c.email).filter(Boolean));
+    if (page.length < PAGE) break;
+  }
+  return emails;
 }
 
 // Upsert immédiat (contact + compteur du jour) après CHAQUE envoi réussi,
@@ -232,7 +253,7 @@ export default async function handler(req) {
 
     // ── Route 3 : nouveaux prospects (listes Brevo) ──
     for (const listId of LISTES_PROSPECTS) {
-      if (!exclus) break;
+      if (!exclus || !nouveauxProspectsActifs()) break;
       if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
       const emails = await listerContactsBrevo(BREVO_KEY, listId);
       for (const email of emails) {
@@ -258,14 +279,10 @@ export default async function handler(req) {
     }
 
     // ── Route 4 : fiches "À contacter" du pipeline CRM ──
-    // Les listes Brevo sont épuisées depuis le 14/09 alors que ~650 vraies
-    // agences attendaient en "À contacter" sans jamais être sollicitées.
-    // Désactivée tant que la variable Vercel PROSPECTION_PIPELINE_ACTIF ne
-    // vaut pas "true" : Thomas veut relire le modèle Brevo n°53 avant que
-    // ces ~650 agences ne reçoivent le premier email.
+    // ~750 agences d'Île-de-France assainies et enrichies le 08/10 attendent
+    // en "À contacter" dans le CRM, souvent absentes des listes Brevo.
     let envoyesStock = 0;
-    const pipelineActif = process.env.PROSPECTION_PIPELINE_ACTIF === 'true';
-    if (pipelineActif && exclus && adminUserId && quotaCount < QUOTA_JOUR && envoyesCeRun < MAX_ENVOIS_PAR_RUN) {
+    if (nouveauxProspectsActifs() && exclus && adminUserId && quotaCount < QUOTA_JOUR && envoyesCeRun < MAX_ENVOIS_PAR_RUN) {
       for (const p of await candidatsStock(SUPABASE_SERVICE_KEY, adminUserId)) {
         if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
         const email = String(p.email).trim().toLowerCase();
