@@ -29,6 +29,7 @@
     { "source": "/api/send-welcome-agency", "destination": "/api/send-welcome-agency.js" },
     { "source": "/api/edouard-push", "destination": "/api/edouard-push.js" },
     { "source": "/api/edouard-cron", "destination": "/api/edouard-cron.js" },
+    { "source": "/api/rapport-edouard", "destination": "/api/rapport-edouard.js" },
     { "source": "/api/backup-auto", "destination": "/api/backup-auto.js" },
     { "source": "/api/register-plan", "destination": "/api/register-plan.js" },
     { "source": "/api/contact-form", "destination": "/api/contact-form.js" },

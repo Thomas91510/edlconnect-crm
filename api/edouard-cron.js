@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' };
 import { origineAutorisee } from './_lib/cors.js';
 import { identiteAbonne as identiteAbonneBase } from './_lib/identite.js';
 import { escapeIlike } from './_lib/ilike.js';
+import { lienRapportEdouard, TAILLE_MAX_STOCKAGE } from './_lib/lien-rapport.js';
 
 const EDOUARD_BASE = 'https://europe-west3-edouard-immo.cloudfunctions.net/api';
 const BUCKET = 'rapports';
@@ -268,47 +269,66 @@ export default async function handler(req) {
             continue;
           }
 
+          // Rapport stocké chez nous (lien signé 1 an) ; s'il est trop lourd
+          // pour Storage (~50 Mo, rapports avec beaucoup de photos), lien
+          // permanent qui redemande le PDF à Edouard à chaque clic.
+          let rapportUrl = '';
           const pdfResp = await fetch(fileUrl);
           if (!pdfResp.ok) {
             journal.erreurs.push('Mission ' + row.id + ' : telechargement PDF HTTP ' + pdfResp.status);
             continue;
           }
-          const pdfBytes = await pdfResp.arrayBuffer();
-
-          // Stocker dans Supabase Storage (un fichier par etat des lieux)
-          const path = (row.user_id || 'inconnu') + '/' + row.id + '_' + sitId + '.pdf';
-          const upResp = await fetch(SUPA_URL + '/storage/v1/object/' + BUCKET + '/' + path, {
-            method: 'POST',
-            headers: {
-              'apikey': SUPA_KEY,
-              'Authorization': 'Bearer ' + SUPA_KEY,
-              'Content-Type': 'application/pdf',
-              'x-upsert': 'true'
-            },
-            body: pdfBytes
-          });
-          if (!upResp.ok) {
-            const t = await upResp.text();
-            journal.erreurs.push('Mission ' + row.id + ' : upload storage HTTP ' + upResp.status + ' ' + t.slice(0, 120));
-            continue;
-          }
-
-          // Lien signe longue duree (1 an)
-          let rapportUrl = '';
-          const signResp = await fetch(SUPA_URL + '/storage/v1/object/sign/' + BUCKET + '/' + path, {
-            method: 'POST',
-            headers: supaHeaders,
-            body: JSON.stringify({ expiresIn: 31536000 })
-          });
-          if (signResp.ok) {
-            const signData = await signResp.json();
-            if (signData && signData.signedURL) {
-              rapportUrl = SUPA_URL + '/storage/v1' + signData.signedURL;
+          const tailleAnnoncee = Number(pdfResp.headers && pdfResp.headers.get('content-length')) || 0;
+          let tropLourd = tailleAnnoncee > TAILLE_MAX_STOCKAGE;
+          if (tropLourd) {
+            try { if (pdfResp.body) await pdfResp.body.cancel(); } catch (e) { /* ignore */ }
+          } else {
+            const pdfBytes = await pdfResp.arrayBuffer();
+            tropLourd = pdfBytes.byteLength > TAILLE_MAX_STOCKAGE;
+            if (!tropLourd) {
+              // Stocker dans Supabase Storage (un fichier par etat des lieux)
+              const path = (row.user_id || 'inconnu') + '/' + row.id + '_' + sitId + '.pdf';
+              const upResp = await fetch(SUPA_URL + '/storage/v1/object/' + BUCKET + '/' + path, {
+                method: 'POST',
+                headers: {
+                  'apikey': SUPA_KEY,
+                  'Authorization': 'Bearer ' + SUPA_KEY,
+                  'Content-Type': 'application/pdf',
+                  'x-upsert': 'true'
+                },
+                body: pdfBytes
+              });
+              if (!upResp.ok) {
+                const t = await upResp.text();
+                if (/413|too large|maximum allowed size/i.test(t)) {
+                  tropLourd = true;
+                } else {
+                  journal.erreurs.push('Mission ' + row.id + ' : upload storage HTTP ' + upResp.status + ' ' + t.slice(0, 120));
+                  continue;
+                }
+              } else {
+                // Lien signe longue duree (1 an)
+                const signResp = await fetch(SUPA_URL + '/storage/v1/object/sign/' + BUCKET + '/' + path, {
+                  method: 'POST',
+                  headers: supaHeaders,
+                  body: JSON.stringify({ expiresIn: 31536000 })
+                });
+                if (signResp.ok) {
+                  const signData = await signResp.json();
+                  if (signData && signData.signedURL) {
+                    rapportUrl = SUPA_URL + '/storage/v1' + signData.signedURL;
+                  }
+                }
+                if (!rapportUrl) {
+                  journal.erreurs.push('Mission ' + row.id + ' : lien signe non genere');
+                  continue;
+                }
+              }
             }
           }
-          if (!rapportUrl) {
-            journal.erreurs.push('Mission ' + row.id + ' : lien signe non genere');
-            continue;
+          if (tropLourd) {
+            rapportUrl = await lienRapportEdouard(sitId, SUPA_KEY);
+            journal.details.push('Mission ' + row.id + ' : rapport volumineux, lien direct Edouard');
           }
 
           let dateLisible = '';
