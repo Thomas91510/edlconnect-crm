@@ -95,6 +95,9 @@ export default async function handler(req) {
     (rows || []).forEach(row => {
       const docs = row.data?.documents || [];
       docs.forEach(d => {
+        // Pas de factures pour les agences : les anciennes entrées de type
+        // "facture" ne sont jamais renvoyées à l'extranet.
+        if (d.type === 'facture') return;
         if (d.url && d.nom && !documents.find(x => x.url === d.url)) {
           documents.push({ nom: d.nom, url: d.url, type: d.type || 'document' });
         }

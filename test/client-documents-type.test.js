@@ -1,5 +1,5 @@
 // Vérifie que /api/client-documents renvoie le champ "type" de chaque
-// document (document | facture), et retombe sur "document" pour les
+// document, ne renvoie jamais de facture (aucune facture pour les agences), et retombe sur "document" pour les
 // entrées existantes qui n'ont jamais eu ce champ (compatibilité).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -27,11 +27,11 @@ function requete() {
   };
 }
 
-test('client-documents : renvoie le type explicite d\'un document', async () => {
-  mockFetch([{ nom: 'Facture juin', url: 'https://x/f.pdf', type: 'facture' }]);
+test('client-documents : jamais de facture pour les agences (anciennes entrées masquées)', async () => {
+  mockFetch([{ nom: 'Facture juin', url: 'https://x/f.pdf', type: 'facture' }, { nom: 'Tarifs', url: 'https://x/t.pdf', type: 'document' }]);
   const resp = await handlerDocs(requete());
   const docs = await resp.json();
-  assert.equal(docs[0].type, 'facture');
+  assert.deepEqual(docs.map(d => d.nom), ['Tarifs']);
 });
 
 test('client-documents : un document sans type retombe sur "document" (compatibilité)', async () => {

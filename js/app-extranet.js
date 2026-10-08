@@ -13,10 +13,7 @@ function feRenderDocs(docs){
   }
   wrap.innerHTML = _feDocs.map((d,i) => `
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-      <select onchange="feUpdateDoc(${i},'type',this.value)" style="flex:0 0 auto">
-        <option value="document"${(d.type||'document')==='document'?' selected':''}>📁 Document</option>
-        <option value="facture"${d.type==='facture'?' selected':''}>🧾 Facture</option>
-      </select>
+      ${d.type === 'facture' ? '<span title="Ancienne facture : plus jamais affichée dans l’extranet des agences" style="font-size:11px;color:var(--text3);flex:0 0 auto">🧾 masquée</span>' : ''}
       <input type="text" value="${esc(d.nom||'')}" placeholder="Nom du document" onchange="feUpdateDoc(${i},'nom',this.value)" style="flex:1">
       <input type="url" value="${esc(d.url||'')}" placeholder="https://drive.google.com/..." onchange="feUpdateDoc(${i},'url',this.value)" style="flex:2">
       <button onclick="feRemoveDoc(${i})" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px">✕</button>
@@ -43,49 +40,8 @@ function feAddDoc(){
 }
 function feGetDocs(){ return _feDocs.filter(d => d.url && d.url.trim()); }
 
-// Dépose une facture PDF pour le contact actuellement ouvert dans la fiche.
-async function uploadFactureCourante(){
-  const fileInput = document.getElementById('fe-facture-file');
-  const statusEl = document.getElementById('fe-facture-status');
-  const c = (typeof DB!=='undefined' && typeof currentFicheId!=='undefined') ? DB.contacts.find(x=>x.id===currentFicheId) : null;
-  const email = (c?.email || '').trim();
-  const file = fileInput?.files?.[0];
-
-  if(!email){ notify('⚠️ Ce contact n\'a pas d\'email renseigné (onglet Informations)', 'warn'); return; }
-  if(!file){ notify('⚠️ Choisis un fichier PDF', 'warn'); return; }
-  if(file.type !== 'application/pdf'){ notify('⚠️ Le fichier doit être un PDF', 'warn'); return; }
-
-  if(statusEl) statusEl.textContent = 'Envoi en cours…';
-  try{
-    const form = new FormData();
-    form.append('file', file);
-    form.append('clientEmail', email);
-    form.append('nom', 'Facture — ' + file.name.replace(/\.pdf$/i, ''));
-
-    const resp = await fetch('/api/upload-facture', {
-      method: 'POST',
-      headers: await _authHeaders(),
-      body: form
-    });
-    const data = await resp.json().catch(() => ({}));
-
-    if(!resp.ok || !data.success){
-      notify('❌ ' + (data.error || 'Échec du dépôt'), 'err');
-      if(statusEl) statusEl.textContent = '';
-      return;
-    }
-
-    _feDocs.push({ nom: data.nom, url: data.path, type: 'facture' });
-    feRenderDocs(_feDocs);
-    feSaveDocs();
-    notify('✅ Facture déposée !');
-    if(statusEl) statusEl.textContent = 'Dernier dépôt : ' + file.name;
-    fileInput.value = '';
-  }catch(e){
-    notify('❌ Erreur réseau lors du dépôt', 'err');
-    if(statusEl) statusEl.textContent = '';
-  }
-}
+// Pas de factures pour les agences : le dépôt de facture PDF dans
+// l'extranet a été retiré (les anciennes restent masquées côté client).
 
 function fmtEntrants(list){
   if(!Array.isArray(list) || !list.length) return '\u2014';
