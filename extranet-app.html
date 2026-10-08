@@ -628,6 +628,20 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let _userEmail = '';
 let _accessToken = '';
+// Aperçu « espace agence » ouvert depuis le CRM (menu de gauche › Espaces
+// agences) : /extranet-app?apercu=email-de-l-agence. L'administrateur voit
+// exactement l'espace de l'agence, en LECTURE SEULE (aucune commande, aucun
+// message, rien marqué comme lu). Le serveur n'honore clientEmail que pour
+// un compte administrateur — un autre compte ne voit que ses propres données.
+const _APERCU = (() => {
+  try { const e = (new URLSearchParams(location.search).get('apercu') || '').trim().toLowerCase(); return /^[^\s@]+@[^\s@]+$/.test(e) ? e : ''; } catch(e) { return ''; }
+})();
+const corpsClient = (obj) => JSON.stringify(_APERCU ? { ...obj, clientEmail: _APERCU } : obj);
+function bloqueEnApercu(){
+  if(!_APERCU) return false;
+  alert('Aperçu de l’espace de ' + _APERCU + ' en lecture seule : aucune action n’est envoyée.');
+  return true;
+}
 let _selectedType = '';
 
 // N'accepter que les URL http(s) — bloque les schémas dangereux (javascript:, data:)
@@ -707,7 +721,7 @@ function resetAttachments(){
 // utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
 // Numéro de version : aligné sur APP_VERSION (js/app-core.js), vérifié par
 // test/frontend-version-coherente.test.js.
-const APP_VERSION = '2.0.0-beta.9';
+const APP_VERSION = '2.0.0-beta.10';
 (async function afficherVersion(){
   const el0 = document.getElementById('app-version');
   if(el0) el0.textContent = 'v' + APP_VERSION;
@@ -744,7 +758,7 @@ function toggleMore(force){
 // Auth au chargement
 sb.auth.onAuthStateChange((event, session) => {
   if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-    _userEmail = session.user.email;
+    _userEmail = _APERCU || session.user.email;
     _accessToken = session.access_token;
     showDashboard();
   }
@@ -755,7 +769,7 @@ sb.auth.onAuthStateChange((event, session) => {
 
 sb.auth.getSession().then(({ data: { session } }) => {
   if (session?.user) {
-    _userEmail = session.user.email;
+    _userEmail = _APERCU || session.user.email;
     _accessToken = session.access_token;
     showDashboard();
   } else {
@@ -776,6 +790,14 @@ async function showDashboard() {
   document.getElementById('order-form').style.display = 'none';
   document.getElementById('app-shell').classList.add('shown');
   document.getElementById('user-email-display').textContent = _userEmail;
+  if(_APERCU && !document.getElementById('bandeau-apercu')){
+    const b = document.createElement('div');
+    b.id = 'bandeau-apercu';
+    b.setAttribute('role', 'status');
+    b.style.cssText = 'position:sticky;top:0;z-index:50;background:#FFF4E5;color:#8A4B00;border-bottom:1px solid #F5D9B0;padding:10px 16px;font-size:13.5px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap';
+    b.innerHTML = '<b>Aperçu administrateur</b> — espace de ' + esc(_APERCU) + ', en lecture seule. <a href="#" onclick="window.close();return false" style="color:#8A4B00">Fermer</a>';
+    document.body.prepend(b);
+  }
   restoreDraft();
   await loadOrders();
   refreshUnreadMessagesBadge();
@@ -996,7 +1018,7 @@ async function chargerApercusAccueil(){
   const boxMsg = document.getElementById('accueil-msg');
   if(boxMsg){
     try {
-      const resp = await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'list' }) });
+      const resp = await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: corpsClient({ action:'list' }) });
       const messages = await resp.json();
       const dernier = Array.isArray(messages) && messages.length ? messages[messages.length - 1] : null;
       boxMsg.innerHTML = dernier
@@ -1006,6 +1028,7 @@ async function chargerApercusAccueil(){
   }
 }
 async function envoyerMessageAccueil(){
+  if(bloqueEnApercu()) return;
   const input = document.getElementById('accueil-msg-input');
   const texte = (input.value || '').trim();
   if(!texte) return;
@@ -1020,7 +1043,7 @@ async function loadOrders() {
   const listEl = document.getElementById('orders-list');
   if(listEl) listEl.innerHTML = '<div style="color:#6b6b6b;font-size:13px;padding:20px 0">Chargement…</div>';
   try {
-    const resp = await fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken} });
+    const resp = await fetch('/api/client-orders', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: corpsClient({}) });
     _ordersCache = trierCommandes(await resp.json());
     const nbAttente = _ordersCache.filter(o=>o.statut==='en_attente').length;
     const badgeTxt = nbAttente > 0 ? String(nbAttente) : '';
@@ -1037,7 +1060,7 @@ let _docsCache = null;
 async function chargerDocsSiBesoin(){
   if(_docsCache) return _docsCache;
   try {
-    const resp = await fetch('/api/client-documents', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body:JSON.stringify({email:_userEmail}) });
+    const resp = await fetch('/api/client-documents', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body:corpsClient({email:_userEmail}) });
     _docsCache = await resp.json();
   } catch(e) { _docsCache = []; }
   return _docsCache;
@@ -1167,16 +1190,17 @@ function renderMessagesThread(messages){
 
 async function loadMessages(){
   try {
-    const resp = await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'list' }) });
+    const resp = await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: corpsClient({ action:'list' }) });
     const messages = await resp.json();
     if(Array.isArray(messages)) renderMessagesThread(messages);
     // Marquer les messages de l'expert comme lus dès que le client ouvre le fil.
-    fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'markRead' }) }).catch(()=>{});
+    if(!_APERCU) fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'markRead' }) }).catch(()=>{});
     refreshUnreadMessagesBadge();
   } catch(e) {}
 }
 
 async function sendClientMessage(){
+  if(bloqueEnApercu()) return;
   const input = document.getElementById('msg-input');
   const texte = input.value.trim();
   if(!texte) return;
@@ -1191,7 +1215,7 @@ async function sendClientMessage(){
 // Messages — ne marque jamais rien comme lu (contrairement à loadMessages).
 async function refreshUnreadMessagesBadge(){
   try {
-    const resp = await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: JSON.stringify({ action:'list' }) });
+    const resp = await fetch('/api/client-messages', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_accessToken}, body: corpsClient({ action:'list' }) });
     const messages = await resp.json();
     // /api/client-messages ne renvoie pas le champ "lu" (non nécessaire côté
     // affichage), donc ce badge compte simplement s'il existe un message
@@ -1620,6 +1644,7 @@ function choisirCreneauExtranet(btn){
 }
 
 async function submitOrder() {
+  if(bloqueEnApercu()) return;
   const errEl = document.getElementById('form-error');
   const adresse = document.getElementById('f-adresse').value.trim();
   const typo = document.getElementById('f-typo').value;

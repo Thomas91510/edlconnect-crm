@@ -751,6 +751,10 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <span class="nav-icon"><i class="ti ti-mail"></i></span>
         <span class="nav-label">Emails</span>
       </button>
+      <button class="nav-item" data-perm="clients" onclick="ouvrirEspacesAgences()" title="Voir l'espace extranet d'une agence (dépannage, paramétrage)">
+        <span class="nav-icon"><i class="ti ti-building-store"></i></span>
+        <span class="nav-label">Espaces agences</span>
+      </button>
       <!-- Sync Brevo : n'apparaît plus dans le menu mais comme onglet de la
            rubrique Emails ; le bouton reste dans le DOM car app-settings.js
            l'affiche/masque pour signaler que le compte y a droit. -->
@@ -2152,6 +2156,21 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 <!-- MODAL APERÇU EXTRANET (admin) : montre exactement ce qu'un client donné
      voit dans son espace extranet, sans avoir besoin de son email pour se
      connecter à sa place. -->
+<div class="modal-bg" id="modal-espaces-agences">
+  <div class="modal" style="width:560px;max-width:96vw">
+    <div class="modal-title">
+      <div><div style="font-size:15px;font-weight:700">Espaces agences</div><div style="font-size:12px;color:var(--text2)">Ouvrez l'extranet d'une agence tel qu'elle le voit — en lecture seule, pour un problème ou un souci de paramétrage.</div></div>
+      <button class="modal-close" onclick="closeModal('modal-espaces-agences')"><i class="ti ti-x"></i></button>
+    </div>
+    <input type="search" id="espaces-agences-recherche" placeholder="Rechercher une agence, un email…" oninput="renderEspacesAgences()" style="margin-bottom:12px">
+    <div id="espaces-agences-liste" style="max-height:58vh;overflow-y:auto"></div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border2);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--text2);flex:1;min-width:200px">Plus de factures pour les agences : supprimez celles déposées auparavant (fiches clients et fichiers PDF).</span>
+      <button type="button" class="btn btn-danger btn-sm" onclick="supprimerAnciennesFacturesAgences()"><i class="ti ti-trash"></i> Supprimer les anciennes factures</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-extranet-preview">
   <div class="modal" style="width:480px;max-width:96vw">
     <div class="modal-title">

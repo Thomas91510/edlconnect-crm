@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.9';
+const APP_VERSION = '2.0.0-beta.10';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.10', titre:'Espaces agences, plus de factures côté agences', texte:'Menu de gauche › « Espaces agences » : ouvrez l\u2019extranet de n\u2019importe quelle agence tel qu\u2019elle le voit, en lecture seule, pour un problème ou un souci de paramétrage. Les factures ne concernent plus que les agents d\u2019état des lieux : dépôt retiré, et bouton pour supprimer les anciennes factures des agences.' },
   { v:'2.0.0-beta.9', titre:'Factures des agents, sauvegarde Google Drive', texte:'Espace agent : onglet « Facturation » — facture mensuelle pré-remplie (date, adresse, typologie, nom du locataire), numéro et lignes modifiables, PDF, envoi par email à EDL IDF (pas aux agences clientes) ; informations juridiques (SIRET, RCS, TVA, IBAN) dans « Mon compte ». CRM : factures reçues par agent dans Rémunérations, identité légale de la société dans Profil. Sortant + entrant payé comme une seule prestation selon la typologie (modifiable). Copie automatique des sauvegardes sur Google Drive.' },
   { v:'2.0.0-beta.8', titre:'Grille du contrat 2026 et frais de déplacement par zone', texte:'Grille par bien sur le modèle de l\u2019annexe 2 du contrat (location nue / meublée, appartements, maisons, garages, locaux selon la surface), sortant + entrant, frais de déplacement par zone, déplacement infructueux. Bouton « Charger la grille du contrat 2026 », tout reste modifiable.' },
   { v:'2.0.0-beta.7', titre:'Suivi payé / non payé des rémunérations', texte:'Réglages › Agents EDL : reste à payer par agent, case « Payée » par mission et « Tout marquer payé » par mois. L\u2019agent voit ce qu\u2019il lui reste à percevoir et la date de chaque paiement.' },

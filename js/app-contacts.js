@@ -1056,4 +1056,56 @@ async function chargerApercuExtranet(email){
 }
 
 
+// ─── Espaces agences (menu de gauche) ────────────────────────
+// Liste les agences (contacts avec email) et ouvre leur extranet réel en
+// mode aperçu (/extranet-app?apercu=email) : lecture seule, réservé côté
+// serveur au compte administrateur — pour dépanner une agence ou vérifier
+// son paramétrage sans se connecter à sa place.
+function agencesAvecEspace(){
+  return (DB.contacts || []).filter(c => c && String(c.email || '').includes('@'))
+    .sort((a, b) => String(a.entreprise || a.contact || a.email).localeCompare(String(b.entreprise || b.contact || b.email), 'fr'));
+}
+function ouvrirEspacesAgences(){
+  const r = document.getElementById('espaces-agences-recherche');
+  if(r) r.value = '';
+  renderEspacesAgences();
+  openModal('modal-espaces-agences');
+  setTimeout(() => r && r.focus(), 50);
+}
+function renderEspacesAgences(){
+  const box = document.getElementById('espaces-agences-liste');
+  if(!box) return;
+  const q = String((document.getElementById('espaces-agences-recherche') || {}).value || '').trim().toLowerCase();
+  const liste = agencesAvecEspace().filter(c => !q || [c.entreprise, c.contact, c.email, c.ville].some(v => String(v || '').toLowerCase().includes(q)));
+  if(!liste.length){ box.innerHTML = '<div class="empty">' + (q ? 'Aucune agence ne correspond.' : 'Aucune agence avec un email.') + '</div>'; return; }
+  box.innerHTML = liste.map(c => `<div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.entreprise || c.contact || c.email)}</div>
+        <div style="font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.email)}${c.contact && c.entreprise ? ' · ' + esc(c.contact) : ''}</div>
+      </div>
+      <button type="button" class="btn btn-sm" onclick="ouvrirEspaceAgence('${esc(c.email)}')"><i class="ti ti-external-link"></i> Voir son espace</button>
+    </div>`).join('');
+}
+function ouvrirEspaceAgence(email){
+  window.open('/extranet-app?apercu=' + encodeURIComponent(String(email || '').trim().toLowerCase()), '_blank', 'noopener');
+}
+async function supprimerAnciennesFacturesAgences(){
+  try{
+    const token = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const appel = (corps) => fetch('/api/factures-agences-purge', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + token }, body: JSON.stringify(corps) }).then(async r => ({ ok: r.ok, data: await r.json().catch(() => ({})) }));
+    const sim = await appel({ simulation: true });
+    if(!sim.ok){ notify(sim.data.error || 'Vérification impossible', 'error'); return; }
+    if(!sim.data.factures){ notify('Aucune ancienne facture à supprimer.'); return; }
+    if(!confirm(`Supprimer définitivement ${sim.data.factures} ancienne(s) facture(s) sur ${sim.data.fiches} fiche(s) client, ainsi que les fichiers PDF ? Cette action est irréversible.`)) return;
+    const res = await appel({});
+    if(!res.ok){ notify(res.data.error || 'Suppression impossible', 'error'); return; }
+    // Même nettoyage dans la copie locale, pour qu'une sauvegarde ultérieure
+    // de la fiche ne remette pas les anciennes entrées.
+    (DB.contacts || []).forEach(c => { if(Array.isArray(c.documents)) c.documents = c.documents.filter(d => !(d && d.type === 'facture')); });
+    if(typeof saveToStorage === 'function') saveToStorage();
+    notify(`✅ ${res.data.factures} facture(s) supprimée(s) — ${res.data.fichiersSupprimes || 0} fichier(s) PDF effacé(s)`);
+  }catch(e){ notify('Erreur réseau', 'error'); }
+}
+
+
 // ─── MISSIONS ─────────────────────────────────────────────
