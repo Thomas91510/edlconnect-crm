@@ -12,9 +12,9 @@ test('rapports et missions CRM visibles par l’agence', async () => {
   let urlMissions = '';
   global.fetch = async (url) => {
     const u = String(url);
-    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', id: 'u1', email: 'agence@x.fr' }) };
+    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', id: 'u1', email: 'lgc13asnieres@arthurimmo.com' }) };
     if (u.includes('/rest/v1/bookings')) return { ok: true, json: async () => [
-      { id: 'b1', created_at: '2026-07-01', data: { email: 'agence@x.fr', adresse: '4 rue de l’Ancienne Gare, 91120 Palaiseau', dateSouhaitee: '2026-07-22', typeEdl: 'EDL entrant', statut: 'confirmee' } },
+      { id: 'b1', created_at: '2026-07-01', data: { email: 'lgc13asnieres@arthurimmo.com', adresse: '4 rue de l’Ancienne Gare, 91120 Palaiseau', dateSouhaitee: '2026-07-22', typeEdl: 'EDL entrant', statut: 'confirmee' } },
     ] };
     if (u.includes('/rest/v1/missions')) { urlMissions = decodeURIComponent(u); return { ok: true, json: async () => [
       { id: 'm1', data: { adresse: '4 rue de l’ancienne gare, 91120 PALAISEAU', date: '2026-07-22T10:00:00', statut: 'terminée', rapports: [{ nom: 'R', url: 'https://s/r1.pdf', type: 1 }] } },
@@ -25,7 +25,7 @@ test('rapports et missions CRM visibles par l’agence', async () => {
   };
   const resp = await handler({ method: 'POST', headers: new Headers({ authorization: 'Bearer t' }), json: async () => ({}) });
   const orders = await resp.json();
-  assert.match(urlMissions, /emailClient=ilike\.agence@x\.fr/, 'recherche insensible à la casse');
+  assert.match(urlMissions, /emailClient=ilike\.lgc13asnieres@arthurimmo\.com/, 'recherche insensible à la casse');
   const b1 = orders.find(o => o.id === 'b1');
   assert.equal(b1.statut, 'rapport_dispo', 'reliée par adresse + jour malgré l’absence de missionId');
   assert.equal(b1.rapportUrl, 'https://s/r1.pdf');

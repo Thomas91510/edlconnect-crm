@@ -13,7 +13,7 @@ process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key
 const { default: handlerDocs } = await import('../api/client-documents.js');
 
 const ADMIN_EMAIL = 'contact@edl-idf.com';
-const AUTRE_EMAIL = 'agence@exemple.fr';
+const AUTRE_EMAIL = 'immogestionlocative@gmail.com';
 
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });

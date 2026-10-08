@@ -36,6 +36,24 @@ const SUPA_TABLES = {
 };
 
 // ─── SETTINGS SUPABASE (clés API par utilisateur) ──────────
+// Champs d'une fiche agent écrits par l'agent lui-même depuis son espace
+// (api/agent-*) : la copie locale du CRM peut être ancienne, la version
+// serveur fait foi — sinon un enregistrement depuis le CRM effacerait une
+// facture envoyée entre-temps.
+const CHAMPS_AGENT_SERVEUR=['factures','infosLegales'];
+const CHAMPS_AGENT_SI_ABSENTS=['photoPath','contratPath','avenantPath','adresse'];
+function fusionnerAgentsServeur(locaux,serveur){
+  const parId=new Map((Array.isArray(serveur)?serveur:[]).filter(a=>a&&a.id).map(a=>[a.id,a]));
+  return (locaux||[]).map(a=>{
+    const s=a&&parId.get(a.id);
+    if(!s)return a;
+    const r={...a};
+    CHAMPS_AGENT_SERVEUR.forEach(k=>{ if(s[k]!==undefined) r[k]=s[k]; });
+    CHAMPS_AGENT_SI_ABSENTS.forEach(k=>{ if(!r[k]&&s[k]) r[k]=s[k]; });
+    return r;
+  });
+}
+
 async function saveSettingsToSupabase(settingsData){
   if(!_supaReady||!_currentUser)return;
   try{
@@ -45,6 +63,7 @@ async function saveSettingsToSupabase(settingsData){
     // connaissant pas.
     const{data:existing}=await supabaseClient.from('settings').select('data').eq('user_id',_currentUser.id).maybeSingle();
     const fusion=Object.assign({},(existing&&existing.data)||{},settingsData);
+    if(Array.isArray(settingsData.agents)) fusion.agents=fusionnerAgentsServeur(settingsData.agents,existing&&existing.data&&existing.data.agents);
     const{error}=await supabaseClient.from('settings').upsert({
       user_id:_currentUser.id,
       data:fusion,

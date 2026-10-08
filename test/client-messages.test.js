@@ -6,8 +6,8 @@ process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key
 const { default: handler } = await import('../api/client-messages.js');
 
 const ADMIN_EMAIL = 'contact@edl-idf.com';
-const CLIENT_EMAIL = 'client@exemple.fr';
-const AUTRE_EMAIL = 'agence@exemple.fr';
+const CLIENT_EMAIL = 'e2t.immo@gmail.com';
+const AUTRE_EMAIL = 'immogestionlocative@gmail.com';
 
 const fetchOriginal = global.fetch;
 const envSlackOriginal = process.env.SLACK_WEBHOOK_URL;

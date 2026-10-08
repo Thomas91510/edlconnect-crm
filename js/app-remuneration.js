@@ -141,10 +141,19 @@ function ligneCorrespondante(mission, lignes) {
     (!l.typos.length || l.typos.includes(typo)) &&
     bienCorrespond(l.bien, mission) &&
     (l.surfaceMin === null || (surface !== null && surface >= l.surfaceMin)) &&
-    (l.surfaceMax === null || (surface !== null && surface <= l.surfaceMax))
+    // Bornes entières de la grille (« < 50 » = max 49, « 50–99 ») : une
+    // surface décimale (49,5 m²) relève de la tranche de sa partie entière,
+    // sans tomber entre deux lignes.
+    (l.surfaceMax === null || (surface !== null && Math.floor(surface) <= l.surfaceMax))
   ) || null;
 }
-const estMeuble = (m) => String(m.bienMeuble || '').toLowerCase().includes('meubl');
+// « Meublé » mais pas « Non meublé » / « Vide ».
+const estMeuble = (m) => {
+  if (m.bienMeuble === true) return true;
+  const v = String(m.bienMeuble || '').toLowerCase();
+  if (/\bnon\b|vide|nue?\b/.test(v)) return false;
+  return v.includes('meubl');
+};
 
 // Référence nettoyée (valeurs numériques ou null), sûre à renvoyer à l'agent.
 function normaliserReference(ref) {

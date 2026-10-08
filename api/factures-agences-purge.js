@@ -9,8 +9,17 @@ const BUCKET = 'factures';
 // Plus de factures pour les agences : supprime les anciennes factures
 // déposées sur les fiches clients (entrées documents de type "facture") et
 // leurs PDF du bucket privé "factures". Un abonné ne touche qu'à SES
-// contacts (data.ownerId) ; l'administrateur à tous. { simulation: true }
+// contacts (colonne user_id) ; l'administrateur à tous. { simulation: true }
 // compte sans rien supprimer (affiché dans la confirmation du CRM).
+
+// L'ancien dépôt enregistrait le chemin avec l'email encodé
+// (« a%40b.fr/facture-1.pdf ») alors que Storage range l'objet sous le nom
+// décodé (« a@b.fr/... ») : on décode avant de demander la suppression.
+export function cheminStockage(url) {
+  const brut = String(url || '').replace(/^\/+/, '');
+  try { return decodeURIComponent(brut); } catch (_) { return brut; }
+}
+
 export default async function handler(req) {
   const headers = {
     'Content-Type': 'application/json',
@@ -40,7 +49,7 @@ export default async function handler(req) {
 
   const supaHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
   let url = `${SUPABASE_URL}/rest/v1/contacts?select=id,data&data->documents=cs.${encodeURIComponent('[{"type":"facture"}]')}`;
-  if (!estAdmin) url += `&data->>ownerId=eq.${encodeURIComponent(user.id)}`;
+  if (!estAdmin) url += `&user_id=eq.${encodeURIComponent(user.id)}`;
   const r = await fetch(url, { headers: supaHeaders });
   if (!r.ok) return reponse({ error: 'Lecture des fiches clients impossible' }, 500);
   const rows = await r.json();
@@ -52,7 +61,7 @@ export default async function handler(req) {
     const docs = Array.isArray(data.documents) ? data.documents : [];
     const anciennes = docs.filter(d => d && d.type === 'facture');
     factures += anciennes.length;
-    anciennes.forEach(d => { if (d.url && !/^https?:/i.test(d.url)) chemins.push(String(d.url)); });
+    anciennes.forEach(d => { if (d.url && !/^https?:/i.test(d.url)) chemins.push(cheminStockage(d.url)); });
     return { id: row.id, data: { ...data, documents: docs.filter(d => !(d && d.type === 'facture')) } };
   }).filter(m => m);
 
@@ -77,7 +86,10 @@ export default async function handler(req) {
       headers: { ...supaHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ prefixes: lot }),
     });
-    if (d.ok) fichiersSupprimes += lot.length;
+    if (d.ok) {
+      const supprimes = await d.json().catch(() => null);
+      fichiersSupprimes += Array.isArray(supprimes) ? supprimes.length : 0;
+    }
   }
 
   return reponse({ success: true, fiches: fichesModifiees, factures, fichiersSupprimes }, 200);

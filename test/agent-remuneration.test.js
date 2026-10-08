@@ -102,6 +102,8 @@ test('grille du contrat 2026 : appartements, maisons, nu / meublé', () => {
   assert.equal(montantMission(m({ bienType: 'Appartement', bienTypo: 'T9' }), CONTRAT), 90, 'T7 et +');
   assert.equal(montantMission(m({ bienType: 'Maison', bienTypo: 'T4' }), CONTRAT), 75);
   assert.equal(montantMission(m({ bienType: 'Maison', bienTypo: 'T4', bienMeuble: 'Meublé' }), CONTRAT), 95);
+  assert.equal(montantMission(m({ bienType: 'Maison', bienTypo: 'T4', bienMeuble: 'Non meublé' }), CONTRAT), 75, '« Non meublé » = tarif nu');
+  assert.equal(montantMission(m({ bienType: 'Appartement', bienTypo: 'T2', bienMeuble: 'Vide' }), CONTRAT), 47);
   assert.equal(montantMission(m({ bienType: '', bienTypo: 'T3' }), CONTRAT), 53, 'type non renseigné = appartement');
   assert.equal(montantMission(m({ bienType: 'Maison', bienTypo: 'T1' }), CONTRAT), null, 'pas de maison T1 au contrat');
 });
@@ -110,6 +112,8 @@ test('grille du contrat 2026 : garage et locaux commerciaux selon la surface', (
   assert.equal(montantMission(m({ bienType: 'Parking' }), CONTRAT), 20);
   assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '35' }), CONTRAT), 80);
   assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '50' }), CONTRAT), 160);
+  assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '49.5' }), CONTRAT), 80, 'surface décimale : pas de trou entre deux tranches');
+  assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '99.9' }), CONTRAT), 160);
   assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '150' }), CONTRAT), 180);
   assert.equal(montantMission(m({ bienType: 'Local commercial', superficie: '250' }), CONTRAT), null, 'au-delà de la grille');
   assert.equal(montantMission(m({ bienType: 'Local commercial' }), CONTRAT), null, 'surface inconnue');

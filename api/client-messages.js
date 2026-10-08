@@ -67,7 +67,7 @@ export default async function handler(req) {
     // Espace extranet non activé (CRM › fiche client) : accès refusé
     // (api/_lib/espace-agence.js). L'administrateur n'est jamais concerné.
     if (!ADMIN_EMAILS.includes(String(callerEmail || '').toLowerCase().trim())) {
-      const statut = await statutEspace(callerEmail, user, SUPABASE_SERVICE_KEY);
+      const statut = await statutEspace(callerEmail, SUPABASE_SERVICE_KEY);
       if (!statut.actif) {
         return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
           status: 403,

@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import handlerOrders from '../api/client-orders.js';
 
-const CLIENT_EMAIL = 'client@exemple.fr';
+const CLIENT_EMAIL = 'e2t.immo@gmail.com';
 
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });

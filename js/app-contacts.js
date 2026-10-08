@@ -1199,8 +1199,8 @@ async function chargerEspacesHistoriques(){
 const SEUIL_RECHERCHE_ESPACES = 8;
 function espaceActif(c){
   if(!c) return false;
-  if(c.espaceActif === true) return true;
   if(c.espaceActif === false) return false;
+  if(c.espaceActif === true) return true;
   return _espacesHistoriques.has(String(c.email || '').toLowerCase());
 }
 function basculerEspaceAgence(id, oui){
@@ -1212,9 +1212,15 @@ function basculerEspaceAgence(id, oui){
     renderBlocEspacesAgences();
     return;
   }
-  quickUpdateContact(id, 'espaceActif', !!oui);
-  // Enregistré tout de suite dans le cloud (pas seulement dans le navigateur).
-  if(typeof pushToSupabase === 'function') pushToSupabase('contacts', c);
+  // Toutes les fiches du même email (doublons) basculent ensemble : côté
+  // serveur, un « désactivé » sur l'une d'elles bloquerait l'accès.
+  const email = String(c.email || '').trim().toLowerCase();
+  const fiches = email ? (DB.contacts || []).filter(x => String(x.email || '').trim().toLowerCase() === email) : [c];
+  fiches.forEach(f => {
+    quickUpdateContact(f.id, 'espaceActif', !!oui);
+    // Enregistré tout de suite dans le cloud (pas seulement dans le navigateur).
+    if(typeof pushToSupabase === 'function') pushToSupabase('contacts', f);
+  });
   renderBlocEspacesAgences();
 }
 function renderBlocEspacesAgences(){

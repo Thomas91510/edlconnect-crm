@@ -10,7 +10,9 @@ import {
 } from './_lib/agent-facture.js';
 
 const BUCKET = 'agent-documents';
-const TAILLE_MAX_B64 = 7 * 1024 * 1024; // ~5 Mo de PDF
+// Corps de requête limité à ~4,5 Mo par Vercel : on reste en dessous
+// (~3 Mo de PDF une fois encodé en base64).
+export const TAILLE_MAX_B64 = 4 * 1024 * 1024;
 
 const echapper = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const euros = (n) => (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';

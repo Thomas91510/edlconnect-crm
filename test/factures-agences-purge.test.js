@@ -27,7 +27,7 @@ function mock(email = 'abonne@x.fr') {
         { nom: 'Tarifs', url: 'https://drive/t', type: 'document' },
       ] } }] };
     }
-    if (u.includes('/storage/v1/object/factures')) { appels.suppression = JSON.parse(opts.body); return { ok: true }; }
+    if (u.includes('/storage/v1/object/factures')) { appels.suppression = JSON.parse(opts.body); return { ok: true, json: async () => appels.suppression.prefixes.map(name => ({ name })) }; }
     throw new Error('URL inattendue ' + u);
   };
   return appels;
@@ -39,7 +39,7 @@ test('simulation : compte sans rien supprimer', async () => {
   assert.deepEqual(await r.json(), { simulation: true, fiches: 1, factures: 1 });
   assert.equal(appels.patch.length, 0);
   assert.equal(appels.suppression, null);
-  assert.match(appels.lecture, /data->>ownerId=eq\.owner-1/, 'un abonné ne voit que ses contacts');
+  assert.match(appels.lecture, /user_id=eq\.owner-1/, 'un abonné ne voit que ses contacts');
 });
 
 test('suppression : fiche nettoyée (documents gardés), PDF supprimé du bucket', async () => {
@@ -49,12 +49,12 @@ test('suppression : fiche nettoyée (documents gardés), PDF supprimé du bucket
   assert.equal(corps.factures, 1);
   assert.equal(corps.fichiersSupprimes, 1);
   assert.deepEqual(appels.patch[0].data.documents.map(d => d.nom), ['Tarifs']);
-  assert.deepEqual(appels.suppression.prefixes, ['agence%40x.fr/facture-1.pdf']);
+  assert.deepEqual(appels.suppression.prefixes, ['agence@x.fr/facture-1.pdf'], 'chemin décodé : nom réel de l\'objet dans Storage');
 });
 
 test('administrateur : toutes les fiches ; sans jeton : 401', async () => {
   const appels = mock('contact@edl-idf.com');
   await purge(requete({ simulation: true }));
-  assert.doesNotMatch(appels.lecture, /ownerId/);
+  assert.doesNotMatch(appels.lecture, /user_id=/);
   assert.equal((await purge(requete({}, null))).status, 401);
 });

@@ -116,6 +116,9 @@ export default async function handler(req) {
     kpi: calculerKpiAgent(missions),
     // Part de l'agent selon la référence financière de sa fiche (jamais le
     // montant facturé au client) — onglet « Rémunération » de son espace.
+    // En mode pourcentage, l'agent connaît son taux (il figure à son
+    // contrat) : le prix client reste déductible de sa part, c'est inhérent
+    // à ce mode de rémunération et accepté.
     remuneration: calculerRemuneration(missions, agent.remuneration, new Date(), {
       primaire: agent.secteurPrimaire, secondaire: agent.secteurSecondaire, statut: agent.zoneStatut,
     }),

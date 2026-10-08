@@ -3,7 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
-import { comptesConnexion, emailsHistoriques, DATE_ACTIVATION } from './_lib/espace-agence.js';
+import { EMAILS_HISTORIQUES, DATE_ACTIVATION } from './_lib/espace-agence.js';
 
 // Pour le CRM (page « Espaces agences », fiche client) : emails des agences
 // de l'appelant qui utilisaient déjà leur extranet avant l'interrupteur —
@@ -35,6 +35,6 @@ export default async function handler(req) {
   const lignes = r.ok ? await r.json() : [];
   const emailsContacts = new Set((lignes || []).map(l => String(l && (l.email || l['data->>email']) || '').toLowerCase()).filter(Boolean));
 
-  const historiques = emailsHistoriques(await comptesConnexion(serviceKey)).filter(e => emailsContacts.has(e));
+  const historiques = EMAILS_HISTORIQUES.filter(e => emailsContacts.has(e));
   return reponse({ historiques, dateActivation: DATE_ACTIVATION }, 200);
 }

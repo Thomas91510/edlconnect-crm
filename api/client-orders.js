@@ -64,7 +64,7 @@ export default async function handler(req) {
     // Espace extranet non activé (CRM › fiche client) : accès refusé
     // (api/_lib/espace-agence.js). L'administrateur n'est jamais concerné.
     if (!ADMIN_EMAILS.includes(String(callerEmail || '').toLowerCase().trim())) {
-      const statut = await statutEspace(callerEmail, userData, SUPABASE_SERVICE_KEY);
+      const statut = await statutEspace(callerEmail, SUPABASE_SERVICE_KEY);
       if (!statut.actif) {
         return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
           status: 403,
@@ -129,7 +129,11 @@ export default async function handler(req) {
     } catch(_){}
 
     const missions = (missionRows || []).map(m => ({ ...(m.data || {}), id: m.id }));
-    const missionsLiees = new Set();
+    // Missions déjà réclamées par le missionId d'une réservation : jamais
+    // attribuées à une autre par le repli adresse + jour.
+    const idLigne = {};
+    (missionRows || []).forEach(m => { if (m.data?.missionId) idLigne[m.data.missionId] = m.id; if (m.id) idLigne[m.id] = m.id; });
+    const missionsLiees = new Set((rows || []).map(r => idLigne[r.data?.missionId]).filter(Boolean));
     const normAdr = (a) => String(a || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const jour = (d) => String(d || '').slice(0, 10);
     // Réservation → mission : par missionId (écrit à la confirmation), sinon
@@ -141,8 +145,8 @@ export default async function handler(req) {
       if (parId) return parId;
       const adr = normAdr(r.data?.adresse);
       const j = jour(r.data?.dateSouhaitee);
-      if (!adr) return null;
-      return missions.find(m => !missionsLiees.has(m.id) && normAdr(m.adresse) === adr && (!j || !m.date || jour(m.date) === j)) || null;
+      if (!adr || !j) return null;
+      return missions.find(m => !missionsLiees.has(m.id) && m.date && normAdr(m.adresse) === adr && jour(m.date) === j) || null;
     };
     // Rapports d'une mission : document rattaché à la fiche, sinon ceux
     // enregistrés sur la mission par la relève Edouard.

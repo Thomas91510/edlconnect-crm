@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'cle-test';
-import { decisionEspace, emailsHistoriques, DATE_ACTIVATION } from '../api/_lib/espace-agence.js';
+import { decisionEspace, estHistorique, DATE_ACTIVATION } from '../api/_lib/espace-agence.js';
 const { default: clientOrders } = await import('../api/client-orders.js');
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });
@@ -13,13 +13,14 @@ const ANCIEN = { created_at: '2026-03-01T00:00:00Z', last_sign_in_at: '2026-09-0
 const NOUVEAU = { created_at: '2026-10-20T00:00:00Z', last_sign_in_at: '2026-10-20T00:00:00Z' };
 
 test('décision : activé / désactivé / historique / non activé', () => {
-  assert.equal(decisionEspace([{ data: { espaceActif: true } }], NOUVEAU).actif, true);
-  assert.equal(decisionEspace([{ data: { espaceActif: false } }], ANCIEN).actif, false, 'désactivé l’emporte sur l’historique');
-  assert.deepEqual(decisionEspace([{ data: {} }], ANCIEN), { actif: true, raison: 'historique' });
-  assert.deepEqual(decisionEspace([{ data: {} }], NOUVEAU), { actif: false, raison: 'non_active' });
-  assert.equal(decisionEspace([], { created_at: '2026-01-01', last_sign_in_at: null }).actif, false, 'compte jamais utilisé');
+  assert.equal(decisionEspace([{ data: { espaceActif: true } }], 'nouvelle@x.fr').actif, true);
+  assert.equal(decisionEspace([{ data: { espaceActif: false } }], 'immogestionlocative@gmail.com').actif, false, 'désactivé l’emporte sur l’historique');
+  assert.equal(decisionEspace([{ data: { espaceActif: true } }, { data: { espaceActif: false } }], 'x@x.fr').actif, false, 'fiches en double : désactivé l’emporte');
+  assert.deepEqual(decisionEspace([{ data: {} }], 'LGC13Asnieres@arthurimmo.com'), { actif: true, raison: 'historique' });
+  assert.deepEqual(decisionEspace([{ data: {} }], 'nouvelle@x.fr'), { actif: false, raison: 'non_active' });
+  assert.ok(estHistorique(' immogestionlocative@gmail.com '));
+  assert.ok(!estHistorique('nouvelle@x.fr'), 'une nouvelle agence n’est jamais historique, même après connexion');
   assert.ok(DATE_ACTIVATION >= '2026-10-08');
-  assert.deepEqual(emailsHistoriques([{ email: 'A@x.fr', ...ANCIEN }, { email: 'b@x.fr', ...NOUVEAU }]), ['a@x.fr']);
 });
 
 function mock(user, contacts) {
@@ -39,9 +40,9 @@ test('extranet : agence non activée → 403 espace_inactif ; activée ou histor
   assert.equal((await r.json()).code, 'espace_inactif');
   mock({ email: 'nouvelle@x.fr', ...NOUVEAU }, [{ data: { email: 'nouvelle@x.fr', espaceActif: true } }]);
   assert.equal((await clientOrders(req())).status, 200);
-  mock({ email: 'immo@x.fr', ...ANCIEN }, [{ data: { email: 'immo@x.fr' } }]);
+  mock({ email: 'immogestionlocative@gmail.com', ...ANCIEN }, [{ data: { email: 'immogestionlocative@gmail.com' } }]);
   assert.equal((await clientOrders(req())).status, 200, 'agence historique (déjà utilisatrice) toujours active');
-  mock({ email: 'immo@x.fr', ...ANCIEN }, [{ data: { email: 'immo@x.fr', espaceActif: false } }]);
+  mock({ email: 'immogestionlocative@gmail.com', ...ANCIEN }, [{ data: { email: 'immogestionlocative@gmail.com', espaceActif: false } }]);
   assert.equal((await clientOrders(req())).status, 403, 'désactivée depuis le CRM');
   mock({ email: 'contact@edl-idf.com', ...NOUVEAU }, []);
   assert.equal((await clientOrders(req())).status, 200, 'administrateur jamais bloqué');

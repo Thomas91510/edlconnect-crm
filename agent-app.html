@@ -1639,13 +1639,15 @@ async function envoyerFacture(){
   try{
     const doc = await genererPdfFacture();
     const pdfBase64 = doc.output('datauristring').split(',')[1];
+    // Même plafond que le serveur (api/agent-facture-envoyer.js).
+    if(pdfBase64.length > 4 * 1024 * 1024){ showToast('❌ Facture trop volumineuse : réduisez le nombre de lignes ou envoyez-la en deux fois.'); return; }
     const resp = await fetch('/api/agent-facture-envoyer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _accessToken },
       body: JSON.stringify({ facture: _facture, pdfBase64 }),
     });
-    const data = await resp.json();
-    if(!resp.ok){ showToast('❌ ' + (data.error || 'Envoi impossible')); return; }
+    const data = await resp.json().catch(() => ({}));
+    if(!resp.ok){ showToast('❌ ' + (data.error || (resp.status === 413 ? 'Facture trop volumineuse' : 'Envoi impossible'))); return; }
     if(Array.isArray(data.factures)) _factures = data.factures;
     _facture = null;
     renderFacturation();
@@ -1743,7 +1745,7 @@ function renderHistorique(missions){
 <div id="app-version"></div>
 <script>
 (async function afficherVersionAgent(){
-  const APP_VERSION = '2.0.0-beta.20';
+  const APP_VERSION = '2.0.0-beta.21';
   const el = document.getElementById('app-version');
   if(el) el.textContent = 'v' + APP_VERSION;
   try {
