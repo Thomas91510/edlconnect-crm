@@ -75,12 +75,17 @@ export default async function handler(req) {
 
   const ident = await identiteAbonne(SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, user.id);
   const societe = ident.nom || 'notre entreprise';
-  const signature = ident.signature || ident.nom || '';
+  const accroche = ident.slogan === undefined ? 'Expert en État des Lieux' : ident.slogan;
+  const societeAccroche = accroche ? `${societe} — ${accroche}` : societe;
+  const signature = [ident.signature, societeAccroche].filter(Boolean).join('\n');
 
   const system = `Tu rédiges les emails de ${societe}, spécialiste des états des lieux professionnels, pour des agences immobilières et des gestionnaires de biens.
 Style : français soigné, professionnel et chaleureux, phrases courtes, concret, une seule idée par paragraphe, un appel à l'action clair à la fin.
-Pas de formules creuses ni de flatterie, pas d'emoji, pas de promesse chiffrée inventée : n'invente ni prix, ni date, ni chiffre absent de la consigne.
-Signe avec : ${signature || societe}.
+Présente la société comme « ${societeAccroche} ».
+Mets quelques emojis pertinents pour donner de l'impact (un dans l'objet, un devant chaque intertitre ou point clé), sans en abuser.
+Pas de formules creuses ni de flatterie, pas de promesse chiffrée inventée : n'invente ni prix, ni date, ni chiffre absent de la consigne.
+Signe avec :
+${signature}
 Réponds uniquement avec l'email : première ligne « Objet: … », une ligne vide, puis le corps. Aucun commentaire.`;
 
   const demande = [

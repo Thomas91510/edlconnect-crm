@@ -75,6 +75,7 @@ async function loadSettingsFromSupabase(){
     if(s.expediteurEmail){localStorage.setItem('edl_exp_email',s.expediteurEmail);}
     if(s.expediteurTel){localStorage.setItem('edl_exp_tel',s.expediteurTel);}
     if(s.expediteurSignature){localStorage.setItem('edl_exp_signature',s.expediteurSignature);}
+    if(typeof s.slogan==='string'){localStorage.setItem('edl_slogan',s.slogan);}
     if(s.expediteurPartenaire){localStorage.setItem('edl_exp_partenaire',s.expediteurPartenaire);}
     if(s.avisGoogleLien){localStorage.setItem('edl_avis_google_lien',s.avisGoogleLien);}
     if(s.couleurPrimaire){localStorage.setItem('edl_couleur_primaire',s.couleurPrimaire);}

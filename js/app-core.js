@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.17';
+const APP_VERSION = '2.0.0-beta.18';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.18', titre:'« Expert en État des Lieux » et emojis dans les emails', texte:'Accroche « Expert en État des Lieux » (modifiable dans Réglages › Profil) dans le bandeau, la signature et les modèles d\u2019emails ; emojis ajoutés aux objets et intertitres des modèles, et demandés à la rédaction IA.' },
   { v:'2.0.0-beta.17', titre:'Emails : modèles retravaillés, rédaction par Claude, suivi des envois clarifié', texte:'Modèles rapides réécrits et classés (Prospection, Missions, Fidélisation) ; emails envoyés avec une mise en page professionnelle aux couleurs de l\u2019agence, et bouton « Aperçu » avant envoi. « Rédiger avec IA » est désormais assuré par Claude. Le panneau « Suivi des envois » affiche les chiffres des 30 derniers jours et les derniers emails, sans menu inutile.' },
   { v:'2.0.0-beta.16', titre:'Espaces agences épurés, suivi des emails automatique dans la fiche', texte:'« Espaces agences » montre par défaut les espaces activés (recherche affichée quand ils deviennent nombreux) ; l\u2019activation d\u2019un autre client se fait par recherche. Fiche client : ouvertures et clics mis à jour automatiquement (à l\u2019ouverture puis toutes les 2 minutes), statut de chaque email affiché sans menu à régler à la main.' },
   { v:'2.0.0-beta.15', titre:'Extranet réservé aux espaces activés', texte:'Une agence dont l\u2019espace n\u2019est pas activé ne peut plus accéder à son extranet (message l\u2019invitant à contacter son expert). Les agences qui utilisaient déjà leur extranet restent activées ; désactiver l\u2019interrupteur bloque l\u2019accès.' },

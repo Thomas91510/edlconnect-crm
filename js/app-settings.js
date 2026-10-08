@@ -781,6 +781,7 @@ function loadSettingsForm(){
   _set('set-exp-tel',CFG.expediteurTel);
   _set('set-exp-signature',CFG.expediteurSignature);
   _set('set-exp-partenaire',CFG.expediteurPartenaire);
+  _set('set-slogan',CFG.slogan);
   _set('set-exp-avis-google',CFG.avisGoogleLien);
   _set('set-couleur',CFG.couleurPrimaire);
   _set('set-couleur-hex',CFG.couleurPrimaire);
@@ -811,6 +812,7 @@ function saveSettings(){
   CFG.expediteurTel=_get('set-exp-tel');
   CFG.expediteurSignature=_get('set-exp-signature');
   CFG.expediteurPartenaire=_get('set-exp-partenaire');
+  if(document.getElementById('set-slogan')) CFG.slogan=_get('set-slogan');
   CFG.avisGoogleLien=_get('set-exp-avis-google');
   CFG.couleurPrimaire=_get('set-couleur')||'#1A5FA8';
   appliquerCouleurMarque(CFG.couleurPrimaire);
@@ -838,6 +840,7 @@ function saveSettings(){
     expediteurTel:CFG.expediteurTel||'',
     expediteurSignature:CFG.expediteurSignature||'',
     expediteurPartenaire:CFG.expediteurPartenaire||'',
+    slogan:CFG.slogan,
     avisGoogleLien:CFG.avisGoogleLien||'',
     couleurPrimaire:CFG.couleurPrimaire||'',
     agents:DB.agents||[]

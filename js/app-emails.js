@@ -46,7 +46,9 @@ function afficherExpediteurCompose(){
 // si l'abonné n'a encore rien configuré (pas de signature générique inventée).
 function genererSignatureEmail(){
   const nom = CFG.expediteurSignature || CFG.expediteurNom || CFG.companyName || '';
-  const sousTitre = [CFG.expediteurNom, CFG.companyName].find(v => v && v !== nom) || '';
+  const societeSig = [CFG.expediteurNom, CFG.companyName].find(v => v && v !== nom) || '';
+  const accrocheSig = (CFG.slogan || '').trim();
+  const sousTitre = [societeSig, accrocheSig].filter(Boolean).join(' — ');
   const tel = CFG.expediteurTel || '';
   const email = CFG.expediteurEmail || '';
   const logo = CFG.logoPath ? (AGENCY_LOGOS_BUCKET_URL + CFG.logoPath) : '';
@@ -205,7 +207,9 @@ function openFicheByEmail(email){
 function remplacerPlaceholdersModele(texte){
   const societe = CFG.companyName || CFG.expediteurNom || 'notre entreprise';
   const lienAvis = CFG.avisGoogleLien || "[votre lien d'avis Google — à renseigner dans Paramètres]";
-  return texte.split('{{SOCIETE}}').join(societe).split('{{AVIS_GOOGLE_LIEN}}').join(lienAvis);
+  const accroche = (CFG.slogan || '').trim();
+  const societeAccroche = accroche ? societe + ' — ' + accroche : societe;
+  return texte.split('{{SOCIETE_ACCROCHE}}').join(societeAccroche).split('{{SOCIETE}}').join(societe).split('{{AVIS_GOOGLE_LIEN}}').join(lienAvis);
 }
 function applyTpl(key){
   const t=TEMPLATES[key];
@@ -245,10 +249,12 @@ function emailHtmlPro(corps){
   const bandeau = logo
     ? `<img src="${esc(logo)}" alt="${esc(societe)}" style="max-height:44px;max-width:200px;display:block">`
     : `<span style="font-size:18px;font-weight:700;color:#ffffff;letter-spacing:.01em">${esc(societe)}</span>`;
+  const accroche = (CFG.slogan || '').trim();
+  const ligneAccroche = accroche ? `<div style="font-family:Arial,Helvetica,sans-serif;font-size:12.5px;letter-spacing:.04em;margin-top:4px;color:${logo ? couleur : 'rgba(255,255,255,.85)'}">${esc(accroche)}</div>` : '';
   return `<!doctype html><html><body style="margin:0;padding:0;background:#F4F6F9">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F9;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #E5E9F0">
-<tr><td style="background:${logo ? '#ffffff' : couleur};padding:${logo ? '22px 32px 6px' : '20px 32px'};${logo ? `border-top:4px solid ${couleur}` : ''}">${bandeau}</td></tr>
+<tr><td style="background:${logo ? '#ffffff' : couleur};padding:${logo ? '22px 32px 6px' : '20px 32px'};${logo ? `border-top:4px solid ${couleur}` : ''}">${bandeau}${ligneAccroche}</td></tr>
 <tr><td style="padding:26px 32px 10px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#1F2937">${blocs}</td></tr>
 <tr><td style="padding:0 32px 26px;font-family:Arial,Helvetica,sans-serif">${genererSignatureEmail()}</td></tr>
 </table>
