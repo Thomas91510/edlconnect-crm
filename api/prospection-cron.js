@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' };
 
 import { resoudreAdminUserId, avancerEtapeProspect } from './_lib/prospects-sync.js';
-import { contactExclu, domaineExclu, estCandidatStock } from './_lib/prospection-regles.js';
+import { contactExclu, domaineExclu, estCandidatStock, nomAgencePourEmail } from './_lib/prospection-regles.js';
 
 // Séquence de prospection EDL IDF (3 emails : J0, J+4, J+6), plafonnée à 250
 // envois/jour. Remplace le scénario Make "Séquence prospection — Envoi
@@ -36,10 +36,11 @@ const TABLE = 'prospection';
 const QUOTA_JOUR = 250;
 const MAX_ENVOIS_PAR_RUN = 60;
 
-// Templates Brevo (créés le 12/09, mêmes IDs que dans le scénario Make) :
-// stage 1 = premier email (nouveaux prospects), stage 2 = relance J+4,
-// stage 3 = relance J+6.
-const TEMPLATES = { 1: 53, 2: 54, 3: 55 };
+// Templates Brevo de la séquence v2 (08/10, courts, signés Thomas, nom de
+// l'agence en paramètre AGENCE) : stage 1 = premier email, stage 2 = relance
+// J+4, stage 3 = dernier message J+10. Remplacent les 53/54/55 (mise en page
+// newsletter, 0 réponse sur 256 envois). Ils doivent être actifs dans Brevo.
+const TEMPLATES = { 1: 59, 2: 57, 3: 58 };
 const REPLY_TO = 'contact@edl-idf.com';
 
 // Listes Brevo sources des nouveaux prospects : une liste "Agence <département>"
@@ -108,15 +109,13 @@ async function candidatsStock(SUPABASE_SERVICE_KEY, adminUserId) {
 function fmtJour(d) { return d.toISOString().split('T')[0]; }
 function ilYA(jours) { const d = new Date(); d.setDate(d.getDate() - jours); return d; }
 
-async function envoyerTemplate(BREVO_KEY, email, templateId) {
+async function envoyerTemplate(BREVO_KEY, email, templateId, agence) {
+  const corps = { to: [{ email }], replyTo: { email: REPLY_TO }, templateId };
+  if (agence) corps.params = { AGENCE: agence };
   const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
-    body: JSON.stringify({
-      to: [{ email }],
-      replyTo: { email: REPLY_TO },
-      templateId
-    })
+    body: JSON.stringify(corps)
   });
   return resp.ok;
 }
@@ -127,7 +126,7 @@ async function envoyerTemplate(BREVO_KEY, email, templateId) {
 // les relances partaient. On pagine désormais par tranches de 500.
 async function listerContactsBrevo(BREVO_KEY, listId) {
   const PAGE = 500;
-  const emails = [];
+  const contacts = [];
   for (let offset = 0; offset < 10000; offset += PAGE) {
     const resp = await fetch(`https://api.brevo.com/v3/contacts/lists/${listId}/contacts?limit=${PAGE}&offset=${offset}`, {
       headers: { 'api-key': BREVO_KEY }
@@ -135,10 +134,28 @@ async function listerContactsBrevo(BREVO_KEY, listId) {
     if (!resp.ok) break;
     const body = await resp.json();
     const page = body.contacts || [];
-    emails.push(...page.map(c => c.email).filter(Boolean));
+    contacts.push(...page.filter(c => c.email).map(c => ({ email: c.email, societe: (c.attributes || {}).COMPANY_NAME || '' })));
     if (page.length < PAGE) break;
   }
-  return emails;
+  return contacts;
+}
+
+// Nom d'agence de chaque email connu du pipeline CRM, pour personnaliser
+// les emails (relances comprises). Best-effort : sans lui, les modèles
+// affichent "chez vous" / "votre agence".
+async function nomsAgences(SUPABASE_SERVICE_KEY, adminUserId) {
+  if (!adminUserId) return new Map();
+  const rows = await lireTout(
+    `${SUPABASE_URL}/rest/v1/prospects?select=email:data->>email,agence:data->>agence&user_id=eq.${encodeURIComponent(adminUserId)}&order=id`,
+    SUPABASE_SERVICE_KEY
+  );
+  const noms = new Map();
+  for (const r of rows || []) {
+    const email = String(r.email || '').trim().toLowerCase();
+    const nom = nomAgencePourEmail(r.agence, email);
+    if (email && nom) noms.set(email, nom);
+  }
+  return noms;
 }
 
 // Upsert immédiat (contact + compteur du jour) après CHAQUE envoi réussi,
@@ -197,6 +214,8 @@ export default async function handler(req) {
     // commercial (table "prospects") — jusqu'ici les deux tables ne se
     // parlaient pas du tout.
     const adminUserId = await resoudreAdminUserId(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const agences = await nomsAgences(SUPABASE_SERVICE_KEY, adminUserId);
+    const agenceDe = email => agences.get(String(email || '').trim().toLowerCase()) || '';
 
     let envoyes1 = 0, envoyes2 = 0, envoyes3 = 0;
     let envoyesCeRun = 0;
@@ -209,7 +228,7 @@ export default async function handler(req) {
       if (!d || d.stage !== 1 || d.clickedAt || sequenceStoppee(d)) continue;
       if (!d.sentAt1 || new Date(d.sentAt1) > seuilStage1) continue;
       try {
-        const ok = await envoyerTemplate(BREVO_KEY, d.email || id, TEMPLATES[2]);
+        const ok = await envoyerTemplate(BREVO_KEY, d.email || id, TEMPLATES[2], agenceDe(d.email || id));
         if (ok) {
           quotaCount++;
           envoyes2++;
@@ -230,7 +249,7 @@ export default async function handler(req) {
       if (!d || d.stage !== 2 || d.clickedAt || sequenceStoppee(d)) continue;
       if (!d.sentAt2 || new Date(d.sentAt2) > seuilStage2) continue;
       try {
-        const ok = await envoyerTemplate(BREVO_KEY, d.email || id, TEMPLATES[3]);
+        const ok = await envoyerTemplate(BREVO_KEY, d.email || id, TEMPLATES[3], agenceDe(d.email || id));
         if (ok) {
           quotaCount++;
           envoyes3++;
@@ -255,13 +274,13 @@ export default async function handler(req) {
     for (const listId of LISTES_PROSPECTS) {
       if (!exclus || !nouveauxProspectsActifs()) break;
       if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
-      const emails = await listerContactsBrevo(BREVO_KEY, listId);
-      for (const email of emails) {
+      const contacts = await listerContactsBrevo(BREVO_KEY, listId);
+      for (const { email, societe } of contacts) {
         if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
         if (etat.has(email)) continue; // déjà contacté (ou en cours dans ce run)
         if (!envoyable(email)) continue;
         try {
-          const ok = await envoyerTemplate(BREVO_KEY, email, TEMPLATES[1]);
+          const ok = await envoyerTemplate(BREVO_KEY, email, TEMPLATES[1], agenceDe(email) || nomAgencePourEmail(societe, email));
           if (ok) {
             quotaCount++;
             envoyes1++;
@@ -288,7 +307,7 @@ export default async function handler(req) {
         const email = String(p.email).trim().toLowerCase();
         if (etat.has(email) || !envoyable(email)) continue;
         try {
-          const ok = await envoyerTemplate(BREVO_KEY, email, TEMPLATES[1]);
+          const ok = await envoyerTemplate(BREVO_KEY, email, TEMPLATES[1], nomAgencePourEmail(p.agence, email));
           if (ok) {
             quotaCount++;
             envoyes1++;
