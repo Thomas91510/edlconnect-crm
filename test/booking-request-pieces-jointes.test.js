@@ -33,7 +33,9 @@ const BASE = {
   typeEdl: 'EDL entrant',
   adresse: '10 Résidence du Parc',
   dateSouhaitee: '2026-09-08',
-  locataire: { nom: 'Bardel', tel: '0695104367' }
+  superficie: '45',
+  proprietaire: 'M. Dupont',
+  locataire: { nom: 'Bardel', tel: '0695104367', email: 'bardel@exemple.fr' }
 };
 
 test('booking-request : stocke les pièces jointes valides', async () => {

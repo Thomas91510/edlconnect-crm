@@ -1941,9 +1941,11 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <div class="form-grid" style="margin-bottom:10px">
         <div><label>Type de bien</label><select id="mr-bien-type"><option>Appartement</option><option>Maison</option><option>Studio</option><option>Local commercial</option><option>Parking</option><option>Autre</option></select></div>
         <div><label>Meublé / Nu</label><select id="mr-meuble"><option>Nu</option><option>Meublé</option></select></div>
-        <div><label>Superficie (m²)</label><input type="number" id="mr-superficie" placeholder="45" min="1"></div>
-        <div><label>Date d'entrée</label><input type="date" id="mr-date-entree"></div>
+        <div><label>Superficie (m²) <span style="color:var(--red)">*</span></label><input type="number" id="mr-superficie" placeholder="45" min="1"></div>
+        <div id="mr-date-entree-wrap" style="display:none"><label>Date de l'EDL d'entrée <span style="color:var(--red)">*</span></label><input type="date" id="mr-date-entree"></div>
       </div>
+      <label>Nom du propriétaire <span style="color:var(--red)">*</span></label>
+      <input type="text" id="mr-proprietaire" placeholder="Ex : M. Dupont" style="margin-bottom:10px">
 
       <label>Accès / Digicode</label>
       <input type="text" id="mr-acces" placeholder="Code : A1234" style="margin-bottom:10px">
@@ -1956,9 +1958,9 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <label style="font-weight:600;display:block;margin-bottom:6px" id="mr-label-locataire">Locataire <span style="color:var(--red)">*</span></label>
       <div class="form-grid" style="margin-bottom:8px">
         <div><label>Nom complet</label><input type="text" id="mr-loc-nom" placeholder="Jean Martin"></div>
-        <div><label>Téléphone</label><input type="tel" id="mr-loc-tel" placeholder="06 12 34 56 78"></div>
+        <div><label>Téléphone <span style="color:var(--red)">*</span></label><input type="tel" id="mr-loc-tel" placeholder="06 12 34 56 78"></div>
       </div>
-      <label>Email du locataire</label>
+      <label>Email du locataire <span style="color:var(--red)">*</span></label>
       <input type="email" id="mr-loc-email" placeholder="jean.martin@email.fr" style="margin-bottom:10px">
 
       <div id="mr-entrants-section" style="display:none;margin-bottom:10px">
@@ -1968,7 +1970,13 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       </div>
 
       <label>Notes</label>
-      <textarea id="mr-notes" placeholder="Informations complémentaires..." style="min-height:60px;margin-bottom:16px"></textarea>
+      <textarea id="mr-notes" placeholder="Informations complémentaires..." style="min-height:60px;margin-bottom:12px"></textarea>
+
+      <label>Pièces jointes (facultatif)</label>
+      <input type="file" id="mr-attachments-input" multiple onchange="mrPiecesJointesChoisies(this)" style="display:none">
+      <button type="button" class="btn btn-sm" style="width:100%;justify-content:center;border-style:dashed" onclick="document.getElementById('mr-attachments-input').click()"><i class="ti ti-paperclip"></i> Ajouter des pièces jointes</button>
+      <div style="font-size:11px;color:var(--text3);margin:4px 0 6px">Plusieurs fichiers à la fois ou en plusieurs fois · 25 Mo max par fichier · 10 fichiers max</div>
+      <div id="mr-attachments-list" style="margin-bottom:16px"></div>
 
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn" onclick="closeModal('modal-manual-resa')">Annuler</button>
@@ -2238,6 +2246,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 <script src="/js/app-agenda.js"></script>
 <script src="/js/app-settings.js"></script>
 <script src="/js/app-extranet.js"></script>
+<script src="/js/reservation-validation.js"></script>
 <script src="/js/app-reservations.js"></script>
 <script src="/js/app-remuneration.js"></script>
 <script src="/js/app-equipe.js"></script>

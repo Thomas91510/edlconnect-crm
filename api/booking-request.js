@@ -1,4 +1,5 @@
 export const config = { runtime: 'edge' };
+import { erreurReservation } from './_lib/reservation-validation.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { identiteAbonne } from './_lib/identite.js';
 import { escapeIlike } from './_lib/ilike.js';
@@ -64,6 +65,13 @@ export default async function handler(req) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if(!emailRegex.test(String(email).trim())){
       return new Response(JSON.stringify({ error: 'Email invalide' }), { status: 400 });
+    }
+    // Champs obligatoires (superficie, propriétaire, date d'entrée pour une
+    // sortie, téléphone + email de chaque locataire) — même règle que les
+    // formulaires, vérifiée ici pour qu'aucune demande incomplète ne passe.
+    const champManquant = erreurReservation(data);
+    if (champManquant) {
+      return new Response(JSON.stringify({ error: champManquant }), { status: 400 });
     }
     // Limites de taille par champ (évite les charges utiles géantes)
     const limites = { agence:150, contact:100, email:150, tel:30, typeEdl:60, adresse:300, bienType:60, bienTypo:20, meuble:20, superficie:20, dateEntree:40, acces:500, proprietaire:150, dateSouhaitee:40, heure:20, notes:2000 };

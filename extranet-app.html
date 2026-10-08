@@ -6,6 +6,7 @@
   <title>Espace client — EDL IDF Expert en État des Lieux</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/reservation-validation.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/index.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@5/index.css">
 <style>
@@ -550,13 +551,13 @@
         <div><div class="form-label">Type de bien</div><select id="f-bien"><option>Appartement</option><option>Maison</option><option>Studio</option><option>Local commercial</option><option>Parking</option><option>Autre</option></select></div>
         <div><div class="form-label">Typologie *</div><select id="f-typo" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Studio</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option></select></div>
         <div><div class="form-label">Meublé / Nu</div><select id="f-meuble" onchange="chargerCreneauxSiPossible()"><option>Nu</option><option>Meublé</option></select></div>
-        <div><div class="form-label">Superficie (m²)</div><input id="f-superficie" type="number" placeholder="45" min="1"></div>
-        <div><div class="form-label">Date d'entrée</div><input id="f-date-entree" type="date"></div>
+        <div><div class="form-label">Superficie (m²) *</div><input id="f-superficie" type="number" placeholder="45" min="1" required></div>
+        <div id="f-date-entree-wrap" style="display:none"><div class="form-label">Date de l'état des lieux d'entrée *</div><input id="f-date-entree" type="date"></div>
       </div>
       <div class="form-label">Accès / Digicode</div>
       <input id="f-acces" placeholder="Code : A1234" style="margin-bottom:14px">
-      <div class="form-label">Nom du propriétaire</div>
-      <input id="f-proprietaire" placeholder="Ex: M. Dupont" style="margin-bottom:14px">
+      <div class="form-label">Nom du propriétaire *</div>
+      <input id="f-proprietaire" placeholder="Ex: M. Dupont" style="margin-bottom:14px" required>
       <div id="slots-panel" style="display:none;margin-bottom:14px">
         <div class="form-label">Créneaux disponibles *</div>
         <div class="cal-nav">
@@ -585,9 +586,9 @@
       <div class="form-label" id="label-locataire">Locataire *</div>
       <div class="form-grid" style="margin-bottom:8px">
         <div><input id="f-loc-nom" placeholder="Jean Martin"></div>
-        <div><input id="f-loc-tel" placeholder="06 12 34 56 78"></div>
+        <div><input id="f-loc-tel" type="tel" placeholder="Téléphone * — 06 12 34 56 78" required></div>
       </div>
-      <input id="f-loc-email" type="email" placeholder="jean.martin@email.fr" style="margin-bottom:14px">
+      <input id="f-loc-email" type="email" placeholder="Email * — jean.martin@email.fr" style="margin-bottom:14px" required>
       <div id="entrants-section" style="display:none">
         <div class="form-label">Locataire(s) entrant(s) *</div>
         <div id="entrants-list"></div>
@@ -595,9 +596,10 @@
       </div>
       <div class="form-label">Notes</div>
       <textarea id="f-notes" placeholder="Informations complémentaires…"></textarea>
-      <div class="form-label" style="margin-top:14px">Pièces jointes (optionnel)</div>
-      <input type="file" id="attachments-input" multiple onchange="onAttachmentsSelected(this)">
-      <div style="font-size:10.5px;color:#6b6b6b;margin-top:4px">Tous formats acceptés · 25 Mo max par fichier · 10 fichiers max</div>
+      <div class="form-label" style="margin-top:14px">Pièces jointes (facultatif)</div>
+      <input type="file" id="attachments-input" multiple onchange="onAttachmentsSelected(this)" style="display:none">
+      <button type="button" onclick="document.getElementById('attachments-input').click()" style="background:#fff;border:1px dashed #1A5FA8;color:#1A5FA8;border-radius:10px;height:44px;font-size:13px;font-weight:500;cursor:pointer;width:100%">📎 Ajouter des pièces jointes</button>
+      <div style="font-size:10.5px;color:#6b6b6b;margin-top:4px">Plusieurs fichiers à la fois, ou en plusieurs fois · tous formats · 25 Mo max par fichier · 10 fichiers max</div>
       <div id="attachments-list" style="margin-top:10px"></div>
     <div id="form-error" style="display:none;background:#FCEBEB;color:#A32D2D;border-radius:8px;padding:10px 14px;font-size:12.5px;margin:14px 0 10px"></div>
     <button class="btn-primary" id="form-submit-btn" style="margin-top:16px" onclick="submitOrder()">Envoyer la demande</button>
@@ -721,7 +723,7 @@ function resetAttachments(){
 // utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
 // Numéro de version : aligné sur APP_VERSION (js/app-core.js), vérifié par
 // test/frontend-version-coherente.test.js.
-const APP_VERSION = '2.0.0-beta.10';
+const APP_VERSION = '2.0.0-beta.11';
 (async function afficherVersion(){
   const el0 = document.getElementById('app-version');
   if(el0) el0.textContent = 'v' + APP_VERSION;
@@ -1371,8 +1373,8 @@ function renderEntrants(){
         <div><input placeholder="Nom" value="${esc(e.nom)}" oninput="_entrants[${i}].nom=this.value"></div>
       </div>
       <div class="form-grid">
-        <div><input placeholder="06 12 34 56 78" value="${esc(e.tel)}" oninput="_entrants[${i}].tel=this.value"></div>
-        <div><input type="email" placeholder="email@exemple.fr" value="${esc(e.email)}" oninput="_entrants[${i}].email=this.value"></div>
+        <div><input type="tel" placeholder="Téléphone *" value="${esc(e.tel)}" oninput="_entrants[${i}].tel=this.value"></div>
+        <div><input type="email" placeholder="Email *" value="${esc(e.email)}" oninput="_entrants[${i}].email=this.value"></div>
       </div>
     </div>`).join('');
 }
@@ -1383,6 +1385,10 @@ function toggleEntrants(){
   document.getElementById('entrants-section').style.display = show ? 'block' : 'none';
   document.getElementById('label-locataire').textContent = show ? 'Locataire sortant *' : 'Locataire *';
   if(show && _entrants.length === 0) addEntrant();
+  // Date de l'état des lieux d'entrée : demandée (et obligatoire) pour toute sortie.
+  const sortie = String(_selectedType || '').toLowerCase().includes('sortant');
+  const wrapEntree = document.getElementById('f-date-entree-wrap');
+  if(wrapEntree) wrapEntree.style.display = sortie ? '' : 'none';
 }
 
 // ─── Autocomplétion d'adresse (API Adresse gratuite, data.gouv.fr) ─────
@@ -1665,6 +1671,10 @@ async function submitOrder() {
       if(!e.prenom || !e.nom){ errEl.textContent='Prénom et nom sont requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
       if(!e.tel){ errEl.textContent='Le mobile est requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
     }
+  }
+  if(typeof erreurReservation === 'function'){
+    const manque = erreurReservation({ typeEdl:_selectedType, superficie:document.getElementById('f-superficie').value, proprietaire:document.getElementById('f-proprietaire').value, dateEntree:document.getElementById('f-date-entree').value, locataire:{ tel:locTel, email:document.getElementById('f-loc-email').value }, locatairesEntrants });
+    if(manque){ errEl.textContent = manque; errEl.style.display='block'; return; }
   }
   if(_attachments.some(a => a.status === 'uploading')){ errEl.textContent="Patientez, l'envoi des pièces jointes est en cours…"; errEl.style.display='block'; return; }
   errEl.style.display='none';

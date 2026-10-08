@@ -38,7 +38,9 @@ test('booking-request : le message Slack inclut le téléphone du locataire', as
     adresse: '10 Résidence du Parc',
     dateSouhaitee: '2026-09-08',
     heure: '09h30',
-    locataire: { nom: 'Bardel', tel: '0695104367' }
+    superficie: '45',
+    proprietaire: 'M. Dupont',
+    locataire: { nom: 'Bardel', tel: '0695104367', email: 'bardel@exemple.fr' }
   }));
 
   assert.equal(res.status, 200);
@@ -47,7 +49,7 @@ test('booking-request : le message Slack inclut le téléphone du locataire', as
   assert.match(slackBody.text, /📱 Téléphone: 0695104367/);
 });
 
-test('booking-request : téléphone absent affiche "—" plutôt que de casser le message', async () => {
+test('booking-request : téléphone du locataire absent → demande refusée (champ obligatoire), aucune notification', async () => {
   let slackBody = null;
   global.fetch = async (url, opts) => {
     if (String(url) === process.env.SLACK_WEBHOOK_URL) {
@@ -56,16 +58,19 @@ test('booking-request : téléphone absent affiche "—" plutôt que de casser l
     return { ok: true, json: async () => ({}) };
   };
 
-  await handler(requete({
+  const res = await handler(requete({
     agence: 'Immo Gestion Era',
     contact: 'Jean Dupont',
     email: 'agence@exemple.fr',
     typeEdl: 'EDL entrant',
     adresse: '10 Résidence du Parc',
     dateSouhaitee: '2026-09-08',
-    locataire: { nom: 'Bardel' }
+    superficie: '45',
+    proprietaire: 'M. Dupont',
+    locataire: { nom: 'Bardel', email: 'bardel@exemple.fr' }
   }));
 
-  assert.ok(slackBody);
-  assert.match(slackBody.text, /📱 Téléphone: —/);
+  assert.equal(res.status, 400);
+  assert.match((await res.json()).error, /téléphone du locataire/);
+  assert.equal(slackBody, null);
 });
