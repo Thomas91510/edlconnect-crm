@@ -6,12 +6,14 @@ import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 import { identiteAbonne } from './_lib/identite.js';
 
-// « Rédiger avec IA » du Composer (Emails › Écrire), rédigé par Claude.
+// « Rédiger avec IA » du Composer (Emails › Écrire), rédigé par Claude, ou
+// par Mistral (gratuit) tant qu'aucune clé Anthropic n'est configurée.
 // Le navigateur n'envoie que la consigne (et éventuellement le destinataire
 // et le brouillon en cours) : les prompts sont construits ici, avec
 // l'identité d'envoi du compte — l'endpoint n'est jamais un proxy IA ouvert
-// (chaque appel est facturé sur la clé ANTHROPIC_API_KEY du compte).
+// (chaque appel est décompté sur la clé API du compte).
 const MODELE = 'claude-opus-5-5';
+const MODELE_MISTRAL = 'mistral-small-latest';
 const MAX_CONSIGNE = 2000;
 const MAX_BROUILLON = 6000;
 
@@ -42,6 +44,30 @@ export function decouperEmail(texte) {
   return { objet, corps };
 }
 
+async function redigerAvecMistral(system, demande, reponse) {
+  try {
+    const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.MISTRAL_API_KEY}` },
+      body: JSON.stringify({
+        model: MODELE_MISTRAL,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: demande }],
+        max_tokens: 1500,
+        temperature: 0.7,
+      }),
+    });
+    if (r.status === 429) return reponse({ error: 'IA momentanément saturée, réessayez dans un instant.' }, 429);
+    if (r.status === 401) return reponse({ error: 'Clé MISTRAL_API_KEY invalide.' }, 503);
+    if (!r.ok) return reponse({ error: 'Erreur de l’IA (' + r.status + ')' }, 502);
+    const data = await r.json();
+    const texte = String(data?.choices?.[0]?.message?.content || '').trim();
+    if (!texte) return reponse({ error: 'Réponse vide de l’IA' }, 502);
+    return reponse(decouperEmail(texte), 200);
+  } catch (_) {
+    return reponse({ error: 'Erreur réseau vers l’IA' }, 502);
+  }
+}
+
 export default async function handler(req) {
   const headers = {
     'Content-Type': 'application/json',
@@ -61,8 +87,12 @@ export default async function handler(req) {
   if (!(await planAutorise(user && user.id, user && user.email))) {
     return reponse({ error: 'La rédaction assistée par IA est réservée aux plans Starter et Pro.', planRequis: true }, 403);
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return reponse({ error: 'Rédaction IA non configurée (clé ANTHROPIC_API_KEY absente).' }, 503);
+  // Claude si la clé ANTHROPIC_API_KEY est configurée ; sinon Mistral
+  // (clé MISTRAL_API_KEY, offre gratuite « Experiment ») — même consigne,
+  // même format de réponse.
+  const fournisseur = process.env.ANTHROPIC_API_KEY ? 'claude' : (process.env.MISTRAL_API_KEY ? 'mistral' : '');
+  if (!fournisseur) {
+    return reponse({ error: 'Rédaction IA non configurée (clé ANTHROPIC_API_KEY ou MISTRAL_API_KEY absente).' }, 503);
   }
 
   let body;
@@ -93,6 +123,8 @@ Réponds uniquement avec l'email : première ligne « Objet: … », une ligne v
     `Consigne : ${consigne}`,
     brouillon ? `Brouillon actuel à améliorer (garde les informations utiles) :\n${brouillon}` : '',
   ].filter(Boolean).join('\n\n');
+
+  if (fournisseur === 'mistral') return redigerAvecMistral(system, demande, reponse);
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 1, fetch: (...a) => fetch(...a) });

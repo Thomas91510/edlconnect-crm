@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.21';
+const APP_VERSION = '2.0.0-beta.22';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.22', titre:'Rédaction IA gratuite', texte:'« Rédiger avec IA » fonctionne avec Mistral (offre gratuite) tant qu\u2019aucune clé Anthropic n\u2019est configurée ; Claude prend le relais automatiquement dès qu\u2019une clé ANTHROPIC_API_KEY est ajoutée.' },
   { v:'2.0.0-beta.21', titre:'Relecture du code : corrections', texte:'Les factures et infos légales envoyées par les agents ne peuvent plus être effacées par un enregistrement depuis le CRM. Espaces agences : liste figée des agences déjà utilisatrices, un espace désactivé reste bloqué (toutes les fiches du même email basculent ensemble). Rémunérations : « Non meublé » payé au tarif nu, surfaces décimales bien rattachées à leur tranche. Rapports : plus de rattachement d\u2019une réservation à une mission sans date commune. Purge des anciennes factures limitée aux fiches de l\u2019abonné, fichiers PDF bien supprimés. Facture agent : taille maximale alignée sur la limite d\u2019envoi.' },
   { v:'2.0.0-beta.20', titre:'Accroche dans l\u2019extranet et l\u2019espace agent', texte:'« Expert en État des Lieux » s\u2019affiche aussi sous le nom EDL IDF dans l\u2019extranet des agences et dans l\u2019espace agent (menu, en-tête mobile, connexion, carte de l\u2019expert).' },
   { v:'2.0.0-beta.19', titre:'En-tête des emails : blanc, logo et trait bleu', texte:'Les emails s\u2019ouvrent sur un en-tête blanc avec votre logo (ou votre nom), l\u2019accroche, et un trait aux couleurs de l\u2019agence juste en dessous.' },

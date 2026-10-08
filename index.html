@@ -1249,7 +1249,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 
             <!-- Panneau IA Claude -->
             <div id="claude-panel" style="display:none;margin-top:12px;border:1px solid #c3dafe;border-radius:var(--radius);padding:12px;background:#eef4ff">
-              <div style="font-size:12px;font-weight:600;color:#2345d4;margin-bottom:8px">✨ Rédiger avec Claude</div>
+              <div style="font-size:12px;font-weight:600;color:#2345d4;margin-bottom:8px">✨ Rédiger avec l'IA</div>
               <label style="font-size:11px;color:var(--text2)">Décris ce que tu veux dire (ex: relance prospect qui n'a pas répondu, proposer rdv)</label>
               <textarea id="claude-prompt" rows="3" style="margin-top:5px;font-size:12px" placeholder="Ex: Email de relance pour une agence immobilière qui n'a pas répondu à mon premier contact, ton professionnel et bienveillant, proposer un appel découverte de 15 min..."></textarea>
               <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
@@ -1449,7 +1449,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <strong>Tracking</strong> → liste à droite du Composer + fiche contact → onglet Emails
     </div>
     <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
-      ✅ La rédaction est assurée par Claude (Anthropic), sans clé à saisir.
+      ✅ La rédaction IA est assurée par le serveur (Mistral, gratuit, ou Claude si une clé Anthropic est configurée), sans clé à saisir.
     </div>
   </div>
 
@@ -1707,7 +1707,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       </div>
       <div class="settings-section" data-rubrique="integrations">
         <div class="settings-title"><i class="ti ti-sparkles" style="font-size:18px"></i>IA — Rédaction emails</div>
-        <div style="font-size:12.5px;color:var(--text2);line-height:1.6">« Rédiger avec IA » (Emails › Écrire) est assuré par <b>Claude</b> (Anthropic), sans clé à saisir ici : la clé est configurée sur le serveur par l'administrateur de la plateforme.</div>
+        <div style="font-size:12.5px;color:var(--text2);line-height:1.6">« Rédiger avec IA » (Emails › Écrire) est assuré par <b>Mistral</b> (offre gratuite) ou par <b>Claude</b> (Anthropic) dès qu'une clé Anthropic est configurée — sans clé à saisir ici : elle est configurée sur le serveur par l'administrateur de la plateforme.</div>
         <input type="hidden" id="set-claude-key">
       </div>
       <div class="settings-section" data-rubrique="agents">

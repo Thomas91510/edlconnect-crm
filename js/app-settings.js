@@ -30,7 +30,7 @@ async function generateWithClaude(){
 
   btn.disabled = true;
   label.textContent = 'Génération…';
-  status.textContent = '⏳ Claude rédige…';
+  status.textContent = '⏳ L\'IA rédige…';
 
   // Rédaction par Claude (api/redaction-ia.js) : les prompts sont construits
   // côté serveur avec l'identité d'envoi du compte ; on n'envoie que la
@@ -57,7 +57,7 @@ async function generateWithClaude(){
     if(bodyText && bodyEl) bodyEl.value = bodyText;
 
     status.textContent = '✅ Email généré !';
-    notify('✨ Email rédigé par Claude !');
+    notify('✨ Email rédigé par l\'IA !');
     setTimeout(()=>{
       document.getElementById('claude-panel').style.display='none';
       status.textContent='';

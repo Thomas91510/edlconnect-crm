@@ -1,4 +1,4 @@
-// /api/redaction-ia : « Rédiger avec IA » par Claude — authentifié, plan
+// /api/redaction-ia : « Rédiger avec IA » par Claude (ou Mistral, gratuit, sans clé Anthropic) — authentifié, plan
 // payant, prompts construits côté serveur (pas de proxy ouvert).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -52,4 +52,32 @@ test('refus : sans jeton, plan gratuit, consigne vide ou refusée par l’IA', a
   assert.equal((await handler(req({ consigne: '  ' }))).status, 400);
   mock({ reponse: { id: 'm', type: 'message', role: 'assistant', model: 'claude-opus-5-5', stop_reason: 'refusal', content: [], usage: { input_tokens: 1, output_tokens: 0 } } });
   assert.equal((await handler(req({ consigne: 'x' }))).status, 422);
+});
+
+test('sans clé Anthropic : rédige avec Mistral (gratuit), même format', async () => {
+  const cle = process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
+  process.env.MISTRAL_API_KEY = 'test-mistral-key';
+  const appels = [];
+  mock();
+  const fetchClaude = global.fetch;
+  global.fetch = async (url, opts = {}) => {
+    if (String(url).includes('api.mistral.ai')) {
+      appels.push(JSON.parse(opts.body));
+      return new Response(JSON.stringify({ choices: [{ message: { content: 'Objet: Relance\n\nBonjour,\nCorps.' } }] }), { status: 200 });
+    }
+    return fetchClaude(url, opts);
+  };
+  try {
+    const r = await handler(req({ consigne: 'Relance agence' }));
+    assert.equal(r.status, 200);
+    assert.deepEqual(await r.json(), { objet: 'Relance', corps: 'Bonjour,\nCorps.' });
+    assert.equal(appels[0].model, 'mistral-small-latest');
+    assert.match(appels[0].messages[0].content, /EDL IDF/);
+    delete process.env.MISTRAL_API_KEY;
+    assert.equal((await handler(req({ consigne: 'x' }))).status, 503, 'aucune clé : non configurée');
+  } finally {
+    process.env.ANTHROPIC_API_KEY = cle;
+    delete process.env.MISTRAL_API_KEY;
+  }
 });
