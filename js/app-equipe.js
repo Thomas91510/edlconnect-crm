@@ -33,7 +33,7 @@ const DROITS_TOUJOURS = ['dashboard'];
 // Vue → droit requis pour l'ouvrir. Vue absente = libre.
 const VUE_DROIT = {
   reservations:'reservations', missions:'missions', agenda:'missions',
-  contacts:'clients', prospection:'prospection',
+  contacts:'clients', rapports:'clients', espaces:'clients', prospection:'prospection',
   compose:'emails', campaigns:'campagnes', brevo:'utilisateurs'
 };
 

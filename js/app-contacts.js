@@ -547,6 +547,7 @@ const SECTIONS_NAV = {
   missions   : { vues:[{v:'reservations',label:'Réservations', badge:'resa-nav-badge', perm:'reservations'},
                        {v:'missions',   label:'Missions', perm:'missions'},
                        {v:'agenda',     label:'Agenda', perm:'missions'}] },
+  espaces    : { vues:[{v:'espaces',    label:'Espaces agences'}] },
   clients    : { vues:[{v:'contacts',   label:'Clients'},
                        {v:'rapports',   label:'Rapports', perm:'clients'}] },
   prospection: { vues:[{v:'prospection',label:'Prospection'}] },
@@ -622,6 +623,7 @@ function nav(v){
   }
   if(v==='missions')renderMissions();
   if(v==='rapports')renderRapports();
+  if(v==='espaces')renderBlocEspacesAgences();
   if(v==='campaigns')renderCampaigns();
   if(v==='compose'){renderTracking();rafraichirSuiviEmails();}
   if(v==='agenda')renderCalendar();
@@ -737,7 +739,6 @@ function filterByMonth(arr, dateField){
 }
 
 function renderDashboard(){
-  if(typeof renderBlocEspacesAgences==='function') try{ renderBlocEspacesAgences(); }catch(e){}
   document.getElementById('today-label').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   // Accueil personnalisé : "Bonjour Thomas" (prénom tiré du nom saisi dans
   // Réglages › Profil), à défaut le simple titre de la rubrique.
@@ -1128,34 +1129,17 @@ function agencesAvecEspace(){
   return (DB.contacts || []).filter(c => c && String(c.email || '').includes('@'))
     .sort((a, b) => String(a.entreprise || a.contact || a.email).localeCompare(String(b.entreprise || b.contact || b.email), 'fr'));
 }
-function ouvrirEspacesAgences(){
-  const r = document.getElementById('espaces-agences-recherche');
-  if(r) r.value = '';
-  renderEspacesAgences();
-  openModal('modal-espaces-agences');
-  setTimeout(() => r && r.focus(), 50);
-}
-function renderEspacesAgences(){
-  const box = document.getElementById('espaces-agences-liste');
-  if(!box) return;
-  const q = String((document.getElementById('espaces-agences-recherche') || {}).value || '').trim().toLowerCase();
-  const liste = agencesAvecEspace().filter(c => !q || [c.entreprise, c.contact, c.email, c.ville].some(v => String(v || '').toLowerCase().includes(q)));
-  if(!liste.length){ box.innerHTML = '<div class="empty">' + (q ? 'Aucune agence ne correspond.' : 'Aucune agence avec un email.') + '</div>'; return; }
-  box.innerHTML = liste.map(c => `<div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--border)">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.entreprise || c.contact || c.email)}</div>
-        <div style="font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.email)}${c.contact && c.entreprise ? ' · ' + esc(c.contact) : ''}</div>
-      </div>
-      <button type="button" class="btn btn-sm" onclick="ouvrirEspaceAgence('${esc(c.email)}')"><i class="ti ti-external-link"></i> Voir son espace</button>
-    </div>`).join('');
-}
-// Bloc « Espaces agences » du tableau de bord (juste après les chiffres clés)
+// Ancien point d'entrée (fenêtre) : ouvre désormais la page « Espaces agences ».
+function ouvrirEspacesAgences(){ nav('espaces'); }
+// Page « Espaces agences » (bouton du menu de gauche)
 function renderBlocEspacesAgences(){
   const box = document.getElementById('dash-espaces-liste');
   if(!box) return;
   const q = String((document.getElementById('dash-espaces-recherche') || {}).value || '').trim().toLowerCase();
   const toutes = agencesAvecEspace();
-  const liste = toutes.filter(c => !q || [c.entreprise, c.contact, c.email].some(v => String(v || '').toLowerCase().includes(q))).slice(0, 8);
+  const liste = toutes.filter(c => !q || [c.entreprise, c.contact, c.email, c.ville].some(v => String(v || '').toLowerCase().includes(q)));
+  const compte = document.getElementById('espaces-agences-compte');
+  if(compte) compte.textContent = toutes.length + ' agence' + (toutes.length > 1 ? 's' : '');
   box.innerHTML = liste.length ? liste.map(c => `<button type="button" class="espaces-agences-carte" onclick="ouvrirEspaceAgence('${esc(c.email)}')" title="Ouvrir l'espace de ${esc(c.entreprise || c.email)} (lecture seule)">
       <span style="min-width:0;flex:1"><b>${esc(c.entreprise || c.contact || c.email)}</b><span>${esc(c.email)}</span></span><i class="ti ti-external-link"></i></button>`).join('')
     : `<div class="espaces-agences-vide">${q ? 'Aucune agence ne correspond.' : 'Aucune agence avec un email.'}</div>`;

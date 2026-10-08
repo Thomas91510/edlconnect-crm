@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.12';
+const APP_VERSION = '2.0.0-beta.13';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.13', titre:'Page « Espaces agences »', texte:'Le bouton « Espaces agences » du menu ouvre maintenant sa propre page (bleu nuit et or) avec toutes les agences ; l\u2019accueil « Aujourd\u2019hui » ne l\u2019affiche plus.' },
   { v:'2.0.0-beta.12', titre:'Rapports par client, relève Edouard horaire, suivi des emails corrigé', texte:'Clients › Rapports : tous les rapports d\u2019état des lieux de toutes les agences, classés par client, ajoutés dès que l\u2019état des lieux est terminé dans Edouard (relève toutes les heures). Encart « Espaces agences » bleu nuit et or juste après les chiffres clés. Fiche client agrandie. Suivi des emails : rafraîchi automatiquement, statuts ouvert / cliqué mis à jour, emails automatiques (confirmations, rappels, rapports) désormais suivis.' },
   { v:'2.0.0-beta.11', titre:'Réservations : champs obligatoires et pièces jointes multiples', texte:'Sur l\u2019extranet, la page publique et la réservation manuelle du CRM : téléphone et email obligatoires pour chaque locataire (sortant et entrant), nom du propriétaire et superficie obligatoires, date de l\u2019état des lieux d\u2019entrée obligatoire pour toute sortie. Bouton « Ajouter des pièces jointes » (plusieurs fichiers, en une ou plusieurs fois), aussi dans la réservation manuelle du CRM.' },
   { v:'2.0.0-beta.10', titre:'Espaces agences, plus de factures côté agences', texte:'Menu de gauche › « Espaces agences » : ouvrez l\u2019extranet de n\u2019importe quelle agence tel qu\u2019elle le voit, en lecture seule, pour un problème ou un souci de paramétrage. Les factures ne concernent plus que les agents d\u2019état des lieux : dépôt retiré, et bouton pour supprimer les anciennes factures des agences.' },

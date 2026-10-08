@@ -696,7 +696,16 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 .nav-item.nav-espaces .nav-icon i,.nav-item.nav-espaces .nav-label{color:#F4F7FA}
 .nav-item.nav-espaces .nav-icon i{color:#C29A5B}
 .nav-item.nav-espaces:hover{background:#1B3048}
-.espaces-agences-bloc{background:#0F1E2E;color:#F4F7FA;border-radius:16px;padding:22px 24px;margin:22px 0 30px;border-top:3px solid #C29A5B}
+.espaces-agences-bloc{background:#0F1E2E;color:#F4F7FA;border-radius:18px;padding:30px 32px;margin:0 0 30px;border-top:4px solid #C29A5B;min-height:calc(100vh - 140px)}
+.espaces-agences-bloc h1{font-size:26px;font-weight:600;margin:0 0 6px;color:#fff;letter-spacing:-.01em}
+.espaces-agences-bloc h1 i{color:#C29A5B}
+.espaces-agences-compte{font-size:13px;color:#C29A5B;font-weight:600}
+.espaces-agences-pied{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:26px;padding-top:16px;border-top:1px dashed #2C4560;font-size:12.5px;color:#8FA0B3}
+.espaces-agences-pied span{flex:1;min-width:220px}
+.espaces-agences-danger{background:transparent;border:1px solid #C26B5B;color:#F0B4A8;border-radius:10px;padding:8px 12px;font-family:inherit;font-size:12.5px;cursor:pointer}
+.espaces-agences-danger:hover{background:#3A2026}
+.nav-item.nav-espaces.active{background:#1B3048;box-shadow:inset 3px 0 0 #C29A5B}
+.nav-item.nav-espaces.active .nav-label{color:#fff}
 .espaces-agences-tete{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
 .espaces-agences-bloc h2{font-size:16px;font-weight:600;margin:0 0 4px;color:#fff}
 .espaces-agences-bloc h2 i{color:#C29A5B}
@@ -779,7 +788,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <span class="nav-icon"><i class="ti ti-mail"></i></span>
         <span class="nav-label">Emails</span>
       </button>
-      <button class="nav-item nav-espaces" data-perm="clients" onclick="ouvrirEspacesAgences()" title="Voir l'espace extranet d'une agence (dépannage, paramétrage)">
+      <button class="nav-item nav-espaces" data-section="espaces" data-perm="clients" onclick="nav('espaces')" title="Voir l'espace extranet d'une agence (dépannage, paramétrage)">
         <span class="nav-icon"><i class="ti ti-building-store"></i></span>
         <span class="nav-label">Espaces agences</span>
       </button>
@@ -855,19 +864,6 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <div class="kpi" data-perm="ca"><div class="kpi-label">CA total <span id="ca-mode-label" style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="toggleTaxMode()" title="Cliquer pour basculer HT/TTC">HT</span></div><div class="kpi-value" id="k-ca">—</div><div class="kpi-sub" id="k-ca-sub"></div></div>
         <div class="kpi" data-perm="clients"><div class="kpi-label">Doublons</div><div class="kpi-value" id="k-dups" style="color:var(--amber)">—</div><div class="kpi-sub warn" id="k-dups-sub"></div></div>
       </div>
-      <!-- Espaces agences : juste après les chiffres clés, apparence propre
-           (bleu nuit + or) pour ne jamais le confondre avec le reste du CRM. -->
-      <section class="espaces-agences-bloc" data-perm="clients" aria-labelledby="espaces-agences-titre">
-        <div class="espaces-agences-tete">
-          <div>
-            <h2 id="espaces-agences-titre"><i class="ti ti-building-store"></i> Espaces agences</h2>
-            <p>Voir l'extranet d'une agence exactement comme elle le voit — lecture seule, pour un problème ou un souci de paramétrage.</p>
-          </div>
-          <button type="button" class="espaces-agences-tout" onclick="ouvrirEspacesAgences()">Toutes les agences</button>
-        </div>
-        <input type="search" class="espaces-agences-recherche" id="dash-espaces-recherche" placeholder="Rechercher une agence…" oninput="renderBlocEspacesAgences()">
-        <div class="espaces-agences-liste" id="dash-espaces-liste"></div>
-      </section>
       <!-- KPIs Email Tracking : repliés par défaut (moins consultés au quotidien
            que les KPI principaux), état mémorisé dans localStorage -->
       <button data-perm="emails" onclick="toggleEmailKpis()" id="email-kpis-toggle" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text2);padding:4px 2px;margin-top:-2px">
@@ -922,6 +918,26 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
     </div>
 
     <!-- CONTACTS -->
+    <!-- Espaces agences : page à part (bouton du menu), apparence propre
+         bleu nuit + or pour ne jamais la confondre avec le reste du CRM. -->
+    <div class="view view-espaces" id="view-espaces">
+      <section class="espaces-agences-bloc" aria-labelledby="espaces-agences-titre">
+        <div class="espaces-agences-tete">
+          <div>
+            <h1 id="espaces-agences-titre"><i class="ti ti-building-store"></i> Espaces agences</h1>
+            <p>Ouvrez l'extranet d'une agence exactement comme elle le voit — en lecture seule, pour un problème ou un souci de paramétrage.</p>
+          </div>
+          <span class="espaces-agences-compte" id="espaces-agences-compte"></span>
+        </div>
+        <input type="search" class="espaces-agences-recherche" id="dash-espaces-recherche" placeholder="Rechercher une agence, un email…" oninput="renderBlocEspacesAgences()">
+        <div class="espaces-agences-liste" id="dash-espaces-liste"></div>
+        <div class="espaces-agences-pied">
+          <span>Plus de factures pour les agences : supprimez celles déposées auparavant (fiches clients et fichiers PDF).</span>
+          <button type="button" class="espaces-agences-danger" onclick="supprimerAnciennesFacturesAgences()"><i class="ti ti-trash"></i> Supprimer les anciennes factures</button>
+        </div>
+      </section>
+    </div>
+
     <div class="view" id="view-rapports">
       <div class="page-header">
         <h1 class="page-title">Rapports</h1>
@@ -2218,21 +2234,6 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 <!-- MODAL APERÇU EXTRANET (admin) : montre exactement ce qu'un client donné
      voit dans son espace extranet, sans avoir besoin de son email pour se
      connecter à sa place. -->
-<div class="modal-bg" id="modal-espaces-agences">
-  <div class="modal" style="width:560px;max-width:96vw">
-    <div class="modal-title">
-      <div><div style="font-size:15px;font-weight:700">Espaces agences</div><div style="font-size:12px;color:var(--text2)">Ouvrez l'extranet d'une agence tel qu'elle le voit — en lecture seule, pour un problème ou un souci de paramétrage.</div></div>
-      <button class="modal-close" onclick="closeModal('modal-espaces-agences')"><i class="ti ti-x"></i></button>
-    </div>
-    <input type="search" id="espaces-agences-recherche" placeholder="Rechercher une agence, un email…" oninput="renderEspacesAgences()" style="margin-bottom:12px">
-    <div id="espaces-agences-liste" style="max-height:58vh;overflow-y:auto"></div>
-    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border2);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-size:12px;color:var(--text2);flex:1;min-width:200px">Plus de factures pour les agences : supprimez celles déposées auparavant (fiches clients et fichiers PDF).</span>
-      <button type="button" class="btn btn-danger btn-sm" onclick="supprimerAnciennesFacturesAgences()"><i class="ti ti-trash"></i> Supprimer les anciennes factures</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-bg" id="modal-extranet-preview">
   <div class="modal" style="width:480px;max-width:96vw">
     <div class="modal-title">
