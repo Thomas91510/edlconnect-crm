@@ -9,7 +9,7 @@ const TYPES_AUTORISES = ['contrat', 'avenant'];
 
 // Génère un lien de téléchargement de très courte durée (60s, jamais
 // stocké) pour le contrat signé ou l'avenant d'un Agent EDL authentifié —
-// même principe que facture-download.js côté extranet client. L'agent ne
+// lien signé de courte durée. L'agent ne
 // peut jamais accéder au document d'un autre agent : le chemin de stockage
 // n'est lu que sur SA PROPRE fiche (résolue depuis son email authentifié
 // via resolverAgentParEmail), jamais fourni par le client.

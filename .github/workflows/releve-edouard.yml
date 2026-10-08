@@ -1,0 +1,35 @@
+name: Relève des rapports Edouard (toutes les heures)
+
+# Va chercher toutes les heures les états des lieux terminés dans Edouard
+# (api/edouard-cron.js) : le rapport PDF apparaît dans le CRM (Clients ›
+# Rapports) et dans l'espace de l'agence quasi immédiatement, au lieu
+# d'attendre la relève du soir (cron reminder-rdv, qui reste en secours).
+# Planifié ici plutôt que dans vercel.json : les crons Vercel du forfait
+# actuel sont limités à une exécution par jour.
+#
+# Aucun secret à configurer : le workflow demande à GitHub un jeton OIDC
+# signé, que le serveur vérifie (dépôt Thomas91510/edlconnect-crm, branche
+# main — api/_lib/github-oidc.js). Les planifications GitHub ne tournent que
+# depuis la branche par défaut.
+
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  releve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Relever les rapports Edouard
+        run: |
+          JETON=$(curl -fsS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=lokentia-edouard-cron" | jq -r '.value')
+          curl -fsS --max-time 120 \
+            -H "Authorization: Bearer $JETON" \
+            https://app.lokentia.fr/api/edouard-cron | head -c 2000

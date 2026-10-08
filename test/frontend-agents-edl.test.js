@@ -420,3 +420,60 @@ test('sauvegarderBareme : aucune ligne valide → n\'écrase pas le barème exis
 
   assert.deepEqual(window.__getDB().baremeDeplacement, [{ label: 'Existant', montant: '9' }]);
 });
+
+// ─── Grille de rémunération : plusieurs typologies cochées par ligne ──
+test('grille de rémunération : les typologies cochées sont relues, l’ancien champ unique est converti', () => {
+  const w = chargerAgentsEDL();
+  const d = w.document;
+  const conteneur = d.createElement('div');
+  conteneur.id = 'rem-typo-lignes';
+  d.body.appendChild(conteneur);
+  w.renderLignesRemuneration([
+    { label: 'T4 et T5', typos: ['T4', 'T5'], simple: '55', double: '95' },
+    { label: 'Ancien', typo: 'T2', simple: '40' },
+  ]);
+  const lignes = d.querySelectorAll('#rem-typo-lignes [data-rem-ligne]');
+  assert.equal(lignes.length, 2);
+  // Coche T6 en plus sur la première ligne
+  lignes[0].querySelector('input[value="T6"]').checked = true;
+  const lues = w.lireLignesRemuneration();
+  assert.deepEqual(Array.from(lues[0].typos), ['T4', 'T5', 'T6']);
+  assert.deepEqual(Array.from(lues[1].typos), ['T2'], 'l’ancien champ « typo » est coché à l’ouverture');
+  assert.equal(lues[0].nue, '55', 'ancien montant « simple » repris en tarif location nue');
+});
+
+// ─── Suivi des paiements des rémunérations ────────────────────────────
+test('suivi des paiements : reste à payer, cocher « payée » enregistre la mission', () => {
+  const html = `<div id="notif"></div><select id="remu-agent-select"></select><select id="remu-filtre"><option value="apayer" selected>À payer</option><option value="payees">Payées</option><option value="toutes">Toutes</option></select><div id="remu-agents-contenu"></div>`;
+  const setup = `
+    window._EXTRANET_MODE = true;
+    window.__getDB = function(){ return DB; };
+    window.__pousses = [];
+    pushToSupabase = async function(cle, item){ window.__pousses.push([cle, item.id]); return true; };
+    confirm = () => true;
+    DB.agents = [{ id: 'ag1', nom: 'Julien', remuneration: { mode: 'forfait', parType: { entrant: '45', sortant: '50' } } }];
+    DB.missions = [
+      { id: 'm1', expertId: 'ag1', type: 'EDL entrant', statut: 'terminée', date: '2026-09-02T09:00:00' },
+      { id: 'm2', expertId: 'ag1', type: 'EDL sortant', statut: 'terminée', date: '2026-09-05T09:00:00' },
+      { id: 'm3', expertId: 'ag2', type: 'EDL sortant', statut: 'terminée', date: '2026-09-05T09:00:00' },
+      { id: 'm4', expertId: 'ag1', type: 'EDL sortant', statut: 'planifiée', date: '2026-12-05T09:00:00' },
+    ];
+  `;
+  const { window: w, document: d } = chargerScripts(['app-cloud.js', 'app-settings.js', 'app-remuneration.js'], html, setup);
+  w.renderRemunerationsAgents();
+  const contenu = d.getElementById('remu-agents-contenu');
+  assert.ok(contenu.textContent.includes('95 € HT'), 'reste à payer = 45 + 50 (missions terminées de cet agent uniquement)');
+  assert.equal(contenu.querySelectorAll('tbody input[type=checkbox]').length, 2);
+
+  w.marquerRemuPayee('m1', true);
+  const m1 = w.__getDB().missions.find(m => m.id === 'm1');
+  assert.equal(m1.remuPayee, true);
+  assert.ok(m1.remuPayeeLe, 'date de paiement enregistrée');
+  assert.deepEqual(Array.from(w.__pousses[0]), ['missions', 'm1'], 'mission synchronisée');
+  assert.ok(contenu.textContent.includes('50 € HT'), 'reste à payer mis à jour');
+
+  w.marquerMoisRemuPaye('ag1', '2026-09');
+  assert.equal(w.__getDB().missions.find(m => m.id === 'm2').remuPayee, true);
+  assert.equal(w.__getDB().missions.find(m => m.id === 'm4').remuPayee, undefined, 'une mission planifiée n’est jamais marquée payée');
+  assert.ok(contenu.textContent.includes('Rien à payer'));
+});

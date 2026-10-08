@@ -6,19 +6,21 @@
 <title>Espace agent — EDL IDF Expert en État des Lieux</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@5/index.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#1A5FA8;--blue-light:#F4F7FA;--blue-dark:#0C447C;
-  --green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;
-  --amber:#854F0B;--amber-bg:#FCF3E3;
+  --blue:#1A5FA8;--blue-light:#EAF1FA;--blue-dark:#124577;
+  --green:#2F7A3E;--green-bg:#E7F3EA;--green-text:#25602F;
+  --amber:#8A5A00;--amber-bg:#FDF1DC;
   --teal:#0F6E56;--teal-light:#E1F5EE;--teal-dark:#085041;
-  --text:#1a1a1a;--text2:#6b6b6b;--text3:#999;
-  --border:#e5e5e2;--bg:#f8f8f6;--white:#fff;
+  --text:#15171C;--text2:#5B6170;--text3:#6E7483;
+  --border:#E8E9EC;--bg:#F6F7F9;--white:#fff;
   --radius:10px;--radius-lg:16px;
   --header-h:67px;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg);min-height:100vh}
+body{font-family:'Geist Variable','Geist',system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;color:var(--text);background:var(--bg);min-height:100vh}
 .header{background:var(--white);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:10}
 .logo-box{display:flex;align-items:center;gap:10px}
 .logo-icon{background:var(--blue-light);width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:var(--blue);letter-spacing:-1px}
@@ -190,13 +192,143 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
   .side-nav-spacer{display:none}
   .side-agent-card{display:none}
 }
+
+/* ═══ REFONTE V2 — même langage visuel que le CRM ═══ */
+.nav-btn{min-height:44px}
+.nav-btn .nav-label b{font-size:14px;font-weight:500}
+.nav-btn .nav-label small{font-size:12px}
+.nav-btn:hover{background:var(--bg)}
+.nav-btn.active{background:var(--blue-light)}
+.nav-btn.active i,.nav-btn.active .nav-label b{color:var(--blue)}
+.nav-btn.active .nav-label small{color:var(--text2)}
+.card{border-radius:14px}
+
+/* Coquille : menu blanc pleine hauteur à gauche (comme le CRM et l'extranet) */
+.header{display:none}
+.layout{max-width:none;margin:0;padding:0;gap:0;min-height:100vh}
+.side-nav{width:248px;position:sticky;top:0;height:100vh;min-height:0;background:var(--white);border-right:1px solid var(--border);padding:22px 14px 16px;gap:2px}
+.side-brand{display:flex;align-items:center;gap:10px;padding:0 6px 18px}
+.side-brand-nom{font-size:15px;font-weight:600}
+.side-brand-sous{font-size:12px;color:var(--text2)}
+.side-brand-accroche{font-size:11.5px;font-weight:600;color:var(--blue);margin:1px 0 2px}
+.nav-btn{height:44px;min-height:0;padding:0 12px}
+.nav-btn .nav-label b{color:#3A3F4B}
+.side-logout{margin-top:8px;height:38px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);color:var(--text2);font-family:inherit;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.side-logout:hover{background:var(--bg)}
+.side-agent-name{font-size:13px;font-weight:600}
+.side-agent-email{font-size:12px}
+.layout > .main{padding:40px 44px 72px;max-width:1120px}
+.page-head{margin-bottom:28px}
+.page-kicker{font-size:14px;color:var(--text2);margin-bottom:6px}
+.page-h1{font-size:30px;font-weight:600;letter-spacing:-.02em;margin:0}
+.section-h2{font-size:15px;font-weight:600;margin:0 0 14px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.kpi-tile{background:var(--white);border:none;border-right:1px solid var(--border);border-radius:0;padding:20px 22px;text-align:left}
+.kpi-tile:last-child{border-right:none}
+.kpi-tile .n{font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--text)}
+.kpi-tile .l{font-size:13px;color:var(--text2);margin-top:4px}
+.typo-chips{margin-top:12px}
+.mission{display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px;padding:20px 24px;background:var(--white);border:1px solid var(--border);border-radius:14px;margin-bottom:12px}
+.mission-quand{width:84px;display:flex;flex-direction:column;gap:2px}
+.mission-quand span{font-size:12.5px;color:var(--text2)}
+.mission-quand b{font-family:'Geist Mono Variable',ui-monospace,monospace;font-size:15px;font-weight:500}
+.mission-corps{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px}
+.mission-adresse{font-size:15px;font-weight:600}
+.mission-meta{display:flex;gap:6px;flex-wrap:wrap}
+.mission-details{font-size:13px;color:#3A3F4B;line-height:1.6}
+.mission-actions{display:flex;gap:8px;flex-wrap:wrap}
+.mission-actions .btn-sm{height:40px;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.badge{border-radius:999px;font-size:12px;padding:3px 10px}
+.badge-zone-primaire{background:var(--blue-light);color:var(--blue)}
+.badge-zone-secondaire{background:var(--bg);color:#3A3F4B}
+.badge-zone-hors{background:var(--amber-bg);color:var(--amber)}
+.card{border-radius:14px}
+.card-head{font-size:15px;font-weight:600;padding:18px 22px 14px}
+.cp-chip{height:40px;min-width:76px;font-family:'Geist Mono Variable',ui-monospace,monospace;font-weight:500;font-size:13px}
+.cp-chip.primaire{background:var(--blue);color:#fff;border-color:var(--blue)}
+.cp-chip.secondaire{background:var(--blue-light);color:var(--blue-dark);border-color:#9EC0E8}
+.swatch.secondaire{background:#9EC0E8}
+.card-head{color:var(--text)}
+.card-head i{color:var(--text2)}
+.mois-titre{color:var(--text);text-transform:none;letter-spacing:0;font-size:14px}
+#login-screen .card{max-width:420px;margin:12vh auto 0}
+@media (max-width:720px){
+  .header{display:flex}
+  .layout{min-height:0}
+  .side-nav{width:auto;height:auto;position:sticky;top:var(--header-h);border-right:none;border-bottom:1px solid var(--border);padding:8px 4px;margin:0;gap:2px}
+  .side-brand,.side-logout{display:none}
+  .nav-btn{height:auto;padding:8px 10px}
+  .layout > .main{padding:20px 16px 60px}
+  .page-h1{font-size:24px}
+  .kpi-tile{border-bottom:1px solid var(--border)}
+  .mission{padding:16px}
+  .mission-actions{width:100%}
+  .mission-actions .btn-sm{flex:1;justify-content:center}
+  #app-version{position:static;text-align:center;padding:12px 0 20px}
+}
+.badge-remu{background:var(--green-bg);color:var(--green-text);font-weight:600}
+.remu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin-bottom:4px}
+.remu-ligne{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--border);font-size:14px}
+.remu-ligne:first-child{border-top:none}
+.remu-mois{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);font-size:13.5px}
+.remu-mois:first-child{border-top:none}
+.remu-mois-lib{width:130px;flex-shrink:0}
+.remu-barre{flex:1;height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
+.remu-barre span{display:block;height:100%;background:var(--blue);border-radius:4px}
+.remu-mois-nb{width:150px;color:var(--text2);text-align:right;flex-shrink:0}
+.remu-mois b{width:90px;text-align:right;flex-shrink:0}
+.remu-table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+.remu-table th{text-align:left;font-weight:500;color:var(--text2);font-size:12px;padding:0 10px 10px 0}
+.remu-table td{padding:12px 10px 12px 0;border-top:1px solid var(--border)}
+.fac-grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.fac-outils{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px}
+.fac-outils .field{margin:0;min-width:200px}
+.fac-alerte{background:var(--amber-bg);color:var(--amber);border-radius:10px;padding:12px 14px;font-size:13.5px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.facture{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:36px 40px;margin:20px 0;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.facture input,.facture textarea{border:1px solid transparent;border-radius:6px;padding:4px 6px;font:inherit;color:inherit;background:transparent;width:100%;box-shadow:none}
+.facture input:hover,.facture textarea:hover{border-color:var(--border)}
+.facture input:focus,.facture textarea:focus{border-color:var(--blue);background:var(--white)}
+.facture textarea{resize:vertical;min-height:84px;line-height:1.5}
+.fac-entete{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:28px}
+.fac-emetteur{font-size:13px;line-height:1.6;color:#3A3F4B;max-width:320px}
+.fac-emetteur b{font-size:15px;color:var(--text)}
+.fac-titre{text-align:right;min-width:240px}
+.fac-titre h2{font-size:26px;letter-spacing:.08em;margin:0 0 10px;font-weight:600}
+.fac-meta{display:grid;grid-template-columns:auto 170px;gap:4px 8px;align-items:center;font-size:13px;color:var(--text2);justify-content:end}
+.fac-meta input{text-align:right;font-weight:600;color:var(--text)}
+.fac-dest{margin-left:auto;max-width:340px;font-size:13px;margin-bottom:24px}
+.fac-dest label,.fac-objet label{font-size:11.5px;color:var(--text2);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
+.fac-objet{margin-bottom:14px;font-size:14px;font-weight:600}
+.fac-table{width:100%;border-collapse:collapse;font-size:13px}
+.fac-table th{text-align:left;font-weight:500;color:var(--text2);font-size:12px;padding:8px 4px;border-bottom:1.5px solid var(--text)}
+.fac-table td{padding:3px 2px;border-bottom:1px solid var(--border);vertical-align:top}
+.fac-table td.num input{text-align:right;font-weight:600}
+.fac-suppr{border:none;background:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:6px}
+.fac-suppr:hover{color:#B42318;background:#FEF3F2}
+.fac-totaux{margin:18px 0 0 auto;width:300px;font-size:14px}
+.fac-totaux div{display:flex;justify-content:space-between;padding:6px 0}
+.fac-totaux .net{border-top:1.5px solid var(--text);font-weight:700;font-size:16px;padding-top:10px;margin-top:4px}
+.fac-pied{margin-top:28px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);line-height:1.6}
+.fac-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.fac-actions .btn-primary{width:auto;margin:0;padding:11px 18px}
+.fac-histo td .btn-sm{padding:5px 10px}
+@media (max-width:720px){
+  .facture{padding:20px 14px}
+  .fac-grid2{grid-template-columns:1fr}
+  .fac-table{min-width:720px}
+  .fac-table-wrap{overflow-x:auto}
+  .fac-totaux{width:100%}
+  .fac-titre{text-align:left}
+  .fac-meta{justify-content:start}
+}
+#app-version{position:fixed;bottom:6px;right:10px;font-size:11px;color:var(--text3);font-family:'Geist Mono Variable',ui-monospace,monospace;pointer-events:none;z-index:5}
 </style>
 </head>
 <body>
 
 <div id="login-screen">
   <div class="card">
-    <div class="card-head"><i class="ti ti-user-circle"></i>Espace agent</div>
+    <div class="card-head"><i class="ti ti-user-circle"></i>Espace agent <span style="font-weight:400;color:var(--text2);font-size:12.5px;margin-left:auto">EDL IDF — Expert en État des Lieux</span></div>
     <div class="card-body">
       <label>Ton adresse email</label>
       <input type="email" id="login-email" placeholder="jean.dupont@gmail.com" autocomplete="email">
@@ -210,27 +342,37 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
   <div class="header">
     <div class="logo-box">
       <div class="logo-icon">EDL</div>
-      <div style="font-size:13px;font-weight:700;color:var(--text2)">Espace agent</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2)">Espace agent <span style="font-weight:400">· EDL IDF, Expert en État des Lieux</span></div>
     </div>
     <button class="btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Déconnexion</button>
   </div>
 
   <div class="layout">
-    <div class="side-nav">
+    <nav class="side-nav" aria-label="Navigation de l'espace agent">
+      <div class="side-brand">
+        <svg viewBox="0 0 120 120" width="32" height="32" style="flex-shrink:0" aria-hidden="true"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
+        <div><div class="side-brand-nom">EDL IDF</div><div class="side-brand-accroche">Expert en État des Lieux</div><div class="side-brand-sous">Espace agent</div></div>
+      </div>
       <button class="nav-btn active" data-page="missions" onclick="allerAgentPage('missions')">
-        <i class="ti ti-calendar-event"></i><span class="nav-label"><b>Mes missions</b><small>Vos interventions prévues</small></span>
-      </button>
-      <button class="nav-btn" data-page="documents" onclick="allerAgentPage('documents')">
-        <i class="ti ti-file-text"></i><span class="nav-label"><b>Mes documents</b><small>Contrat & avenant</small></span>
+        <i class="ti ti-calendar-event"></i><span class="nav-label"><b>Mes missions</b></span>
       </button>
       <button class="nav-btn" data-page="historique" onclick="allerAgentPage('historique')">
-        <i class="ti ti-history"></i><span class="nav-label"><b>Historique</b><small>Missions réalisées</small></span>
+        <i class="ti ti-history"></i><span class="nav-label"><b>Historique</b></span>
       </button>
-      <button class="nav-btn" data-page="aide" onclick="allerAgentPage('aide')">
-        <i class="ti ti-help-circle"></i><span class="nav-label"><b>Aide & Tutos</b><small>Comment ça marche</small></span>
+      <button class="nav-btn" data-page="remuneration" onclick="allerAgentPage('remuneration')">
+        <i class="ti ti-coin-euro"></i><span class="nav-label"><b>Rémunération</b></span>
+      </button>
+      <button class="nav-btn" data-page="facturation" onclick="allerAgentPage('facturation')">
+        <i class="ti ti-file-invoice"></i><span class="nav-label"><b>Facturation</b></span>
+      </button>
+      <button class="nav-btn" data-page="documents" onclick="allerAgentPage('documents')">
+        <i class="ti ti-file-text"></i><span class="nav-label"><b>Mes documents</b></span>
       </button>
       <button class="nav-btn" data-page="compte" onclick="allerAgentPage('compte')">
-        <i class="ti ti-user-circle"></i><span class="nav-label"><b>Mon compte</b><small>Photo & informations</small></span>
+        <i class="ti ti-map-pin"></i><span class="nav-label"><b>Mon compte &amp; zones</b></span>
+      </button>
+      <button class="nav-btn" data-page="aide" onclick="allerAgentPage('aide')">
+        <i class="ti ti-help-circle"></i><span class="nav-label"><b>Aide</b></span>
       </button>
 
       <div class="side-nav-spacer"></div>
@@ -242,31 +384,41 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
           <span class="side-agent-email" id="sidenav-email"></span>
         </span>
       </button>
-    </div>
+      <button class="side-logout" onclick="doLogout()"><i class="ti ti-logout"></i> Déconnexion</button>
+    </nav>
 
     <div class="main">
 
       <div id="page-missions" class="page active">
-        <div class="welcome-banner">
-          <div class="welcome-decor"></div>
-          <div class="welcome-decor welcome-decor2"></div>
-          <h2 id="welcome-titre">Bonjour 👋</h2>
-          <p>Bienvenue dans votre espace agent. Suivez vos missions et gérez votre profil en toute simplicité.</p>
+        <div class="page-head">
+          <div class="page-kicker" id="date-du-jour"></div>
+          <h1 class="page-h1" id="welcome-titre">Bonjour</h1>
         </div>
-        <div class="card">
-          <div class="card-head"><i class="ti ti-chart-bar"></i>Mes statistiques</div>
-          <div class="card-body">
-            <div class="kpi-grid" id="kpi-grid"></div>
-            <div id="kpi-typologies" class="typo-chips"></div>
-          </div>
+        <section aria-labelledby="titre-stats" style="margin-bottom:32px">
+          <h2 class="section-h2" id="titre-stats">Mes statistiques</h2>
+          <div class="kpi-grid" id="kpi-grid"></div>
+          <div id="kpi-typologies" class="typo-chips"></div>
+        </section>
+        <section aria-labelledby="titre-missions">
+          <h2 class="section-h2" id="titre-missions">Mes missions</h2>
+          <div id="missions-list"></div>
+        </section>
+      </div>
+
+      <div id="page-remuneration" class="page">
+        <div class="page-head"><h1 class="page-h1">Rémunération</h1></div>
+        <div id="remuneration-contenu"><div class="empty">Chargement…</div></div>
+      </div>
+
+      <div id="page-facturation" class="page">
+        <div class="page-head"><h1 class="page-h1">Facturation</h1>
+          <p class="page-kicker" style="margin:8px 0 0">Ta facture mensuelle est pré-remplie avec tes missions réalisées (date, adresse, typologie, locataire) — tout reste modifiable avant l'envoi.</p>
         </div>
-        <div class="card">
-          <div class="card-head"><i class="ti ti-calendar-event"></i>Mes missions</div>
-          <div class="card-body" id="missions-list"></div>
-        </div>
+        <div id="facturation-contenu"><div class="empty">Chargement…</div></div>
       </div>
 
       <div id="page-documents" class="page">
+        <div class="page-head"><h1 class="page-h1">Mes documents</h1></div>
         <div class="card">
           <div class="card-head"><i class="ti ti-file-text"></i>Mes documents</div>
           <div class="card-body" id="documents-list"></div>
@@ -274,6 +426,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
       </div>
 
       <div id="page-historique" class="page">
+        <div class="page-head"><h1 class="page-h1">Historique</h1></div>
         <div class="card">
           <div class="card-head"><i class="ti ti-history"></i>Missions réalisées par mois</div>
           <div class="card-body" id="historique-list"></div>
@@ -281,6 +434,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
       </div>
 
       <div id="page-aide" class="page">
+        <div class="page-head"><h1 class="page-h1">Aide</h1></div>
         <div class="card">
           <div class="card-head"><i class="ti ti-help-circle"></i>Comment fonctionne ton espace</div>
           <div class="card-body">
@@ -288,6 +442,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
               <ol>
                 <li>Connecte-toi avec ton email — tu reçois un lien à usage unique, aucun mot de passe à retenir.</li>
                 <li><strong>Mes missions</strong> : tes états des lieux à venir, avec adresse, horaire, coordonnées du locataire et code d'accès.</li>
+                <li><strong>Facturation</strong> : complète tes informations juridiques dans « Mon compte », puis choisis le mois — la facture est pré-remplie, modifiable, téléchargeable en PDF et envoyée par email à EDL IDF en un clic (jamais aux agences clientes).</li>
                 <li><strong>Mes documents</strong> : ton contrat signé et un éventuel avenant, déposés par l'agence.</li>
                 <li><strong>Historique</strong> : tes missions déjà réalisées, regroupées mois par mois.</li>
               </ol>
@@ -317,6 +472,7 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
       </div>
 
       <div id="page-compte" class="page">
+        <div class="page-head"><h1 class="page-h1">Mon compte &amp; zones</h1></div>
         <div class="compte-layout">
           <div class="compte-main">
             <div class="card">
@@ -351,6 +507,31 @@ label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bot
                   </div>
                   <p class="compte-note" style="margin-top:6px">À renseigner vous-même — la sélection dans les suggestions évite les erreurs de saisie.</p>
                 </div>
+              </div>
+            </div>
+            <div class="card" id="carte-infos-legales">
+              <div class="card-head"><i class="ti ti-building"></i>Informations juridiques <span style="font-weight:400;color:var(--text2);font-size:13px">— reprises sur tes factures</span></div>
+              <div class="card-body">
+                <div class="fac-grid2">
+                  <div class="field"><label>Raison sociale / nom commercial</label><input id="leg-raison" placeholder="Jean Dupont EI"></div>
+                  <div class="field"><label>Statut</label><select id="leg-statut">
+                    <option value="">— Choisir —</option><option>Micro-entrepreneur</option><option>Entreprise individuelle</option><option>EURL</option><option>SASU</option><option>SARL</option><option>SAS</option><option>Autre</option>
+                  </select></div>
+                </div>
+                <div class="field"><label>Adresse de facturation</label><input id="leg-adresse" placeholder="12 rue de la Paix, 91000 Évry-Courcouronnes"></div>
+                <div class="fac-grid2">
+                  <div class="field"><label>SIRET</label><input id="leg-siret" placeholder="123 456 789 00012" inputmode="numeric"></div>
+                  <div class="field"><label>RCS / RM</label><input id="leg-rcs" placeholder="RCS Evry 123 456 789 — ou « Dispensé d'immatriculation »"></div>
+                  <div class="field"><label>TVA</label><select id="leg-regime" onchange="majChampTauxTva()">
+                    <option value="franchise">Franchise en base (TVA non applicable)</option><option value="assujetti">Assujetti à la TVA</option>
+                  </select></div>
+                  <div class="field" id="leg-taux-wrap"><label>Taux de TVA (%)</label><input id="leg-taux" type="number" min="0" max="30" step="0.1" value="20"></div>
+                  <div class="field"><label>N° TVA intracommunautaire</label><input id="leg-tva" placeholder="FR00123456789"></div>
+                  <div class="field"><label>IBAN</label><input id="leg-iban" placeholder="FR76 …"></div>
+                  <div class="field"><label>BIC</label><input id="leg-bic" placeholder="BNPAFRPP"></div>
+                </div>
+                <div class="field"><label>Mentions complémentaires</label><input id="leg-mentions" placeholder="Assurance RC Pro : … — police n° …"></div>
+                <button class="btn-sm" id="btn-save-legal" onclick="enregistrerInfosLegales()"><i class="ti ti-device-floppy"></i> Enregistrer</button>
               </div>
             </div>
           </div>
@@ -440,6 +621,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let _accessToken = '';
 let _missionsCache = [];
+let _remuneration = null; // calculée côté serveur (api/_lib/agent-remuneration.js)
 let _agentEmail = '';
 
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
@@ -469,6 +651,8 @@ async function showDashboard(email){
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-shell').style.display = 'block';
   _agentEmail = email;
+  const dateJour = document.getElementById('date-du-jour');
+  if(dateJour){ const t = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); dateJour.textContent = t.charAt(0).toUpperCase() + t.slice(1); }
   await chargerMesMissions();
 }
 
@@ -589,7 +773,12 @@ async function chargerMesMissions(){
     _missionsCache = data.missions || [];
     remplirCompte(data.agent || {});
     renderKpi(data.kpi);
+    _remuneration = data.remuneration || null;
     renderMissions(_missionsCache);
+    renderRemuneration(_remuneration);
+    _factures = Array.isArray(data.agent?.factures) ? data.agent.factures : [];
+    _destinataireFacture = data.destinataireFacture || {};
+    renderFacturation();
     renderDocuments(data.agent?.documents);
     renderHistorique(_missionsCache);
     appliquerCouleurMarque(data.couleurPrimaire);
@@ -626,7 +815,7 @@ function remplirCompte(agent){
   const nom = agent.nom || 'Mon espace';
   const prenom = extrairePrenom(nom);
 
-  document.getElementById('welcome-titre').textContent = 'Bonjour, ' + prenom + ' 👋';
+  document.getElementById('welcome-titre').textContent = 'Bonjour ' + prenom;
   document.getElementById('sidenav-nom').textContent = nom;
   document.getElementById('sidenav-email').textContent = _agentEmail;
   document.getElementById('compte-nom').textContent = nom;
@@ -636,6 +825,7 @@ function remplirCompte(agent){
   document.getElementById('compte-champ-adresse').value = agent.adresse || '';
   appliquerAvatar(agent.photoUrl, nom);
 
+  remplirInfosLegales(agent.infosLegales);
   renderBareme(agent.bareme);
   initZones(agent.secteurPrimaire, agent.secteurSecondaire, agent.zoneStatut, agent.zoneRefusMotif);
 }
@@ -988,24 +1178,499 @@ function renderKpi(kpi){
     : '';
 }
 
+// Zone de la mission (primaire / secondaire / hors zone) d'après le code
+// postal de l'adresse — affichée seulement quand les zones de l'agent ont
+// été validées par l'agence (sinon l'information pourrait être fausse).
+const LIBELLE_ZONE = { primaire:'Zone primaire', secondaire:'Zone secondaire', hors:'Hors zone' };
+function zoneMission(m){
+  if(zoneStatut !== 'valide' || !Object.keys(assignments).length) return '';
+  const cp = (String(m.adresse || '').match(/\b(\d{5})\b/) || [])[1];
+  if(!cp) return '';
+  return assignments[cp] || 'hors';
+}
 function carteMission(m){
   const cat = categorieEdl(m.type);
-  return `<div class="mission">
-    <div class="mission-top">
+  const d = m.date ? new Date(m.date) : null;
+  const jour = d ? d.toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' }) : 'Date';
+  const heure = d ? d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : 'à confirmer';
+  const zone = zoneMission(m);
+  const itineraire = m.adresse ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(m.adresse) : '';
+  const tel = String(m.locataireTel || '').replace(/[^\d+]/g, '');
+  return `<article class="mission">
+    <div class="mission-quand"><span>${esc(jour)}</span><b>${esc(heure)}</b></div>
+    <div class="mission-corps">
       <div class="mission-adresse">${esc(m.adresse) || '—'}</div>
-      <div class="mission-date">${esc(fmtDateHeure(m.date))}</div>
+      <div class="mission-meta">
+        <span class="badge badge-${cat}">${esc(LABEL_CATEGORIE[cat] || m.type)}</span>
+        <span class="badge badge-autre">${esc(LABEL_STATUT[m.statut] || m.statut || 'Planifiée')}</span>
+        ${zone ? `<span class="badge badge-zone-${zone}">${LIBELLE_ZONE[zone]}</span>` : ''}
+        ${montantAgentHTML(m)}
+      </div>
+      <div class="mission-details">
+        ${[m.bienType, m.bienTypo, m.bienMeuble].filter(Boolean).map(esc).join(' · ') || '—'}${m.superficie ? ' · ' + esc(m.superficie) + ' m²' : ''}
+        ${m.locataireNom ? '<br>Locataire : ' + esc(m.locataireNom) + (m.locataireTel ? ' · ' + esc(m.locataireTel) : '') : ''}
+        ${m.acces ? '<br>Accès : ' + esc(m.acces) : ''}
+        ${m.dureeEstimee ? '<br>Durée estimée : ' + esc(m.dureeEstimee) : ''}
+      </div>
     </div>
-    <div style="margin-bottom:6px">
-      <span class="badge badge-${cat}">${esc(LABEL_CATEGORIE[cat] || m.type)}</span>
-      <span class="badge badge-autre">${esc(LABEL_STATUT[m.statut] || m.statut || 'Planifiée')}</span>
+    <div class="mission-actions">
+      ${itineraire ? `<a class="btn-sm" href="${esc(itineraire)}" target="_blank" rel="noopener"><i class="ti ti-map-2"></i> Itinéraire</a>` : ''}
+      ${tel ? `<a class="btn-sm" href="tel:${esc(tel)}"><i class="ti ti-phone"></i> Locataire</a>` : ''}
     </div>
-    <div class="mission-meta">
-      ${[m.bienType, m.bienTypo, m.bienMeuble].filter(Boolean).map(esc).join(' · ') || '—'}${m.superficie ? ' · ' + esc(m.superficie) + ' m²' : ''}<br>
-      ${m.locataireNom ? '👤 ' + esc(m.locataireNom) + (m.locataireTel ? ' · ' + esc(m.locataireTel) : '') + '<br>' : ''}
-      ${m.acces ? '🔑 ' + esc(m.acces) + '<br>' : ''}
-      ${m.dureeEstimee ? '⏱️ Durée estimée : ' + esc(m.dureeEstimee) : ''}
+  </article>`;
+}
+
+// ─── Rémunération : part de l'agent selon la référence de sa fiche ───
+// (montants calculés côté serveur, jamais le prix facturé au client)
+function fmtEuros(n, unite){
+  if(n === null || n === undefined) return '—';
+  const u = unite === 'net' ? '€ net' : '€ ' + (unite || 'HT');
+  return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' ' + u;
+}
+function montantAgentHTML(m){
+  if(!_remuneration || !_remuneration.reference || !_remuneration.reference.configuree) return '';
+  const l = (_remuneration.lignes || []).find(x => x.id === m.id);
+  if(!l || l.montant === null) return '';
+  return `<span class="badge badge-remu">${esc(fmtEuros(l.montant, _remuneration.reference.unite))}</span>`;
+}
+const LIBELLE_TYPE_REMU = { entrant:'EDL entrant', sortant:'EDL sortant', simultane:'Sortant + entrant', autre:'Autre (pré-état des lieux…)' };
+function renderRemuneration(r){
+  const box = document.getElementById('remuneration-contenu');
+  if(!box) return;
+  if(!r || !r.reference || !r.reference.configuree){
+    box.innerHTML = '<div class="card"><div class="card-body"><div class="empty">L’agence n’a pas encore renseigné votre grille de rémunération. Elle apparaîtra ici dès qu’elle sera saisie dans votre fiche.</div></div></div>';
+    return;
+  }
+  const ref = r.reference, u = ref.unite;
+  const mc = r.moisCourant || {};
+  const libMois = cle => { const [a, m] = String(cle).split('-').map(Number); const t = new Date(a, m - 1, 1).toLocaleDateString('fr-FR', { month:'long', year:'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const cellule = v => v === null || v === undefined ? '<span style="color:var(--text3);font-weight:400">—</span>' : esc(fmtEuros(v, u));
+  const grille = ref.mode === 'pourcentage'
+    ? `<div class="remu-ligne"><span>Part de chaque mission</span><b>${esc(String(ref.pourcentage).replace('.', ','))} % du montant HT</b></div>`
+    : ref.mode === 'typologie'
+    ? `<table class="remu-table remu-typo" style="min-width:0">
+        <thead><tr><th>Bien</th><th style="text-align:right">Location nue</th><th style="text-align:right">Location meublée</th></tr></thead>
+        <tbody>${(ref.lignes || []).map(l => `<tr><td><span style="font-weight:500">${esc(l.label || l.criteres)}</span>${l.label && l.criteres !== l.label ? `<br><span style="font-size:12px;color:var(--text2)">${esc(l.criteres)}</span>` : ''}</td><td style="text-align:right;font-weight:600">${cellule(l.nue)}</td><td style="text-align:right;font-weight:600">${cellule(l.meublee === null ? l.nue : l.meublee)}</td></tr>`).join('')}</tbody>
+      </table>
+      <div class="remu-ligne" style="border-top:1px solid var(--border);margin-top:4px"><span>Sortant + entrant</span><b>${ref.coefSortantEntrant === 1 ? 'une seule prestation (tarif de la typologie)' : esc(String(ref.coefSortantEntrant).replace('.', ',')) + ' prestations'}</b></div>
+      <div class="remu-ligne"><span>Autre / pré-état des lieux</span><b>${cellule(ref.typoAutre)}</b></div>`
+    : Object.keys(LIBELLE_TYPE_REMU).map(k => `<div class="remu-ligne"><span>${esc(LIBELLE_TYPE_REMU[k])}</span><b>${ref.parType[k] === null ? '<span style="color:var(--text3);font-weight:400">Non défini</span>' : esc(fmtEuros(ref.parType[k], u))}</b></div>`).join('');
+  const mois = (r.parMois || []);
+  const max = Math.max(1, ...mois.map(x => x.total));
+  const recentes = (r.lignes || []).slice(0, 12);
+  const etatHTML = l => l.etat === 'prevue' ? '<span class="badge badge-autre">Prévue</span>'
+    : l.payee ? `<span class="badge badge-entrant">Payée${l.payeeLe ? ' le ' + esc(new Date(l.payeeLe).toLocaleDateString('fr-FR')) : ''}</span>`
+    : '<span class="badge badge-zone-hors">À percevoir</span>';
+  box.innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:28px">
+      <div class="kpi-tile"><div class="n">${esc(fmtEuros(mc.acquis, u))}</div><div class="l">Acquis en ${esc(libMois(mc.mois).toLowerCase())}</div></div>
+      <div class="kpi-tile"><div class="n">${esc(fmtEuros(mc.prevu, u))}</div><div class="l">Prévu (missions planifiées)</div></div>
+      <div class="kpi-tile"><div class="n">${esc(fmtEuros((r.paiements || {}).resteAPayer || 0, u))}</div><div class="l">Reste à percevoir (${(r.paiements || {}).nbAPayer || 0} mission${((r.paiements || {}).nbAPayer || 0) > 1 ? 's' : ''})</div></div>
+      <div class="kpi-tile"><div class="n">${esc(fmtEuros(mc.paye || 0, u))}</div><div class="l">Payé ce mois-ci</div></div>
     </div>
-  </div>`;
+    <div class="remu-grid">
+      <section class="card" aria-labelledby="remu-grille-titre">
+        <div class="card-head" id="remu-grille-titre"><i class="ti ti-file-dollar"></i>Ma grille de rémunération</div>
+        <div class="card-body">
+          ${grille}
+          ${['primaire','secondaire','hors'].some(z => ref.fraisZone && ref.fraisZone[z] !== null) ? `<div style="margin-top:14px;font-weight:600;font-size:13.5px">Frais de déplacement</div>
+            ${['primaire','secondaire','hors'].map(z => `<div class="remu-ligne"><span>${({primaire:'Zone primaire', secondaire:'Zone secondaire', hors:'Hors zone'})[z]}</span><b>${cellule(ref.fraisZone[z])}</b></div>`).join('')}` : ''}
+          ${ref.deplacementInfructueux !== null && ref.deplacementInfructueux !== undefined ? `<div class="remu-ligne" style="border-top:1px solid var(--border)"><span>Déplacement infructueux</span><b>${cellule(ref.deplacementInfructueux)}</b></div>` : ''}
+          <p class="compte-note" style="margin-top:12px">Référence fixée par l'agence dans votre fiche — lecture seule.${ref.note ? '<br>' + esc(ref.note) : ''}</p>
+          ${r.nonCouvertes ? `<p class="compte-note" style="color:var(--amber)">${r.nonCouvertes} mission${r.nonCouvertes > 1 ? 's' : ''} sans tarif dans votre grille : rapprochez-vous de l'agence.</p>` : ''}
+        </div>
+      </section>
+      <section class="card" aria-labelledby="remu-mois-titre">
+        <div class="card-head" id="remu-mois-titre"><i class="ti ti-calendar-stats"></i>Par mois (missions réalisées)</div>
+        <div class="card-body">
+          ${mois.length ? mois.map(x => `<div class="remu-mois">
+            <span class="remu-mois-lib">${esc(libMois(x.mois))}</span>
+            <span class="remu-barre"><span style="width:${Math.round(x.total / max * 100)}%"></span></span>
+            <span class="remu-mois-nb">${x.nb} mission${x.nb > 1 ? 's' : ''}${x.paye >= x.total && x.total > 0 ? ' · payé' : x.paye ? ' · ' + esc(fmtEuros(x.paye, u)) + ' payé' : ''}</span>
+            <b>${esc(fmtEuros(x.total, u))}</b>
+          </div>`).join('') : '<div class="empty">Aucune mission réalisée pour l’instant.</div>'}
+        </div>
+      </section>
+    </div>
+    <section class="card" aria-labelledby="remu-detail-titre">
+      <div class="card-head" id="remu-detail-titre"><i class="ti ti-list-details"></i>Détail des dernières missions</div>
+      <div class="card-body" style="overflow-x:auto">
+        <table class="remu-table">
+          <thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>Bien</th><th>État</th><th style="text-align:right">Montant</th></tr></thead>
+          <tbody>${recentes.map(l => `<tr>
+            <td>${esc(l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—')}</td>
+            <td>${esc(l.adresse || '—')}</td>
+            <td>${esc(l.type || '—')}</td>
+            <td>${esc(l.ligneGrille || (l.typologie && l.typologie !== 'Non renseignée' ? l.typologie : '—'))}</td>
+            <td>${etatHTML(l)}</td>
+            <td style="text-align:right;font-weight:600">${esc(fmtEuros(l.montant, u))}${l.frais ? `<div style="font-size:11.5px;font-weight:400;color:var(--text2)">dont ${esc(fmtEuros(l.frais, u))} dépl.</div>` : ''}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </section>`;
+}
+
+// ─── Facturation (l'agent génère, édite et envoie sa facture) ──────────
+// Pré-remplie avec les missions ACQUISES du mois choisi (calcul serveur :
+// _remuneration.lignes) — date, adresse, typologie, nom du locataire,
+// montant (frais de déplacement compris). Tout reste modifiable : numéro,
+// date, destinataire, lignes (ajout / suppression, ex. formation à déduire).
+// Le PDF est produit dans le navigateur (jsPDF, chargé à la demande) puis
+// téléchargé ou envoyé au titulaire du CRM (EDL IDF — jamais aux agences
+// clientes) par api/agent-facture-envoyer.js, qui
+// recalcule les totaux et garde l'historique sur la fiche agent.
+let _infosLegales = {};
+let _factures = [];
+let _destinataireFacture = {};
+let _facture = null;
+const MENTION_FRANCHISE_TVA = 'TVA non applicable, art. 293 B du CGI';
+const CHAMPS_LEGAUX = { raisonSociale:'leg-raison', statut:'leg-statut', adresse:'leg-adresse', siret:'leg-siret', rcs:'leg-rcs', regimeTva:'leg-regime', tauxTva:'leg-taux', tvaIntra:'leg-tva', iban:'leg-iban', bic:'leg-bic', mentions:'leg-mentions' };
+
+function remplirInfosLegales(infos){
+  _infosLegales = infos || {};
+  Object.entries(CHAMPS_LEGAUX).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if(el) el.value = _infosLegales[k] !== undefined && _infosLegales[k] !== null && _infosLegales[k] !== '' ? _infosLegales[k] : (k === 'regimeTva' ? 'franchise' : k === 'tauxTva' ? 20 : '');
+  });
+  majChampTauxTva();
+}
+function majChampTauxTva(){
+  const wrap = document.getElementById('leg-taux-wrap');
+  const regime = document.getElementById('leg-regime');
+  if(wrap && regime) wrap.style.display = regime.value === 'assujetti' ? '' : 'none';
+}
+function champsLegauxManquants(i){
+  const m = [];
+  if(!(i && i.raisonSociale)) m.push('raison sociale');
+  if(!(i && i.adresse)) m.push('adresse');
+  if(!(i && String(i.siret || '').replace(/\s/g, ''))) m.push('SIRET');
+  return m;
+}
+async function enregistrerInfosLegales(){
+  const infosLegales = {};
+  Object.entries(CHAMPS_LEGAUX).forEach(([k, id]) => { const el = document.getElementById(id); infosLegales[k] = el ? el.value.trim() : ''; });
+  infosLegales.tauxTva = Number(infosLegales.tauxTva);
+  const btn = document.getElementById('btn-save-legal');
+  if(btn) btn.disabled = true;
+  try{
+    const resp = await fetch('/api/agent-infos-legales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _accessToken },
+      body: JSON.stringify({ infosLegales }),
+    });
+    const data = await resp.json();
+    if(!resp.ok){ showToast('❌ ' + (data.error || 'Erreur lors de l\'enregistrement')); return; }
+    remplirInfosLegales(data.infosLegales);
+    renderFacturation();
+    showToast('✅ Informations juridiques enregistrées');
+  }catch(e){
+    showToast('❌ Erreur réseau, réessaie.');
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
+const cleMoisFac = d => String(d || '').slice(0, 7);
+function libelleMoisFac(cle){
+  const [a, m] = String(cle).split('-').map(Number);
+  if(!a || !m) return cle;
+  const t = new Date(a, m - 1, 1).toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+const jourIso = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+const arrondiFac = n => Math.round((Number(n) || 0) * 100) / 100;
+const eurosFac = n => (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+
+// Numéro proposé : suite de la dernière facture de l'année (F2026-001, …)
+function prochainNumeroFacture(factures, annee){
+  let max = 0;
+  (factures || []).forEach(f => {
+    const m = String(f && f.numero || '').match(new RegExp('^F' + annee + '-(\\d+)$'));
+    if(m) max = Math.max(max, Number(m[1]));
+  });
+  return 'F' + annee + '-' + String(max + 1).padStart(3, '0');
+}
+
+function moisFacturables(){
+  return ((_remuneration && _remuneration.parMois) || []).filter(x => x.nb > 0).map(x => x.mois).sort().reverse();
+}
+
+function lignesFactureDuMois(mois){
+  return ((_remuneration && _remuneration.lignes) || [])
+    .filter(l => l.etat === 'acquise' && l.montant !== null && cleMoisFac(l.date) === mois)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map(l => ({
+      date: cleMoisFac(l.date) ? String(l.date).slice(0, 10) : '',
+      adresse: l.adresse || '',
+      typologie: l.infructueux ? '—' : (l.ligneGrille || [l.bien, l.typologie !== 'Non renseignée' ? l.typologie : ''].filter(Boolean).join(' ')),
+      prestation: l.infructueux ? 'Déplacement infructueux' : (l.type || 'État des lieux') + (l.frais ? ' + dépl.' : ''),
+      locataire: l.locataire || '',
+      montant: l.montant,
+    }));
+}
+
+function texteDestinataire(d){
+  return [d.nom, d.adresse, d.rcs, d.siret ? 'SIRET ' + d.siret : '', d.tvaIntra ? 'TVA ' + d.tvaIntra : ''].filter(Boolean).join('\n');
+}
+
+function preparerFacture(mois){
+  const deja = _factures.find(f => f.mois === mois);
+  _facture = {
+    numero: prochainNumeroFacture(_factures, new Date().getFullYear()),
+    date: jourIso(),
+    mois,
+    objet: 'Prestations d’états des lieux — ' + libelleMoisFac(mois),
+    destinataire: texteDestinataire(_destinataireFacture || {}),
+    lignes: lignesFactureDuMois(mois),
+    note: '',
+    dejaEnvoyee: deja ? deja.numero : '',
+  };
+  renderFacturation();
+}
+
+function totauxFacture(f){
+  const totalHT = arrondiFac((f.lignes || []).reduce((s, l) => s + (Number(l.montant) || 0), 0));
+  const taux = _infosLegales.regimeTva === 'assujetti' ? Number(_infosLegales.tauxTva) || 0 : 0;
+  const tva = arrondiFac(totalHT * taux / 100);
+  return { totalHT, taux, tva, totalTTC: arrondiFac(totalHT + tva) };
+}
+
+function majChampFacture(champ, valeur){ if(_facture){ _facture[champ] = valeur; } }
+function majLigneFacture(i, champ, valeur){
+  if(!_facture || !_facture.lignes[i]) return;
+  _facture.lignes[i][champ] = champ === 'montant' ? arrondiFac(String(valeur).replace(',', '.')) : valeur;
+  if(champ === 'montant') majTotauxFacture();
+}
+function ajouterLigneFacture(){
+  if(!_facture) return;
+  _facture.lignes.push({ date: jourIso(), adresse: '', typologie: '', prestation: '', locataire: '', montant: 0 });
+  renderFacturation();
+}
+function supprimerLigneFacture(i){
+  if(!_facture) return;
+  _facture.lignes.splice(i, 1);
+  renderFacturation();
+}
+function majTotauxFacture(){
+  const box = document.getElementById('fac-totaux');
+  if(box && _facture) box.innerHTML = htmlTotauxFacture(totauxFacture(_facture));
+}
+function htmlTotauxFacture(t){
+  return `<div><span>Total HT</span><b>${esc(eurosFac(t.totalHT))}</b></div>`
+    + (t.taux ? `<div><span>TVA ${esc(String(t.taux).replace('.', ','))} %</span><b>${esc(eurosFac(t.tva))}</b></div>` : '')
+    + `<div class="net"><span>Net à payer${t.taux ? ' TTC' : ''}</span><span>${esc(eurosFac(t.totalTTC))}</span></div>`;
+}
+
+function lignesEmetteur(i){
+  return [
+    i.statut ? i.statut : '',
+    i.adresse || '',
+    i.siret ? 'SIRET ' + i.siret : '',
+    i.rcs || '',
+    i.tvaIntra ? 'TVA ' + i.tvaIntra : '',
+    _agentEmail || '',
+  ].filter(Boolean);
+}
+function piedFacture(i, t){
+  return [
+    t.taux ? '' : MENTION_FRANCHISE_TVA,
+    'Paiement à 30 jours par virement — pas d’escompte pour paiement anticipé. Pénalités de retard : 3 fois le taux d’intérêt légal ; indemnité forfaitaire pour frais de recouvrement : 40 €.',
+    i.iban ? 'IBAN ' + i.iban + (i.bic ? ' — BIC ' + i.bic : '') : '',
+    i.mentions || '',
+  ].filter(Boolean);
+}
+
+function renderFacturation(){
+  const box = document.getElementById('facturation-contenu');
+  if(!box) return;
+  const manquants = champsLegauxManquants(_infosLegales);
+  const moisDispo = moisFacturables();
+  const alerte = manquants.length ? `<div class="fac-alerte"><i class="ti ti-alert-triangle"></i><span>Pour envoyer une facture, complète tes informations juridiques : <b>${esc(manquants.join(', '))}</b>.</span><button class="btn-sm" style="margin-left:auto" onclick="allerAgentPage('compte');document.getElementById('carte-infos-legales')?.scrollIntoView({behavior:'smooth'})">Compléter</button></div>` : '';
+  const choix = `<section class="card"><div class="card-body fac-outils">
+      <div class="field"><label>Mois à facturer</label><select id="fac-mois">${moisDispo.length ? moisDispo.map(m => `<option value="${esc(m)}"${_facture && _facture.mois === m ? ' selected' : ''}>${esc(libelleMoisFac(m))}</option>`).join('') : '<option value="">Aucune mission réalisée</option>'}</select></div>
+      <button class="btn-sm" style="height:42px" onclick="preparerFacture(document.getElementById('fac-mois').value)"${moisDispo.length ? '' : ' disabled'}><i class="ti ti-file-plus"></i> ${_facture ? 'Repartir des missions du mois' : 'Préparer la facture'}</button>
+    </div></section>`;
+  let editeur = '';
+  if(_facture){
+    const f = _facture, i = _infosLegales, t = totauxFacture(f);
+    editeur = `<div class="facture" id="facture-editeur">
+      ${f.dejaEnvoyee ? `<div class="fac-alerte" style="margin-bottom:20px"><i class="ti ti-info-circle"></i>Une facture (n° ${esc(f.dejaEnvoyee)}) a déjà été envoyée pour ce mois.</div>` : ''}
+      <div class="fac-entete">
+        <div class="fac-emetteur"><b>${esc(i.raisonSociale || 'Ta raison sociale')}</b><br>${lignesEmetteur(i).map(esc).join('<br>')}</div>
+        <div class="fac-titre"><h2>FACTURE</h2>
+          <div class="fac-meta">
+            <span>N°</span><input id="fac-numero" value="${esc(f.numero)}" oninput="majChampFacture('numero', this.value)" aria-label="Numéro de facture">
+            <span>Date</span><input id="fac-date" type="date" value="${esc(f.date)}" oninput="majChampFacture('date', this.value)" aria-label="Date de la facture">
+          </div>
+        </div>
+      </div>
+      <div class="fac-dest"><label for="fac-destinataire">Facturé à</label><textarea id="fac-destinataire" oninput="majChampFacture('destinataire', this.value)">${esc(f.destinataire)}</textarea></div>
+      <div class="fac-objet"><label for="fac-objet">Objet</label><input id="fac-objet" value="${esc(f.objet)}" oninput="majChampFacture('objet', this.value)"></div>
+      <div class="fac-table-wrap"><table class="fac-table">
+        <thead><tr><th style="width:118px">Date</th><th>Adresse</th><th style="width:150px">Typologie</th><th style="width:150px">Prestation</th><th style="width:140px">Locataire</th><th style="width:96px;text-align:right">Montant HT</th><th style="width:34px"></th></tr></thead>
+        <tbody>${f.lignes.map((l, n) => `<tr>
+          <td><input type="date" value="${esc(l.date)}" oninput="majLigneFacture(${n}, 'date', this.value)" aria-label="Date"></td>
+          <td><input value="${esc(l.adresse)}" oninput="majLigneFacture(${n}, 'adresse', this.value)" aria-label="Adresse"></td>
+          <td><input value="${esc(l.typologie)}" oninput="majLigneFacture(${n}, 'typologie', this.value)" aria-label="Typologie"></td>
+          <td><input value="${esc(l.prestation)}" oninput="majLigneFacture(${n}, 'prestation', this.value)" aria-label="Prestation"></td>
+          <td><input value="${esc(l.locataire)}" oninput="majLigneFacture(${n}, 'locataire', this.value)" aria-label="Nom du locataire"></td>
+          <td class="num"><input inputmode="decimal" value="${esc(String(l.montant).replace('.', ','))}" oninput="majLigneFacture(${n}, 'montant', this.value)" aria-label="Montant HT"></td>
+          <td><button class="fac-suppr" title="Retirer la ligne" onclick="supprimerLigneFacture(${n})"><i class="ti ti-x"></i></button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+      <button class="btn-sm" style="margin-top:12px" onclick="ajouterLigneFacture()"><i class="ti ti-plus"></i> Ajouter une ligne</button>
+      <div class="fac-totaux" id="fac-totaux">${htmlTotauxFacture(t)}</div>
+      <div class="fac-pied">${piedFacture(i, t).map(esc).join('<br>')}</div>
+    </div>
+    <section class="card"><div class="card-body">
+      <div class="field"><label for="fac-note">Message joint à l'email (facultatif)</label><input id="fac-note" value="${esc(f.note)}" oninput="majChampFacture('note', this.value)" placeholder="Bonjour, voici ma facture du mois…"></div>
+      <div class="fac-actions">
+        <span class="compte-note" style="margin-right:auto">Envoyée à ${esc((_destinataireFacture && _destinataireFacture.nom) || 'EDL IDF')} (ton donneur d’ordre), avec toi en copie — jamais aux agences clientes.</span>
+        <button class="btn-sm" style="height:42px" onclick="telechargerFacturePdf()"><i class="ti ti-download"></i> Télécharger le PDF</button>
+        <button class="btn-primary" id="btn-envoyer-facture" onclick="envoyerFacture()"${manquants.length ? ' disabled title="Informations juridiques incomplètes"' : ''}><i class="ti ti-send"></i> Envoyer par email</button>
+      </div>
+    </div></section>`;
+  }
+  const histo = `<section class="card"><div class="card-head"><i class="ti ti-archive"></i>Mes factures envoyées</div><div class="card-body" style="overflow-x:auto">${_factures.length
+    ? `<table class="remu-table fac-histo"><thead><tr><th>N°</th><th>Mois</th><th>Missions</th><th style="text-align:right">Montant HT</th><th>Envoyée le</th><th></th></tr></thead><tbody>${_factures.map(x => `<tr>
+        <td style="font-weight:600">${esc(x.numero)}</td><td>${esc(x.mois ? libelleMoisFac(x.mois) : '—')}</td><td>${esc(x.nbLignes || 0)}</td>
+        <td style="text-align:right;font-weight:600">${esc(eurosFac(x.totalHT))}</td>
+        <td>${esc(x.envoyeeLe ? new Date(x.envoyeeLe).toLocaleDateString('fr-FR') : '—')}</td>
+        <td style="text-align:right"><button class="btn-sm" onclick="telechargerFactureEnvoyee('${esc(x.numero)}')"><i class="ti ti-download"></i> PDF</button></td>
+      </tr>`).join('')}</tbody></table>`
+    : '<div class="empty">Aucune facture envoyée pour l’instant.</div>'}</div></section>`;
+  box.innerHTML = alerte + choix + editeur + histo;
+}
+
+// jsPDF n'est chargé qu'au premier PDF (cdnjs) — l'espace agent reste léger.
+function chargerJsPdf(){
+  if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  return new Promise((ok, ko) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    sc.onload = () => window.jspdf ? ok(window.jspdf.jsPDF) : ko(new Error('jsPDF indisponible'));
+    sc.onerror = () => ko(new Error('Chargement de jsPDF impossible'));
+    document.head.appendChild(sc);
+  });
+}
+
+// Les polices standard du PDF ne connaissent pas les espaces fines
+// insécables de toLocaleString('fr-FR') : on les remplace.
+const pdfTxt = v => String(v == null ? '' : v).replace(/[  ]/g, ' ').replace(/[’]/g, "'");
+
+async function genererPdfFacture(){
+  const JsPDF = await chargerJsPdf();
+  const f = _facture, i = _infosLegales, t = totauxFacture(f);
+  const doc = new JsPDF({ unit: 'mm', format: 'a4' });
+  const G = 16, D = 194;
+  let y = 20;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+  doc.text(pdfTxt(i.raisonSociale || ''), G, y);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  lignesEmetteur(i).forEach((l, n) => doc.text(pdfTxt(l), G, y + 6 + n * 4.5));
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+  doc.text('FACTURE', D, y, { align: 'right' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  doc.text(pdfTxt('N° ' + f.numero), D, y + 8, { align: 'right' });
+  doc.text(pdfTxt('Date : ' + (f.date ? new Date(f.date).toLocaleDateString('fr-FR') : '')), D, y + 13, { align: 'right' });
+  if(f.date){
+    const ech = new Date(f.date); ech.setDate(ech.getDate() + 30);
+    doc.text(pdfTxt('Échéance : ' + ech.toLocaleDateString('fr-FR')), D, y + 18, { align: 'right' });
+  }
+  y = 56;
+  doc.setFontSize(8); doc.setTextColor(110); doc.text('FACTURÉ À', 120, y); doc.setTextColor(0);
+  doc.setFontSize(10);
+  String(f.destinataire || '').split('\n').forEach((l, n) => { doc.setFont('helvetica', n === 0 ? 'bold' : 'normal'); doc.text(pdfTxt(l), 120, y + 5 + n * 4.8); });
+  y = Math.max(y + 10 + String(f.destinataire || '').split('\n').length * 4.8, 84);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+  doc.text(pdfTxt(f.objet || ''), G, y); y += 8;
+  const cols = [ { t:'Date', x:G, w:18 }, { t:'Adresse', x:G + 19, w:58 }, { t:'Typologie', x:G + 78, w:27 }, { t:'Prestation', x:G + 106, w:30 }, { t:'Locataire', x:G + 137, w:22 } ];
+  const entete = () => {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5);
+    cols.forEach(c => doc.text(c.t, c.x, y));
+    doc.text('Montant HT', D, y, { align: 'right' });
+    doc.setLineWidth(0.4); doc.line(G, y + 2, D, y + 2); y += 7;
+    doc.setFont('helvetica', 'normal');
+  };
+  entete();
+  f.lignes.forEach(l => {
+    const cellules = [
+      l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '', l.adresse, l.typologie, l.prestation, l.locataire,
+    ].map((v, n) => doc.splitTextToSize(pdfTxt(v), cols[n].w));
+    const h = Math.max(...cellules.map(c => c.length)) * 3.8;
+    if(y + h > 262){ doc.addPage(); y = 20; entete(); }
+    cellules.forEach((c, n) => doc.text(c, cols[n].x, y));
+    doc.text(pdfTxt(eurosFac(l.montant)), D, y, { align: 'right' });
+    y += h + 1.5;
+    doc.setDrawColor(225); doc.setLineWidth(0.2); doc.line(G, y - 2.5, D, y - 2.5); doc.setDrawColor(0);
+  });
+  if(y > 240){ doc.addPage(); y = 20; }
+  y += 4; doc.setFontSize(10);
+  const ligneTotal = (lib, val, gras) => { doc.setFont('helvetica', gras ? 'bold' : 'normal'); doc.text(pdfTxt(lib), 130, y); doc.text(pdfTxt(val), D, y, { align: 'right' }); y += 6; };
+  ligneTotal('Total HT', eurosFac(t.totalHT));
+  if(t.taux) ligneTotal('TVA ' + String(t.taux).replace('.', ',') + ' %', eurosFac(t.tva));
+  doc.setLineWidth(0.4); doc.line(130, y - 3.5, D, y - 3.5);
+  ligneTotal('Net à payer' + (t.taux ? ' TTC' : ''), eurosFac(t.totalTTC), true);
+  y = Math.max(y + 8, 250);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(90);
+  piedFacture(i, t).forEach(l => { const lignes = doc.splitTextToSize(pdfTxt(l), D - G); if(y + lignes.length * 3.6 > 290){ doc.addPage(); y = 20; } doc.text(lignes, G, y); y += lignes.length * 3.6 + 1; });
+  return doc;
+}
+
+function nomFichierFactureAgent(numero){
+  const base = String(numero || 'facture').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '');
+  return 'Facture-' + (base || 'sans-numero') + '.pdf';
+}
+
+async function telechargerFacturePdf(){
+  if(!_facture) return;
+  try{
+    const doc = await genererPdfFacture();
+    doc.save(nomFichierFactureAgent(_facture.numero));
+  }catch(e){ showToast('❌ ' + (e.message || 'PDF impossible')); }
+}
+
+async function envoyerFacture(){
+  if(!_facture) return;
+  if(!_facture.numero.trim()){ showToast('❌ Renseigne un numéro de facture'); return; }
+  if(!_facture.lignes.length){ showToast('❌ La facture ne contient aucune ligne'); return; }
+  const btn = document.getElementById('btn-envoyer-facture');
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Envoi…'; }
+  try{
+    const doc = await genererPdfFacture();
+    const pdfBase64 = doc.output('datauristring').split(',')[1];
+    // Même plafond que le serveur (api/agent-facture-envoyer.js).
+    if(pdfBase64.length > 4 * 1024 * 1024){ showToast('❌ Facture trop volumineuse : réduisez le nombre de lignes ou envoyez-la en deux fois.'); return; }
+    const resp = await fetch('/api/agent-facture-envoyer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _accessToken },
+      body: JSON.stringify({ facture: _facture, pdfBase64 }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if(!resp.ok){ showToast('❌ ' + (data.error || (resp.status === 413 ? 'Facture trop volumineuse' : 'Envoi impossible'))); return; }
+    if(Array.isArray(data.factures)) _factures = data.factures;
+    _facture = null;
+    renderFacturation();
+    showToast('✅ Facture envoyée à ' + ((_destinataireFacture && _destinataireFacture.nom) || 'EDL IDF'));
+  }catch(e){
+    showToast('❌ ' + (e.message || 'Erreur réseau, réessaie.'));
+  }finally{
+    const b = document.getElementById('btn-envoyer-facture');
+    if(b){ b.disabled = false; b.innerHTML = '<i class="ti ti-send"></i> Envoyer par email'; }
+  }
+}
+
+async function telechargerFactureEnvoyee(numero){
+  try{
+    const resp = await fetch('/api/agent-facture-download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _accessToken },
+      body: JSON.stringify({ numero }),
+    });
+    const data = await resp.json();
+    if(!resp.ok){ showToast('❌ ' + (data.error || 'Téléchargement impossible')); return; }
+    window.open(data.url, '_blank', 'noopener');
+  }catch(e){ showToast('❌ Erreur réseau, réessaie.'); }
 }
 
 function renderMissions(missions){
@@ -1075,6 +1740,19 @@ function renderHistorique(missions){
     </div>`;
   }).join('');
 }
+</script>
+<!-- Version affichée : APP_VERSION (aligné sur js/app-core.js) + commit déployé -->
+<div id="app-version"></div>
+<script>
+(async function afficherVersionAgent(){
+  const APP_VERSION = '2.0.0-beta.24';
+  const el = document.getElementById('app-version');
+  if(el) el.textContent = 'v' + APP_VERSION;
+  try {
+    const data = await (await fetch('/api/version')).json();
+    if(el) el.textContent = ['v' + APP_VERSION, data.env && data.env !== 'production' ? data.env : '', data.sha || ''].filter(Boolean).join(' · ');
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>

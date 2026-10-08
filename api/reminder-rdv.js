@@ -232,6 +232,9 @@ export default async function handler(req) {
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
             sender: { name: IDENT.nom, email: IDENT.email },
+            // Tag de l'abonné : le suivi des emails (api/brevo-tracking.js) ne
+            // remonte que les emails portant « sub_<id> ».
+            ...(row.user_id ? { tags: ['sub_' + row.user_id] } : {}),
             to: [{ email: m.locataireEmail, name: salutation || locNom }],
             replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
             subject: `⏰ Rappel — Votre état des lieux demain à ${heureStr} — ${m.adresse}`,
@@ -319,6 +322,9 @@ export default async function handler(req) {
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
             sender: { name: IDENT.nom, email: IDENT.email },
+            // Tag de l'abonné : le suivi des emails (api/brevo-tracking.js) ne
+            // remonte que les emails portant « sub_<id> ».
+            ...(row.user_id ? { tags: ['sub_' + row.user_id] } : {}),
             to: [{ email: dest.email, name: salutation || locNom }],
             replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
             subject: '⭐ Comment s\'est passé votre état des lieux ?',
@@ -402,6 +408,9 @@ export default async function handler(req) {
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
             sender: { name: IDENT.nom, email: IDENT.email },
+            // Tag de l'abonné : le suivi des emails (api/brevo-tracking.js) ne
+            // remonte que les emails portant « sub_<id> ».
+            ...(row.user_id ? { tags: ['sub_' + row.user_id] } : {}),
             to: [{ email: dest.email, name: salutation || locNom }],
             replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
             subject: '⭐ Votre avis compte pour nous',

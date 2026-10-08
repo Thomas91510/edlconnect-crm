@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { escapeIlike } from './_lib/ilike.js';
+import { statutEspace, MESSAGE_ESPACE_INACTIF } from './_lib/espace-agence.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -65,6 +66,18 @@ export default async function handler(req) {
       if (clientEmail) email = clientEmail;
     }
 
+    // Espace extranet non activé (CRM › fiche client) : accès refusé
+    // (api/_lib/espace-agence.js). L'administrateur n'est jamais concerné.
+    if (!ADMIN_EMAILS.includes(String(callerEmail || '').toLowerCase().trim())) {
+      const statut = await statutEspace(callerEmail, SUPABASE_SERVICE_KEY);
+      if (!statut.actif) {
+        return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
+        });
+      }
+    }
+
     if (!email) {
       return new Response(JSON.stringify([]), {
         status: 200,
@@ -95,6 +108,9 @@ export default async function handler(req) {
     (rows || []).forEach(row => {
       const docs = row.data?.documents || [];
       docs.forEach(d => {
+        // Pas de factures pour les agences : les anciennes entrées de type
+        // "facture" ne sont jamais renvoyées à l'extranet.
+        if (d.type === 'facture') return;
         if (d.url && d.nom && !documents.find(x => x.url === d.url)) {
           documents.push({ nom: d.nom, url: d.url, type: d.type || 'document' });
         }

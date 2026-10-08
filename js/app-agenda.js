@@ -315,23 +315,10 @@ async function loadBrevo(){
     if(resp2.ok){
       const tracking=await resp2.json();
       if(tracking&&tracking.length){
-        // Injecter dans DB.trackings (sans doublons)
-        tracking.forEach(t=>{
-          if(!DB.trackings.find(e=>e.id===t.id)){
-            DB.trackings.push(t);
-          }
-        });
-        // Injecter dans les historiques des contacts
-        tracking.forEach(t=>{
-          const emailLow=(t.email||'').toLowerCase();
-          const contact=DB.contacts.find(c=>(c.email||'').toLowerCase()===emailLow);
-          if(contact){
-            if(!contact.history)contact.history=[];
-            if(!contact.history.find(h=>h.id===t.id)){
-              contact.history.push(t);
-            }
-          }
-        });
+        // Ajoute les nouveaux emails ET met à jour statut / ouvertures / clics
+        // des emails déjà connus (js/app-emails.js).
+        fusionnerSuiviEmails(tracking);
+        _suiviEmailsCharge = Date.now();
         notify(`📧 ${tracking.length} emails historiques chargés depuis Brevo`);
       }
     }

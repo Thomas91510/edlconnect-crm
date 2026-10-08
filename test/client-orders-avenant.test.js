@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import handlerOrders from '../api/client-orders.js';
 
-const CLIENT_EMAIL = 'client@exemple.fr';
+const CLIENT_EMAIL = 'e2t.immo@gmail.com';
 
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });
@@ -14,7 +14,7 @@ function mockFetch({ avenantUrl, statut }) {
   global.fetch = async (url) => {
     const u = String(url);
     if (u.includes('/auth/v1/user')) {
-      return { ok: true, json: async () => ({ email: CLIENT_EMAIL }) };
+      return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: CLIENT_EMAIL }) };
     }
     if (u.includes('/rest/v1/bookings')) {
       return {
@@ -63,7 +63,7 @@ test('client-orders : avenantUrl vide quand la mission n\'en a pas', async () =>
 test('client-orders : avenantUrl vide quand aucune mission n\'est liée', async () => {
   global.fetch = async (url) => {
     const u = String(url);
-    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ email: CLIENT_EMAIL }) };
+    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: CLIENT_EMAIL }) };
     if (u.includes('/rest/v1/bookings')) {
       return { ok: true, json: async () => [{ id: 'b2', created_at: '2026-06-01T00:00:00Z', data: { email: CLIENT_EMAIL, typeEdl: 'EDL sortant' } }] };
     }

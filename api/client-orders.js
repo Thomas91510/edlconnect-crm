@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { escapeIlike } from './_lib/ilike.js';
+import { statutEspace, MESSAGE_ESPACE_INACTIF } from './_lib/espace-agence.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -60,6 +61,18 @@ export default async function handler(req) {
       if (clientEmail) userEmail = clientEmail;
     }
 
+    // Espace extranet non activé (CRM › fiche client) : accès refusé
+    // (api/_lib/espace-agence.js). L'administrateur n'est jamais concerné.
+    if (!ADMIN_EMAILS.includes(String(callerEmail || '').toLowerCase().trim())) {
+      const statut = await statutEspace(callerEmail, SUPABASE_SERVICE_KEY);
+      if (!statut.actif) {
+        return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
+        });
+      }
+    }
+
     const supaHeaders = {
       'apikey': SUPABASE_SERVICE_KEY,
       'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
@@ -79,7 +92,9 @@ export default async function handler(req) {
     const rows = await bookingsResp.json();
 
     // Récupérer aussi les missions liées à cet email pour synchroniser le statut "réalisé"
-    const missionsUrl = `${SUPABASE_URL}/rest/v1/missions?select=id,data&data->emailClient=eq.%22${encodeURIComponent(userEmail)}%22`;
+    // Insensible à la casse : « Agence@x.fr » sur la mission et « agence@x.fr »
+    // pour le compte extranet désignent bien la même agence.
+    const missionsUrl = `${SUPABASE_URL}/rest/v1/missions?select=id,data&data->>emailClient=ilike.${encodeURIComponent(escapeIlike(userEmail))}`;
     let missionRows = [];
     try {
       const mResp = await fetch(missionsUrl, { headers: supaHeaders });
@@ -113,6 +128,38 @@ export default async function handler(req) {
       }
     } catch(_){}
 
+    const missions = (missionRows || []).map(m => ({ ...(m.data || {}), id: m.id }));
+    // Missions déjà réclamées par le missionId d'une réservation : jamais
+    // attribuées à une autre par le repli adresse + jour.
+    const idLigne = {};
+    (missionRows || []).forEach(m => { if (m.data?.missionId) idLigne[m.data.missionId] = m.id; if (m.id) idLigne[m.id] = m.id; });
+    const missionsLiees = new Set((rows || []).map(r => idLigne[r.data?.missionId]).filter(Boolean));
+    const normAdr = (a) => String(a || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const jour = (d) => String(d || '').slice(0, 10);
+    // Réservation → mission : par missionId (écrit à la confirmation), sinon
+    // même adresse et même jour (missionId absent sur d'anciennes
+    // réservations : sans ce repli, elles restaient « Rendez-vous confirmé »
+    // pour toujours, rapport compris).
+    const missionDe = (r) => {
+      const parId = missionMap[r.data?.missionId];
+      if (parId) return parId;
+      const adr = normAdr(r.data?.adresse);
+      const j = jour(r.data?.dateSouhaitee);
+      if (!adr || !j) return null;
+      return missions.find(m => !missionsLiees.has(m.id) && m.date && normAdr(m.adresse) === adr && jour(m.date) === j) || null;
+    };
+    // Rapports d'une mission : document rattaché à la fiche, sinon ceux
+    // enregistrés sur la mission par la relève Edouard.
+    const rapportsDe = (m) => {
+      if (!m) return [];
+      const liste = Array.isArray(m.rapports) && m.rapports.length ? m.rapports
+        : (m.rapportUrl ? [{ nom: 'Rapport', url: m.rapportUrl }] : []);
+      const out = liste.filter(x => x && x.url).map(x => ({ nom: String(x.nom || 'Rapport'), url: x.url, type: x.type || null, date: x.date || '' }));
+      const doc = m.id ? docsParMission[m.id] : null;
+      if (doc && !out.some(x => x.url === doc.url)) out.unshift({ nom: doc.nom || 'Rapport', url: doc.url, type: null, date: '' });
+      return out;
+    };
+
     const orders = (rows || []).map(r => {
       // Une mission liée est-elle réellement effectuée ? "terminée" est
       // désormais le seul statut que le CRM écrit pour une mission achevée
@@ -122,11 +169,13 @@ export default async function handler(req) {
       // ce correctif). Le rapport EDL (Edouard) se synchronise en temps réel
       // avec les locataires : pas de palier intermédiaire "réalisé sans
       // rapport" à afficher, on passe directement à "rapport disponible".
-      const linkedMission = missionMap[r.data?.missionId] || null;
+      const linkedMission = missionDe(r);
+      if (linkedMission && linkedMission.id) missionsLiees.add(linkedMission.id);
       const missionAnnulee = linkedMission && linkedMission.statut === 'annulée';
       const missionEffectuee = linkedMission && ['terminée', 'réalisée'].includes(linkedMission.statut);
       let statut = r.data?.statut || 'en_attente';
       let rapportUrl = '';
+      let rapports = [];
       // Le statut de la reservation elle-meme (r.data.statut, ecrit une
       // seule fois a la confirmation) ne se met jamais a jour tout seul si
       // la mission liee change ensuite — on le derive donc en direct du
@@ -136,8 +185,8 @@ export default async function handler(req) {
         statut = 'annulee';
       } else if (missionEffectuee) {
         statut = 'rapport_dispo';
-        const doc = linkedMission.id ? docsParMission[linkedMission.id] : null;
-        if (doc) rapportUrl = doc.url;
+        rapports = rapportsDe(linkedMission);
+        rapportUrl = rapports.length ? rapports[rapports.length - 1].url : '';
       }
       // L'avenant est un champ direct sur la mission (m-avenant-url côté
       // CRM), pas un document rattaché — indépendant de docsParMission qui
@@ -156,6 +205,7 @@ export default async function handler(req) {
         proprietaire: r.data?.proprietaire || '',
         statut,
         rapportUrl,
+        rapports,
         avenantUrl,
         dateSouhaitee: r.data?.dateSouhaitee || '',
         heure: r.data?.heure || '',
@@ -163,6 +213,35 @@ export default async function handler(req) {
         locataireTel: r.data?.locataireTel || (r.data?.locataire?.tel) || '',
         createdAt: r.created_at
       };
+    });
+
+    // Missions saisies directement dans le CRM (sans réservation) pour cette
+    // agence : elles apparaissent aussi dans son espace, rapports compris.
+    missions.filter(m => !missionsLiees.has(m.id)).forEach(m => {
+      const st = String(m.statut || '').toLowerCase();
+      const statut = st.includes('annul') ? 'annulee'
+        : (['terminée', 'réalisée'].includes(m.statut) ? 'rapport_dispo' : (m.date ? 'confirmee' : 'en_attente'));
+      const rapports = statut === 'rapport_dispo' ? rapportsDe(m) : [];
+      orders.push({
+        id: 'm_' + m.id,
+        typeEdl: m.type || '',
+        adresse: m.adresse || '',
+        bienType: m.bienType || '',
+        bienTypo: m.bienTypo || '',
+        meuble: m.bienMeuble || '',
+        superficie: m.superficie || '',
+        acces: m.acces || '',
+        proprietaire: m.proprietaire || '',
+        statut,
+        rapportUrl: rapports.length ? rapports[rapports.length - 1].url : '',
+        rapports,
+        avenantUrl: m.avenantUrl || '',
+        dateSouhaitee: m.date || '',
+        heure: m.date && /T\d{2}:\d{2}/.test(m.date) ? String(m.date).slice(11, 16) : '',
+        locataireNom: m.locataireNom || '',
+        locataireTel: m.locataireTel || '',
+        createdAt: m.createdAt || m.date || '',
+      });
     });
 
     return new Response(JSON.stringify(orders), {

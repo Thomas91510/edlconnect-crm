@@ -45,16 +45,57 @@ function ajustementsPourMois(mois){
   }, { nb: 0, ca: 0 });
 }
 
-// Affiche le commit réellement déployé (api/version.js expose
-// VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement, aucune maintenance
-// manuelle) — utile pour vérifier en un coup d'œil qu'un déploiement a
-// bien pris effet, comme sur l'extranet.
+// ─── VERSION ──────────────────────────────────────────────
+// Numéro de version lisible (majeure.mineure.correctif), à incrémenter à
+// chaque mise en production avec une entrée dans NOUVEAUTES ci-dessous.
+// Il est complété par le commit réellement déployé (api/version.js expose
+// VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
+// en un coup d'œil qu'un déploiement a bien pris effet.
+const APP_VERSION = '2.0.0-beta.24';
+const NOUVEAUTES = [
+  { v:'2.0.0-beta.24', titre:'Relève Edouard toutes les heures, sans réglage', texte:'La relève horaire des rapports Edouard s\u2019authentifie toute seule auprès du serveur (jeton signé par GitHub) : plus aucun secret à configurer. Elle démarre dès la mise en production.' },
+  { v:'2.0.0-beta.23', titre:'Rédaction IA plus fiable', texte:'Quand l\u2019IA gratuite est saturée, « Rédiger avec IA » réessaie automatiquement puis passe sur un autre modèle gratuit, au lieu d\u2019afficher une erreur.' },
+  { v:'2.0.0-beta.22', titre:'Rédaction IA gratuite', texte:'« Rédiger avec IA » fonctionne avec Mistral (offre gratuite) tant qu\u2019aucune clé Anthropic n\u2019est configurée ; Claude prend le relais automatiquement dès qu\u2019une clé ANTHROPIC_API_KEY est ajoutée.' },
+  { v:'2.0.0-beta.21', titre:'Relecture du code : corrections', texte:'Les factures et infos légales envoyées par les agents ne peuvent plus être effacées par un enregistrement depuis le CRM. Espaces agences : liste figée des agences déjà utilisatrices, un espace désactivé reste bloqué (toutes les fiches du même email basculent ensemble). Rémunérations : « Non meublé » payé au tarif nu, surfaces décimales bien rattachées à leur tranche. Rapports : plus de rattachement d\u2019une réservation à une mission sans date commune. Purge des anciennes factures limitée aux fiches de l\u2019abonné, fichiers PDF bien supprimés. Facture agent : taille maximale alignée sur la limite d\u2019envoi.' },
+  { v:'2.0.0-beta.20', titre:'Accroche dans l\u2019extranet et l\u2019espace agent', texte:'« Expert en État des Lieux » s\u2019affiche aussi sous le nom EDL IDF dans l\u2019extranet des agences et dans l\u2019espace agent (menu, en-tête mobile, connexion, carte de l\u2019expert).' },
+  { v:'2.0.0-beta.19', titre:'En-tête des emails : blanc, logo et trait bleu', texte:'Les emails s\u2019ouvrent sur un en-tête blanc avec votre logo (ou votre nom), l\u2019accroche, et un trait aux couleurs de l\u2019agence juste en dessous.' },
+  { v:'2.0.0-beta.18', titre:'« Expert en État des Lieux » et emojis dans les emails', texte:'Accroche « Expert en État des Lieux » (modifiable dans Réglages › Profil) dans le bandeau, la signature et les modèles d\u2019emails ; emojis ajoutés aux objets et intertitres des modèles, et demandés à la rédaction IA.' },
+  { v:'2.0.0-beta.17', titre:'Emails : modèles retravaillés, rédaction par Claude, suivi des envois clarifié', texte:'Modèles rapides réécrits et classés (Prospection, Missions, Fidélisation) ; emails envoyés avec une mise en page professionnelle aux couleurs de l\u2019agence, et bouton « Aperçu » avant envoi. « Rédiger avec IA » est désormais assuré par Claude. Le panneau « Suivi des envois » affiche les chiffres des 30 derniers jours et les derniers emails, sans menu inutile.' },
+  { v:'2.0.0-beta.16', titre:'Espaces agences épurés, suivi des emails automatique dans la fiche', texte:'« Espaces agences » montre par défaut les espaces activés (recherche affichée quand ils deviennent nombreux) ; l\u2019activation d\u2019un autre client se fait par recherche. Fiche client : ouvertures et clics mis à jour automatiquement (à l\u2019ouverture puis toutes les 2 minutes), statut de chaque email affiché sans menu à régler à la main.' },
+  { v:'2.0.0-beta.15', titre:'Extranet réservé aux espaces activés', texte:'Une agence dont l\u2019espace n\u2019est pas activé ne peut plus accéder à son extranet (message l\u2019invitant à contacter son expert). Les agences qui utilisaient déjà leur extranet restent activées ; désactiver l\u2019interrupteur bloque l\u2019accès.' },
+  { v:'2.0.0-beta.14', titre:'Rapports dans les fiches et l\u2019extranet, espaces activés, accueil agence', texte:'Rapports d\u2019état des lieux visibles dans la fiche client (onglet Commandes) et dans l\u2019extranet de l\u2019agence, y compris pour les missions saisies dans le CRM et les anciennes réservations. Interrupteur « Espace extranet activé » par client : seuls les espaces activés apparaissent dans « Espaces agences ». Extranet : l\u2019accueil montre les rendez-vous des 7 prochains jours, la liste complète reste dans « États des lieux ».' },
+  { v:'2.0.0-beta.13', titre:'Page « Espaces agences »', texte:'Le bouton « Espaces agences » du menu ouvre maintenant sa propre page (bleu nuit et or) avec toutes les agences ; l\u2019accueil « Aujourd\u2019hui » ne l\u2019affiche plus.' },
+  { v:'2.0.0-beta.12', titre:'Rapports par client, relève Edouard horaire, suivi des emails corrigé', texte:'Clients › Rapports : tous les rapports d\u2019état des lieux de toutes les agences, classés par client, ajoutés dès que l\u2019état des lieux est terminé dans Edouard (relève toutes les heures). Encart « Espaces agences » bleu nuit et or juste après les chiffres clés. Fiche client agrandie. Suivi des emails : rafraîchi automatiquement, statuts ouvert / cliqué mis à jour, emails automatiques (confirmations, rappels, rapports) désormais suivis.' },
+  { v:'2.0.0-beta.11', titre:'Réservations : champs obligatoires et pièces jointes multiples', texte:'Sur l\u2019extranet, la page publique et la réservation manuelle du CRM : téléphone et email obligatoires pour chaque locataire (sortant et entrant), nom du propriétaire et superficie obligatoires, date de l\u2019état des lieux d\u2019entrée obligatoire pour toute sortie. Bouton « Ajouter des pièces jointes » (plusieurs fichiers, en une ou plusieurs fois), aussi dans la réservation manuelle du CRM.' },
+  { v:'2.0.0-beta.10', titre:'Espaces agences, plus de factures côté agences', texte:'Menu de gauche › « Espaces agences » : ouvrez l\u2019extranet de n\u2019importe quelle agence tel qu\u2019elle le voit, en lecture seule, pour un problème ou un souci de paramétrage. Les factures ne concernent plus que les agents d\u2019état des lieux : dépôt retiré, et bouton pour supprimer les anciennes factures des agences.' },
+  { v:'2.0.0-beta.9', titre:'Factures des agents, sauvegarde Google Drive', texte:'Espace agent : onglet « Facturation » — facture mensuelle pré-remplie (date, adresse, typologie, nom du locataire), numéro et lignes modifiables, PDF, envoi par email à EDL IDF (pas aux agences clientes) ; informations juridiques (SIRET, RCS, TVA, IBAN) dans « Mon compte ». CRM : factures reçues par agent dans Rémunérations, identité légale de la société dans Profil. Sortant + entrant payé comme une seule prestation selon la typologie (modifiable). Copie automatique des sauvegardes sur Google Drive.' },
+  { v:'2.0.0-beta.8', titre:'Grille du contrat 2026 et frais de déplacement par zone', texte:'Grille par bien sur le modèle de l\u2019annexe 2 du contrat (location nue / meublée, appartements, maisons, garages, locaux selon la surface), sortant + entrant, frais de déplacement par zone, déplacement infructueux. Bouton « Charger la grille du contrat 2026 », tout reste modifiable.' },
+  { v:'2.0.0-beta.7', titre:'Suivi payé / non payé des rémunérations', texte:'Réglages › Agents EDL : reste à payer par agent, case « Payée » par mission et « Tout marquer payé » par mois. L\u2019agent voit ce qu\u2019il lui reste à percevoir et la date de chaque paiement.' },
+  { v:'2.0.0-beta.6', titre:'Plusieurs typologies par ligne', texte:'Dans la grille de rémunération, chaque ligne peut viser plusieurs typologies à cocher (ex. « T4 et T5 », « T6 et T7+ »).' },
+  { v:'2.0.0-beta.5', titre:'Grille de rémunération modifiable', texte:'Lignes libres dans la fiche agent : libellé au choix (Maison, T2 meublé, Parking…), critères typologie / type de bien / meublé, ordre de priorité, ajout et suppression de lignes.' },
+  { v:'2.0.0-beta.4', titre:'Rémunération par typologie', texte:'Nouveau mode de calcul dans la fiche agent : un tarif par typologie (T1/studio à T7 et plus), colonnes « entrant ou sortant » et « sortant + entrant », tarif à part pour les pré-états des lieux.' },
+  { v:'2.0.0-beta.3', titre:'Rémunération des agents', texte:'Référence financière dans la fiche agent (forfait par type d\u2019état des lieux ou pourcentage), onglet « Rémunération » dans l\u2019espace agent : acquis et prévu du mois, totaux par mois, détail par mission.' },
+  { v:'2.0.0-beta.2', titre:'Extranet agence et espace agent redessinés', texte:'Extranet : tableau de bord (prochain RDV, suivi des états des lieux, messages, factures), commande en 2 étapes dans un panneau latéral, factures et documents réunis. Espace agent : menu latéral, cartes de mission avec zone, itinéraire et appel du locataire.' },
+  { v:'2.0.0-beta.1', titre:'Refonte de l\u2019interface (V1 de test)', texte:'Menu en 5 rubriques, accueil « Aujourd\u2019hui », réservations, missions et agenda réunis, emails regroupés, rôles administrateur / assistante, réglages par rubrique.' }
+];
+let _versionDeploiement = { sha:'', env:'' };
+// "v2.0.0-beta.1 · preview · a3f9c21" — l'environnement n'est affiché que
+// hors production, pour repérer d'un coup d'œil une version de test.
+function libelleVersion(info){
+  const morceaux = ['v' + APP_VERSION];
+  if(info && info.env && info.env !== 'production') morceaux.push(info.env);
+  if(info && info.sha) morceaux.push(info.sha);
+  return morceaux.join(' · ');
+}
 (async function afficherVersionCrm(){
+  const el = document.getElementById('app-version');
+  if(el) el.textContent = libelleVersion(null);
   try {
     const resp = await fetch('/api/version');
     const data = await resp.json();
-    const el = document.getElementById('app-version');
-    if(el && data.sha) el.textContent = (data.env === 'production' ? '' : data.env + ' · ') + data.sha;
+    _versionDeploiement = { sha: data.sha || '', env: data.env || '' };
+    const elApres = document.getElementById('app-version');
+    if(elApres) elApres.textContent = libelleVersion(_versionDeploiement);
   } catch(e) {}
 })();
 
@@ -558,20 +599,22 @@ function renderAujourdhui(){
   const stagnants = typeof prospectsStagnants === 'function' ? prospectsStagnants() : [];
 
   const items = [
-    { label:"RDV aujourd'hui / demain", count: rdvProches.length, icone:'ti-calendar-event', couleur:'var(--blue)', action:"nav('missions')" },
-    { label:'Réservations non traitées', count:'—', id:'dash-today-resa', icone:'ti-inbox', couleur:'var(--red-text, #A32D2D)', action:"nav('reservations')" },
-    { label:'Avis à relancer', count: avisAttente.length, icone:'ti-star', couleur:'var(--green)', action:"nav('missions')" },
-    { label:'Prospects qui stagnent', count: stagnants.length, icone:'ti-clock-pause', couleur:'var(--red-text, #A32D2D)', action:"nav('prospection')" }
-  ];
+    { kicker:'Réservations en ligne', label:'à confirmer', count:'—', id:'dash-today-resa', dot:'var(--violet)', cta:'Confirmer', action:"nav('reservations')", perm:'reservations' },
+    { kicker:'Planning', label:"RDV aujourd'hui et demain", count: rdvProches.length, dot:'var(--blue)', cta:'Voir le planning', action:"nav('agenda')", perm:'missions' },
+    { kicker:'Avis Google', label:'demandes en attente', count: avisAttente.length, dot:'var(--green)', cta:'Voir les missions', action:"nav('missions')", perm:'missions' },
+    { kicker:'Prospection', label:'prospects qui stagnent', count: stagnants.length, dot:'var(--amber)', cta:'Relancer', action:"nav('prospection')", perm:'prospection' }
+  ].filter(it=>typeof peut!=='function' || peut(it.perm));
 
+  // Cartes cliquables (vrais <button> : accessibles au clavier).
   box.innerHTML = items.map(it=>`
-    <div onclick="${it.action}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border2);cursor:pointer;background:var(--bg2)">
-      <i class="ti ${it.icone}" style="font-size:20px;color:${it.couleur};flex-shrink:0"></i>
-      <div style="min-width:0">
-        <div style="font-size:18px;font-weight:700"${it.id?` id="${it.id}"`:''}>${it.count}</div>
-        <div style="font-size:10.5px;color:var(--text2)">${it.label}</div>
-      </div>
-    </div>`).join('');
+    <button type="button" class="todo-card" onclick="${it.action}">
+      <span class="todo-kicker"><span class="todo-dot" style="background:${it.dot}"></span>${it.kicker}</span>
+      <span style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <span class="todo-count"${it.id?` id="${it.id}"`:''}>${it.count}</span>
+        <span style="font-size:14px;font-weight:500">${it.label}</span>
+      </span>
+      <span class="todo-cta">${it.cta} →</span>
+    </button>`).join('');
 
   chargerResaPendingCount();
 }

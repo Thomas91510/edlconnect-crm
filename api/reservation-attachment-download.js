@@ -16,7 +16,7 @@ const BUCKET = 'reservations';
 // Défense en profondeur : le chemin ne doit jamais être signé tel quel sans
 // vérifier qu'il correspond à une pièce jointe RÉELLEMENT rattachée à une
 // réservation existante ET appartenant à l'appelant (piecesJointes[].path +
-// data.ownerId) — même principe que facture-download.js, pour ne jamais
+// data.ownerId) — lien signé de courte durée, pour ne jamais
 // transformer cet endpoint en "signeur" de n'importe quel chemin du bucket.
 export default async function handler(req) {
   const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) };

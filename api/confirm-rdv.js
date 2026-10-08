@@ -421,6 +421,9 @@ export default async function handler(req) {
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
           sender: { name: IDENT.nom, email: IDENT.email },
+          // Tag de l'abonné : le suivi des emails (api/brevo-tracking.js) ne
+          // remonte que les emails portant « sub_<id> ».
+          ...((_user && _user.id) ? { tags: ['sub_' + (_user && _user.id)] } : {}),
           to: [{ email: agentEmail }],
           replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
           subject: `✅ Confirmation EDL — ${mission.type} · ${dateStr} · ${mission.adresse}`,
@@ -452,6 +455,9 @@ export default async function handler(req) {
           headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
           body: JSON.stringify({
             sender: { name: IDENT.nom, email: IDENT.email },
+            // Tag de l'abonné : le suivi des emails (api/brevo-tracking.js) ne
+            // remonte que les emails portant « sub_<id> ».
+            ...((_user && _user.id) ? { tags: ['sub_' + (_user && _user.id)] } : {}),
             to: [{ email: loc.email, name: (civLoc + ' ' + nomLoc).trim() || '' }],
             replyTo: { email: IDENT.replyTo || IDENT.email, name: IDENT.nom },
             subject: sujet,

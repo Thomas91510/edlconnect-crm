@@ -356,7 +356,7 @@ test('remplirCompte : affiche le nom, le téléphone, l\'adresse et personnalise
   const w = chargerAgentApp();
   w.remplirCompte({ nom: 'Julie Berthier', tel: '0612345678', adresse: '3 rue de Rivoli, 75001 Paris', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
 
-  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Julie 👋');
+  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour Julie');
   assert.equal(w.document.getElementById('sidenav-nom').textContent, 'Julie Berthier');
   assert.equal(w.document.getElementById('compte-nom').textContent, 'Julie Berthier');
   assert.equal(w.document.getElementById('compte-champ-nom').value, 'Julie Berthier');
@@ -367,13 +367,13 @@ test('remplirCompte : affiche le nom, le téléphone, l\'adresse et personnalise
 test('remplirCompte : extrait le bon prénom même au format "NOM Prénom" (ex. LANGLADE Thomas)', () => {
   const w = chargerAgentApp();
   w.remplirCompte({ nom: 'LANGLADE Thomas', tel: '', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
-  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Thomas 👋');
+  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour Thomas');
 });
 
 test('remplirCompte : nom sur un seul mot → utilisé tel quel', () => {
   const w = chargerAgentApp();
   w.remplirCompte({ nom: 'Paul', tel: '', photoUrl: null, bareme: [], secteurPrimaire: [], secteurSecondaire: [] });
-  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour, Paul 👋');
+  assert.equal(w.document.getElementById('welcome-titre').textContent, 'Bonjour Paul');
 });
 
 test('enregistrerAdresse : envoie l\'adresse saisie et met à jour le champ', async () => {
@@ -606,4 +606,187 @@ test('toggleTutoEdouard : charge le guide au premier clic, bascule ensuite sans 
   w.toggleTutoEdouard();
   assert.equal(frame.hidden, true, 'un second clic referme sans toucher au src déjà chargé');
   assert.equal(frame.src, 'https://exemple.fr/deja-charge.html');
+});
+
+// ─── Refonte V2 : carte mission (zone, itinéraire, appel) ─────────────
+test('carteMission : étiquette de zone seulement si les zones sont validées par l’agence', () => {
+  const w = chargerAgentApp();
+  const m = { adresse: '12 rue de Fontenay, 94300 Vincennes', type: 'EDL entrant', date: '2026-10-08T14:00:00' };
+  w.eval("assignments = { '94300': 'primaire' }; zoneStatut = 'attente';");
+  assert.ok(!w.carteMission(m).includes('Zone primaire'), 'zones non validées : pas d’étiquette');
+  w.eval("zoneStatut = 'valide';");
+  assert.ok(w.carteMission(m).includes('Zone primaire'));
+  assert.ok(w.carteMission({ ...m, adresse: '1 rue X, 75011 Paris' }).includes('Hors zone'));
+});
+
+test('carteMission : lien itinéraire encodé et appel du locataire', () => {
+  const w = chargerAgentApp();
+  const html = w.carteMission({ adresse: '12 rue de la Paix, 94300 Vincennes', type: 'EDL sortant', locataireNom: 'Jean', locataireTel: '06 12 34 56 78' });
+  assert.ok(html.includes('https://www.google.com/maps/search/?api=1&amp;query=12%20rue%20de%20la%20Paix'));
+  assert.ok(html.includes('href="tel:0612345678"'));
+});
+
+// ─── Onglet Rémunération ─────────────────────────────────────────────
+function avecConteneurRemu(w) {
+  const div = w.document.createElement('div');
+  div.id = 'remuneration-contenu';
+  w.document.body.appendChild(div);
+  return div;
+}
+
+test('renderRemuneration : message clair si l’agence n’a pas saisi de grille', () => {
+  const w = chargerAgentApp();
+  const box = avecConteneurRemu(w);
+  w.renderRemuneration({ reference: { configuree: false } });
+  assert.ok(box.textContent.includes('pas encore renseigné'));
+});
+
+test('renderRemuneration : grille, totaux du mois et détail échappé', () => {
+  const w = chargerAgentApp();
+  const box = avecConteneurRemu(w);
+  w.renderRemuneration({
+    reference: { configuree: true, mode: 'forfait', unite: 'HT', parType: { entrant: 45, sortant: 45, simultane: 80, autre: null }, note: '' },
+    moisCourant: { mois: '2026-10', acquis: 125, prevu: 45, nbAcquises: 2 },
+    parMois: [{ mois: '2026-10', nb: 2, total: 125 }],
+    lignes: [{ id: 'm1', date: '2026-10-02T09:00:00', adresse: '<img src=x onerror=alert(1)>', type: 'EDL entrant', etat: 'acquise', montant: 45 }],
+    nonCouvertes: 0,
+  });
+  const html = box.innerHTML;
+  assert.ok(html.includes('125 € HT'));
+  assert.ok(html.includes('80 € HT'));
+  assert.ok(html.includes('Non défini'), 'un type sans tarif est signalé');
+  assert.ok(!html.includes('<img src=x'), 'l’adresse doit être échappée');
+});
+
+test('renderRemuneration : grille par bien (nue / meublée), frais de zone, déplacement infructueux', () => {
+  const w = chargerAgentApp();
+  const box = avecConteneurRemu(w);
+  const lignes = [
+    { label: 'Maison T4', criteres: 'Maison · T4', nue: 75, meublee: 95 },
+    { label: 'Garage — 1 place', criteres: 'Garage', nue: 20, meublee: null },
+  ];
+  w.renderRemuneration({
+    reference: { configuree: true, mode: 'typologie', unite: 'HT', parType: null, lignes, typoAutre: 30, coefSortantEntrant: 2,
+      fraisZone: { primaire: 0, secondaire: 10, hors: 25 }, deplacementInfructueux: 50, note: '' },
+    moisCourant: { mois: '2026-10', acquis: 85, prevu: 0, nbAcquises: 1, paye: 0 },
+    paiements: { resteAPayer: 85, nbAPayer: 1 },
+    parMois: [], nonCouvertes: 0,
+    lignes: [{ id: 'm1', date: '2026-10-02T09:00:00', adresse: '1 rue A', type: 'EDL entrant', typologie: 'T4', ligneGrille: 'Maison T4', etat: 'acquise', prestation: 75, frais: 10, zone: 'secondaire', montant: 85, payee: false }],
+  });
+  const html = box.innerHTML;
+  assert.ok(html.includes('Location meublée'));
+  assert.ok(html.includes('95 € HT'));
+  assert.ok(html.includes('Maison · T4'), 'critères affichés sous le libellé');
+  assert.ok(html.includes('2 prestations'), 'sortant + entrant');
+  assert.ok(html.includes('Zone secondaire') && html.includes('25 € HT'), 'frais de déplacement par zone');
+  assert.ok(html.includes('Déplacement infructueux') && html.includes('50 € HT'));
+  assert.ok(html.includes('dont 10 € HT dépl.'), 'détail : part déplacement');
+  assert.ok(html.includes('<td>Maison T4</td>'));
+});
+test('renderRemuneration : suivi des paiements (reste à percevoir, payée le…, à percevoir)', () => {
+  const w = chargerAgentApp();
+  const box = avecConteneurRemu(w);
+  w.renderRemuneration({
+    reference: { configuree: true, mode: 'forfait', unite: 'HT', parType: { entrant: 45, sortant: 45, simultane: 80, autre: null }, note: '' },
+    moisCourant: { mois: '2026-10', acquis: 90, prevu: 0, nbAcquises: 2, paye: 45 },
+    paiements: { resteAPayer: 45, nbAPayer: 1 },
+    parMois: [{ mois: '2026-10', nb: 2, total: 90, paye: 45 }],
+    lignes: [
+      { id: 'a', date: '2026-10-02T09:00:00', adresse: 'A', type: 'EDL entrant', etat: 'acquise', montant: 45, payee: true, payeeLe: '2026-10-10T08:00:00' },
+      { id: 'b', date: '2026-10-03T09:00:00', adresse: 'B', type: 'EDL sortant', etat: 'acquise', montant: 45, payee: false },
+    ],
+    nonCouvertes: 0,
+  });
+  const html = box.innerHTML;
+  assert.ok(html.includes('Reste à percevoir (1 mission)'));
+  assert.ok(html.includes('Payée le 10/10/2026'));
+  assert.ok(html.includes('À percevoir'));
+  assert.ok(html.includes('45 € HT payé'), 'part payée du mois');
+});
+
+// ─── Facturation (l'agent génère, édite et envoie sa facture) ───
+function avecFacturation(w, { infos = {}, factures = [], lignes } = {}) {
+  const div = w.document.createElement('div');
+  div.id = 'facturation-contenu';
+  w.document.body.appendChild(div);
+  w.__remu = { reference: { configuree: true, unite: 'HT' }, parMois: [{ mois: '2026-09', nb: 2, total: 132 }, { mois: '2026-10', nb: 1, total: 47 }],
+    lignes: lignes || [
+      { id: 'a', date: '2026-09-12T09:00:00', adresse: '3 rue <b>B</b>', type: 'EDL entrant', bien: 'Appartement', typologie: 'T2', ligneGrille: 'Appartement T2', locataire: 'M. <i>Martin</i>', etat: 'acquise', montant: 57, frais: 10 },
+      { id: 'b', date: '2026-09-02T09:00:00', adresse: '1 rue A', type: 'EDL Sortant / Entrant', bien: 'Maison', typologie: 'T4', ligneGrille: 'Maison T4', locataire: 'Mme Durand', etat: 'acquise', montant: 75, frais: null },
+      { id: 'c', date: '2026-09-20T09:00:00', adresse: 'Prévue', type: 'EDL entrant', etat: 'prevue', montant: 47 },
+      { id: 'd', date: '2026-10-01T09:00:00', adresse: 'Octobre', type: 'EDL entrant', etat: 'acquise', montant: 47 },
+    ] };
+  w.__infos = infos; w.__factures = factures;
+  w.eval("_remuneration = window.__remu; _infosLegales = window.__infos; _factures = window.__factures; _destinataireFacture = { nom: 'EDL IDF SAS', adresse: '18 Grande Rue, 91510 Lardy', rcs: 'RCS Evry 943 093 781' };");
+  return div;
+}
+const INFOS_OK = { raisonSociale: 'Jean Dupont EI', statut: 'Micro-entrepreneur', adresse: '1 rue A', siret: '123 456 789 00012', regimeTva: 'franchise', iban: 'FR76 1234' };
+
+test('facturation : infos juridiques incomplètes signalées, envoi bloqué', () => {
+  const w = chargerAgentApp();
+  const box = avecFacturation(w, { infos: { raisonSociale: 'X' } });
+  w.renderFacturation();
+  assert.ok(box.textContent.includes('adresse, SIRET'));
+  w.preparerFacture('2026-09');
+  assert.ok(box.querySelector('#btn-envoyer-facture').disabled);
+});
+
+test('facturation : pré-remplie avec les missions acquises du mois (date, adresse, typologie, locataire), échappées', () => {
+  const w = chargerAgentApp();
+  const box = avecFacturation(w, { infos: INFOS_OK, factures: [{ numero: 'F2026-004', mois: '2026-08', totalHT: 100, nbLignes: 2 }] });
+  w.renderFacturation();
+  assert.equal(box.querySelector('#fac-mois').value, '2026-10', 'mois le plus récent proposé');
+  w.preparerFacture('2026-09');
+  const lignes = [...box.querySelectorAll('.fac-table tbody tr')];
+  assert.equal(lignes.length, 2, 'ni la mission prévue ni celle d’octobre');
+  const valeurs = lignes.map(tr => [...tr.querySelectorAll('input')].map(i => i.value));
+  assert.deepEqual(valeurs[0], ['2026-09-02', '1 rue A', 'Maison T4', 'EDL Sortant / Entrant', 'Mme Durand', '75']);
+  assert.equal(valeurs[1][4], 'M. <i>Martin</i>');
+  assert.equal(valeurs[1][3], 'EDL entrant + dépl.');
+  assert.ok(!box.querySelector('.fac-table i:not(.ti), .fac-table b'), 'adresse et nom du locataire échappés');
+  assert.equal(box.querySelector('#fac-numero').value, 'F' + new Date().getFullYear() + '-' + (new Date().getFullYear() === 2026 ? '005' : '001'));
+  assert.ok(box.querySelector('#fac-destinataire').value.startsWith('EDL IDF SAS\n18 Grande Rue'));
+  assert.ok(box.textContent.includes('TVA non applicable, art. 293 B du CGI'));
+  assert.ok(box.querySelector('#fac-totaux').textContent.includes('132,00 €'));
+  assert.ok(box.textContent.includes('F2026-004'), 'historique des factures envoyées');
+});
+
+test('facturation : lignes modifiables, ajout / suppression, totaux et TVA recalculés', () => {
+  const w = chargerAgentApp();
+  const box = avecFacturation(w, { infos: { ...INFOS_OK, regimeTva: 'assujetti', tauxTva: 20 } });
+  w.preparerFacture('2026-09');
+  w.majLigneFacture(0, 'montant', '80,5');
+  assert.ok(box.querySelector('#fac-totaux').textContent.includes('137,50 €'));
+  w.ajouterLigneFacture();
+  w.majLigneFacture(2, 'montant', '-150');
+  w.majLigneFacture(2, 'prestation', 'Formation (art. 9)');
+  const t = box.querySelector('#fac-totaux').textContent;
+  assert.ok(t.includes('-12,50 €') && t.includes('TVA 20 %') && t.includes('-15,00 €'), t);
+  w.supprimerLigneFacture(2);
+  assert.equal(box.querySelectorAll('.fac-table tbody tr').length, 2);
+  assert.ok(!box.textContent.includes('293 B'), 'pas de mention de franchise si assujetti');
+});
+
+test('facturation : numéro suivant de l’année, quel que soit l’ordre', () => {
+  const w = chargerAgentApp();
+  assert.equal(w.prochainNumeroFacture([], 2026), 'F2026-001');
+  assert.equal(w.prochainNumeroFacture([{ numero: 'F2026-009' }, { numero: 'F2026-012' }, { numero: 'F2025-040' }, { numero: 'perso' }], 2026), 'F2026-013');
+});
+
+test('facturation : l’envoi transmet la facture éditée et le PDF, puis met à jour l’historique', async () => {
+  const w = chargerAgentApp();
+  const box = avecFacturation(w, { infos: INFOS_OK });
+  w.preparerFacture('2026-09');
+  w.majChampFacture('numero', 'F2026-100');
+  let corps = null;
+  w.jspdf = { jsPDF: function () { return { output: () => 'data:application/pdf;base64,JVBERi0x', save() {} }; } };
+  w.eval('genererPdfFacture = async () => new window.jspdf.jsPDF();');
+  w.fetch = async (url, opts) => { corps = { url, body: JSON.parse(opts.body) }; return { ok: true, json: async () => ({ destinataire: 'contact@edl-idf.com', factures: [{ numero: 'F2026-100', mois: '2026-09', totalHT: 132, nbLignes: 2 }] }) }; };
+  await w.envoyerFacture();
+  assert.equal(corps.url, '/api/agent-facture-envoyer');
+  assert.equal(corps.body.pdfBase64, 'JVBERi0x');
+  assert.equal(corps.body.facture.numero, 'F2026-100');
+  assert.equal(corps.body.facture.lignes[0].locataire, 'Mme Durand');
+  assert.ok(!box.querySelector('#facture-editeur'), 'éditeur refermé après envoi');
+  assert.ok(box.textContent.includes('F2026-100'));
 });

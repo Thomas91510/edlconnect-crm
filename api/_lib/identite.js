@@ -42,6 +42,7 @@ export async function identiteAbonne(supaUrl, serviceKey, userId) {
       email: peutExpedier ? mail : IDENTITE_NEUTRE.email,
       replyTo: (!peutExpedier && mail) ? mail : '',
       tel: (d.expediteurTel || '').trim(),
+      slogan: typeof d.slogan === 'string' ? d.slogan.trim() : 'Expert en État des Lieux',
       signature: (d.expediteurSignature || '').trim(),
       partenaire: (d.expediteurPartenaire || '').trim(),
       avisGoogleLien: (d.avisGoogleLien || '').trim(),

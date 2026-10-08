@@ -36,6 +36,24 @@ const SUPA_TABLES = {
 };
 
 // ─── SETTINGS SUPABASE (clés API par utilisateur) ──────────
+// Champs d'une fiche agent écrits par l'agent lui-même depuis son espace
+// (api/agent-*) : la copie locale du CRM peut être ancienne, la version
+// serveur fait foi — sinon un enregistrement depuis le CRM effacerait une
+// facture envoyée entre-temps.
+const CHAMPS_AGENT_SERVEUR=['factures','infosLegales'];
+const CHAMPS_AGENT_SI_ABSENTS=['photoPath','contratPath','avenantPath','adresse'];
+function fusionnerAgentsServeur(locaux,serveur){
+  const parId=new Map((Array.isArray(serveur)?serveur:[]).filter(a=>a&&a.id).map(a=>[a.id,a]));
+  return (locaux||[]).map(a=>{
+    const s=a&&parId.get(a.id);
+    if(!s)return a;
+    const r={...a};
+    CHAMPS_AGENT_SERVEUR.forEach(k=>{ if(s[k]!==undefined) r[k]=s[k]; });
+    CHAMPS_AGENT_SI_ABSENTS.forEach(k=>{ if(!r[k]&&s[k]) r[k]=s[k]; });
+    return r;
+  });
+}
+
 async function saveSettingsToSupabase(settingsData){
   if(!_supaReady||!_currentUser)return;
   try{
@@ -45,6 +63,7 @@ async function saveSettingsToSupabase(settingsData){
     // connaissant pas.
     const{data:existing}=await supabaseClient.from('settings').select('data').eq('user_id',_currentUser.id).maybeSingle();
     const fusion=Object.assign({},(existing&&existing.data)||{},settingsData);
+    if(Array.isArray(settingsData.agents)) fusion.agents=fusionnerAgentsServeur(settingsData.agents,existing&&existing.data&&existing.data.agents);
     const{error}=await supabaseClient.from('settings').upsert({
       user_id:_currentUser.id,
       data:fusion,
@@ -75,9 +94,16 @@ async function loadSettingsFromSupabase(){
     if(s.expediteurEmail){localStorage.setItem('edl_exp_email',s.expediteurEmail);}
     if(s.expediteurTel){localStorage.setItem('edl_exp_tel',s.expediteurTel);}
     if(s.expediteurSignature){localStorage.setItem('edl_exp_signature',s.expediteurSignature);}
+    if(typeof s.slogan==='string'){localStorage.setItem('edl_slogan',s.slogan);}
     if(s.expediteurPartenaire){localStorage.setItem('edl_exp_partenaire',s.expediteurPartenaire);}
     if(s.avisGoogleLien){localStorage.setItem('edl_avis_google_lien',s.avisGoogleLien);}
     if(s.couleurPrimaire){localStorage.setItem('edl_couleur_primaire',s.couleurPrimaire);}
+    // Identité légale (destinataire des factures des agents)
+    if(typeof s.legalRaisonSociale==='string'){localStorage.setItem('edl_legal_raison',s.legalRaisonSociale);}
+    if(typeof s.legalAdresse==='string'){localStorage.setItem('edl_legal_adresse',s.legalAdresse);}
+    if(typeof s.legalRcs==='string'){localStorage.setItem('edl_legal_rcs',s.legalRcs);}
+    if(typeof s.legalSiret==='string'){localStorage.setItem('edl_legal_siret',s.legalSiret);}
+    if(typeof s.legalTvaIntra==='string'){localStorage.setItem('edl_legal_tva',s.legalTvaIntra);}
     // typeof (pas juste truthy) : une chaîne vide signifie "logo retiré", il
     // faut aussi synchroniser ce cas, pas seulement quand un logo est présent.
     if(typeof s.logoPath==='string'){localStorage.setItem('edl_logo_path',s.logoPath);}

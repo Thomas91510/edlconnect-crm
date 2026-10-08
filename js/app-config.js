@@ -33,6 +33,10 @@ const CFG={
   set expediteurTel(v){localStorage.setItem('edl_exp_tel',v);},
   get expediteurSignature(){return localStorage.getItem('edl_exp_signature')||'';},
   set expediteurSignature(v){localStorage.setItem('edl_exp_signature',v);},
+  // Accroche affichée à côté du nom de la société dans les emails
+  // (bandeau, signature, modèles) — « Expert en État des Lieux » par défaut.
+  get slogan(){const v=localStorage.getItem('edl_slogan');return v===null?'Expert en État des Lieux':v;},
+  set slogan(v){localStorage.setItem('edl_slogan',v);},
   get expediteurPartenaire(){return localStorage.getItem('edl_exp_partenaire')||'';},
   set expediteurPartenaire(v){localStorage.setItem('edl_exp_partenaire',v);},
   get avisGoogleLien(){return localStorage.getItem('edl_avis_google_lien')||'';},
@@ -45,6 +49,17 @@ const CFG={
   // aucun logo déposé, auquel cas le logo Lokentia par défaut reste affiché.
   get logoPath(){return localStorage.getItem('edl_logo_path')||'';},
   set logoPath(v){localStorage.setItem('edl_logo_path',v);},
+  // Identité légale de l'agence — destinataire des factures des agents.
+  get legalRaisonSociale(){return localStorage.getItem('edl_legal_raison')||'';},
+  set legalRaisonSociale(v){localStorage.setItem('edl_legal_raison',v);},
+  get legalAdresse(){return localStorage.getItem('edl_legal_adresse')||'';},
+  set legalAdresse(v){localStorage.setItem('edl_legal_adresse',v);},
+  get legalRcs(){return localStorage.getItem('edl_legal_rcs')||'';},
+  set legalRcs(v){localStorage.setItem('edl_legal_rcs',v);},
+  get legalSiret(){return localStorage.getItem('edl_legal_siret')||'';},
+  set legalSiret(v){localStorage.setItem('edl_legal_siret',v);},
+  get legalTvaIntra(){return localStorage.getItem('edl_legal_tva')||'';},
+  set legalTvaIntra(v){localStorage.setItem('edl_legal_tva',v);},
   proxy:'https://api.allorigins.win/raw?url='
 };
 
@@ -81,6 +96,23 @@ const PROSP_STAGES=[
   {key:'gagne',label:'Gagné ✅',color:'#3B6D11',bg:'#D6EDCA',proba:100},
   {key:'perdu',label:'Perdu ❌',color:'#A32D2D',bg:'#FCEBEB',proba:0}
 ];
+
+// Colonnes affichées dans le tableau de prospection (refonte V2) : chaque
+// colonne regroupe une ou plusieurs étapes de PROSP_STAGES.
+const COLONNES_PIPELINE=[
+  {key:'a_contacter', label:'À contacter',          etapes:['a_contacter']},
+  {key:'discussion',  label:'En discussion',        etapes:['email_envoye','email_ouvert','reponse_recue']},
+  {key:'rdv',         label:'RDV planifié',         etapes:['rdv_planifie']},
+  {key:'devis',       label:'Devis & négociation',  etapes:['devis_envoye','negociation']},
+  {key:'gagne',       label:'Gagné',                etapes:['gagne']}
+];
+const COLONNE_PERDUS={key:'perdu',label:'Perdu',etapes:['perdu']};
+let _afficherPerdus=false;
+function colonneSuivante(cle){
+  const i=COLONNES_PIPELINE.findIndex(c=>c.key===cle);
+  return i>=0&&i<COLONNES_PIPELINE.length-1?COLONNES_PIPELINE[i+1]:null;
+}
+function basculerProspectsPerdus(){ _afficherPerdus=!_afficherPerdus; renderProspection(); }
 
 // Nombre de jours sans action au-delà duquel une carte active (pas
 // Gagné/Perdu) est considérée comme stagnante (alerte dashboard + badge kanban).
@@ -119,12 +151,9 @@ function renderProspection(){
   const actifs=DB.prospects.filter(p=>!['gagne','perdu'].includes(p.etape)).length;
   const taux=total>0?Math.round(gagnes/total*100):0;
   const caTotal=DB.prospects.filter(p=>p.etape==='gagne'&&p.ca).reduce((s,p)=>s+(p.ca||0),0);
-  stats.innerHTML=`
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px">${total}</span> prospects</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#1A5FA8">${actifs}</span> en cours</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#3B6D11">${gagnes}</span> gagnés</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:#854F0B">${taux}%</span> taux conversion</div>
-    ${caTotal>0?`<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius);padding:6px 12px;font-size:12px"><span style="font-weight:600;font-size:16px;color:var(--green)">${caTotal.toLocaleString('fr-FR')} €</span>/mois CA gagné</div>`:''}`;
+  const chip=(val,lib,coul)=>`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 16px;font-size:13px;color:var(--text2)"><span style="font-weight:600;font-size:18px;color:${coul||'var(--text)'};margin-right:6px">${val}</span>${lib}</div>`;
+  stats.innerHTML=chip(total,'prospects')+chip(actifs,'en cours','var(--blue)')+chip(gagnes,'gagnés','var(--green)')+chip(taux+' %','de conversion')
+    +(caTotal>0?chip(caTotal.toLocaleString('fr-FR')+' €','/ mois gagnés','var(--green)'):'');
 
   // Kanban
   const board=document.getElementById('prosp-board');
@@ -148,48 +177,57 @@ function renderProspection(){
     if(clearBtn)clearBtn.style.display='none';
     if(countEl)countEl.textContent='';
   }
-  board.innerHTML=PROSP_STAGES.map(stage=>{
-    const cards=_filtered.filter(p=>p.etape===stage.key);
-    return `<div class="prosp-col" style="border-top:3px solid ${stage.color}">
-      <div class="prosp-col-title" style="color:${stage.color}">
-        <span>${stage.label}</span>
-        <span style="background:${stage.bg};color:${stage.color};padding:1px 6px;border-radius:8px;font-size:10px">${cards.length}</span>
+  // Refonte V2 : 5 colonnes au lieu de 9. Les étapes détaillées restent
+  // enregistrées telles quelles (p.etape, cron de relance, CA pondéré) ;
+  // seules les colonnes les regroupent, l'étape précise s'affichant en
+  // étiquette sur la carte. "Perdu" est replié sous le tableau.
+  const colonnes = COLONNES_PIPELINE.concat(_pStage==='perdu'||_afficherPerdus ? [COLONNE_PERDUS] : []);
+  board.innerHTML=colonnes.map(col=>{
+    const cards=_filtered.filter(p=>col.etapes.includes(p.etape));
+    const suivante=colonneSuivante(col.key);
+    return `<section class="prosp-col" aria-label="${esc(col.label)}">
+      <div class="prosp-col-title">
+        <span style="color:var(--text)">${esc(col.label)}</span>
+        <span style="color:var(--text2);font-weight:500">${cards.length}</span>
       </div>
       ${cards.map(p=>{
         const jStagnation=['gagne','perdu'].includes(p.etape)?null:joursDepuis(p.lastAction||p.createdAt);
         const stagnant=jStagnation!==null&&jStagnation>=STAGNATION_JOURS;
-        return `<div class="prosp-card" onclick="openProspCard('${p.id}')" style="${stagnant?'border:1px solid var(--red)':''}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
-          <div class="prosp-card-name" style="flex:1">${p.agence}</div>
-          <button onclick="event.stopPropagation();deleteProspect('${p.id}')" title="Supprimer ce prospect"
-            style="background:none;border:none;cursor:pointer;color:var(--red);font-size:13px;padding:0;line-height:1;flex-shrink:0;opacity:0.6"
-            onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">✕</button>
+        const st=PROSP_STAGES.find(x=>x.key===p.etape)||PROSP_STAGES[0];
+        return `<article class="prosp-card" onclick="openProspCard('${esc(p.id)}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+          <div class="prosp-card-name" style="flex:1">${esc(p.agence)}</div>
+          <button type="button" onclick="event.stopPropagation();deleteProspect('${esc(p.id)}')" title="Supprimer ce prospect" aria-label="Supprimer ${esc(p.agence)}"
+            style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 2px;line-height:1;flex-shrink:0"><i class="ti ti-x"></i></button>
         </div>
-        ${p.contact?`<div style="font-size:10px;color:var(--text2)">${p.contact}</div>`:''}
-        <div class="prosp-card-email">${p.email||p.tel||'—'}</div>
-        ${p.ca?`<div style="font-size:11px;font-weight:600;color:#3B6D11;margin-top:2px">${p.ca.toLocaleString('fr-FR')} €/mois</div>`:''}
-        ${stagnant?`<div style="font-size:10px;font-weight:600;color:var(--red);margin-top:2px">⏱ ${jStagnation}j sans action</div>`:''}
-        <div class="prosp-card-date">${p.lastAction?'Dernier : '+fmtDate(p.lastAction):'Aucun contact'}</div>
-        <div style="display:flex;gap:3px;margin-top:5px;flex-wrap:wrap">
-          ${PROSP_STAGES.filter(s=>s.key!==stage.key).slice(0,3).map(s=>`
-            <button onclick="event.stopPropagation();moveProspect('${p.id}','${s.key}')" 
-              title="Déplacer vers ${s.label}"
-              style="font-size:9px;padding:2px 5px;border:0.5px solid ${s.color};background:${s.bg};color:${s.color};border-radius:3px;cursor:pointer;white-space:nowrap">
-              → ${s.label.substring(0,10)}
-            </button>`).join('')}
-          <button onclick="event.stopPropagation();emailProspect('${p.id}')"
-            style="font-size:9px;padding:2px 5px;border:0.5px solid var(--blue);background:var(--blue-bg);color:var(--blue-text);border-radius:3px;cursor:pointer">
-            ✉️ Email
-          </button>
+        ${p.contact?`<div style="font-size:12px;color:var(--text2)">${esc(p.contact)}</div>`:''}
+        <div class="prosp-card-email">${esc(p.email||p.tel||'—')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          ${col.etapes.length>1?`<span class="badge" style="background:var(--blue-bg);color:var(--blue)">${esc(st.label)}</span>`:''}
+          ${stagnant?`<span class="badge" style="background:var(--amber-bg);color:var(--amber-text)">${jStagnation} j sans action</span>`:''}
+          ${p.ca?`<span class="badge b-green">${p.ca.toLocaleString('fr-FR')} €/mois</span>`:''}
         </div>
-      </div>`;
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid #F0F1F3">
+          <span class="prosp-card-date">${p.lastAction?'Dernier contact : '+fmtDate(p.lastAction):'Aucun contact'}</span>
+          <span style="display:flex;gap:4px">
+            <button type="button" onclick="event.stopPropagation();emailProspect('${esc(p.id)}')" title="Écrire un email" aria-label="Écrire à ${esc(p.agence)}" class="btn btn-sm" style="height:28px;padding:0 8px"><i class="ti ti-mail"></i></button>
+            ${suivante?`<button type="button" onclick="event.stopPropagation();moveProspect('${esc(p.id)}','${suivante.etapes[0]}')" title="Passer à : ${esc(suivante.label)}" class="btn btn-sm" style="height:28px;padding:0 8px"><i class="ti ti-arrow-right"></i></button>`:''}
+          </span>
+        </div>
+      </article>`;
       }).join('')}
-      <button onclick="quickAddProspect('${stage.key}')" 
-        style="width:100%;font-size:10px;padding:5px;border:1px dashed var(--border2);background:none;border-radius:var(--radius);cursor:pointer;color:var(--text2);margin-top:2px">
+      <button type="button" onclick="quickAddProspect('${col.etapes[0]}')"
+        style="width:100%;font-size:12.5px;height:36px;border:1px dashed var(--border2);background:none;border-radius:var(--radius);cursor:pointer;color:var(--text2);margin-top:2px">
         + Ajouter
       </button>
-    </div>`;
+    </section>`;
   }).join('');
+  const nbPerdus=DB.prospects.filter(p=>p.etape==='perdu').length;
+  const lienPerdus=document.getElementById('prosp-perdus-toggle');
+  if(lienPerdus){
+    lienPerdus.style.display=nbPerdus&&_pStage!=='perdu'?'':'none';
+    lienPerdus.textContent=_afficherPerdus?'Masquer les prospects perdus':`Afficher les prospects perdus (${nbPerdus})`;
+  }
 
   // Badge nav : nombre de prospects qui stagnent (alerte actionnable), pas le
   // total des prospects actifs (devenu illisible et sans utilité depuis la
@@ -771,63 +809,70 @@ const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août'
 const DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 
 // Les modèles ci-dessous sont partagés par tous les abonnés du CRM (pas
-// seulement EDL IDF) : {{SOCIETE}} et {{AVIS_GOOGLE_LIEN}} sont substitués
+// seulement EDL IDF) : {{SOCIETE}}, {{SOCIETE_ACCROCHE}} (« Société —
+// Expert en État des Lieux ») et {{AVIS_GOOGLE_LIEN}} sont substitués
 // par applyTpl() avec l'identité propre au compte connecté (Paramètres →
 // "Identité de vos emails"), jamais avec des valeurs figées en dur.
+// Mise en forme à l'envoi (js/app-emails.js, emailHtmlPro) : une ligne
+// finissant par « : » devient un intertitre, les lignes « • » une liste.
 const TEMPLATES={
-  intro:{label:'🏠 Présentation de votre agence',subj:'🏠 {{SOCIETE}} — Votre partenaire états des lieux',body:`Bonjour,\n\nJe me permets de vous contacter afin de vous présenter {{SOCIETE}}, société spécialisée dans la réalisation d'états des lieux professionnels pour les agences immobilières.\n\n🏠 Nos prestations :\n• État des lieux d'entrée\n• État des lieux de sortie\n• Pré-état des lieux\n\n✅ Pourquoi nous choisir ?\n• Disponible 7j/7, matin et soir\n• Rapport numérique remis sous 24h\n• Signature électronique incluse\n• Tarifs dégressifs selon le volume\n\nJe serais ravi d'échanger avec vous sur vos besoins et de vous proposer une grille tarifaire adaptée.`},
-  cold:{label:'📋 Prospection à froid',subj:'📋 Externalisez vos états des lieux — {{SOCIETE}}',body:`Bonjour,\n\nJe me permets de vous contacter au sujet de l'externalisation de vos états des lieux.\n\n{{SOCIETE}} réalise vos EDL entrants, sortants et pré-états des lieux — rapport remis sous 24h, disponible 7j/7.\n\n✅ Simple à mettre en place\n✅ Tarifs dégressifs selon volume\n✅ Signature électronique incluse\n\nSeriez-vous disponible pour un échange de 15 min cette semaine ?`},
-  followup:{label:'📞 Relance J+2',subj:'📞 Suite à mon email — {{SOCIETE}}',body:`Bonjour,\n\nJe reviens vers vous suite à mon email de l'avant-hier concernant nos prestations d'états des lieux professionnels.\n\nAvez-vous eu l'occasion d'y jeter un œil ? Je reste disponible pour un court échange téléphonique si vous souhaitez en savoir plus.\n\nN'hésitez pas à me faire signe !`},
-  devis:{label:'💶 Devis',subj:'💶 Votre devis {{SOCIETE}} — États des lieux professionnels',body:`Bonjour,\n\nSuite à notre échange, veuillez trouver ci-dessous notre grille tarifaire :\n\n📋 TARIFS {{SOCIETE}} (prix en HT — TVA 20%)\n\n• État des lieux entrant — à partir de 150 € HT (180 € TTC)\n• État des lieux sortant — à partir de 160 € HT (192 € TTC)\n• Pré-état des lieux — à partir de 120 € HT (144 € TTC)\n\n🎁 Remises partenaires agences :\n• À partir de 5 missions/mois : -5%\n• À partir de 10 missions/mois : -10%\n• À partir de 20 missions/mois : sur devis\n\n✅ Rapport numérique remis sous 24h\n✅ Signature électronique incluse\n✅ Disponible 7j/7`},
-    confirm_pec:{label:'📩 Confirmation prise en charge EDL',subj:'Confirmation de prise en charge EDL',body:`Bonjour,\n\nJe vous confirme la prise en charge de la mission pour l'état des lieux de sortie.\n\nLe rendez-vous est fixé le [JOUR] [DATE] à [HEURE].`},
-  confirm_entrant:{label:'✅ Confirmation EDL entrant',subj:"✅ Confirmation de votre état des lieux d'entrée — {{SOCIETE}}",body:`Bonjour,\n\nJe vous confirme la prise en charge de votre état des lieux d'entrée :\n\n📅 Date : [DATE]\n🕐 Heure : [HEURE]\n📍 Adresse : [ADRESSE]\n\n🔑 Merci de prévoir :\n• Les clés du logement\n• Le bail de location signé\n• Les relevés de compteurs (eau, gaz, électricité)\n\nLe rapport vous sera transmis dans les 24h.`},
-    confirm_sortant:{label:'✅ Confirmation EDL sortant',subj:'✅ Confirmation de votre état des lieux de sortie — {{SOCIETE}}',body:`Bonjour,\n\nJe vous confirme la prise en charge de votre état des lieux de sortie :\n\n📅 Date : [DATE]\n🕐 Heure : [HEURE]\n📍 Adresse : [ADRESSE]\n\n🔑 Merci de prévoir :\n• L'état des lieux d'entrée (pour comparaison)\n• L'ensemble des clés du logement\n• Les relevés de compteurs actualisés\n• Le locataire sortant (si possible)\n\nLe rapport comparatif vous sera transmis dans les 24h avec mention des éventuelles dégradations constatées et signature électronique des parties.`},
-  remerciement:{label:'🙏 Remerciement après mission',subj:'🙏 Merci pour votre confiance — {{SOCIETE}}',body:`Bonjour,\n\nJe tenais à vous remercier pour la confiance que vous nous accordez.\n\nVotre état des lieux a été réalisé avec soin et le rapport vous a été transmis dans les délais convenus.\n\nNous espérons que cette prestation a répondu à vos attentes et restons à votre disposition pour toutes vos prochaines missions.`},
-  partenariat:{label:'🤝 Proposition partenariat',subj:'🤝 Partenariat états des lieux — {{SOCIETE}}',body:`Bonjour,\n\nJe souhaite vous proposer un partenariat durable pour la prise en charge de vos états des lieux.\n\n🤝 Ce que nous proposons à nos partenaires :\n• Tarifs préférentiels dégressifs selon volume\n• Priorité de réservation sur nos créneaux\n• Interlocuteur dédié pour votre agence\n• Rapport standardisé à votre charte si souhaité\n• Facturation mensuelle groupée\n\nSeriez-vous disponible pour un rendez-vous afin d'étudier ensemble les modalités d'un partenariat adapté ?`},
-  // Reprend mot pour mot l'email envoye automatiquement a J+1 par
-  // reminder-rdv.js, pour les locataires dont la mission n'est pas dans le CRM.
-  avis_google:{label:'⭐ Avis Google post-prestation',subj:'⭐ Comment s\'est passé votre état des lieux ?',body:`Bonjour,\n\nChez {{SOCIETE}}, nous accordons une grande importance à la qualité de nos prestations et à la satisfaction des personnes que nous accompagnons. Votre retour est précieux : il nous permet d'améliorer continuellement nos services.\n\nSi vous avez quelques instants, pourriez-vous partager votre expérience sur notre page Google ? Cela ne prend que quelques minutes et nous aide énormément :\n\n⭐ {{AVIS_GOOGLE_LIEN}}\n\nN'hésitez pas si vous avez la moindre question, nous restons à votre entière disposition.\n\nBien cordialement,\nL'équipe {{SOCIETE}}`},
-  // Equivalent de la relance automatique a J+3.
-  avis_google_relance:{label:'⭐ Avis Google — relance',subj:'⭐ Votre avis compte pour nous',body:`Bonjour,\n\nNous nous permettons de revenir vers vous au sujet de l'état des lieux réalisé récemment. Si vous n'avez pas encore eu l'occasion de nous laisser un avis, votre retour nous serait très précieux : il ne prend qu'une minute et nous aide beaucoup à faire connaître notre travail.\n\n⭐ {{AVIS_GOOGLE_LIEN}}\n\nSi vous l'avez déjà fait, nous vous en remercions sincèrement et vous prions d'ignorer ce message.\n\nBien cordialement,\nL'équipe {{SOCIETE}}`},
-  summer:{label:'☀️ Offre estivale',subj:'☀️ Offre été 2026 — -10% sur vos EDL | {{SOCIETE}}',body:`Bonjour,\n\nL'été approche et avec lui le pic d'activité pour vos états des lieux !\n\n🎁 Offre spéciale été 2026 :\n-10% sur toutes vos missions de juillet à août 2026\n\n✅ Valable pour tout nouveau partenariat signé avant le 30 juin\n✅ Disponible 7j/7 tout l'été\n✅ Rapport remis sous 24h\n\nRéservez dès maintenant vos créneaux !`},
-  // Version texte brut de l'annonce des creneaux Cal.com envoyee en campagne
-  // Brevo (bandeau bleu, encart colore...) — pratique pour un renvoi ponctuel
-  // depuis une fiche contact, la mise en forme visuelle restant reservee a
-  // l'envoi groupe.
-  nouveaute_creneaux:{label:'🗓️ Créneaux en ligne (nouveauté)',subj:'🗓️ Nouveau : ne perdez plus de temps à trouver une date pour vos états des lieux',body:`Bonjour,\n\nUne nouveauté qui va vous faire gagner du temps au quotidien : notre formulaire de demande d'état des lieux affiche désormais nos disponibilités réelles, en direct. Fini les échanges d'emails pour trouver une date qui convienne des deux côtés — vous voyez immédiatement nos créneaux libres et choisissez celui qui vous arrange.\n\n⏱️ Ce que ça change concrètement pour votre agence :\n• Plus besoin d'attendre notre retour pour savoir si une date vous convient : les créneaux affichés sont réellement disponibles\n• Une demande complète en un seul passage sur le formulaire, sans aller-retour par email ou téléphone\n• Une prise en charge plus rapide de vos dossiers, dès la première visite du formulaire\n\nLe reste ne change pas : même formulaire, mêmes informations à renseigner, et un accusé de réception immédiat par email. Si aucun créneau ne vous convient, vous pouvez toujours indiquer une date libre comme auparavant.\n\nN'hésitez pas si vous avez la moindre question, nous restons à votre entière disposition.\n\nBien cordialement,\nL'équipe {{SOCIETE}}`}
+  intro:{label:'Présentation de votre société',subj:'🏠 {{SOCIETE_ACCROCHE}} — vos états des lieux, sans y passer vos journées',body:`Bonjour,\n\nGérer les états des lieux en plus des visites, des signatures et des relances : c'est souvent là que les journées d'une agence débordent. C'est précisément ce que {{SOCIETE_ACCROCHE}} prend en charge.\n\n🏠 Ce que nous réalisons pour vous :\n• États des lieux d'entrée et de sortie, meublés ou non\n• Pré-états des lieux avant départ du locataire\n• Rapports photos détaillés, signés électroniquement sur place\n\n⚡ Ce qui change pour votre agence :\n• Un créneau en 48 h, y compris le samedi\n• Le rapport dans votre boîte mail le jour même\n• Un interlocuteur unique qui connaît vos dossiers\n\n📞 Je vous propose un échange de 15 minutes pour voir si nous pouvons vous faire gagner du temps dès ce mois-ci. Quel créneau vous conviendrait ?`},
+  cold:{label:'Premier contact',subj:'📋 Vos états des lieux, rapport remis le jour même — {{SOCIETE}}',body:`Bonjour,\n\nAvez-vous déjà envisagé de confier vos états des lieux à un prestataire dédié ?\n\n{{SOCIETE}} réalise vos EDL d'entrée, de sortie et vos pré-états des lieux, avec un rapport photo signé électroniquement et transmis le jour même. Expert en État des Lieux, c'est notre seul métier.\n\n✅ En pratique :\n• Mise en place immédiate, sans engagement\n• Créneaux disponibles en 48 h\n• Tarifs dégressifs selon votre volume\n\n📞 Seriez-vous disponible cette semaine pour un appel de 15 minutes ?`},
+  followup:{label:'Relance',subj:'🔔 Re : vos états des lieux — {{SOCIETE_ACCROCHE}}',body:`Bonjour,\n\nJe me permets de revenir vers vous au sujet de mon précédent message sur la prise en charge de vos états des lieux.\n\nSi le sujet n'est pas prioritaire en ce moment, aucun souci : dites-le-moi simplement et je ne vous relancerai pas. 👍 S'il l'est, je peux vous envoyer notre grille tarifaire ou vous appeler au moment qui vous arrange.\n\n💬 Qu'est-ce qui vous serait le plus utile ?`},
+  devis:{label:'Devis',subj:'💶 Votre proposition tarifaire — {{SOCIETE_ACCROCHE}}',body:`Bonjour,\n\nComme convenu, voici notre proposition pour la prise en charge de vos états des lieux.\n\n💶 Tarifs (HT, TVA 20 % en sus) :\n• État des lieux d'entrée : à partir de 150 € HT\n• État des lieux de sortie : à partir de 160 € HT\n• Pré-état des lieux : à partir de 120 € HT\n\n🎁 Remises partenaires :\n• Dès 5 missions par mois : -5 %\n• Dès 10 missions par mois : -10 %\n• Au-delà de 20 missions : tarif sur mesure\n\n✅ Inclus dans chaque mission :\n• Rapport photo détaillé transmis le jour même\n• Signature électronique des parties\n• Créneaux 6 jours sur 7\n\nJe reste à votre disposition pour ajuster cette proposition à vos volumes.`},
+  confirm_pec:{label:'Prise en charge',subj:'✅ Prise en charge confirmée — état des lieux du [DATE]',body:`Bonjour,\n\nNous prenons en charge votre demande d'état des lieux. 👍\n\n📅 Rendez-vous :\n• Date : [JOUR] [DATE]\n• Heure : [HEURE]\n• Adresse : [ADRESSE]\n\n📩 Vous recevrez une confirmation la veille, et le rapport complet le jour même de l'intervention.`},
+  confirm_entrant:{label:'Confirmation EDL d\'entrée',subj:"🔑 Confirmation — état des lieux d'entrée du [DATE]",body:`Bonjour,\n\nVotre état des lieux d'entrée est confirmé. ✅\n\n📅 Rendez-vous :\n• Date : [DATE]\n• Heure : [HEURE]\n• Adresse : [ADRESSE]\n\n🔑 À prévoir pour le jour J :\n• Les clés du logement\n• Le bail signé\n• L'accès aux compteurs (eau, gaz, électricité)\n\n📄 Le rapport photo, signé par les parties, vous sera transmis le jour même.`},
+  confirm_sortant:{label:'Confirmation EDL de sortie',subj:'🚪 Confirmation — état des lieux de sortie du [DATE]',body:`Bonjour,\n\nVotre état des lieux de sortie est confirmé. ✅\n\n📅 Rendez-vous :\n• Date : [DATE]\n• Heure : [HEURE]\n• Adresse : [ADRESSE]\n\n🔑 À prévoir pour le jour J :\n• L'état des lieux d'entrée, pour la comparaison\n• L'ensemble des clés du logement\n• La présence du locataire sortant, si possible\n\n📄 Vous recevrez le jour même un rapport comparatif signé, avec les éventuelles dégradations relevées pièce par pièce.`},
+  remerciement:{label:'Remerciement',subj:'🙏 Merci pour votre confiance — {{SOCIETE_ACCROCHE}}',body:`Bonjour,\n\nMerci de nous avoir confié votre état des lieux. 🙏 Le rapport vous a été transmis et reste disponible à tout moment dans votre espace.\n\n💬 Une question sur le rapport, ou un prochain dossier à planifier ? Répondez simplement à ce message : nous nous en occupons.\n\nAu plaisir de travailler à nouveau ensemble.`},
+  partenariat:{label:'Proposition de partenariat',subj:'🤝 Une proposition de partenariat — {{SOCIETE_ACCROCHE}}',body:`Bonjour,\n\nPlusieurs agences nous confient aujourd'hui l'ensemble de leurs états des lieux. Je souhaitais vous proposer le même fonctionnement.\n\n🤝 Ce que comprend le partenariat :\n• Tarifs préférentiels selon votre volume\n• Créneaux prioritaires, y compris en période de forte rotation\n• Un interlocuteur dédié à votre agence\n• Un espace en ligne pour commander et retrouver tous vos rapports\n• Une facturation mensuelle unique\n\n📅 Pouvons-nous en parler lors d'un court rendez-vous, à l'agence ou par téléphone ?`},
+  // Reprend l'email envoyé automatiquement à J+1 par reminder-rdv.js, pour
+  // les locataires dont la mission n'est pas dans le CRM.
+  avis_google:{label:'Demande d\'avis Google',subj:'⭐ Comment s\'est passé votre état des lieux ?',body:`Bonjour,\n\nMerci de nous avoir accueillis pour votre état des lieux. 🙏 Chez {{SOCIETE}}, chaque retour compte : il nous aide à améliorer nos prestations et permet à d'autres de nous découvrir.\n\nAuriez-vous une minute pour partager votre expérience sur Google ?\n\n⭐ {{AVIS_GOOGLE_LIEN}}\n\nMerci d'avance, et n'hésitez pas à nous écrire pour toute question.\n\nBien cordialement,\nL'équipe {{SOCIETE_ACCROCHE}}`},
+  // Équivalent de la relance automatique à J+3.
+  avis_google_relance:{label:'Relance avis Google',subj:'⭐ Votre avis compte pour nous',body:`Bonjour,\n\nNous revenons vers vous au sujet de votre récent état des lieux. Si vous n'avez pas encore eu l'occasion de laisser un avis, votre retour nous serait précieux — il ne prend qu'une minute :\n\n⭐ {{AVIS_GOOGLE_LIEN}}\n\nSi c'est déjà fait, un grand merci 🙏, et ne tenez pas compte de ce message.\n\nBien cordialement,\nL'équipe {{SOCIETE_ACCROCHE}}`},
+  summer:{label:'Offre saisonnière',subj:'☀️ Été 2026 : -10 % sur vos états des lieux — {{SOCIETE}}',body:`Bonjour,\n\nL'été arrive, et avec lui le pic des entrées et sorties de locataires. ☀️ Pour vous aider à l'absorber sereinement, nous proposons une offre dédiée.\n\n🎁 L'offre été 2026 :\n• -10 % sur toutes vos missions de juillet à août\n• Créneaux disponibles tout l'été, samedi compris\n• Rapport transmis le jour même\n\n📅 Offre valable pour tout partenariat signé avant le 30 juin. Souhaitez-vous réserver vos premiers créneaux dès maintenant ?`},
+  // Version texte de l'annonce des créneaux en ligne (campagne Brevo).
+  nouveaute_creneaux:{label:'Nouveauté : créneaux en ligne',subj:'🗓️ Nouveau : choisissez vous-même le créneau de vos états des lieux',body:`Bonjour,\n\nBonne nouvelle pour votre agenda 🎉 : notre formulaire de demande affiche désormais nos disponibilités réelles, en direct.\n\n⚡ Ce que ça change pour vous :\n• Vous voyez immédiatement les créneaux libres et choisissez le vôtre\n• Une demande complète en un seul passage, sans aller-retour par email\n• Une prise en charge plus rapide de chaque dossier\n\nLe reste ne change pas : mêmes informations à renseigner, et un accusé de réception immédiat. Si aucun créneau ne vous convient, vous pouvez toujours proposer une date libre.\n\nBien cordialement,\nL'équipe {{SOCIETE_ACCROCHE}}`}
 };
 
-// ─── Boutons de modeles ajoutes apres coup ────────────────
-// Injectes en JavaScript plutot que dans index.html : ce fichier fait
-// ~2400 lignes et l'editer directement s'est deja avere risque.
-// Chaque entree cible le bouton existant apres lequel s'inserer.
-const MODELES_SUPPLEMENTAIRES = [
-  { cle: 'avis_google_relance', apres: 'avis_google', icone: 'ti-star' },
-  { cle: 'nouveaute_creneaux', apres: 'avis_google_relance', icone: 'ti-calendar-event' }
+// ─── Modèles rapides : présentation par usage ─────────────
+// Rendu dans le Composer (Emails › Écrire) par renderModelesRapides().
+const GROUPES_MODELES = [
+  { titre: 'Prospection', couleur: '#1A5FA8', modeles: [
+    { cle: 'intro', icone: 'ti-building-store', desc: 'Présenter votre société à une agence' },
+    { cle: 'cold', icone: 'ti-send', desc: 'Premier message court, appel à 15 min' },
+    { cle: 'followup', icone: 'ti-refresh', desc: 'Relancer sans insister' },
+    { cle: 'partenariat', icone: 'ti-heart-handshake', desc: 'Proposer un partenariat durable' },
+    { cle: 'summer', icone: 'ti-sun', desc: 'Offre de saison à durée limitée' },
+    { cle: 'nouveaute_creneaux', icone: 'ti-calendar-event', desc: 'Annoncer la réservation en ligne' },
+  ]},
+  { titre: 'Missions', couleur: '#0F6E56', modeles: [
+    { cle: 'devis', icone: 'ti-receipt', desc: 'Grille tarifaire et remises' },
+    { cle: 'confirm_pec', icone: 'ti-circle-check', desc: 'Confirmer la prise en charge' },
+    { cle: 'confirm_entrant', icone: 'ti-door-enter', desc: 'Rendez-vous et pièces à prévoir' },
+    { cle: 'confirm_sortant', icone: 'ti-door-exit', desc: 'Rendez-vous et comparatif de sortie' },
+  ]},
+  { titre: 'Fidélisation', couleur: '#B7791F', modeles: [
+    { cle: 'remerciement', icone: 'ti-heart', desc: 'Remercier après la mission' },
+    { cle: 'avis_google', icone: 'ti-star', desc: 'Demander un avis Google' },
+    { cle: 'avis_google_relance', icone: 'ti-star-half', desc: 'Relancer la demande d\'avis' },
+  ]},
 ];
 
-function injecterBoutonsModeles(){
-  MODELES_SUPPLEMENTAIRES.forEach(function(mod){
-    const tpl = TEMPLATES[mod.cle];
-    if(!tpl) return;
-    // Deja injecte ? (renderTracking peut relancer plusieurs fois)
-    if(document.querySelector('[data-tpl="' + mod.cle + '"]')) return;
-    const reference = document.querySelector('button[onclick*="applyTpl(\'' + mod.apres + '\')"]');
-    if(!reference) return;
-    const bouton = document.createElement('button');
-    bouton.className = 'btn btn-sm';
-    bouton.style.justifyContent = 'flex-start';
-    bouton.setAttribute('data-tpl', mod.cle);
-    bouton.innerHTML = '<i class="ti ' + mod.icone + '"></i>' + tpl.label.replace(/^[^\s]+\s/, '');
-    bouton.onclick = function(){ applyTpl(mod.cle); };
-    reference.parentNode.insertBefore(bouton, reference.nextSibling);
-  });
+function renderModelesRapides(){
+  const box = document.getElementById('modeles-rapides');
+  if(!box) return;
+  box.innerHTML = GROUPES_MODELES.map(g => `<div class="modeles-groupe">
+      <div class="modeles-groupe-titre" style="color:${g.couleur}">${g.titre}</div>
+      ${g.modeles.filter(m => TEMPLATES[m.cle]).map(m => `<button type="button" class="modele-carte" data-tpl="${m.cle}" onclick="applyTpl('${m.cle}')" title="${TEMPLATES[m.cle].subj.replace(/"/g, '&quot;')}">
+        <span class="modele-icone" style="background:${g.couleur}14;color:${g.couleur}"><i class="ti ${m.icone}"></i></span>
+        <span class="modele-texte"><b>${TEMPLATES[m.cle].label}</b><span>${m.desc}</span></span>
+      </button>`).join('')}
+    </div>`).join('');
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-  // Leger differe : les boutons du Composer sont dans index.html, deja
-  // presents au chargement, mais on laisse le DOM se stabiliser.
-  setTimeout(injecterBoutonsModeles, 300);
+  setTimeout(renderModelesRapides, 0);
 });
 
 // ─── STATE ────────────────────────────────────────────────

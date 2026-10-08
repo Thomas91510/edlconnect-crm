@@ -100,6 +100,8 @@ function retirerTelAutre(id,index){
 function openFiche(id){
   const c=DB.contacts.find(x=>x.id===id);if(!c)return;
   currentFicheId=id;
+  const _cbEspace=document.getElementById('fiche-espace-actif'); if(_cbEspace) _cbEspace.checked=espaceActif(c);
+  if(typeof chargerEspacesHistoriques==='function') chargerEspacesHistoriques();
   document.getElementById('fiche-avatar').textContent=initials(c.entreprise||c.contact||'?');
   document.getElementById('fiche-name').textContent=c.entreprise||c.contact||'—';
   document.getElementById('fiche-sub').textContent=[c.contact,c.source].filter(Boolean).join(' · ')||'';
@@ -163,8 +165,9 @@ function openFiche(id){
     <div class="fiche-section">
       <div class="fiche-section-title">Tracking email</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="stat-pill pill-open"><i class="ti ti-eye" style="font-size:10px"></i>${c.opens||0} ouvertures</span>
-        <span class="stat-pill pill-click"><i class="ti ti-mouse" style="font-size:10px"></i>${c.clicks||0} clics</span>
+        <span class="stat-pill pill-open"><i class="ti ti-eye" style="font-size:10px"></i><span id="fiche-suivi-opens">${statsSuiviContact(c).opens}</span> ouvertures</span>
+        <span class="stat-pill pill-click"><i class="ti ti-mouse" style="font-size:10px"></i><span id="fiche-suivi-clicks">${statsSuiviContact(c).clicks}</span> clics</span>
+        <span id="fiche-suivi-maj" style="font-size:11px;color:var(--text3)">Mis à jour automatiquement</span>
       </div>
     </div>
 
@@ -184,6 +187,7 @@ function openFiche(id){
 
   // Rendu emails via fonction dédiée (inclut Gmail)
   renderFicheEmails(c);
+  suivreEmailsFiche(c.id);
   feRenderDocs(c.documents || []);
   const msgBadge=document.getElementById('ftab-messages-count');
   if(msgBadge){
@@ -466,9 +470,10 @@ function renderFicheCommandes(c){
           ${m.statut==='annulée'?'❌':m.statut==='terminée'?'🏁':m.statut==='en cours'?'⏳':'📅'}
         </div>
         <div style="flex:1">
-          <div style="font-size:12px;font-weight:600;margin-bottom:2px">${m.type||'EDL'}</div>
-          <div style="font-size:11px;color:var(--text2)">${m.adresse||'Adresse non renseignée'}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">${fmtDT(m.date)}</div>
+          <div style="font-size:12px;font-weight:600;margin-bottom:2px">${esc(m.type||'EDL')}</div>
+          <div style="font-size:11px;color:var(--text2)">${esc(m.adresse||'Adresse non renseignée')}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${fmtDT(m.date)}${m.locataireNom?' · '+esc(m.locataireNom):''}</div>
+          ${rapportsDeMission(m).length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${rapportsDeMission(m).map(r => { const href = _urlSureApercuExtranet(r.url); return href ? `<a href="${href}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#0F6E56;background:#E3F5EF;padding:3px 9px;border-radius:20px;text-decoration:none"><i class="ti ti-file-download"></i>Rapport${r.type === 1 ? ' d’entrée' : r.type === 2 ? ' de sortie' : ''}</a>` : ''; }).join('')}</div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:14px;font-weight:700;color:var(--green)">${(m.montant||0)} €</div>
@@ -501,11 +506,50 @@ function deleteContact(){
   notify('Contact supprimé');renderContacts();renderDashboard();
 }
 
-function renderFicheEmails(c){
+// ─── Suivi des emails dans la fiche : automatique ─────────────
+// Ouvert / cliqué viennent de Brevo (rafraîchi à l'ouverture de la fiche
+// puis toutes les 2 minutes tant qu'elle reste ouverte) : plus de menu à
+// régler à la main.
+function emailsDuContact(c){
   const emailLower=(c.email||'').toLowerCase();
   const fromHistory=(c.history||[]);
-  const fromTracking=DB.trackings.filter(t=>(t.email||'').toLowerCase()===emailLower&&!fromHistory.find(h=>h.id===t.id));
-  const allEmails=[...fromHistory,...fromTracking].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const fromTracking=(DB.trackings||[]).filter(t=>(t.email||'').toLowerCase()===emailLower&&!fromHistory.find(h=>h.id===t.id));
+  return [...fromHistory,...fromTracking].sort((a,b)=>new Date(b.date)-new Date(a.date));
+}
+function statsSuiviContact(c){
+  const emails = emailsDuContact(c);
+  const somme = (k) => emails.reduce((n, e) => n + (Number(e[k]) || 0), 0);
+  const ouverts = emails.filter(e => e.statut === 'Ouvert' || e.statut === 'Cliqué' || e.statut === 'Répondu').length;
+  return { opens: Math.max(somme('opens'), ouverts, Number(c.opens) || 0), clicks: Math.max(somme('clicks'), Number(c.clicks) || 0) };
+}
+let _minuteurSuiviFiche = null;
+async function suivreEmailsFiche(id){
+  clearInterval(_minuteurSuiviFiche);
+  const maj = async (force) => {
+    const modal = document.getElementById('modal-fiche');
+    if(currentFicheId !== id || (modal && !modal.classList.contains('open'))){ clearInterval(_minuteurSuiviFiche); return; }
+    if(typeof rafraichirSuiviEmails === 'function') await rafraichirSuiviEmails(force, 60 * 1000);
+    const c = (DB.contacts || []).find(x => x.id === id);
+    if(!c || currentFicheId !== id) return;
+    const st = statsSuiviContact(c);
+    const o = document.getElementById('fiche-suivi-opens'); if(o) o.textContent = st.opens;
+    const k = document.getElementById('fiche-suivi-clicks'); if(k) k.textContent = st.clicks;
+    const m = document.getElementById('fiche-suivi-maj'); if(m) m.textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    renderFicheEmails(c);
+  };
+  // Sans connexion au cloud (tests, mode hors ligne) : pas de relève.
+  if(typeof supabaseClient === 'undefined' || !supabaseClient) return;
+  maj(false);
+  _minuteurSuiviFiche = setInterval(() => maj(true), 2 * 60 * 1000);
+}
+const _STYLE_STATUT_EMAIL = { 'Envoyé':['#F2F4F7','#475467','ti-send'], 'Ouvert':['#EAF3DE','#3B6D11','ti-eye'], 'Cliqué':['#E8F0FB','#1A5FA8','ti-mouse'], 'Répondu':['#FFF4E5','#854F0B','ti-message-reply'], 'Reçu':['#E8F0FB','#0C447C','ti-inbox'], 'Échec':['#FEF3F2','#B42318','ti-alert-triangle'], 'Spam':['#FEF3F2','#B42318','ti-alert-triangle'], 'Désabonné':['#F2F4F7','#475467','ti-user-off'], 'Sans suite':['#FEF3F2','#A32D2D','ti-x'] };
+function badgeStatutEmail(t){
+  const [bg, fg, ic] = _STYLE_STATUT_EMAIL[t.statut] || _STYLE_STATUT_EMAIL['Envoyé'];
+  const det = [t.opens ? t.opens + ' ouv.' : '', t.clicks ? t.clicks + ' clic' + (t.clicks > 1 ? 's' : '') : ''].filter(Boolean).join(' · ');
+  return `<span title="Statut suivi automatiquement (Brevo)" style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;background:${bg};color:${fg};padding:3px 8px;border-radius:20px;white-space:nowrap;margin-left:8px;flex-shrink:0"><i class="ti ${ic}" style="font-size:11px"></i>${esc(t.statut || 'Envoyé')}${det ? ' · ' + esc(det) : ''}</span>`;
+}
+function renderFicheEmails(c){
+  const allEmails=emailsDuContact(c);
   const gmailBtnHtml=''; // Gmail désactivé (invalid_client)
   const emailsHtml=allEmails.length?allEmails.map((t,i)=>`
     <div style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${t.direction==='recu'?'border-left:3px solid var(--blue)':''}">
@@ -513,15 +557,13 @@ function renderFicheEmails(c){
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
             ${t.direction==='recu'?'<span style="font-size:9px;background:var(--blue-bg);color:var(--blue-text);padding:1px 5px;border-radius:3px">REÇU</span>':'<span style="font-size:9px;background:var(--bg3);color:var(--text2);padding:1px 5px;border-radius:3px">ENVOYÉ</span>'}
-            <div style="font-weight:600;font-size:12px">${t.objet||t.subject||'—'}</div>
+            <div style="font-weight:600;font-size:12px">${esc(t.objet||t.subject||'—')}</div>
           </div>
           <div style="font-size:10px;color:var(--text2)">${fmtDT(t.date)}${t.from&&t.direction==='recu'?' · De : '+t.from:''}</div>
         </div>
-        <select style="font-size:10px;padding:2px 6px;min-width:90px;max-width:110px;margin-left:8px;flex-shrink:0" onchange="updateEmailStatus('${c.id}','${t.id||i}',this.value)">
-          ${['Envoyé','Ouvert','Cliqué','Répondu','Reçu','Sans suite'].map(s=>`<option value="${s}"${s===t.statut?' selected':''}>${s}</option>`).join('')}
-        </select>
+        ${badgeStatutEmail(t)}
       </div>
-      ${t.corps?`<div style="padding:8px 12px;font-size:11px;color:var(--text2);border-top:1px solid var(--border);max-height:80px;overflow-y:auto;white-space:pre-wrap">${t.corps.substring(0,300)}${t.corps.length>300?'…':''}</div>`:''}
+      ${t.corps?`<div style="padding:8px 12px;font-size:11px;color:var(--text2);border-top:1px solid var(--border);max-height:80px;overflow-y:auto;white-space:pre-wrap">${esc(t.corps.substring(0,300))}${t.corps.length>300?'…':''}</div>`:''}
     </div>`).join('')
   :`<div class="empty">Aucun email — utilise le bouton ci-dessus pour charger les emails Gmail ou envoie un email depuis le bas</div>`;
   document.getElementById('fiche-emails-list').innerHTML=gmailBtnHtml+emailsHtml;
@@ -538,13 +580,79 @@ function updateEmailStatus(contactId,emailId,newStatut){
 }
 
 // ─── NAV ──────────────────────────────────────────────────
+// Refonte V2 : le menu ne compte plus que 5 rubriques. Une rubrique peut
+// regrouper plusieurs vues historiques (ex. Missions = Réservations +
+// Missions + Agenda), présentées alors comme des onglets en tête de page.
+// Les vues gardent leurs identifiants (view-xxx) : seule la navigation change.
+const SECTIONS_NAV = {
+  aujourdhui : { vues:[{v:'dashboard',  label:"Aujourd'hui"}] },
+  missions   : { vues:[{v:'reservations',label:'Réservations', badge:'resa-nav-badge', perm:'reservations'},
+                       {v:'missions',   label:'Missions', perm:'missions'},
+                       {v:'agenda',     label:'Agenda', perm:'missions'}] },
+  espaces    : { vues:[{v:'espaces',    label:'Espaces agences'}] },
+  clients    : { vues:[{v:'contacts',   label:'Clients'},
+                       {v:'rapports',   label:'Rapports', perm:'clients'}] },
+  prospection: { vues:[{v:'prospection',label:'Prospection'}] },
+  emails     : { vues:[{v:'compose',    label:'Écrire', perm:'emails'},
+                       {v:'campaigns',  label:'Campagnes', perm:'campagnes'},
+                       {v:'brevo',      label:'Synchronisation Brevo', siVisible:'nav-brevo'}] },
+  reglages   : { vues:[{v:'settings',   label:'Réglages'}] },
+  aide       : { vues:[{v:'help',       label:'Aide'}] },
+  admin      : { vues:[{v:'admin',      label:'Plateforme'}] }
+};
+function sectionDeVue(v){
+  for(const cle in SECTIONS_NAV){
+    if(SECTIONS_NAV[cle].vues.some(x=>x.v===v)) return cle;
+  }
+  return null;
+}
+// Onglets visibles d'une rubrique : ceux autorisés par le rôle courant
+// (peut(), js/app-equipe.js — absent des tests : tout est alors autorisé)
+// et, pour Brevo, seulement si le compte y a droit (bouton #nav-brevo affiché).
+function ongletsVisibles(section){
+  const def=SECTIONS_NAV[section];
+  if(!def) return [];
+  return def.vues.filter(x=>{
+    if(x.perm && typeof peut==='function' && !peut(x.perm)) return false;
+    if(x.siVisible){
+      const el=document.getElementById(x.siVisible);
+      if(!el || el.style.display==='none') return false;
+    }
+    return true;
+  });
+}
+function renderSectionTabs(v){
+  const barre=document.getElementById('section-tabs-bar');
+  const conteneur=document.getElementById('section-tabs');
+  if(!barre||!conteneur) return;
+  const onglets=ongletsVisibles(sectionDeVue(v));
+  if(onglets.length<2){ barre.classList.remove('show'); conteneur.innerHTML=''; return; }
+  barre.classList.add('show');
+  conteneur.innerHTML=onglets.map(o=>{
+    const actif=o.v===v;
+    let badge='';
+    if(o.badge){
+      const b=document.getElementById(o.badge);
+      if(b && b.style.display!=='none' && b.textContent) badge=` <span class="nav-badge nb-red">${esc(b.textContent)}</span>`;
+    }
+    return `<button type="button" role="tab" class="section-tab${actif?' active':''}" aria-selected="${actif}" onclick="nav('${o.v}')">${esc(o.label)}${badge}</button>`;
+  }).join('');
+}
 function nav(v){
+  // Une rubrique interdite au rôle courant renvoie vers l'accueil (le menu
+  // la masque déjà ; ceci couvre les accès par lien ou raccourci).
+  if(typeof vueAutorisee==='function' && !vueAutorisee(v)) v='dashboard';
   // Fermer toute fenêtre modale restée ouverte pour éviter qu'elle ne bloque l'affichage d'une future fenêtre
   document.querySelectorAll('.modal-bg.open').forEach(el=>el.classList.remove('open'));
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(el=>{if(el.getAttribute('onclick')&&el.getAttribute('onclick').includes("'"+v+"'"))el.classList.add('active');});
+  const section=sectionDeVue(v);
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    const s=el.getAttribute('data-section');
+    if(s ? s===section : (el.getAttribute('onclick')||'').includes("'"+v+"'")) el.classList.add('active');
+  });
+  renderSectionTabs(v);
   if(v==='dashboard')renderDashboard();
   if(v==='contacts'){detectDuplicates();renderContacts();}
   if(v==='prospection'){
@@ -556,18 +664,19 @@ function nav(v){
     }
   }
   if(v==='missions')renderMissions();
+  if(v==='rapports')renderRapports();
+  if(v==='espaces'){renderBlocEspacesAgences();chargerEspacesHistoriques();}
   if(v==='campaigns')renderCampaigns();
-  if(v==='compose')renderTracking();
+  if(v==='compose'){renderTracking();rafraichirSuiviEmails();}
   if(v==='agenda')renderCalendar();
   if(v==='reservations')loadReservations();
   if(v!=='reservations' && _resaAutoRefreshInterval) silentRefreshReservations();
-  if(v==='settings')loadSettingsForm();
+  if(v==='settings'){loadSettingsForm(); if(typeof renderReglagesV2==='function') renderReglagesV2();}
   if(v==='help'){}
-  // Synchronise la barre mobile même quand la navigation vient du tiroir
-  // complet (ex. Contacts, Composer) : les vues absentes du raccourci
-  // rapide allument "Plus" plutôt que de laisser un ancien onglet actif.
-  const vuesRaccourcis=['dashboard','reservations','missions','agenda'];
-  updateMobileNav(vuesRaccourcis.includes(v)?v:'plus');
+  // Barre mobile : les rubriques sans raccourci allument "Plus".
+  const raccourcis={aujourdhui:'dashboard',missions:'missions',clients:'contacts',emails:'compose'};
+  updateMobileNav(raccourcis[section]||'plus');
+  const main=document.querySelector('.main'); if(main) main.scrollTop=0;
   closeMobileSidebar(); // ferme le menu mobile après navigation
 }
 
@@ -673,6 +782,13 @@ function filterByMonth(arr, dateField){
 
 function renderDashboard(){
   document.getElementById('today-label').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  // Accueil personnalisé : "Bonjour Thomas" (prénom tiré du nom saisi dans
+  // Réglages › Profil), à défaut le simple titre de la rubrique.
+  const titreAccueil=document.getElementById('dash-greeting');
+  if(titreAccueil){
+    const prenom=((typeof CFG!=='undefined'&&CFG&&CFG.userName)||'').trim().split(/\s+/)[0];
+    titreAccueil.textContent=prenom?'Bonjour '+prenom:"Aujourd'hui";
+  }
   detectDuplicates();
   buildMonthOptions();
   renderAujourdhui();
@@ -742,9 +858,10 @@ function renderDashboard(){
   document.getElementById('k-no-reply').textContent=noReply||'—';
   document.getElementById('k-no-reply-pct').textContent=noReply>0?`${Math.round(noReply/total*100)}% des envois`:'Aucun';
 
-  const stageCounts={};PROSP_STAGES.forEach(s=>stageCounts[s.key]=DB.prospects.filter(p=>p.etape===s.key).length);
-  const maxC=Math.max(...Object.values(stageCounts),1);
-  document.getElementById('dash-pipeline').innerHTML=PROSP_STAGES.map(s=>`<div class="stat-row"><span style="font-size:11px;width:80px;color:var(--text2);flex-shrink:0">${s.label}</span><div class="progress-bar"><div class="progress-fill" style="width:${Math.round(stageCounts[s.key]/maxC*100)}%;background:${s.color}"></div></div><span style="font-size:11px;min-width:16px;text-align:right">${stageCounts[s.key]}</span></div>`).join('');
+  // Mêmes 5 colonnes que le tableau de prospection (COLONNES_PIPELINE).
+  const colCounts=COLONNES_PIPELINE.map(c=>({label:c.label,n:DB.prospects.filter(p=>c.etapes.includes(p.etape)).length}));
+  const maxC=Math.max(...colCounts.map(c=>c.n),1);
+  document.getElementById('dash-pipeline').innerHTML=colCounts.map(c=>`<div class="stat-row" style="margin-bottom:14px"><span style="font-size:13px;width:150px;flex-shrink:0">${c.label}</span><div class="progress-bar" style="height:8px;border-radius:4px;background:#F0F1F3"><div class="progress-fill" style="width:${Math.round(c.n/maxC*100)}%"></div></div><span style="font-size:13px;min-width:24px;text-align:right;color:var(--text2)">${c.n}</span></div>`).join('');
 
   // Missions dans le tableau — filtrées
   document.getElementById('dash-missions').innerHTML=missions.slice(-5).reverse().map(m=>`<tr><td>${esc(m.agence)}</td><td style="font-size:10px">${esc(m.type)}</td><td>${m.montant} €</td><td>${statusBadge(m.statut)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Aucune</td></tr>';
@@ -982,6 +1099,192 @@ async function chargerApercuExtranet(email){
   }catch(e){
     body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red-text)">Erreur lors du chargement de l\'aperçu.</div>';
   }
+}
+
+
+// ─── Rapports par client ────────────────────────────────────
+// Tous les rapports d'état des lieux récupérés d'Edouard (api/edouard-cron.js,
+// relève horaire : .github/workflows/releve-edouard.yml) — m.rapports, ou
+// l'ancien champ unique m.rapportUrl — regroupés par client (agence).
+function rapportsDeMission(m){
+  const liste = Array.isArray(m.rapports) && m.rapports.length ? m.rapports
+    : (m.rapportUrl ? [{ nom: 'Rapport EDL', url: m.rapportUrl, date: m.rapportRecupereAt || '' }] : []);
+  return liste.filter(r => r && r.url);
+}
+function clientDeMission(m){
+  const email = String(m.emailClient || '').trim().toLowerCase();
+  const c = email ? (DB.contacts || []).find(x => String(x.email || '').toLowerCase() === email) : null;
+  const nom = (c && (c.entreprise || c.contact)) || m.agence || email || 'Client non renseigné';
+  return { cle: email || String(nom).toLowerCase(), nom, email, contactId: c ? c.id : '' };
+}
+function renderRapports(){
+  const box = document.getElementById('rapports-contenu');
+  if(!box) return;
+  const releve = document.getElementById('rapports-releve');
+  const q = String((document.getElementById('rapports-recherche') || {}).value || '').trim().toLowerCase();
+  const groupes = {};
+  let derniere = '';
+  (DB.missions || []).forEach(m => {
+    const rapports = rapportsDeMission(m);
+    if(!rapports.length) return;
+    if(m.rapportRecupereAt && String(m.rapportRecupereAt) > derniere) derniere = String(m.rapportRecupereAt);
+    const cl = clientDeMission(m);
+    const texte = [cl.nom, cl.email, m.adresse, m.locataireNom, m.type].join(' ').toLowerCase();
+    if(q && !texte.includes(q)) return;
+    const g = groupes[cl.cle] || (groupes[cl.cle] = { ...cl, missions: [] });
+    g.missions.push(m);
+  });
+  if(releve) releve.textContent = derniere ? 'Dernier rapport reçu : ' + new Date(derniere).toLocaleString('fr-FR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+  const liste = Object.values(groupes).sort((a, b) => String(a.nom).localeCompare(String(b.nom), 'fr'));
+  if(!liste.length){ box.innerHTML = '<div class="empty">' + (q ? 'Aucun rapport ne correspond.' : 'Aucun rapport pour l’instant : ils apparaissent ici dès qu’un état des lieux est terminé dans Edouard.') + '</div>'; return; }
+  box.innerHTML = liste.map(g => {
+    g.missions.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    const nb = g.missions.reduce((n, m) => n + rapportsDeMission(m).length, 0);
+    return `<details class="rapports-client" open>
+      <summary><span class="rapports-client-nom">${esc(g.nom)}</span><span class="rapports-client-meta">${g.email ? esc(g.email) + ' · ' : ''}${nb} rapport${nb > 1 ? 's' : ''}</span>
+        ${g.contactId ? `<button type="button" class="btn btn-sm" onclick="event.preventDefault();openFiche('${esc(g.contactId)}')">Fiche</button>` : ''}
+        ${g.email ? `<button type="button" class="btn btn-sm" onclick="event.preventDefault();ouvrirEspaceAgence('${esc(g.email)}')"><i class="ti ti-building-store"></i>Son espace</button>` : ''}
+      </summary>
+      <div style="overflow-x:auto"><table class="tbl tbl-remu"><thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>Locataire</th><th>Rapport(s)</th></tr></thead><tbody>
+      ${g.missions.map(m => `<tr>
+        <td>${esc(m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '—')}</td>
+        <td>${esc(m.adresse || '—')}</td>
+        <td>${esc(m.type || '—')}</td>
+        <td>${esc(m.locataireNom || '—')}</td>
+        <td>${rapportsDeMission(m).map(r => { const href = _urlSureApercuExtranet(r.url); return href ? `<a class="btn btn-sm" href="${href}" target="_blank" rel="noopener"><i class="ti ti-file-download"></i>${esc(r.type === 1 ? 'Entrée' : r.type === 2 ? 'Sortie' : 'PDF')}${r.date ? ' · ' + esc(new Date(r.date).toLocaleDateString('fr-FR')) : ''}</a>` : ''; }).join(' ')}</td>
+      </tr>`).join('')}
+      </tbody></table></div>
+    </details>`;
+  }).join('');
+}
+async function releverRapportsMaintenant(){
+  if(typeof syncEdouardMaintenant === 'function') await syncEdouardMaintenant();
+  renderRapports();
+}
+
+// ─── Espaces agences (menu de gauche) ────────────────────────
+// Liste les agences (contacts avec email) et ouvre leur extranet réel en
+// mode aperçu (/extranet-app?apercu=email) : lecture seule, réservé côté
+// serveur au compte administrateur — pour dépanner une agence ou vérifier
+// son paramétrage sans se connecter à sa place.
+function agencesAvecEspace(){
+  return (DB.contacts || []).filter(c => c && String(c.email || '').includes('@'))
+    .sort((a, b) => String(a.entreprise || a.contact || a.email).localeCompare(String(b.entreprise || b.contact || b.email), 'fr'));
+}
+// Ancien point d'entrée (fenêtre) : ouvre désormais la page « Espaces agences ».
+function ouvrirEspacesAgences(){ nav('espaces'); }
+// Page « Espaces agences » (bouton du menu de gauche) : seulement les
+// clients dont l'espace extranet est ACTIVÉ (interrupteur dans la fiche
+// client ou ici) ; les autres s'activent depuis « Activer l'espace d'un
+// autre client ».
+// Agences qui utilisaient déjà leur extranet avant l'interrupteur
+// (api/espaces-agences-statuts.js) : activées tant qu'on ne les désactive
+// pas — même règle que le serveur (api/_lib/espace-agence.js).
+let _espacesHistoriques = new Set();
+let _espacesHistoriquesCharges = false;
+async function chargerEspacesHistoriques(){
+  if(_espacesHistoriquesCharges) return;
+  _espacesHistoriquesCharges = true;
+  try{
+    const r = await fetch('/api/espaces-agences-statuts', { headers: await _authHeaders() });
+    if(!r.ok) return;
+    const d = await r.json();
+    _espacesHistoriques = new Set((d.historiques || []).map(e => String(e).toLowerCase()));
+    renderBlocEspacesAgences();
+    const cb = document.getElementById('fiche-espace-actif');
+    const c = (DB.contacts || []).find(x => x.id === currentFicheId);
+    if(cb && c) cb.checked = espaceActif(c);
+  }catch(e){ _espacesHistoriquesCharges = false; }
+}
+const SEUIL_RECHERCHE_ESPACES = 8;
+function espaceActif(c){
+  if(!c) return false;
+  if(c.espaceActif === false) return false;
+  if(c.espaceActif === true) return true;
+  return _espacesHistoriques.has(String(c.email || '').toLowerCase());
+}
+function basculerEspaceAgence(id, oui){
+  const c = (DB.contacts || []).find(x => x.id === id);
+  if(!c) return;
+  if(oui && !String(c.email || '').includes('@')){
+    notify("⚠️ Renseignez d'abord l'email de ce client : c'est son identifiant de connexion à l'extranet.", 'warn');
+    const cb = document.getElementById('fiche-espace-actif'); if(cb && currentFicheId === id) cb.checked = false;
+    renderBlocEspacesAgences();
+    return;
+  }
+  // Toutes les fiches du même email (doublons) basculent ensemble : côté
+  // serveur, un « désactivé » sur l'une d'elles bloquerait l'accès.
+  const email = String(c.email || '').trim().toLowerCase();
+  const fiches = email ? (DB.contacts || []).filter(x => String(x.email || '').trim().toLowerCase() === email) : [c];
+  fiches.forEach(f => {
+    quickUpdateContact(f.id, 'espaceActif', !!oui);
+    // Enregistré tout de suite dans le cloud (pas seulement dans le navigateur).
+    if(typeof pushToSupabase === 'function') pushToSupabase('contacts', f);
+  });
+  renderBlocEspacesAgences();
+}
+function renderBlocEspacesAgences(){
+  const box = document.getElementById('dash-espaces-liste');
+  if(!box) return;
+  const q = String((document.getElementById('dash-espaces-recherche') || {}).value || '').trim().toLowerCase();
+  const correspond = c => !q || [c.entreprise, c.contact, c.email, c.ville].some(v => String(v || '').toLowerCase().includes(q));
+  const tous = agencesAvecEspace();
+  const actifs = tous.filter(espaceActif);
+  const compte = document.getElementById('espaces-agences-compte');
+  if(compte) compte.textContent = actifs.length + ' espace' + (actifs.length > 1 ? 's' : '') + ' activé' + (actifs.length > 1 ? 's' : '');
+  // Recherche affichée seulement quand les agences activées deviennent nombreuses.
+  const champ = document.getElementById('dash-espaces-recherche');
+  if(champ) champ.style.display = (actifs.length > SEUIL_RECHERCHE_ESPACES || q) ? '' : 'none';
+  const liste = actifs.filter(correspond);
+  box.innerHTML = liste.length ? liste.map(c => `<div class="espaces-agences-carte-wrap">
+      <button type="button" class="espaces-agences-carte" onclick="ouvrirEspaceAgence('${esc(c.email)}')" title="Ouvrir l'espace de ${esc(c.entreprise || c.email)} (lecture seule)">
+        <span style="min-width:0;flex:1"><b>${esc(c.entreprise || c.contact || c.email)}</b><span>${esc(c.email)}</span></span><i class="ti ti-external-link"></i></button>
+      <button type="button" class="espaces-agences-off" title="Désactiver l'espace de ${esc(c.entreprise || c.email)}" aria-label="Désactiver l'espace" onclick="basculerEspaceAgence('${esc(c.id)}', false)">Désactiver</button>
+    </div>`).join('')
+    : `<div class="espaces-agences-vide">${q ? 'Aucun espace activé ne correspond.' : 'Aucun espace activé pour l’instant : activez-en un ci-dessous ou depuis la fiche du client.'}</div>`;
+  const inactifs = tous.filter(c => !espaceActif(c));
+  const nbI = document.getElementById('espaces-inactifs-compte');
+  if(nbI) nbI.textContent = '(' + inactifs.length + ')';
+  const boxI = document.getElementById('espaces-inactifs-liste');
+  if(boxI){
+    // Clients non activés : jamais toute la liste d'un coup — on cherche
+    // l'agence à activer (2 lettres minimum).
+    const qi = String((document.getElementById('espaces-inactifs-recherche') || {}).value || '').trim().toLowerCase();
+    const champI = `<input type="search" class="espaces-agences-recherche" id="espaces-inactifs-recherche" placeholder="Rechercher le client à activer…" value="${esc(qi)}" oninput="renderBlocEspacesAgences()">`;
+    if(!document.getElementById('espaces-inactifs-recherche')) boxI.insertAdjacentHTML('beforebegin', champI);
+    const trouves = qi.length >= 2 ? inactifs.filter(c => [c.entreprise, c.contact, c.email, c.ville].some(v => String(v || '').toLowerCase().includes(qi))) : [];
+    const vus = trouves.slice(0, 30);
+    if(qi.length < 2){ boxI.innerHTML = '<div class="espaces-agences-vide" style="padding:8px 4px">Tapez le nom ou l’email du client pour l’activer.</div>'; return; }
+    boxI.innerHTML = vus.length ? vus.map(c => `<div class="espaces-agences-inactif"><span><b style="color:#F4F7FA">${esc(c.entreprise || c.contact || c.email)}</b> · ${esc(c.email)}</span>
+        <button type="button" onclick="basculerEspaceAgence('${esc(c.id)}', true)">Activer</button></div>`).join('')
+      + (trouves.length > vus.length ? '<div class="espaces-agences-vide" style="padding:8px 4px">Affinez la recherche pour voir les autres.</div>' : '')
+      : '<div class="espaces-agences-vide" style="padding:8px 4px">Aucun client ne correspond.</div>';
+  }
+}
+function ouvrirEspaceFicheCourante(){
+  const c = (DB.contacts || []).find(x => x.id === currentFicheId);
+  if(c && c.email) ouvrirEspaceAgence(c.email);
+  else notify("⚠️ Ce contact n'a pas d'email renseigné", 'warn');
+}
+function ouvrirEspaceAgence(email){
+  window.open('/extranet-app?apercu=' + encodeURIComponent(String(email || '').trim().toLowerCase()), '_blank', 'noopener');
+}
+async function supprimerAnciennesFacturesAgences(){
+  try{
+    const token = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const appel = (corps) => fetch('/api/factures-agences-purge', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + token }, body: JSON.stringify(corps) }).then(async r => ({ ok: r.ok, data: await r.json().catch(() => ({})) }));
+    const sim = await appel({ simulation: true });
+    if(!sim.ok){ notify(sim.data.error || 'Vérification impossible', 'error'); return; }
+    if(!sim.data.factures){ notify('Aucune ancienne facture à supprimer.'); return; }
+    if(!confirm(`Supprimer définitivement ${sim.data.factures} ancienne(s) facture(s) sur ${sim.data.fiches} fiche(s) client, ainsi que les fichiers PDF ? Cette action est irréversible.`)) return;
+    const res = await appel({});
+    if(!res.ok){ notify(res.data.error || 'Suppression impossible', 'error'); return; }
+    // Même nettoyage dans la copie locale, pour qu'une sauvegarde ultérieure
+    // de la fiche ne remette pas les anciennes entrées.
+    (DB.contacts || []).forEach(c => { if(Array.isArray(c.documents)) c.documents = c.documents.filter(d => !(d && d.type === 'facture')); });
+    if(typeof saveToStorage === 'function') saveToStorage();
+    notify(`✅ ${res.data.factures} facture(s) supprimée(s) — ${res.data.fichiersSupprimes || 0} fichier(s) PDF effacé(s)`);
+  }catch(e){ notify('Erreur réseau', 'error'); }
 }
 
 

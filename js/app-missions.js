@@ -3,9 +3,9 @@
 // Genere depuis index.html — NE PAS reordonner les fichiers dans index.html
 
 // ─── SYNC EDOUARD À LA DEMANDE ─────────────────────────────
-// La récupération automatique des rapports Edouard tourne une fois par jour
-// (cron reminder-rdv, en fin de journée) : ce bouton permet de forcer une
-// vérification immédiate sans attendre, réservé côté serveur aux comptes
+// La récupération automatique des rapports Edouard tourne toutes les heures
+// (.github/workflows/releve-edouard.yml, plus le cron reminder-rdv du soir
+// en secours) : ce bouton permet de forcer une vérification immédiate, réservé côté serveur aux comptes
 // admin (api/edouard-cron.js, déclencheur "manuel").
 async function syncEdouardMaintenant(){
   const btn = document.getElementById('edouard-sync-btn');
@@ -29,6 +29,7 @@ async function syncEdouardMaintenant(){
       // recharger depuis le cloud, pas depuis localStorage qui n'a pas bougé.
       await loadFromSupabase();
       renderMissions();
+      if(typeof renderRapports === 'function') renderRapports();
     } else {
       notify('Aucun nouveau rapport disponible pour le moment.');
     }

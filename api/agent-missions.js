@@ -4,6 +4,8 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { resolverAgentParEmail } from './_lib/agent-lookup.js';
 import { calculerKpiAgent } from './_lib/agent-kpi.js';
+import { nettoyerInfosLegales } from './_lib/agent-facture.js';
+import { calculerRemuneration } from './_lib/agent-remuneration.js';
 
 const BAREME_PAR_DEFAUT = [
   { label: 'Secteur primaire', montant: '0' },
@@ -103,13 +105,35 @@ export default async function handler(req) {
       secteurSecondaire: Array.isArray(agent.secteurSecondaire) ? agent.secteurSecondaire : [],
       zoneStatut: agent.zoneStatut || null,
       zoneRefusMotif: agent.zoneRefusMotif || '',
+      // Facturation (onglet « Facturation ») : informations juridiques
+      // saisies par l'agent et historique de ses factures envoyées (sans le
+      // chemin de stockage, servi seulement par agent-facture-download.js).
+      infosLegales: nettoyerInfosLegales(agent.infosLegales),
+      factures: (Array.isArray(agent.factures) ? agent.factures : []).map(({ chemin: _c, ...f }) => f),
       bareme: Array.isArray(data.baremeDeplacement) && data.baremeDeplacement.length ? data.baremeDeplacement : BAREME_PAR_DEFAUT,
     },
     missions: missionsPubliques,
     kpi: calculerKpiAgent(missions),
+    // Part de l'agent selon la référence financière de sa fiche (jamais le
+    // montant facturé au client) — onglet « Rémunération » de son espace.
+    // En mode pourcentage, l'agent connaît son taux (il figure à son
+    // contrat) : le prix client reste déductible de sa part, c'est inhérent
+    // à ce mode de rémunération et accepté.
+    remuneration: calculerRemuneration(missions, agent.remuneration, new Date(), {
+      primaire: agent.secteurPrimaire, secondaire: agent.secteurSecondaire, statut: agent.zoneStatut,
+    }),
     // Couleur de marque choisie par l'agence (Paramètres) — recolore
     // l'espace agent pour qu'il reste cohérent avec l'identité de l'agence.
     couleurPrimaire: data.couleurPrimaire || '',
+    // Destinataire des factures de l'agent : identité légale de l'agence
+    // (Réglages › Profil), modifiable par l'agent sur chaque facture.
+    destinataireFacture: {
+      nom: data.legalRaisonSociale || data.companyName || '',
+      adresse: data.legalAdresse || '',
+      rcs: data.legalRcs || '',
+      siret: data.legalSiret || '',
+      tvaIntra: data.legalTvaIntra || '',
+    },
   };
   return new Response(JSON.stringify(body), { status: 200, headers });
 }

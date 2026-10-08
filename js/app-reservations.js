@@ -1017,6 +1017,45 @@ function mrToggleEntrants(){
   if(section) section.style.display = show ? 'block' : 'none';
   if(label) label.innerHTML = show ? 'Locataire sortant <span style="color:var(--red)">*</span>' : 'Locataire <span style="color:var(--red)">*</span>';
   if(show && _mrEntrants.length === 0) mrAddEntrant();
+  // Date de l'EDL d'entrée : demandée (et obligatoire) pour toute sortie.
+  const wrapEntree = document.getElementById('mr-date-entree-wrap');
+  if(wrapEntree) wrapEntree.style.display = String(_mrSelectedType || '').toLowerCase().includes('sortant') ? '' : 'none';
+}
+
+// Pièces jointes de la réservation manuelle : même dépôt que les formulaires
+// publics (api/upload-booking-attachment.js, regroupées par un jeton), puis
+// transmises à /api/booking-request avec la demande.
+let _mrPiecesJointes = [];
+let _mrJetonPJ = '';
+const MR_MAX_PJ = 10;
+function mrRenderPiecesJointes(){
+  const box = document.getElementById('mr-attachments-list');
+  if(!box) return;
+  box.innerHTML = _mrPiecesJointes.map((a, i) => `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:12px">
+      <span>${a.status === 'uploading' ? '⏳' : a.status === 'error' ? '⚠️' : '📎'}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.nom)}${a.status === 'error' ? ' — ' + esc(a.error || 'échec') : ''}</span>
+      <span onclick="_mrPiecesJointes.splice(${i},1);mrRenderPiecesJointes()" style="cursor:pointer;color:var(--text3)">✕</span></div>`).join('');
+}
+async function mrPiecesJointesChoisies(input){
+  const fichiers = Array.from(input.files || []);
+  input.value = '';
+  if(!_mrJetonPJ) _mrJetonPJ = 'crm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  for(const f of fichiers){
+    if(_mrPiecesJointes.length >= MR_MAX_PJ){ notify('Maximum ' + MR_MAX_PJ + ' fichiers.', 'warn'); break; }
+    const entree = { nom: f.name, path: '', status: 'uploading' };
+    _mrPiecesJointes.push(entree);
+    mrRenderPiecesJointes();
+    try{
+      const form = new FormData();
+      form.append('file', f);
+      form.append('token', _mrJetonPJ);
+      const resp = await fetch('/api/upload-booking-attachment', { method: 'POST', body: form });
+      const data = await resp.json().catch(() => ({}));
+      if(!resp.ok || !data.path) throw new Error(data.error || 'Échec du dépôt');
+      entree.path = data.path; entree.status = 'ok';
+    }catch(e){ entree.status = 'error'; entree.error = e.message; }
+    mrRenderPiecesJointes();
+  }
 }
 
 function openManualReservationModal(){
@@ -1040,6 +1079,9 @@ function openManualReservationModal(){
   });
   document.getElementById('mr-date').value = '';
   document.getElementById('mr-superficie').value = '';
+  const _prop = document.getElementById('mr-proprietaire'); if(_prop) _prop.value = '';
+  _mrPiecesJointes = []; _mrJetonPJ = ''; mrRenderPiecesJointes();
+  const _wrapEntree = document.getElementById('mr-date-entree-wrap'); if(_wrapEntree) _wrapEntree.style.display = 'none';
   document.getElementById('mr-date-entree').value = '';
   document.getElementById('mr-heure').value = '';
   document.getElementById('mr-submit-btn').disabled = false;
@@ -1075,6 +1117,11 @@ async function submitManualReservation(){
       if(!e.tel){ errEl.textContent='Le mobile est requis pour chaque locataire entrant.'; errEl.style.display='block'; return; }
     }
   }
+  if(typeof erreurReservation === 'function'){
+    const manque = erreurReservation({ typeEdl: _mrSelectedType, superficie: document.getElementById('mr-superficie').value, proprietaire: (document.getElementById('mr-proprietaire') || {}).value, dateEntree: document.getElementById('mr-date-entree').value, locataire: { tel: locTel, email: document.getElementById('mr-loc-email').value }, locatairesEntrants });
+    if(manque){ errEl.textContent = manque; errEl.style.display = 'block'; return; }
+  }
+  if(_mrPiecesJointes.some(a => a.status === 'uploading')){ errEl.textContent = 'Patientez, l’envoi des pièces jointes est en cours…'; errEl.style.display = 'block'; return; }
   errEl.style.display = 'none';
 
   const btn = document.getElementById('mr-submit-btn');
@@ -1102,6 +1149,8 @@ async function submitManualReservation(){
     superficie: document.getElementById('mr-superficie').value || '',
     dateEntree: document.getElementById('mr-date-entree').value || '',
     acces: document.getElementById('mr-acces').value.trim(),
+    proprietaire: (document.getElementById('mr-proprietaire') || {}).value?.trim() || '',
+    pieceJointes: _mrPiecesJointes.filter(a => a.status === 'ok').map(a => ({ nom: a.nom, path: a.path })),
     dateSouhaitee: date,
     heure: document.getElementById('mr-heure').value,
     notes: document.getElementById('mr-notes').value.trim(),

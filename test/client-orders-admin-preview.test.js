@@ -13,7 +13,7 @@ process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key
 const { default: handlerDocs } = await import('../api/client-documents.js');
 
 const ADMIN_EMAIL = 'contact@edl-idf.com';
-const AUTRE_EMAIL = 'agence@exemple.fr';
+const AUTRE_EMAIL = 'immogestionlocative@gmail.com';
 
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });
@@ -23,7 +23,7 @@ function mockFetchOrders(callerEmail) {
   global.fetch = async (url) => {
     urlsAppelees.push(String(url));
     if (String(url).includes('/auth/v1/user')) {
-      return { ok: true, json: async () => ({ email: callerEmail }) };
+      return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: callerEmail }) };
     }
     if (String(url).includes('/rest/v1/bookings')) {
       return { ok: true, json: async () => [] };
@@ -70,7 +70,7 @@ function mockFetchDocs(callerEmail) {
   global.fetch = async (url) => {
     urlsAppelees.push(String(url));
     if (String(url).includes('/auth/v1/user')) {
-      return { ok: true, json: async () => ({ email: callerEmail }) };
+      return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: callerEmail }) };
     }
     return { ok: true, json: async () => [] };
   };

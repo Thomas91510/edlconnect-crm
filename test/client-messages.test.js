@@ -6,8 +6,8 @@ process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key
 const { default: handler } = await import('../api/client-messages.js');
 
 const ADMIN_EMAIL = 'contact@edl-idf.com';
-const CLIENT_EMAIL = 'client@exemple.fr';
-const AUTRE_EMAIL = 'agence@exemple.fr';
+const CLIENT_EMAIL = 'e2t.immo@gmail.com';
+const AUTRE_EMAIL = 'immogestionlocative@gmail.com';
 
 const fetchOriginal = global.fetch;
 const envSlackOriginal = process.env.SLACK_WEBHOOK_URL;
@@ -24,7 +24,7 @@ function requete(callerEmail, body) {
 function mockFetch({ callerEmail, contactRows, patchSpy, slackSpy }) {
   global.fetch = async (url, opts) => {
     const u = String(url);
-    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ email: callerEmail }) };
+    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: callerEmail }) };
     if (u.includes('/rest/v1/contacts') && (!opts || opts.method !== 'PATCH')) {
       return { ok: true, json: async () => contactRows ?? [] };
     }
@@ -117,7 +117,7 @@ test('client-messages : un non-admin ne peut pas lire les messages d\'un autre e
   const urls = [];
   global.fetch = async (url) => {
     urls.push(String(url));
-    if (String(url).includes('/auth/v1/user')) return { ok: true, json: async () => ({ email: AUTRE_EMAIL }) };
+    if (String(url).includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: AUTRE_EMAIL }) };
     return { ok: true, json: async () => [] };
   };
   await handler(requete(AUTRE_EMAIL, { action: 'list', clientEmail: 'victime@exemple.fr' }));
@@ -130,7 +130,7 @@ test('client-messages : un admin peut consulter un autre email via clientEmail',
   const urls = [];
   global.fetch = async (url) => {
     urls.push(String(url));
-    if (String(url).includes('/auth/v1/user')) return { ok: true, json: async () => ({ email: ADMIN_EMAIL }) };
+    if (String(url).includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: ADMIN_EMAIL }) };
     return { ok: true, json: async () => [] };
   };
   await handler(requete(ADMIN_EMAIL, { action: 'list', clientEmail: CLIENT_EMAIL }));

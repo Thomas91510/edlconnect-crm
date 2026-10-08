@@ -254,15 +254,15 @@ textarea{min-height:75px;resize:vertical}
         </div>
         <div class="form-row">
           <div><label>Meublé / Nu</label><select id="meuble" onchange="chargerCreneauxSiPossible()"><option value="">— Choisir —</option><option>Meublé</option><option>Nu</option></select></div>
-          <div><label>Superficie (m²)</label><input type="number" id="superficie" placeholder="Ex: 45" min="1" step="0.1"></div>
+          <div><label>Superficie (m²) <span class="req">*</span></label><input type="number" id="superficie" placeholder="Ex: 45" min="1" step="0.1" required></div>
         </div>
         <div class="form-row">
           <div><label>Accès (digicode…)</label><input type="text" id="acces" placeholder="Code : A1234"></div>
-          <div><label>Nom du propriétaire</label><input type="text" id="proprietaire" placeholder="Ex: M. Dupont"></div>
+          <div><label>Nom du propriétaire <span class="req">*</span></label><input type="text" id="proprietaire" placeholder="Ex: M. Dupont" required></div>
         </div>
         <div class="form-row">
           <div id="date-entree-wrap" style="display:none">
-            <label>Date d&#39;entrée dans le logement</label>
+            <label>Date de l&#39;état des lieux d&#39;entrée <span class="req">*</span></label>
             <input type="date" id="date-entree">
           </div>
         </div>
@@ -314,10 +314,11 @@ textarea{min-height:75px;resize:vertical}
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><i class="ti ti-paperclip"></i>Pièces jointes (optionnel)</div>
+      <div class="card-head"><i class="ti ti-paperclip"></i>Pièces jointes (facultatif)</div>
       <div class="card-body">
-        <input type="file" id="attachments-input" multiple onchange="onAttachmentsSelected(this)">
-        <div class="hint">Tous formats acceptés · 25 Mo max par fichier · 10 fichiers max</div>
+        <input type="file" id="attachments-input" multiple onchange="onAttachmentsSelected(this)" style="display:none">
+        <button type="button" class="btn" style="width:100%;justify-content:center;border-style:dashed" onclick="document.getElementById('attachments-input').click()"><i class="ti ti-paperclip"></i> Ajouter des pièces jointes</button>
+        <div class="hint">Plusieurs fichiers à la fois, ou en plusieurs fois · tous formats · 25 Mo max par fichier · 10 fichiers max</div>
         <div id="attachments-list" style="margin-top:10px"></div>
       </div>
     </div>
@@ -349,7 +350,7 @@ textarea{min-height:75px;resize:vertical}
             </div>
             <div class="form-row">
               <div><label>Téléphone <span class="req">*</span></label><input type="tel" class="loc-tel" placeholder="06 12 34 56 78"></div>
-              <div><label>Email</label><input type="email" class="loc-email" placeholder="jean.martin@email.fr"></div>
+              <div><label>Email <span class="req">*</span></label><input type="email" class="loc-email" placeholder="jean.martin@email.fr" required></div>
             </div>
           </div>
         </div>
@@ -400,6 +401,7 @@ textarea{min-height:75px;resize:vertical}
 
 </div>
 
+<script src="/js/reservation-validation.js"></script>
 <script>
 const AGENCY_ID = '${agencyId}';
 const CONTACT_ID = '${contactId}';
@@ -773,6 +775,9 @@ function next(from){
     chargerCreneauxSiPossible(); // au cas où typologie/meublé étaient déjà remplis (retour arrière)
   } else if(from===2){
     if(!document.getElementById('adresse').value.trim()) return showErr("L'adresse du bien est requise.");
+    if(!(Number(String(document.getElementById('superficie').value).replace(',', '.')) > 0)) return showErr("La superficie du bien est requise.");
+    if(!document.getElementById('proprietaire').value.trim()) return showErr("Le nom du propriétaire est requis.");
+    if(String(type || '').toLowerCase().includes('sortant') && !document.getElementById('date-entree').value) return showErr("La date de l'état des lieux d'entrée est requise pour une sortie.");
     if(!document.getElementById('date').value) return showErr("La date souhaitée est requise.");
     buildRecap(); setStep(3);
   }
@@ -811,8 +816,8 @@ function addLocataire(){
   div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:#1A5FA8">👤 Locataire '+_locCount+'</div><button type="button" onclick="removeLocataire(this)" style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:16px;padding:0">✕</button></div>'
     +'<div class="form-row"><div><label>Civilité</label><select class="loc-civilite"><option value="">— Choisir —</option><option value="M.">M.</option><option value="Mme">Mme</option></select></div>'
     +'<div><label>Nom complet</label><input type="text" class="loc-nom" placeholder="Marie Martin"></div></div>'
-    +'<div class="form-row"><div><label>Téléphone</label><input type="tel" class="loc-tel" placeholder="06 12 34 56 78"></div>'
-    +'<div><label>Email</label><input type="email" class="loc-email" placeholder="marie.martin@email.fr"></div></div>';
+    +'<div class="form-row"><div><label>Téléphone <span class="req">*</span></label><input type="tel" class="loc-tel" placeholder="06 12 34 56 78"></div>'
+    +'<div><label>Email <span class="req">*</span></label><input type="email" class="loc-email" placeholder="marie.martin@email.fr"></div></div>';
   list.appendChild(div);
 }
 let _entCount = 0;
@@ -826,7 +831,7 @@ function addEntrant(){
     +'<div class="form-row"><div><label>Prénom <span class="req">*</span></label><input type="text" class="ent-prenom" placeholder="Marie"></div>'
     +'<div><label>Nom <span class="req">*</span></label><input type="text" class="ent-nom" placeholder="Martin"></div></div>'
     +'<div class="form-row"><div><label>Mobile <span class="req">*</span></label><input type="tel" class="ent-tel" placeholder="06 12 34 56 78"></div>'
-    +'<div><label>Email</label><input type="email" class="ent-email" placeholder="marie.martin@email.fr"></div></div>';
+    +'<div><label>Email <span class="req">*</span></label><input type="email" class="ent-email" placeholder="marie.martin@email.fr"></div></div>';
   list.appendChild(div);
   renumEntrants();
 }
@@ -906,6 +911,8 @@ async function submit(){
     locatairesEntrants: locatairesEntrants,
     pieceJointes: _attachments.filter(a => a.status === 'ok').map(a => ({ nom: a.nom, path: a.path }))
   };
+  const manque = typeof erreurReservation === 'function' ? erreurReservation(payload) : '';
+  if(manque){ btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> Envoyer ma demande'; return showErr(manque); }
   try {
     const resp = await fetch('/api/booking-request', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     if(resp.ok){
