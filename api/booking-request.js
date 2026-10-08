@@ -237,6 +237,9 @@ export default async function handler(req) {
         headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
         body: JSON.stringify({
           sender: { name: IDENT.nom, email: IDENT.email },
+          // Tag de l'abonné : le suivi des emails (api/brevo-tracking.js) ne
+          // remonte que les emails portant « sub_<id> ».
+          ...(ownerId ? { tags: ['sub_' + ownerId] } : {}),
           ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
           to: [{ email, name: contact }],
           subject: `✅ Demande d'EDL reçue — ${typeEdl} · ${adresse}`,

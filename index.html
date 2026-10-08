@@ -691,6 +691,34 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
   .btn{height:42px}
   #apercu-role-bandeau{padding:10px 16px}
 }
+/* Espaces agences : identité visuelle distincte (bleu nuit + or) */
+.nav-item.nav-espaces{margin-top:10px;background:#0F1E2E;color:#F4F7FA}
+.nav-item.nav-espaces .nav-icon i,.nav-item.nav-espaces .nav-label{color:#F4F7FA}
+.nav-item.nav-espaces .nav-icon i{color:#C29A5B}
+.nav-item.nav-espaces:hover{background:#1B3048}
+.espaces-agences-bloc{background:#0F1E2E;color:#F4F7FA;border-radius:16px;padding:22px 24px;margin:22px 0 30px;border-top:3px solid #C29A5B}
+.espaces-agences-tete{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+.espaces-agences-bloc h2{font-size:16px;font-weight:600;margin:0 0 4px;color:#fff}
+.espaces-agences-bloc h2 i{color:#C29A5B}
+.espaces-agences-bloc p{font-size:13px;color:#B9C4D0;margin:0;max-width:620px}
+.espaces-agences-tout{background:#C29A5B;color:#0F1E2E;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-family:inherit;font-size:13px;cursor:pointer}
+.espaces-agences-recherche{background:#1B3048;border:1px solid #2C4560;color:#fff;margin-bottom:12px}
+.espaces-agences-recherche::placeholder{color:#8FA0B3}
+.espaces-agences-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.espaces-agences-carte{display:flex;align-items:center;gap:10px;background:#1B3048;border:1px solid #2C4560;border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;color:#F4F7FA;font-family:inherit}
+.espaces-agences-carte:hover{border-color:#C29A5B}
+.espaces-agences-carte b{display:block;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.espaces-agences-carte span{display:block;font-size:12px;color:#8FA0B3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.espaces-agences-carte i{color:#C29A5B;margin-left:auto}
+.espaces-agences-vide{font-size:13px;color:#8FA0B3}
+/* Fiche client agrandie */
+.modal.modal-fiche-large{max-height:92vh;padding:30px 34px}
+.modal.modal-fiche-large input,.modal.modal-fiche-large select,.modal.modal-fiche-large textarea{font-size:14px}
+/* Rapports par client */
+.rapports-client{background:var(--white,#fff);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;padding:4px 16px}
+.rapports-client summary{display:flex;align-items:center;gap:10px;padding:12px 0;cursor:pointer;flex-wrap:wrap}
+.rapports-client-nom{font-weight:600;font-size:14.5px}
+.rapports-client-meta{font-size:12px;color:var(--text2);margin-right:auto}
 </style>
 </head>
 <body>
@@ -751,7 +779,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <span class="nav-icon"><i class="ti ti-mail"></i></span>
         <span class="nav-label">Emails</span>
       </button>
-      <button class="nav-item" data-perm="clients" onclick="ouvrirEspacesAgences()" title="Voir l'espace extranet d'une agence (dépannage, paramétrage)">
+      <button class="nav-item nav-espaces" data-perm="clients" onclick="ouvrirEspacesAgences()" title="Voir l'espace extranet d'une agence (dépannage, paramétrage)">
         <span class="nav-icon"><i class="ti ti-building-store"></i></span>
         <span class="nav-label">Espaces agences</span>
       </button>
@@ -827,6 +855,19 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <div class="kpi" data-perm="ca"><div class="kpi-label">CA total <span id="ca-mode-label" style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="toggleTaxMode()" title="Cliquer pour basculer HT/TTC">HT</span></div><div class="kpi-value" id="k-ca">—</div><div class="kpi-sub" id="k-ca-sub"></div></div>
         <div class="kpi" data-perm="clients"><div class="kpi-label">Doublons</div><div class="kpi-value" id="k-dups" style="color:var(--amber)">—</div><div class="kpi-sub warn" id="k-dups-sub"></div></div>
       </div>
+      <!-- Espaces agences : juste après les chiffres clés, apparence propre
+           (bleu nuit + or) pour ne jamais le confondre avec le reste du CRM. -->
+      <section class="espaces-agences-bloc" data-perm="clients" aria-labelledby="espaces-agences-titre">
+        <div class="espaces-agences-tete">
+          <div>
+            <h2 id="espaces-agences-titre"><i class="ti ti-building-store"></i> Espaces agences</h2>
+            <p>Voir l'extranet d'une agence exactement comme elle le voit — lecture seule, pour un problème ou un souci de paramétrage.</p>
+          </div>
+          <button type="button" class="espaces-agences-tout" onclick="ouvrirEspacesAgences()">Toutes les agences</button>
+        </div>
+        <input type="search" class="espaces-agences-recherche" id="dash-espaces-recherche" placeholder="Rechercher une agence…" oninput="renderBlocEspacesAgences()">
+        <div class="espaces-agences-liste" id="dash-espaces-liste"></div>
+      </section>
       <!-- KPIs Email Tracking : repliés par défaut (moins consultés au quotidien
            que les KPI principaux), état mémorisé dans localStorage -->
       <button data-perm="emails" onclick="toggleEmailKpis()" id="email-kpis-toggle" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text2);padding:4px 2px;margin-top:-2px">
@@ -881,6 +922,19 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
     </div>
 
     <!-- CONTACTS -->
+    <div class="view" id="view-rapports">
+      <div class="page-header">
+        <h1 class="page-title">Rapports</h1>
+        <div style="display:flex;gap:7px;align-items:center">
+          <span id="rapports-releve" style="font-size:12px;color:var(--text2)"></span>
+          <button class="btn btn-sm" onclick="releverRapportsMaintenant()"><i class="ti ti-refresh"></i>Relever maintenant</button>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text2);margin:-6px 0 14px">Rapports d'état des lieux de toutes les agences, classés par client — ajoutés automatiquement dès que l'état des lieux est terminé dans Edouard (relève toutes les heures).</p>
+      <div class="search-wrap"><i class="ti ti-search"></i><input type="text" id="rapports-recherche" placeholder="Rechercher un client, une adresse, un locataire…" oninput="renderRapports()"></div>
+      <div id="rapports-contenu"></div>
+    </div>
+
     <div class="view" id="view-contacts">
       <div class="page-header">
         <h1 class="page-title">Clients</h1>
@@ -1059,7 +1113,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <h1 class="page-title">Missions</h1>
         <div style="display:flex;gap:8px;align-items:center">
           <span id="edouard-sync-status" style="font-size:11px;color:var(--text2)"></span>
-          <button class="btn btn-sm" id="edouard-sync-btn" onclick="syncEdouardMaintenant()" title="Va chercher immédiatement les rapports d'état des lieux terminés dans Edouard, sans attendre la synchro automatique du soir"><i class="ti ti-refresh"></i>Sync Edouard</button>
+          <button class="btn btn-sm" id="edouard-sync-btn" onclick="syncEdouardMaintenant()" title="Va chercher immédiatement les rapports d'état des lieux terminés dans Edouard, sans attendre la relève automatique (toutes les heures)"><i class="ti ti-refresh"></i>Sync Edouard</button>
           <button class="btn btn-primary" onclick="openNewMissionModal()"><i class="ti ti-plus"></i>Nouvelle mission</button>
         </div>
       </div>
@@ -2095,12 +2149,12 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 
 <!-- FICHE CONTACT -->
 <div class="modal-bg" id="modal-fiche">
-  <div class="modal" style="width:600px;max-width:96vw">
+  <div class="modal modal-fiche-large" style="width:980px;max-width:96vw">
     <div class="modal-title">
       <div class="flex-row" id="fiche-title-row"><div class="avatar-lg" id="fiche-avatar"></div><div><div style="font-size:16px;font-weight:700" id="fiche-name"></div><div style="font-size:12px;color:var(--text2)" id="fiche-sub"></div></div></div>
       <button class="modal-close" onclick="closeModal('modal-fiche')"><i class="ti ti-x"></i></button>
     </div>
-    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:14px">
+    <div style="display:flex;gap:22px;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:18px">
       <button class="tab active" id="ftab-infos" onclick="ficheTab('infos',this)">Informations</button>
       <button class="tab" id="ftab-commandes" onclick="ficheTab('commandes',this)">Commandes <span id="ftab-commandes-count"></span></button>
       <button class="tab" id="ftab-taches" onclick="ficheTab('taches',this)">Tâches <span id="ftab-taches-count" style="font-size:10px;background:var(--blue-bg);color:var(--blue-text);padding:1px 5px;border-radius:8px;margin-left:2px"></span></button>
@@ -2113,7 +2167,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" id="fiche-email-btn"><i class="ti ti-send"></i>Envoyer un email</button>
         <button class="btn btn-sm" id="fiche-booking-btn" onclick="copyBookingLink()" style="background:var(--green-bg);color:var(--green-text);border-color:var(--green)"><i class="ti ti-link"></i>Lien booking</button>
-        <button class="btn btn-sm" onclick="previewExtranetClient()"><i class="ti ti-eye"></i>Aperçu extranet</button>
+        <button class="btn btn-sm" onclick="ouvrirEspaceFicheCourante()"><i class="ti ti-building-store"></i>Voir son espace</button>
       </div>
     </div>
     <div id="fiche-commandes" style="display:none">

@@ -547,7 +547,8 @@ const SECTIONS_NAV = {
   missions   : { vues:[{v:'reservations',label:'Réservations', badge:'resa-nav-badge', perm:'reservations'},
                        {v:'missions',   label:'Missions', perm:'missions'},
                        {v:'agenda',     label:'Agenda', perm:'missions'}] },
-  clients    : { vues:[{v:'contacts',   label:'Clients'}] },
+  clients    : { vues:[{v:'contacts',   label:'Clients'},
+                       {v:'rapports',   label:'Rapports', perm:'clients'}] },
   prospection: { vues:[{v:'prospection',label:'Prospection'}] },
   emails     : { vues:[{v:'compose',    label:'Écrire', perm:'emails'},
                        {v:'campaigns',  label:'Campagnes', perm:'campagnes'},
@@ -620,8 +621,9 @@ function nav(v){
     }
   }
   if(v==='missions')renderMissions();
+  if(v==='rapports')renderRapports();
   if(v==='campaigns')renderCampaigns();
-  if(v==='compose')renderTracking();
+  if(v==='compose'){renderTracking();rafraichirSuiviEmails();}
   if(v==='agenda')renderCalendar();
   if(v==='reservations')loadReservations();
   if(v!=='reservations' && _resaAutoRefreshInterval) silentRefreshReservations();
@@ -735,6 +737,7 @@ function filterByMonth(arr, dateField){
 }
 
 function renderDashboard(){
+  if(typeof renderBlocEspacesAgences==='function') try{ renderBlocEspacesAgences(); }catch(e){}
   document.getElementById('today-label').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   // Accueil personnalisé : "Bonjour Thomas" (prénom tiré du nom saisi dans
   // Réglages › Profil), à défaut le simple titre de la rubrique.
@@ -1056,6 +1059,66 @@ async function chargerApercuExtranet(email){
 }
 
 
+// ─── Rapports par client ────────────────────────────────────
+// Tous les rapports d'état des lieux récupérés d'Edouard (api/edouard-cron.js,
+// relève horaire : .github/workflows/releve-edouard.yml) — m.rapports, ou
+// l'ancien champ unique m.rapportUrl — regroupés par client (agence).
+function rapportsDeMission(m){
+  const liste = Array.isArray(m.rapports) && m.rapports.length ? m.rapports
+    : (m.rapportUrl ? [{ nom: 'Rapport EDL', url: m.rapportUrl, date: m.rapportRecupereAt || '' }] : []);
+  return liste.filter(r => r && r.url);
+}
+function clientDeMission(m){
+  const email = String(m.emailClient || '').trim().toLowerCase();
+  const c = email ? (DB.contacts || []).find(x => String(x.email || '').toLowerCase() === email) : null;
+  const nom = (c && (c.entreprise || c.contact)) || m.agence || email || 'Client non renseigné';
+  return { cle: email || String(nom).toLowerCase(), nom, email, contactId: c ? c.id : '' };
+}
+function renderRapports(){
+  const box = document.getElementById('rapports-contenu');
+  if(!box) return;
+  const releve = document.getElementById('rapports-releve');
+  const q = String((document.getElementById('rapports-recherche') || {}).value || '').trim().toLowerCase();
+  const groupes = {};
+  let derniere = '';
+  (DB.missions || []).forEach(m => {
+    const rapports = rapportsDeMission(m);
+    if(!rapports.length) return;
+    if(m.rapportRecupereAt && String(m.rapportRecupereAt) > derniere) derniere = String(m.rapportRecupereAt);
+    const cl = clientDeMission(m);
+    const texte = [cl.nom, cl.email, m.adresse, m.locataireNom, m.type].join(' ').toLowerCase();
+    if(q && !texte.includes(q)) return;
+    const g = groupes[cl.cle] || (groupes[cl.cle] = { ...cl, missions: [] });
+    g.missions.push(m);
+  });
+  if(releve) releve.textContent = derniere ? 'Dernier rapport reçu : ' + new Date(derniere).toLocaleString('fr-FR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+  const liste = Object.values(groupes).sort((a, b) => String(a.nom).localeCompare(String(b.nom), 'fr'));
+  if(!liste.length){ box.innerHTML = '<div class="empty">' + (q ? 'Aucun rapport ne correspond.' : 'Aucun rapport pour l’instant : ils apparaissent ici dès qu’un état des lieux est terminé dans Edouard.') + '</div>'; return; }
+  box.innerHTML = liste.map(g => {
+    g.missions.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    const nb = g.missions.reduce((n, m) => n + rapportsDeMission(m).length, 0);
+    return `<details class="rapports-client" open>
+      <summary><span class="rapports-client-nom">${esc(g.nom)}</span><span class="rapports-client-meta">${g.email ? esc(g.email) + ' · ' : ''}${nb} rapport${nb > 1 ? 's' : ''}</span>
+        ${g.contactId ? `<button type="button" class="btn btn-sm" onclick="event.preventDefault();openFiche('${esc(g.contactId)}')">Fiche</button>` : ''}
+        ${g.email ? `<button type="button" class="btn btn-sm" onclick="event.preventDefault();ouvrirEspaceAgence('${esc(g.email)}')"><i class="ti ti-building-store"></i>Son espace</button>` : ''}
+      </summary>
+      <div style="overflow-x:auto"><table class="tbl tbl-remu"><thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>Locataire</th><th>Rapport(s)</th></tr></thead><tbody>
+      ${g.missions.map(m => `<tr>
+        <td>${esc(m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '—')}</td>
+        <td>${esc(m.adresse || '—')}</td>
+        <td>${esc(m.type || '—')}</td>
+        <td>${esc(m.locataireNom || '—')}</td>
+        <td>${rapportsDeMission(m).map(r => { const href = _urlSureApercuExtranet(r.url); return href ? `<a class="btn btn-sm" href="${href}" target="_blank" rel="noopener"><i class="ti ti-file-download"></i>${esc(r.type === 1 ? 'Entrée' : r.type === 2 ? 'Sortie' : 'PDF')}${r.date ? ' · ' + esc(new Date(r.date).toLocaleDateString('fr-FR')) : ''}</a>` : ''; }).join(' ')}</td>
+      </tr>`).join('')}
+      </tbody></table></div>
+    </details>`;
+  }).join('');
+}
+async function releverRapportsMaintenant(){
+  if(typeof syncEdouardMaintenant === 'function') await syncEdouardMaintenant();
+  renderRapports();
+}
+
 // ─── Espaces agences (menu de gauche) ────────────────────────
 // Liste les agences (contacts avec email) et ouvre leur extranet réel en
 // mode aperçu (/extranet-app?apercu=email) : lecture seule, réservé côté
@@ -1085,6 +1148,22 @@ function renderEspacesAgences(){
       </div>
       <button type="button" class="btn btn-sm" onclick="ouvrirEspaceAgence('${esc(c.email)}')"><i class="ti ti-external-link"></i> Voir son espace</button>
     </div>`).join('');
+}
+// Bloc « Espaces agences » du tableau de bord (juste après les chiffres clés)
+function renderBlocEspacesAgences(){
+  const box = document.getElementById('dash-espaces-liste');
+  if(!box) return;
+  const q = String((document.getElementById('dash-espaces-recherche') || {}).value || '').trim().toLowerCase();
+  const toutes = agencesAvecEspace();
+  const liste = toutes.filter(c => !q || [c.entreprise, c.contact, c.email].some(v => String(v || '').toLowerCase().includes(q))).slice(0, 8);
+  box.innerHTML = liste.length ? liste.map(c => `<button type="button" class="espaces-agences-carte" onclick="ouvrirEspaceAgence('${esc(c.email)}')" title="Ouvrir l'espace de ${esc(c.entreprise || c.email)} (lecture seule)">
+      <span style="min-width:0;flex:1"><b>${esc(c.entreprise || c.contact || c.email)}</b><span>${esc(c.email)}</span></span><i class="ti ti-external-link"></i></button>`).join('')
+    : `<div class="espaces-agences-vide">${q ? 'Aucune agence ne correspond.' : 'Aucune agence avec un email.'}</div>`;
+}
+function ouvrirEspaceFicheCourante(){
+  const c = (DB.contacts || []).find(x => x.id === currentFicheId);
+  if(c && c.email) ouvrirEspaceAgence(c.email);
+  else notify("⚠️ Ce contact n'a pas d'email renseigné", 'warn');
 }
 function ouvrirEspaceAgence(email){
   window.open('/extranet-app?apercu=' + encodeURIComponent(String(email || '').trim().toLowerCase()), '_blank', 'noopener');

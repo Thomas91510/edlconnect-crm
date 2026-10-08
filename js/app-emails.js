@@ -76,14 +76,63 @@ function genererSignatureEmail(){
 </div>`;
 }
 
+// ─── Suivi des emails (Brevo) ───────────────────────────────
+// Avant : le suivi n'était chargé que par « Synchronisation Brevo » (manuel)
+// et un email déjà connu n'était JAMAIS mis à jour (« Envoyé » restait
+// « Envoyé » même ouvert ou cliqué ensuite), la liste n'était pas triée.
+// Désormais : rafraîchi à l'ouverture d'Emails (au plus toutes les 5 min),
+// statut / ouvertures / clics mis à jour, plus récents en premier.
+const _RANG_STATUT_EMAIL = { 'Envoyé':1, 'Désabonné':1, 'Échec':1, 'Spam':1, 'Ouvert':2, 'Cliqué':3, 'Répondu':4 };
+function fusionnerSuiviEmails(liste){
+  let nouveaux = 0, majs = 0;
+  const maj = (cible, t) => {
+    let change = false;
+    if((_RANG_STATUT_EMAIL[t.statut]||0) >= (_RANG_STATUT_EMAIL[cible.statut]||0) && t.statut !== cible.statut){ cible.statut = t.statut; change = true; }
+    if((t.opens||0) > (cible.opens||0)){ cible.opens = t.opens; change = true; }
+    if((t.clicks||0) > (cible.clicks||0)){ cible.clicks = t.clicks; change = true; }
+    if(t.date && String(t.date) > String(cible.date||'')){ cible.date = t.date; change = true; }
+    return change;
+  };
+  (liste || []).forEach(t => {
+    if(!t || !t.id) return;
+    const ex = (DB.trackings || []).find(e => e.id === t.id);
+    if(ex){ if(maj(ex, t)) majs++; }
+    else { DB.trackings.push({ ...t }); nouveaux++; }
+    const c = (DB.contacts || []).find(x => (x.email||'').toLowerCase() === String(t.email||'').toLowerCase());
+    if(c){
+      if(!c.history) c.history = [];
+      const h = c.history.find(e => e.id === t.id);
+      if(h) maj(h, t); else c.history.push({ ...t });
+    }
+  });
+  DB.trackings.sort((a, b) => String(b.date||'').localeCompare(String(a.date||'')));
+  return { nouveaux, majs };
+}
+let _suiviEmailsCharge = 0;
+async function rafraichirSuiviEmails(force){
+  if(!force && Date.now() - _suiviEmailsCharge < 5 * 60 * 1000) return null;
+  _suiviEmailsCharge = Date.now();
+  try{
+    const tk = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';
+    const resp = await fetch('/api/brevo-tracking?t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + tk } });
+    if(!resp.ok) return null;
+    const res = fusionnerSuiviEmails(await resp.json());
+    if(res.nouveaux || res.majs){ saveToStorage(); }
+    renderTracking();
+    return res;
+  }catch(e){ return null; }
+}
 function renderTracking(){
   const statColor={'Envoyé':'#888','Ouvert':'#3B6D11','Cliqué':'#1A5FA8','Répondu':'#854F0B','Sans suite':'#A32D2D'};
-  document.getElementById('tracking-list').innerHTML=DB.trackings.length?DB.trackings.slice(0,20).map(t=>`<div class="tracking-item" style="cursor:pointer" onclick="openFicheByEmail('${(t.email||'').replace(/'/g,"\\'")}')">
+  const box=document.getElementById('tracking-list');
+  if(!box) return;
+  const tries=(DB.trackings||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  box.innerHTML=tries.length?tries.slice(0,20).map(t=>`<div class="tracking-item" style="cursor:pointer" onclick="openFicheByEmail('${(t.email||'').replace(/'/g,"\\'")}')">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:11px;font-weight:600">${t.contact||t.email||'—'}</span>
-      <span><span class="t-dot" style="background:${statColor[t.statut]||'#888'}"></span><span style="font-size:10px;color:var(--text2)">${t.statut}</span></span>
+      <span style="font-size:11px;font-weight:600">${esc(t.contact||t.email||'—')}</span>
+      <span><span class="t-dot" style="background:${statColor[t.statut]||'#888'}"></span><span style="font-size:10px;color:var(--text2)">${esc(t.statut)}${t.opens?' · '+t.opens+' ouv.':''}${t.clicks?' · '+t.clicks+' clic'+(t.clicks>1?'s':''):''}</span></span>
     </div>
-    <div style="font-size:10px;color:var(--text2)">${t.objet||'—'}</div>
+    <div style="font-size:10px;color:var(--text2)">${esc(t.objet||'—')}</div>
     <div style="font-size:10px;color:var(--text3)">${fmtDT(t.date)}</div>
   </div>`).join(''):'<div class="empty">Aucun email envoyé</div>';
 }

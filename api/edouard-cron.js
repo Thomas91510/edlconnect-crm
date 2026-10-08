@@ -387,6 +387,9 @@ export default async function handler(req) {
               headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 sender: { name: IDENT.nom, email: IDENT.email },
+                // Tag de l'abonné : le suivi des emails (api/brevo-tracking.js) ne
+                // remonte que les emails portant « sub_<id> ».
+                ...(row.user_id ? { tags: ['sub_' + row.user_id] } : {}),
                 ...(IDENT.replyTo ? { replyTo: { email: IDENT.replyTo, name: IDENT.nom } } : {}),
                 to: [{ email: m.emailClient }],
                 subject: '\u2705 Rapport' + (pluriel ? 's' : '') + ' d\u2019\u00e9tat des lieux disponible' + (pluriel ? 's' : '') + ' \u2014 ' + (m.adresse || ''),
