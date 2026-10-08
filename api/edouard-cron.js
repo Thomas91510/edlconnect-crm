@@ -107,6 +107,17 @@ export default async function handler(req) {
     });
   }
 
+  // Relève AUTOMATIQUE désactivée (choix de l'exploitant, 08/10/2026) : les
+  // rapports sont ajoutés à la main (fiche client › Documents). Les appels
+  // planifiés (relève du soir via reminder-rdv, GitHub Actions) ne font
+  // plus rien tant que la variable Vercel EDOUARD_RELEVE_AUTO ne vaut pas
+  // "true". Le bouton « Relever maintenant » de l'administrateur reste actif.
+  if (declencheur !== 'manuel' && process.env.EDOUARD_RELEVE_AUTO !== 'true') {
+    return new Response(JSON.stringify({ success: true, desactivee: true, journal: { declencheur: declencheur, desactivee: true } }), {
+      status: 200, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   const EDOUARD_KEY = process.env.EDOUARD_API_KEY;
   const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
   const BREVO_KEY = process.env.BREVO_API_KEY;

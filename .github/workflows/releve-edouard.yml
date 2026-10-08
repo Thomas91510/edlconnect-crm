@@ -1,4 +1,4 @@
-name: Relève des rapports Edouard (toutes les heures)
+name: Relève des rapports Edouard (manuelle)
 
 # Va chercher toutes les heures les états des lieux terminés dans Edouard
 # (api/edouard-cron.js) : le rapport PDF apparaît dans le CRM (Clients ›
@@ -12,9 +12,11 @@ name: Relève des rapports Edouard (toutes les heures)
 # main — api/_lib/github-oidc.js). Les planifications GitHub ne tournent que
 # depuis la branche par défaut.
 
+# Planification horaire retirée (08/10/2026) : les rapports sont ajoutés à
+# la main pour le moment. Lancement manuel seulement ; pour réactiver,
+# remettre « schedule: - cron: '7 * * * *' » ET la variable Vercel
+# EDOUARD_RELEVE_AUTO=true (sinon api/edouard-cron.js ignore l'appel).
 on:
-  schedule:
-    - cron: '7 * * * *'
   workflow_dispatch:
 
 permissions:

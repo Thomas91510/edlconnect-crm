@@ -14,6 +14,7 @@ process.env.CRON_SECRET = process.env.CRON_SECRET || 'test-cron-secret';
 process.env.EDOUARD_API_KEY = process.env.EDOUARD_API_KEY || 'test-edouard-key';
 process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key';
 process.env.BREVO_API_KEY = process.env.BREVO_API_KEY || 'test-brevo-key';
+process.env.EDOUARD_RELEVE_AUTO = 'true';
 
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });
@@ -153,4 +154,17 @@ test('edouard-cron : type de mission non reconnu (ex. pre-etat des lieux) garde 
   const body = await res.json();
 
   assert.equal(body.journal.rapportsRecuperes, 1, 'seul celui proche de la date doit etre rapatrie');
+});
+
+test('edouard-cron : relève automatique désactivée par défaut (rapports ajoutés à la main)', async () => {
+  delete process.env.EDOUARD_RELEVE_AUTO;
+  let appelsEdouard = 0;
+  global.fetch = async (url) => { if (String(url).includes('edouard')) appelsEdouard++; return { ok: true, json: async () => [] }; };
+  try {
+    const body = await (await handler(requete())).json();
+    assert.equal(body.desactivee, true);
+    assert.equal(appelsEdouard, 0, 'aucun appel à Edouard, aucun email');
+  } finally {
+    process.env.EDOUARD_RELEVE_AUTO = 'true';
+  }
 });
