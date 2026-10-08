@@ -260,8 +260,12 @@ export default async function handler(req) {
     // ── Route 4 : fiches "À contacter" du pipeline CRM ──
     // Les listes Brevo sont épuisées depuis le 14/09 alors que ~650 vraies
     // agences attendaient en "À contacter" sans jamais être sollicitées.
+    // Désactivée tant que la variable Vercel PROSPECTION_PIPELINE_ACTIF ne
+    // vaut pas "true" : Thomas veut relire le modèle Brevo n°53 avant que
+    // ces ~650 agences ne reçoivent le premier email.
     let envoyesStock = 0;
-    if (exclus && adminUserId && quotaCount < QUOTA_JOUR && envoyesCeRun < MAX_ENVOIS_PAR_RUN) {
+    const pipelineActif = process.env.PROSPECTION_PIPELINE_ACTIF === 'true';
+    if (pipelineActif && exclus && adminUserId && quotaCount < QUOTA_JOUR && envoyesCeRun < MAX_ENVOIS_PAR_RUN) {
       for (const p of await candidatsStock(SUPABASE_SERVICE_KEY, adminUserId)) {
         if (quotaCount >= QUOTA_JOUR || envoyesCeRun >= MAX_ENVOIS_PAR_RUN) break;
         const email = String(p.email).trim().toLowerCase();
