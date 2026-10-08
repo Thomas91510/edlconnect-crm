@@ -122,19 +122,31 @@ async function rafraichirSuiviEmails(force, intervalleMs = 5 * 60 * 1000){
     return res;
   }catch(e){ return null; }
 }
+// Panneau « Suivi des envois » du Composer : chiffres des 30 derniers jours
+// puis les 8 derniers emails (statut Brevo automatique, sans menu manuel).
 function renderTracking(){
-  const statColor={'Envoyé':'#888','Ouvert':'#3B6D11','Cliqué':'#1A5FA8','Répondu':'#854F0B','Sans suite':'#A32D2D'};
   const box=document.getElementById('tracking-list');
   if(!box) return;
+  const depuis=Date.now()-30*86400000;
   const tries=(DB.trackings||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-  box.innerHTML=tries.length?tries.slice(0,20).map(t=>`<div class="tracking-item" style="cursor:pointer" onclick="openFicheByEmail('${(t.email||'').replace(/'/g,"\\'")}')">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:11px;font-weight:600">${esc(t.contact||t.email||'—')}</span>
-      <span><span class="t-dot" style="background:${statColor[t.statut]||'#888'}"></span><span style="font-size:10px;color:var(--text2)">${esc(t.statut)}${t.opens?' · '+t.opens+' ouv.':''}${t.clicks?' · '+t.clicks+' clic'+(t.clicks>1?'s':''):''}</span></span>
-    </div>
-    <div style="font-size:10px;color:var(--text2)">${esc(t.objet||'—')}</div>
-    <div style="font-size:10px;color:var(--text3)">${fmtDT(t.date)}</div>
-  </div>`).join(''):'<div class="empty">Aucun email envoyé</div>';
+  const recents=tries.filter(t=>new Date(t.date||0).getTime()>=depuis);
+  if(!tries.length){ box.innerHTML='<div class="empty">Aucun email envoyé pour l’instant.</div>'; return; }
+  const ouverts=recents.filter(t=>['Ouvert','Cliqué','Répondu'].includes(t.statut)||(t.opens||0)>0).length;
+  const cliques=recents.filter(t=>t.statut==='Cliqué'||(t.clicks||0)>0).length;
+  const pct=n=>recents.length?Math.round(n/recents.length*100)+' %':'—';
+  const nomContact=t=>{
+    const c=(DB.contacts||[]).find(x=>(x.email||'').toLowerCase()===String(t.email||'').toLowerCase());
+    return (c&&(c.entreprise||c.contact))||t.contact||t.email||'—';
+  };
+  const badge=t=>typeof badgeStatutEmail==='function'?badgeStatutEmail(t):`<span style="font-size:11px;color:var(--text2)">${esc(t.statut||'Envoyé')}</span>`;
+  box.innerHTML=`<div class="suivi-chiffres">
+      <div><b>${recents.length}</b><span>envoyés</span></div>
+      <div><b>${pct(ouverts)}</b><span>ouverts</span></div>
+      <div><b>${pct(cliques)}</b><span>cliqués</span></div>
+    </div>`+tries.slice(0,8).map(t=>`<div class="suivi-ligne" role="button" tabindex="0" onclick="openFicheByEmail('${esc(String(t.email||'').replace(/'/g,''))}')">
+      <div class="suivi-info"><div class="suivi-qui">${esc(nomContact(t))}</div><div class="suivi-objet">${esc(t.objet||t.subject||'—')}</div><div class="suivi-date">${fmtDT(t.date)}</div></div>
+      ${badge(t)}
+    </div>`).join('');
 }
 function autocompleteContact(val){
   const box=document.getElementById('to-suggest');
@@ -199,6 +211,57 @@ function applyTpl(key){
   const t=TEMPLATES[key];
   document.getElementById('subj-f').value=remplacerPlaceholdersModele(t.subj);
   document.getElementById('body-f').value=remplacerPlaceholdersModele(t.body);
+  document.querySelectorAll('.modele-carte').forEach(b=>b.classList.toggle('actif', b.getAttribute('data-tpl')===key));
+}
+
+// ─── Mise en page des emails envoyés ─────────────────────────
+// Le texte saisi (ou issu d'un modèle) devient un email soigné : bandeau aux
+// couleurs de l'agence (logo ou nom), carte blanche, intertitres pour les
+// lignes finissant par « : », listes pour les lignes « • » / « - » / « ✅ »,
+// liens cliquables, signature en pied. Le texte brut reste envoyé à côté.
+function emailHtmlPro(corps){
+  const couleur = /^#[0-9a-fA-F]{6}$/.test(CFG.couleurPrimaire || '') ? CFG.couleurPrimaire : '#1A5FA8';
+  const societe = CFG.companyName || CFG.expediteurNom || '';
+  const logo = CFG.logoPath ? (AGENCY_LOGOS_BUCKET_URL + CFG.logoPath) : '';
+  const lien = t => t.replace(/(https?:\/\/[^\s<]+)/g, u => `<a href="${u}" style="color:${couleur};font-weight:600">${u}</a>`);
+  const blocs = String(corps || '').replace(/\r/g, '').split(/\n{2,}/).map(bloc => {
+    const lignes = bloc.split('\n').map(l => l.trimEnd()).filter(l => l.trim() !== '');
+    let html = '', liste = [];
+    const viderListe = () => {
+      if(!liste.length) return;
+      html += `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 14px">${liste.map(li => `<tr><td style="vertical-align:top;padding:3px 10px 3px 0;color:${couleur};font-weight:700">&#10003;</td><td style="padding:3px 0;color:#1F2937">${lien(esc(li))}</td></tr>`).join('')}</table>`;
+      liste = [];
+    };
+    lignes.forEach(l => {
+      const puce = /^\s*(?:[•\-–✅✔☑]|\d+[.)])\s+(.*)$/.exec(l);
+      if(puce){ liste.push(puce[1]); return; }
+      viderListe();
+      if(/:\s*$/.test(l) && l.length < 70) html += `<p style="margin:18px 0 6px;font-weight:700;color:#111827;font-size:15px">${esc(l.replace(/\s*:\s*$/, ''))}</p>`;
+      else html += `<p style="margin:0 0 12px">${lien(esc(l))}</p>`;
+    });
+    viderListe();
+    return html;
+  }).join('');
+  const bandeau = logo
+    ? `<img src="${esc(logo)}" alt="${esc(societe)}" style="max-height:44px;max-width:200px;display:block">`
+    : `<span style="font-size:18px;font-weight:700;color:#ffffff;letter-spacing:.01em">${esc(societe)}</span>`;
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#F4F6F9">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F9;padding:24px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #E5E9F0">
+<tr><td style="background:${logo ? '#ffffff' : couleur};padding:${logo ? '22px 32px 6px' : '20px 32px'};${logo ? `border-top:4px solid ${couleur}` : ''}">${bandeau}</td></tr>
+<tr><td style="padding:26px 32px 10px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#1F2937">${blocs}</td></tr>
+<tr><td style="padding:0 32px 26px;font-family:Arial,Helvetica,sans-serif">${genererSignatureEmail()}</td></tr>
+</table>
+<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#98A2B3;margin-top:12px">${esc(societe)}${CFG.expediteurEmail ? ' · ' + esc(CFG.expediteurEmail) : ''}</div>
+</td></tr></table></body></html>`;
+}
+function apercuEmail(){
+  const corps = document.getElementById('body-f').value;
+  const objet = document.getElementById('subj-f').value;
+  if(!corps.trim()){ notify('Écrivez le message (ou choisissez un modèle) pour voir l’aperçu', 'warn'); return; }
+  document.getElementById('apercu-email-objet').textContent = objet ? 'Objet : ' + objet : '';
+  document.getElementById('apercu-email-cadre').srcdoc = emailHtmlPro(corps);
+  openModal('modal-apercu-email');
 }
 
 // Données pièce jointe
@@ -326,7 +389,7 @@ async function sendEmail(){
         sender:{name:'EDL IDF',email:'contact@edl-idf.com'},
         to:[{email:dest}],
         subject:subj,
-        htmlContent:`<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${body.replace(/\n/g,'<br>')}${genererSignatureEmail()}</div>`,
+        htmlContent:emailHtmlPro(body),
         textContent:body,
         headers:{'X-CRM-ID':entry.id}
       };

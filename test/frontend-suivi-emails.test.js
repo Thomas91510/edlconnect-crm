@@ -34,3 +34,13 @@ test('rdvSeptJours (extranet) : seulement les rendez-vous des 7 prochains jours,
   const res = rdvSeptJours([o('loin', 9), o('demain', 1), o('annule', 2, 'annulee'), o('passe', -2), o('j6', 6), o('fait', 3, 'rapport_dispo')], now);
   assert.deepEqual(res.map(x => x.id), ['demain', 'j6']);
 });
+
+test('emailHtmlPro : intertitres, listes cochées, liens, texte échappé', () => {
+  const { window: w } = chargerScripts(['app-config.js', 'app-emails.js'], '', "CFG.companyName='ImmoCheck'; window.AGENCY_LOGOS_BUCKET_URL=''; window.genererSignatureEmail = () => '<p>SIG</p>';");
+  const html = w.emailHtmlPro('Bonjour,\n\nCe que nous faisons :\n• Entrée\n• Sortie <b>x</b>\n\nVoir https://exemple.fr/avis');
+  assert.match(html, /font-weight:700;color:#111827;font-size:15px">Ce que nous faisons</);
+  assert.equal((html.match(/&#10003;/g) || []).length, 2, 'deux puces cochées');
+  assert.ok(!html.includes('<b>x</b>'), 'texte échappé');
+  assert.match(html, /<a href="https:\/\/exemple\.fr\/avis"/);
+  assert.match(html, />ImmoCheck</);
+});

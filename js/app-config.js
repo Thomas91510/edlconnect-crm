@@ -808,60 +808,66 @@ const DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 // seulement EDL IDF) : {{SOCIETE}} et {{AVIS_GOOGLE_LIEN}} sont substitués
 // par applyTpl() avec l'identité propre au compte connecté (Paramètres →
 // "Identité de vos emails"), jamais avec des valeurs figées en dur.
+// Mise en forme à l'envoi (js/app-emails.js, emailHtmlPro) : une ligne
+// finissant par « : » devient un intertitre, les lignes « • » une liste.
 const TEMPLATES={
-  intro:{label:'🏠 Présentation de votre agence',subj:'🏠 {{SOCIETE}} — Votre partenaire états des lieux',body:`Bonjour,\n\nJe me permets de vous contacter afin de vous présenter {{SOCIETE}}, société spécialisée dans la réalisation d'états des lieux professionnels pour les agences immobilières.\n\n🏠 Nos prestations :\n• État des lieux d'entrée\n• État des lieux de sortie\n• Pré-état des lieux\n\n✅ Pourquoi nous choisir ?\n• Disponible 7j/7, matin et soir\n• Rapport numérique remis sous 24h\n• Signature électronique incluse\n• Tarifs dégressifs selon le volume\n\nJe serais ravi d'échanger avec vous sur vos besoins et de vous proposer une grille tarifaire adaptée.`},
-  cold:{label:'📋 Prospection à froid',subj:'📋 Externalisez vos états des lieux — {{SOCIETE}}',body:`Bonjour,\n\nJe me permets de vous contacter au sujet de l'externalisation de vos états des lieux.\n\n{{SOCIETE}} réalise vos EDL entrants, sortants et pré-états des lieux — rapport remis sous 24h, disponible 7j/7.\n\n✅ Simple à mettre en place\n✅ Tarifs dégressifs selon volume\n✅ Signature électronique incluse\n\nSeriez-vous disponible pour un échange de 15 min cette semaine ?`},
-  followup:{label:'📞 Relance J+2',subj:'📞 Suite à mon email — {{SOCIETE}}',body:`Bonjour,\n\nJe reviens vers vous suite à mon email de l'avant-hier concernant nos prestations d'états des lieux professionnels.\n\nAvez-vous eu l'occasion d'y jeter un œil ? Je reste disponible pour un court échange téléphonique si vous souhaitez en savoir plus.\n\nN'hésitez pas à me faire signe !`},
-  devis:{label:'💶 Devis',subj:'💶 Votre devis {{SOCIETE}} — États des lieux professionnels',body:`Bonjour,\n\nSuite à notre échange, veuillez trouver ci-dessous notre grille tarifaire :\n\n📋 TARIFS {{SOCIETE}} (prix en HT — TVA 20%)\n\n• État des lieux entrant — à partir de 150 € HT (180 € TTC)\n• État des lieux sortant — à partir de 160 € HT (192 € TTC)\n• Pré-état des lieux — à partir de 120 € HT (144 € TTC)\n\n🎁 Remises partenaires agences :\n• À partir de 5 missions/mois : -5%\n• À partir de 10 missions/mois : -10%\n• À partir de 20 missions/mois : sur devis\n\n✅ Rapport numérique remis sous 24h\n✅ Signature électronique incluse\n✅ Disponible 7j/7`},
-    confirm_pec:{label:'📩 Confirmation prise en charge EDL',subj:'Confirmation de prise en charge EDL',body:`Bonjour,\n\nJe vous confirme la prise en charge de la mission pour l'état des lieux de sortie.\n\nLe rendez-vous est fixé le [JOUR] [DATE] à [HEURE].`},
-  confirm_entrant:{label:'✅ Confirmation EDL entrant',subj:"✅ Confirmation de votre état des lieux d'entrée — {{SOCIETE}}",body:`Bonjour,\n\nJe vous confirme la prise en charge de votre état des lieux d'entrée :\n\n📅 Date : [DATE]\n🕐 Heure : [HEURE]\n📍 Adresse : [ADRESSE]\n\n🔑 Merci de prévoir :\n• Les clés du logement\n• Le bail de location signé\n• Les relevés de compteurs (eau, gaz, électricité)\n\nLe rapport vous sera transmis dans les 24h.`},
-    confirm_sortant:{label:'✅ Confirmation EDL sortant',subj:'✅ Confirmation de votre état des lieux de sortie — {{SOCIETE}}',body:`Bonjour,\n\nJe vous confirme la prise en charge de votre état des lieux de sortie :\n\n📅 Date : [DATE]\n🕐 Heure : [HEURE]\n📍 Adresse : [ADRESSE]\n\n🔑 Merci de prévoir :\n• L'état des lieux d'entrée (pour comparaison)\n• L'ensemble des clés du logement\n• Les relevés de compteurs actualisés\n• Le locataire sortant (si possible)\n\nLe rapport comparatif vous sera transmis dans les 24h avec mention des éventuelles dégradations constatées et signature électronique des parties.`},
-  remerciement:{label:'🙏 Remerciement après mission',subj:'🙏 Merci pour votre confiance — {{SOCIETE}}',body:`Bonjour,\n\nJe tenais à vous remercier pour la confiance que vous nous accordez.\n\nVotre état des lieux a été réalisé avec soin et le rapport vous a été transmis dans les délais convenus.\n\nNous espérons que cette prestation a répondu à vos attentes et restons à votre disposition pour toutes vos prochaines missions.`},
-  partenariat:{label:'🤝 Proposition partenariat',subj:'🤝 Partenariat états des lieux — {{SOCIETE}}',body:`Bonjour,\n\nJe souhaite vous proposer un partenariat durable pour la prise en charge de vos états des lieux.\n\n🤝 Ce que nous proposons à nos partenaires :\n• Tarifs préférentiels dégressifs selon volume\n• Priorité de réservation sur nos créneaux\n• Interlocuteur dédié pour votre agence\n• Rapport standardisé à votre charte si souhaité\n• Facturation mensuelle groupée\n\nSeriez-vous disponible pour un rendez-vous afin d'étudier ensemble les modalités d'un partenariat adapté ?`},
-  // Reprend mot pour mot l'email envoye automatiquement a J+1 par
-  // reminder-rdv.js, pour les locataires dont la mission n'est pas dans le CRM.
-  avis_google:{label:'⭐ Avis Google post-prestation',subj:'⭐ Comment s\'est passé votre état des lieux ?',body:`Bonjour,\n\nChez {{SOCIETE}}, nous accordons une grande importance à la qualité de nos prestations et à la satisfaction des personnes que nous accompagnons. Votre retour est précieux : il nous permet d'améliorer continuellement nos services.\n\nSi vous avez quelques instants, pourriez-vous partager votre expérience sur notre page Google ? Cela ne prend que quelques minutes et nous aide énormément :\n\n⭐ {{AVIS_GOOGLE_LIEN}}\n\nN'hésitez pas si vous avez la moindre question, nous restons à votre entière disposition.\n\nBien cordialement,\nL'équipe {{SOCIETE}}`},
-  // Equivalent de la relance automatique a J+3.
-  avis_google_relance:{label:'⭐ Avis Google — relance',subj:'⭐ Votre avis compte pour nous',body:`Bonjour,\n\nNous nous permettons de revenir vers vous au sujet de l'état des lieux réalisé récemment. Si vous n'avez pas encore eu l'occasion de nous laisser un avis, votre retour nous serait très précieux : il ne prend qu'une minute et nous aide beaucoup à faire connaître notre travail.\n\n⭐ {{AVIS_GOOGLE_LIEN}}\n\nSi vous l'avez déjà fait, nous vous en remercions sincèrement et vous prions d'ignorer ce message.\n\nBien cordialement,\nL'équipe {{SOCIETE}}`},
-  summer:{label:'☀️ Offre estivale',subj:'☀️ Offre été 2026 — -10% sur vos EDL | {{SOCIETE}}',body:`Bonjour,\n\nL'été approche et avec lui le pic d'activité pour vos états des lieux !\n\n🎁 Offre spéciale été 2026 :\n-10% sur toutes vos missions de juillet à août 2026\n\n✅ Valable pour tout nouveau partenariat signé avant le 30 juin\n✅ Disponible 7j/7 tout l'été\n✅ Rapport remis sous 24h\n\nRéservez dès maintenant vos créneaux !`},
-  // Version texte brut de l'annonce des creneaux Cal.com envoyee en campagne
-  // Brevo (bandeau bleu, encart colore...) — pratique pour un renvoi ponctuel
-  // depuis une fiche contact, la mise en forme visuelle restant reservee a
-  // l'envoi groupe.
-  nouveaute_creneaux:{label:'🗓️ Créneaux en ligne (nouveauté)',subj:'🗓️ Nouveau : ne perdez plus de temps à trouver une date pour vos états des lieux',body:`Bonjour,\n\nUne nouveauté qui va vous faire gagner du temps au quotidien : notre formulaire de demande d'état des lieux affiche désormais nos disponibilités réelles, en direct. Fini les échanges d'emails pour trouver une date qui convienne des deux côtés — vous voyez immédiatement nos créneaux libres et choisissez celui qui vous arrange.\n\n⏱️ Ce que ça change concrètement pour votre agence :\n• Plus besoin d'attendre notre retour pour savoir si une date vous convient : les créneaux affichés sont réellement disponibles\n• Une demande complète en un seul passage sur le formulaire, sans aller-retour par email ou téléphone\n• Une prise en charge plus rapide de vos dossiers, dès la première visite du formulaire\n\nLe reste ne change pas : même formulaire, mêmes informations à renseigner, et un accusé de réception immédiat par email. Si aucun créneau ne vous convient, vous pouvez toujours indiquer une date libre comme auparavant.\n\nN'hésitez pas si vous avez la moindre question, nous restons à votre entière disposition.\n\nBien cordialement,\nL'équipe {{SOCIETE}}`}
+  intro:{label:'Présentation de votre société',subj:'{{SOCIETE}} — vos états des lieux, sans y passer vos journées',body:`Bonjour,\n\nGérer les états des lieux en plus des visites, des signatures et des relances : c'est souvent là que les journées d'une agence débordent. C'est précisément ce que {{SOCIETE}} prend en charge.\n\nCe que nous réalisons pour vous :\n• États des lieux d'entrée et de sortie, meublés ou non\n• Pré-états des lieux avant départ du locataire\n• Rapports photos détaillés, signés électroniquement sur place\n\nCe qui change pour votre agence :\n• Un créneau en 48 h, y compris le samedi\n• Le rapport dans votre boîte mail le jour même\n• Un interlocuteur unique qui connaît vos dossiers\n\nJe vous propose un échange de 15 minutes pour voir si nous pouvons vous faire gagner du temps dès ce mois-ci. Quel créneau vous conviendrait ?`},
+  cold:{label:'Premier contact',subj:'Vos états des lieux, rapport remis le jour même — {{SOCIETE}}',body:`Bonjour,\n\nAvez-vous déjà envisagé de confier vos états des lieux à un prestataire dédié ?\n\n{{SOCIETE}} réalise vos EDL d'entrée, de sortie et vos pré-états des lieux, avec un rapport photo signé électroniquement et transmis le jour même.\n\nEn pratique :\n• Mise en place immédiate, sans engagement\n• Créneaux disponibles en 48 h\n• Tarifs dégressifs selon votre volume\n\nSeriez-vous disponible cette semaine pour un appel de 15 minutes ?`},
+  followup:{label:'Relance',subj:'Re : vos états des lieux',body:`Bonjour,\n\nJe me permets de revenir vers vous au sujet de mon précédent message sur la prise en charge de vos états des lieux.\n\nSi le sujet n'est pas prioritaire en ce moment, aucun souci : dites-le-moi simplement et je ne vous relancerai pas. S'il l'est, je peux vous envoyer notre grille tarifaire ou vous appeler au moment qui vous arrange.\n\nQu'est-ce qui vous serait le plus utile ?`},
+  devis:{label:'Devis',subj:'Votre proposition tarifaire — {{SOCIETE}}',body:`Bonjour,\n\nComme convenu, voici notre proposition pour la prise en charge de vos états des lieux.\n\nTarifs (HT, TVA 20 % en sus) :\n• État des lieux d'entrée : à partir de 150 € HT\n• État des lieux de sortie : à partir de 160 € HT\n• Pré-état des lieux : à partir de 120 € HT\n\nRemises partenaires :\n• Dès 5 missions par mois : -5 %\n• Dès 10 missions par mois : -10 %\n• Au-delà de 20 missions : tarif sur mesure\n\nInclus dans chaque mission :\n• Rapport photo détaillé transmis le jour même\n• Signature électronique des parties\n• Créneaux 6 jours sur 7\n\nJe reste à votre disposition pour ajuster cette proposition à vos volumes.`},
+  confirm_pec:{label:'Prise en charge',subj:'Prise en charge confirmée — état des lieux du [DATE]',body:`Bonjour,\n\nNous prenons en charge votre demande d'état des lieux.\n\nRendez-vous :\n• Date : [JOUR] [DATE]\n• Heure : [HEURE]\n• Adresse : [ADRESSE]\n\nVous recevrez une confirmation la veille, et le rapport complet le jour même de l'intervention.`},
+  confirm_entrant:{label:'Confirmation EDL d\'entrée',subj:"Confirmation — état des lieux d'entrée du [DATE]",body:`Bonjour,\n\nVotre état des lieux d'entrée est confirmé.\n\nRendez-vous :\n• Date : [DATE]\n• Heure : [HEURE]\n• Adresse : [ADRESSE]\n\nÀ prévoir pour le jour J :\n• Les clés du logement\n• Le bail signé\n• L'accès aux compteurs (eau, gaz, électricité)\n\nLe rapport photo, signé par les parties, vous sera transmis le jour même.`},
+  confirm_sortant:{label:'Confirmation EDL de sortie',subj:'Confirmation — état des lieux de sortie du [DATE]',body:`Bonjour,\n\nVotre état des lieux de sortie est confirmé.\n\nRendez-vous :\n• Date : [DATE]\n• Heure : [HEURE]\n• Adresse : [ADRESSE]\n\nÀ prévoir pour le jour J :\n• L'état des lieux d'entrée, pour la comparaison\n• L'ensemble des clés du logement\n• La présence du locataire sortant, si possible\n\nVous recevrez le jour même un rapport comparatif signé, avec les éventuelles dégradations relevées pièce par pièce.`},
+  remerciement:{label:'Remerciement',subj:'Merci pour votre confiance',body:`Bonjour,\n\nMerci de nous avoir confié votre état des lieux. Le rapport vous a été transmis et reste disponible à tout moment dans votre espace.\n\nUne question sur le rapport, ou un prochain dossier à planifier ? Répondez simplement à ce message : nous nous en occupons.\n\nAu plaisir de travailler à nouveau ensemble.`},
+  partenariat:{label:'Proposition de partenariat',subj:'Une proposition de partenariat pour vos états des lieux',body:`Bonjour,\n\nPlusieurs agences nous confient aujourd'hui l'ensemble de leurs états des lieux. Je souhaitais vous proposer le même fonctionnement.\n\nCe que comprend le partenariat :\n• Tarifs préférentiels selon votre volume\n• Créneaux prioritaires, y compris en période de forte rotation\n• Un interlocuteur dédié à votre agence\n• Un espace en ligne pour commander et retrouver tous vos rapports\n• Une facturation mensuelle unique\n\nPouvons-nous en parler lors d'un court rendez-vous, à l'agence ou par téléphone ?`},
+  // Reprend l'email envoyé automatiquement à J+1 par reminder-rdv.js, pour
+  // les locataires dont la mission n'est pas dans le CRM.
+  avis_google:{label:'Demande d\'avis Google',subj:'Comment s\'est passé votre état des lieux ?',body:`Bonjour,\n\nMerci de nous avoir accueillis pour votre état des lieux. Chez {{SOCIETE}}, chaque retour compte : il nous aide à améliorer nos prestations et permet à d'autres de nous découvrir.\n\nAuriez-vous une minute pour partager votre expérience sur Google ?\n\n{{AVIS_GOOGLE_LIEN}}\n\nMerci d'avance, et n'hésitez pas à nous écrire pour toute question.\n\nBien cordialement,\nL'équipe {{SOCIETE}}`},
+  // Équivalent de la relance automatique à J+3.
+  avis_google_relance:{label:'Relance avis Google',subj:'Votre avis compte pour nous',body:`Bonjour,\n\nNous revenons vers vous au sujet de votre récent état des lieux. Si vous n'avez pas encore eu l'occasion de laisser un avis, votre retour nous serait précieux — il ne prend qu'une minute :\n\n{{AVIS_GOOGLE_LIEN}}\n\nSi c'est déjà fait, un grand merci, et ne tenez pas compte de ce message.\n\nBien cordialement,\nL'équipe {{SOCIETE}}`},
+  summer:{label:'Offre saisonnière',subj:'Été 2026 : -10 % sur vos états des lieux',body:`Bonjour,\n\nL'été arrive, et avec lui le pic des entrées et sorties de locataires. Pour vous aider à l'absorber sereinement, nous proposons une offre dédiée.\n\nL'offre été 2026 :\n• -10 % sur toutes vos missions de juillet à août\n• Créneaux disponibles tout l'été, samedi compris\n• Rapport transmis le jour même\n\nOffre valable pour tout partenariat signé avant le 30 juin. Souhaitez-vous réserver vos premiers créneaux dès maintenant ?`},
+  // Version texte de l'annonce des créneaux en ligne (campagne Brevo).
+  nouveaute_creneaux:{label:'Nouveauté : créneaux en ligne',subj:'Nouveau : choisissez vous-même le créneau de vos états des lieux',body:`Bonjour,\n\nBonne nouvelle pour votre agenda : notre formulaire de demande affiche désormais nos disponibilités réelles, en direct.\n\nCe que ça change pour vous :\n• Vous voyez immédiatement les créneaux libres et choisissez le vôtre\n• Une demande complète en un seul passage, sans aller-retour par email\n• Une prise en charge plus rapide de chaque dossier\n\nLe reste ne change pas : mêmes informations à renseigner, et un accusé de réception immédiat. Si aucun créneau ne vous convient, vous pouvez toujours proposer une date libre.\n\nBien cordialement,\nL'équipe {{SOCIETE}}`}
 };
 
-// ─── Boutons de modeles ajoutes apres coup ────────────────
-// Injectes en JavaScript plutot que dans index.html : ce fichier fait
-// ~2400 lignes et l'editer directement s'est deja avere risque.
-// Chaque entree cible le bouton existant apres lequel s'inserer.
-const MODELES_SUPPLEMENTAIRES = [
-  { cle: 'avis_google_relance', apres: 'avis_google', icone: 'ti-star' },
-  { cle: 'nouveaute_creneaux', apres: 'avis_google_relance', icone: 'ti-calendar-event' }
+// ─── Modèles rapides : présentation par usage ─────────────
+// Rendu dans le Composer (Emails › Écrire) par renderModelesRapides().
+const GROUPES_MODELES = [
+  { titre: 'Prospection', couleur: '#1A5FA8', modeles: [
+    { cle: 'intro', icone: 'ti-building-store', desc: 'Présenter votre société à une agence' },
+    { cle: 'cold', icone: 'ti-send', desc: 'Premier message court, appel à 15 min' },
+    { cle: 'followup', icone: 'ti-refresh', desc: 'Relancer sans insister' },
+    { cle: 'partenariat', icone: 'ti-heart-handshake', desc: 'Proposer un partenariat durable' },
+    { cle: 'summer', icone: 'ti-sun', desc: 'Offre de saison à durée limitée' },
+    { cle: 'nouveaute_creneaux', icone: 'ti-calendar-event', desc: 'Annoncer la réservation en ligne' },
+  ]},
+  { titre: 'Missions', couleur: '#0F6E56', modeles: [
+    { cle: 'devis', icone: 'ti-receipt', desc: 'Grille tarifaire et remises' },
+    { cle: 'confirm_pec', icone: 'ti-circle-check', desc: 'Confirmer la prise en charge' },
+    { cle: 'confirm_entrant', icone: 'ti-door-enter', desc: 'Rendez-vous et pièces à prévoir' },
+    { cle: 'confirm_sortant', icone: 'ti-door-exit', desc: 'Rendez-vous et comparatif de sortie' },
+  ]},
+  { titre: 'Fidélisation', couleur: '#B7791F', modeles: [
+    { cle: 'remerciement', icone: 'ti-heart', desc: 'Remercier après la mission' },
+    { cle: 'avis_google', icone: 'ti-star', desc: 'Demander un avis Google' },
+    { cle: 'avis_google_relance', icone: 'ti-star-half', desc: 'Relancer la demande d\'avis' },
+  ]},
 ];
 
-function injecterBoutonsModeles(){
-  MODELES_SUPPLEMENTAIRES.forEach(function(mod){
-    const tpl = TEMPLATES[mod.cle];
-    if(!tpl) return;
-    // Deja injecte ? (renderTracking peut relancer plusieurs fois)
-    if(document.querySelector('[data-tpl="' + mod.cle + '"]')) return;
-    const reference = document.querySelector('button[onclick*="applyTpl(\'' + mod.apres + '\')"]');
-    if(!reference) return;
-    const bouton = document.createElement('button');
-    bouton.className = 'btn btn-sm';
-    bouton.style.justifyContent = 'flex-start';
-    bouton.setAttribute('data-tpl', mod.cle);
-    bouton.innerHTML = '<i class="ti ' + mod.icone + '"></i>' + tpl.label.replace(/^[^\s]+\s/, '');
-    bouton.onclick = function(){ applyTpl(mod.cle); };
-    reference.parentNode.insertBefore(bouton, reference.nextSibling);
-  });
+function renderModelesRapides(){
+  const box = document.getElementById('modeles-rapides');
+  if(!box) return;
+  box.innerHTML = GROUPES_MODELES.map(g => `<div class="modeles-groupe">
+      <div class="modeles-groupe-titre" style="color:${g.couleur}">${g.titre}</div>
+      ${g.modeles.filter(m => TEMPLATES[m.cle]).map(m => `<button type="button" class="modele-carte" data-tpl="${m.cle}" onclick="applyTpl('${m.cle}')" title="${TEMPLATES[m.cle].subj.replace(/"/g, '&quot;')}">
+        <span class="modele-icone" style="background:${g.couleur}14;color:${g.couleur}"><i class="ti ${m.icone}"></i></span>
+        <span class="modele-texte"><b>${TEMPLATES[m.cle].label}</b><span>${m.desc}</span></span>
+      </button>`).join('')}
+    </div>`).join('');
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-  // Leger differe : les boutons du Composer sont dans index.html, deja
-  // presents au chargement, mais on laisse le DOM se stabiliser.
-  setTimeout(injecterBoutonsModeles, 300);
+  setTimeout(renderModelesRapides, 0);
 });
 
 // ─── STATE ────────────────────────────────────────────────

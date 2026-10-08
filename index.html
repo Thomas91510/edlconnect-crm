@@ -746,6 +746,28 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 .espaces-agences-inactif{display:flex;align-items:center;gap:12px;padding:9px 4px;border-top:1px solid #1B3048;font-size:13px}
 .espaces-agences-inactif span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#B9C4D0}
 .espaces-agences-inactif button{background:transparent;border:1px solid #C29A5B;color:#C29A5B;border-radius:8px;padding:5px 10px;font-family:inherit;font-size:12px;cursor:pointer}
+/* Modèles rapides (Composer) */
+.modeles-groupe{margin-top:8px}
+.modeles-groupe-titre{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 4px 6px}
+.modele-carte{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--white,#fff);border:1px solid var(--border);border-radius:12px;padding:9px 11px;margin-bottom:6px;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s,transform .15s}
+.modele-carte:hover{border-color:#B9C7DA;box-shadow:0 2px 8px rgba(16,24,40,.06);transform:translateY(-1px)}
+.modele-carte.actif{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,95,168,.12)}
+.modele-icone{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.modele-texte{min-width:0}
+.modele-texte b{display:block;font-size:13px;font-weight:600;color:var(--text)}
+.modele-texte span{display:block;font-size:11.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Suivi des envois (Composer) */
+.suivi-chiffres{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.suivi-chiffres div{background:var(--bg);border-radius:10px;padding:9px 10px}
+.suivi-chiffres b{display:block;font-size:18px;font-weight:600}
+.suivi-chiffres span{font-size:11px;color:var(--text2)}
+.suivi-ligne{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-top:1px solid var(--border);cursor:pointer}
+.suivi-ligne:first-of-type{border-top:none}
+.suivi-ligne:hover .suivi-objet{color:var(--blue)}
+.suivi-info{flex:1;min-width:0}
+.suivi-qui{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.suivi-objet{font-size:11.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.suivi-date{font-size:11px;color:var(--text3)}
 </style>
 </head>
 <body>
@@ -1227,7 +1249,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 
             <!-- Panneau IA Claude -->
             <div id="claude-panel" style="display:none;margin-top:12px;border:1px solid #c3dafe;border-radius:var(--radius);padding:12px;background:#eef4ff">
-              <div style="font-size:12px;font-weight:600;color:#2345d4;margin-bottom:8px">✨ Rédiger avec Mistral IA</div>
+              <div style="font-size:12px;font-weight:600;color:#2345d4;margin-bottom:8px">✨ Rédiger avec Claude</div>
               <label style="font-size:11px;color:var(--text2)">Décris ce que tu veux dire (ex: relance prospect qui n'a pas répondu, proposer rdv)</label>
               <textarea id="claude-prompt" rows="3" style="margin-top:5px;font-size:12px" placeholder="Ex: Email de relance pour une agence immobilière qui n'a pas répondu à mon premier contact, ton professionnel et bienveillant, proposer un appel découverte de 15 min..."></textarea>
               <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
@@ -1240,7 +1262,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
             </div>
             <div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">
               <button class="btn btn-primary" onclick="sendEmail()"><i class="ti ti-send"></i>Envoyer via Brevo</button>
-              <button class="btn" onclick="applyTpl('cold')"><i class="ti ti-template"></i>Modèle</button>
+              <button class="btn" onclick="apercuEmail()"><i class="ti ti-eye"></i>Aperçu</button>
               <button class="btn" onclick="toggleClaudePanel()" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none">
                 <i class="ti ti-sparkles"></i>Rédiger avec IA
               </button>
@@ -1257,24 +1279,12 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         </div>
         <div>
           <div class="card" style="margin-bottom:10px">
-            <div class="card-head">Modèles rapides</div>
-            <div style="padding:8px;display:flex;flex-direction:column;gap:4px">
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('intro')"><i class="ti ti-building-store"></i>Présentation EDL IDF</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('cold')"><i class="ti ti-mail"></i>Prospection à froid</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('followup')"><i class="ti ti-refresh"></i>Relance J+2</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('devis')"><i class="ti ti-receipt"></i>Devis</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('confirm_pec')"><i class="ti ti-check"></i>Confirmation prise en charge</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('confirm_entrant')"><i class="ti ti-door-enter"></i>Confirmation EDL entrant</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('confirm_sortant')"><i class="ti ti-door-exit"></i>Confirmation EDL sortant</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('remerciement')"><i class="ti ti-heart"></i>Remerciement après mission</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('partenariat')"><i class="ti ti-handshake"></i>Proposition partenariat</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('avis_google')"><i class="ti ti-star"></i>Avis Google post-prestation</button>
-              <button class="btn btn-sm" style="justify-content:flex-start" onclick="applyTpl('summer')"><i class="ti ti-sun"></i>Offre estivale</button>
-            </div>
+            <div class="card-head">Modèles rapides <span style="font-weight:400;font-size:12px;color:var(--text2)">· cliquez pour remplir l'email</span></div>
+            <div id="modeles-rapides" style="padding:6px 10px 12px"></div>
           </div>
           <div class="card">
-            <div class="card-head">Tracking emails</div>
-            <div style="padding:10px" id="tracking-list"><div class="empty">Aucun email envoyé</div></div>
+            <div class="card-head">Suivi des envois <span style="font-weight:400;font-size:12px;color:var(--text2)">· 30 derniers jours, mis à jour automatiquement</span></div>
+            <div style="padding:12px 14px" id="tracking-list"><div class="empty">Aucun email envoyé</div></div>
           </div>
         </div>
       </div>
@@ -1439,7 +1449,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <strong>Tracking</strong> → liste à droite du Composer + fiche contact → onglet Emails
     </div>
     <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
-      ✅ Clé Mistral gratuite sur console.mistral.ai → Paramètres → IA pour activer la rédaction automatique.
+      ✅ La rédaction est assurée par Claude (Anthropic), sans clé à saisir.
     </div>
   </div>
 
@@ -1697,9 +1707,8 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       </div>
       <div class="settings-section" data-rubrique="integrations">
         <div class="settings-title"><i class="ti ti-sparkles" style="font-size:18px"></i>IA — Rédaction emails</div>
-        <label>Clé API Mistral IA <span style="font-size:10px;color:var(--text2)">(gratuit — modèle mistral-small)</span></label>
-        <input type="password" id="set-claude-key" placeholder="...">
-        <div style="font-size:11px;color:var(--text2);margin-top:4px">Obtenir une clé gratuite : <a href="https://console.mistral.ai/api-keys" target="_blank" style="color:var(--blue)">console.mistral.ai</a> → "API Keys" → "Create new key"</div>
+        <div style="font-size:12.5px;color:var(--text2);line-height:1.6">« Rédiger avec IA » (Emails › Écrire) est assuré par <b>Claude</b> (Anthropic), sans clé à saisir ici : la clé est configurée sur le serveur par l'administrateur de la plateforme.</div>
+        <input type="hidden" id="set-claude-key">
       </div>
       <div class="settings-section" data-rubrique="agents">
         <div class="settings-title"><i class="ti ti-users" style="font-size:18px"></i>Agents EDL</div>
@@ -2186,6 +2195,16 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 </div>
 
 <!-- FICHE CONTACT -->
+<div class="modal-bg" id="modal-apercu-email">
+  <div class="modal" style="width:720px;max-width:96vw">
+    <div class="modal-title">
+      <div><div style="font-size:15px;font-weight:700">Aperçu de l'email</div><div style="font-size:12px;color:var(--text2)" id="apercu-email-objet"></div></div>
+      <button class="modal-close" onclick="closeModal('modal-apercu-email')"><i class="ti ti-x"></i></button>
+    </div>
+    <iframe id="apercu-email-cadre" title="Aperçu de l'email" style="width:100%;height:62vh;border:1px solid var(--border);border-radius:12px;background:#F4F6F9"></iframe>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-fiche">
   <div class="modal modal-fiche-large" style="width:980px;max-width:96vw">
     <div class="modal-title">
@@ -2445,12 +2464,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <input type="password" id="ob-brevo" placeholder="xkeysib-…" style="width:100%">
         <div style="font-size:10px;color:var(--text2);margin-top:4px">Obtenir une clé gratuite sur <a href="https://app.brevo.com/settings/keys/api" target="_blank" style="color:var(--blue)">app.brevo.com</a></div>
       </div>
-      <div style="background:var(--bg2);border-radius:var(--radius);padding:12px 14px;margin-bottom:24px">
-        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">✨ Mistral IA — Rédaction emails</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Permet de générer des emails professionnels automatiquement.</div>
-        <input type="password" id="ob-mistral" placeholder="Clé API Mistral…" style="width:100%">
-        <div style="font-size:10px;color:var(--text2);margin-top:4px">Clé gratuite sur <a href="https://console.mistral.ai/api-keys" target="_blank" style="color:var(--blue)">console.mistral.ai</a></div>
-      </div>
+      <input type="hidden" id="ob-mistral">
       <div style="display:flex;gap:10px">
         <button class="btn" style="flex:1;justify-content:center;padding:12px" onclick="obBack(2)">
           <i class="ti ti-arrow-left"></i> Retour

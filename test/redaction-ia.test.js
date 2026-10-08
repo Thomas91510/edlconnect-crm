@@ -1,0 +1,55 @@
+// /api/redaction-ia : « Rédiger avec IA » par Claude — authentifié, plan
+// payant, prompts construits côté serveur (pas de proxy ouvert).
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key';
+process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+const { default: handler, decouperEmail } = await import('../api/redaction-ia.js');
+const fetchOriginal = global.fetch;
+test.after(() => { global.fetch = fetchOriginal; });
+
+const req = (body, token = 't') => ({ method: 'POST', url: 'https://x.test/api/redaction-ia', headers: new Headers(token ? { authorization: 'Bearer ' + token } : {}), json: async () => body });
+
+function mock({ plan = 'pro', appels = [], reponse } = {}) {
+  global.fetch = async (url, opts = {}) => {
+    const u = String(url instanceof Request ? url.url : url);
+    if (u.includes('/auth/v1/user')) return new Response(JSON.stringify({ id: 'u1', email: 'agence@x.fr' }), { status: 200 });
+    if (u.includes('/rest/v1/user_plans')) return new Response(JSON.stringify([{ plan, status: 'active' }]), { status: 200 });
+    if (u.includes('/rest/v1/settings')) return new Response(JSON.stringify([{ data: { companyName: 'EDL IDF', expediteurSignature: 'Thomas' } }]), { status: 200 });
+    if (u.includes('api.anthropic.com')) {
+      const corps = JSON.parse(opts.body || (url instanceof Request ? await url.text() : '{}'));
+      appels.push({ corps, headers: opts.headers });
+      return new Response(JSON.stringify(reponse || { id: 'm', type: 'message', role: 'assistant', model: 'claude-opus-5-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Objet: Votre état des lieux\n\nBonjour,\nCorps.\n\nThomas' }], usage: { input_tokens: 1, output_tokens: 1 } }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    return new Response('{}', { status: 200 });
+  };
+  return appels;
+}
+
+test('découpe objet / corps', () => {
+  assert.deepEqual(decouperEmail('Objet: Bonjour\n\nLigne 1\nLigne 2'), { objet: 'Bonjour', corps: 'Ligne 1\nLigne 2' });
+  assert.deepEqual(decouperEmail('Juste un corps'), { objet: '', corps: 'Juste un corps' });
+});
+
+test('rédige avec Claude : modèle, consigne et identité construits côté serveur', async () => {
+  const appels = mock();
+  const r = await handler(req({ consigne: 'Relance agence', destinataire: 'a@b.fr', model: 'autre-modele' }));
+  assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), { objet: 'Votre état des lieux', corps: 'Bonjour,\nCorps.\n\nThomas' });
+  const corps = appels[0].corps;
+  assert.equal(corps.model, 'claude-opus-5-5', 'le modèle demandé par le navigateur est ignoré');
+  assert.match(corps.system, /EDL IDF/);
+  assert.match(corps.messages[0].content, /Relance agence/);
+  assert.equal(corps.fallbacks, 'default');
+});
+
+test('refus : sans jeton, plan gratuit, consigne vide ou refusée par l’IA', async () => {
+  mock();
+  assert.equal((await handler(req({ consigne: 'x' }, null))).status, 401);
+  mock({ plan: 'free' });
+  assert.equal((await handler(req({ consigne: 'x' }))).status, 403);
+  mock();
+  assert.equal((await handler(req({ consigne: '  ' }))).status, 400);
+  mock({ reponse: { id: 'm', type: 'message', role: 'assistant', model: 'claude-opus-5-5', stop_reason: 'refusal', content: [], usage: { input_tokens: 1, output_tokens: 0 } } });
+  assert.equal((await handler(req({ consigne: 'x' }))).status, 422);
+});

@@ -32,68 +32,32 @@ async function generateWithClaude(){
   label.textContent = 'Génération…';
   status.textContent = '⏳ Claude rédige…';
 
-  // Contexte propre au compte connecté (jamais EDL IDF en dur : ce panneau
-  // sert tous les abonnés du CRM, pas seulement EDL IDF).
-  const societe = CFG.companyName || CFG.expediteurNom || 'notre entreprise';
-  const nomSignature = CFG.expediteurSignature || CFG.expediteurNom || CFG.companyName || 'Lokentia';
-  const systemPrompt = `Tu es l'assistant commercial de ${societe}, expert en états des lieux professionnels.
-Tu rédiges des emails professionnels B2B en français pour des agences immobilières.
-Ton style est : professionnel, bienveillant, concis, sans fioritures.
-Tu ne mets JAMAIS de formules creuses comme "j'espère que ce message vous trouve en bonne santé".
-Tu signes toujours : ${nomSignature}.
-Tu retournes UNIQUEMENT le texte de l'email (objet sur la première ligne précédé de "Objet: ", puis le corps), sans aucune explication ni commentaire.`;
-
-  const userPrompt = `Rédige un email professionnel.
-${to ? 'Destinataire : ' + to : ''}
-Contexte / instructions : ${prompt}
-
-Format de réponse :
-Objet: [objet de l'email]
-
-[corps de l'email]`;
-
+  // Rédaction par Claude (api/redaction-ia.js) : les prompts sont construits
+  // côté serveur avec l'identité d'envoi du compte ; on n'envoie que la
+  // consigne, le destinataire et le brouillon en cours.
   try {
-   const response = await fetch('/api/mistral', {
+    const response = await fetch('/api/redaction-ia', {
       method : 'POST',
       headers: await _authHeaders({ 'Content-Type' : 'application/json' }),
-      body: JSON.stringify({
-        model      : 'mistral-small-latest',
-        temperature: 0.7,
-        max_tokens : 1000,
-        messages   : [
-          { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userPrompt   }
-        ]
-      })
+      body: JSON.stringify({ consigne: prompt, destinataire: to, brouillon: bodyEl ? bodyEl.value : '' })
     });
-
-    const data = await response.json();
-
+    const data = await response.json().catch(() => ({}));
     if(!response.ok){
-      const errMsg = data.message || data.error?.message || 'Erreur API Mistral';
-      if(response.status === 400 || response.status === 401){
-        status.textContent = '⚠️ Clé API invalide — vérifie dans Paramètres';
+      if(response.status === 503 || response.status === 403){
+        status.textContent = '⚠️ ' + (data.error || 'Rédaction IA indisponible');
         generateLocalEmail(prompt, to, subjEl, bodyEl);
         btn.disabled = false; label.textContent = 'Générer';
         return;
       }
-      throw new Error(errMsg);
+      throw new Error(data.error || 'Erreur de la rédaction IA');
     }
-
-    const text = data.choices?.[0]?.message?.content || '';
-
-    // Parser objet et corps
-    const lines     = text.split('\n');
-    const objetLine = lines.find(l => l.toLowerCase().startsWith('objet:'));
-    const objetVal  = objetLine ? objetLine.replace(/^objet:\s*/i,'').trim() : '';
-    const bodyStart = objetLine ? lines.indexOf(objetLine) + 1 : 0;
-    const bodyText  = lines.slice(bodyStart).join('\n').trim();
-
+    const objetVal = data.objet || '';
+    const bodyText = data.corps || '';
     if(objetVal && subjEl && !subjEl.value) subjEl.value = objetVal;
     if(bodyText && bodyEl) bodyEl.value = bodyText;
 
     status.textContent = '✅ Email généré !';
-    notify('✨ Email rédigé par Mistral IA !');
+    notify('✨ Email rédigé par Claude !');
     setTimeout(()=>{
       document.getElementById('claude-panel').style.display='none';
       status.textContent='';
