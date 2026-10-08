@@ -109,8 +109,8 @@ function fusionnerSuiviEmails(liste){
   return { nouveaux, majs };
 }
 let _suiviEmailsCharge = 0;
-async function rafraichirSuiviEmails(force){
-  if(!force && Date.now() - _suiviEmailsCharge < 5 * 60 * 1000) return null;
+async function rafraichirSuiviEmails(force, intervalleMs = 5 * 60 * 1000){
+  if(!force && Date.now() - _suiviEmailsCharge < intervalleMs) return null;
   _suiviEmailsCharge = Date.now();
   try{
     const tk = (await supabaseClient.auth.getSession()).data?.session?.access_token || '';

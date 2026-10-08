@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.0-beta.15';
+const APP_VERSION = '2.0.0-beta.16';
 const NOUVEAUTES = [
+  { v:'2.0.0-beta.16', titre:'Espaces agences épurés, suivi des emails automatique dans la fiche', texte:'« Espaces agences » montre par défaut les espaces activés (recherche affichée quand ils deviennent nombreux) ; l\u2019activation d\u2019un autre client se fait par recherche. Fiche client : ouvertures et clics mis à jour automatiquement (à l\u2019ouverture puis toutes les 2 minutes), statut de chaque email affiché sans menu à régler à la main.' },
   { v:'2.0.0-beta.15', titre:'Extranet réservé aux espaces activés', texte:'Une agence dont l\u2019espace n\u2019est pas activé ne peut plus accéder à son extranet (message l\u2019invitant à contacter son expert). Les agences qui utilisaient déjà leur extranet restent activées ; désactiver l\u2019interrupteur bloque l\u2019accès.' },
   { v:'2.0.0-beta.14', titre:'Rapports dans les fiches et l\u2019extranet, espaces activés, accueil agence', texte:'Rapports d\u2019état des lieux visibles dans la fiche client (onglet Commandes) et dans l\u2019extranet de l\u2019agence, y compris pour les missions saisies dans le CRM et les anciennes réservations. Interrupteur « Espace extranet activé » par client : seuls les espaces activés apparaissent dans « Espaces agences ». Extranet : l\u2019accueil montre les rendez-vous des 7 prochains jours, la liste complète reste dans « États des lieux ».' },
   { v:'2.0.0-beta.13', titre:'Page « Espaces agences »', texte:'Le bouton « Espaces agences » du menu ouvre maintenant sa propre page (bleu nuit et or) avec toutes les agences ; l\u2019accueil « Aujourd\u2019hui » ne l\u2019affiche plus.' },

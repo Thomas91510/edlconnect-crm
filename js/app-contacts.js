@@ -165,8 +165,9 @@ function openFiche(id){
     <div class="fiche-section">
       <div class="fiche-section-title">Tracking email</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="stat-pill pill-open"><i class="ti ti-eye" style="font-size:10px"></i>${c.opens||0} ouvertures</span>
-        <span class="stat-pill pill-click"><i class="ti ti-mouse" style="font-size:10px"></i>${c.clicks||0} clics</span>
+        <span class="stat-pill pill-open"><i class="ti ti-eye" style="font-size:10px"></i><span id="fiche-suivi-opens">${statsSuiviContact(c).opens}</span> ouvertures</span>
+        <span class="stat-pill pill-click"><i class="ti ti-mouse" style="font-size:10px"></i><span id="fiche-suivi-clicks">${statsSuiviContact(c).clicks}</span> clics</span>
+        <span id="fiche-suivi-maj" style="font-size:11px;color:var(--text3)">Mis à jour automatiquement</span>
       </div>
     </div>
 
@@ -186,6 +187,7 @@ function openFiche(id){
 
   // Rendu emails via fonction dédiée (inclut Gmail)
   renderFicheEmails(c);
+  suivreEmailsFiche(c.id);
   feRenderDocs(c.documents || []);
   const msgBadge=document.getElementById('ftab-messages-count');
   if(msgBadge){
@@ -504,11 +506,50 @@ function deleteContact(){
   notify('Contact supprimé');renderContacts();renderDashboard();
 }
 
-function renderFicheEmails(c){
+// ─── Suivi des emails dans la fiche : automatique ─────────────
+// Ouvert / cliqué viennent de Brevo (rafraîchi à l'ouverture de la fiche
+// puis toutes les 2 minutes tant qu'elle reste ouverte) : plus de menu à
+// régler à la main.
+function emailsDuContact(c){
   const emailLower=(c.email||'').toLowerCase();
   const fromHistory=(c.history||[]);
-  const fromTracking=DB.trackings.filter(t=>(t.email||'').toLowerCase()===emailLower&&!fromHistory.find(h=>h.id===t.id));
-  const allEmails=[...fromHistory,...fromTracking].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const fromTracking=(DB.trackings||[]).filter(t=>(t.email||'').toLowerCase()===emailLower&&!fromHistory.find(h=>h.id===t.id));
+  return [...fromHistory,...fromTracking].sort((a,b)=>new Date(b.date)-new Date(a.date));
+}
+function statsSuiviContact(c){
+  const emails = emailsDuContact(c);
+  const somme = (k) => emails.reduce((n, e) => n + (Number(e[k]) || 0), 0);
+  const ouverts = emails.filter(e => e.statut === 'Ouvert' || e.statut === 'Cliqué' || e.statut === 'Répondu').length;
+  return { opens: Math.max(somme('opens'), ouverts, Number(c.opens) || 0), clicks: Math.max(somme('clicks'), Number(c.clicks) || 0) };
+}
+let _minuteurSuiviFiche = null;
+async function suivreEmailsFiche(id){
+  clearInterval(_minuteurSuiviFiche);
+  const maj = async (force) => {
+    const modal = document.getElementById('modal-fiche');
+    if(currentFicheId !== id || (modal && !modal.classList.contains('open'))){ clearInterval(_minuteurSuiviFiche); return; }
+    if(typeof rafraichirSuiviEmails === 'function') await rafraichirSuiviEmails(force, 60 * 1000);
+    const c = (DB.contacts || []).find(x => x.id === id);
+    if(!c || currentFicheId !== id) return;
+    const st = statsSuiviContact(c);
+    const o = document.getElementById('fiche-suivi-opens'); if(o) o.textContent = st.opens;
+    const k = document.getElementById('fiche-suivi-clicks'); if(k) k.textContent = st.clicks;
+    const m = document.getElementById('fiche-suivi-maj'); if(m) m.textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    renderFicheEmails(c);
+  };
+  // Sans connexion au cloud (tests, mode hors ligne) : pas de relève.
+  if(typeof supabaseClient === 'undefined' || !supabaseClient) return;
+  maj(false);
+  _minuteurSuiviFiche = setInterval(() => maj(true), 2 * 60 * 1000);
+}
+const _STYLE_STATUT_EMAIL = { 'Envoyé':['#F2F4F7','#475467','ti-send'], 'Ouvert':['#EAF3DE','#3B6D11','ti-eye'], 'Cliqué':['#E8F0FB','#1A5FA8','ti-mouse'], 'Répondu':['#FFF4E5','#854F0B','ti-message-reply'], 'Reçu':['#E8F0FB','#0C447C','ti-inbox'], 'Échec':['#FEF3F2','#B42318','ti-alert-triangle'], 'Spam':['#FEF3F2','#B42318','ti-alert-triangle'], 'Désabonné':['#F2F4F7','#475467','ti-user-off'], 'Sans suite':['#FEF3F2','#A32D2D','ti-x'] };
+function badgeStatutEmail(t){
+  const [bg, fg, ic] = _STYLE_STATUT_EMAIL[t.statut] || _STYLE_STATUT_EMAIL['Envoyé'];
+  const det = [t.opens ? t.opens + ' ouv.' : '', t.clicks ? t.clicks + ' clic' + (t.clicks > 1 ? 's' : '') : ''].filter(Boolean).join(' · ');
+  return `<span title="Statut suivi automatiquement (Brevo)" style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;background:${bg};color:${fg};padding:3px 8px;border-radius:20px;white-space:nowrap;margin-left:8px;flex-shrink:0"><i class="ti ${ic}" style="font-size:11px"></i>${esc(t.statut || 'Envoyé')}${det ? ' · ' + esc(det) : ''}</span>`;
+}
+function renderFicheEmails(c){
+  const allEmails=emailsDuContact(c);
   const gmailBtnHtml=''; // Gmail désactivé (invalid_client)
   const emailsHtml=allEmails.length?allEmails.map((t,i)=>`
     <div style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${t.direction==='recu'?'border-left:3px solid var(--blue)':''}">
@@ -516,15 +557,13 @@ function renderFicheEmails(c){
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
             ${t.direction==='recu'?'<span style="font-size:9px;background:var(--blue-bg);color:var(--blue-text);padding:1px 5px;border-radius:3px">REÇU</span>':'<span style="font-size:9px;background:var(--bg3);color:var(--text2);padding:1px 5px;border-radius:3px">ENVOYÉ</span>'}
-            <div style="font-weight:600;font-size:12px">${t.objet||t.subject||'—'}</div>
+            <div style="font-weight:600;font-size:12px">${esc(t.objet||t.subject||'—')}</div>
           </div>
           <div style="font-size:10px;color:var(--text2)">${fmtDT(t.date)}${t.from&&t.direction==='recu'?' · De : '+t.from:''}</div>
         </div>
-        <select style="font-size:10px;padding:2px 6px;min-width:90px;max-width:110px;margin-left:8px;flex-shrink:0" onchange="updateEmailStatus('${c.id}','${t.id||i}',this.value)">
-          ${['Envoyé','Ouvert','Cliqué','Répondu','Reçu','Sans suite'].map(s=>`<option value="${s}"${s===t.statut?' selected':''}>${s}</option>`).join('')}
-        </select>
+        ${badgeStatutEmail(t)}
       </div>
-      ${t.corps?`<div style="padding:8px 12px;font-size:11px;color:var(--text2);border-top:1px solid var(--border);max-height:80px;overflow-y:auto;white-space:pre-wrap">${t.corps.substring(0,300)}${t.corps.length>300?'…':''}</div>`:''}
+      ${t.corps?`<div style="padding:8px 12px;font-size:11px;color:var(--text2);border-top:1px solid var(--border);max-height:80px;overflow-y:auto;white-space:pre-wrap">${esc(t.corps.substring(0,300))}${t.corps.length>300?'…':''}</div>`:''}
     </div>`).join('')
   :`<div class="empty">Aucun email — utilise le bouton ci-dessus pour charger les emails Gmail ou envoie un email depuis le bas</div>`;
   document.getElementById('fiche-emails-list').innerHTML=gmailBtnHtml+emailsHtml;
@@ -1157,6 +1196,7 @@ async function chargerEspacesHistoriques(){
     if(cb && c) cb.checked = espaceActif(c);
   }catch(e){ _espacesHistoriquesCharges = false; }
 }
+const SEUIL_RECHERCHE_ESPACES = 8;
 function espaceActif(c){
   if(!c) return false;
   if(c.espaceActif === true) return true;
@@ -1186,6 +1226,9 @@ function renderBlocEspacesAgences(){
   const actifs = tous.filter(espaceActif);
   const compte = document.getElementById('espaces-agences-compte');
   if(compte) compte.textContent = actifs.length + ' espace' + (actifs.length > 1 ? 's' : '') + ' activé' + (actifs.length > 1 ? 's' : '');
+  // Recherche affichée seulement quand les agences activées deviennent nombreuses.
+  const champ = document.getElementById('dash-espaces-recherche');
+  if(champ) champ.style.display = (actifs.length > SEUIL_RECHERCHE_ESPACES || q) ? '' : 'none';
   const liste = actifs.filter(correspond);
   box.innerHTML = liste.length ? liste.map(c => `<div class="espaces-agences-carte-wrap">
       <button type="button" class="espaces-agences-carte" onclick="ouvrirEspaceAgence('${esc(c.email)}')" title="Ouvrir l'espace de ${esc(c.entreprise || c.email)} (lecture seule)">
@@ -1198,12 +1241,18 @@ function renderBlocEspacesAgences(){
   if(nbI) nbI.textContent = '(' + inactifs.length + ')';
   const boxI = document.getElementById('espaces-inactifs-liste');
   if(boxI){
-    const vus = inactifs.filter(correspond).slice(0, 60);
+    // Clients non activés : jamais toute la liste d'un coup — on cherche
+    // l'agence à activer (2 lettres minimum).
+    const qi = String((document.getElementById('espaces-inactifs-recherche') || {}).value || '').trim().toLowerCase();
+    const champI = `<input type="search" class="espaces-agences-recherche" id="espaces-inactifs-recherche" placeholder="Rechercher le client à activer…" value="${esc(qi)}" oninput="renderBlocEspacesAgences()">`;
+    if(!document.getElementById('espaces-inactifs-recherche')) boxI.insertAdjacentHTML('beforebegin', champI);
+    const trouves = qi.length >= 2 ? inactifs.filter(c => [c.entreprise, c.contact, c.email, c.ville].some(v => String(v || '').toLowerCase().includes(qi))) : [];
+    const vus = trouves.slice(0, 30);
+    if(qi.length < 2){ boxI.innerHTML = '<div class="espaces-agences-vide" style="padding:8px 4px">Tapez le nom ou l’email du client pour l’activer.</div>'; return; }
     boxI.innerHTML = vus.length ? vus.map(c => `<div class="espaces-agences-inactif"><span><b style="color:#F4F7FA">${esc(c.entreprise || c.contact || c.email)}</b> · ${esc(c.email)}</span>
         <button type="button" onclick="basculerEspaceAgence('${esc(c.id)}', true)">Activer</button></div>`).join('')
-      + (inactifs.filter(correspond).length > vus.length ? '<div class="espaces-agences-vide" style="padding:8px 4px">Affinez la recherche pour voir les autres.</div>' : '')
-      : '<div class="espaces-agences-vide" style="padding:8px 4px">Aucun autre client avec un email.</div>';
-    if(q && vus.length) document.getElementById('espaces-inactifs').open = true;
+      + (trouves.length > vus.length ? '<div class="espaces-agences-vide" style="padding:8px 4px">Affinez la recherche pour voir les autres.</div>' : '')
+      : '<div class="espaces-agences-vide" style="padding:8px 4px">Aucun client ne correspond.</div>';
   }
 }
 function ouvrirEspaceFicheCourante(){
