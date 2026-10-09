@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.4';
+const APP_VERSION = '2.0.5';
 const NOUVEAUTES = [
+  { v:'2.0.5', titre:'Clients sur un seul écran, Notion retiré', texte:'Page Clients : filtre « Notion » retiré, tableau en 7 colonnes (entreprise et contact, email et téléphone, date et moyen du dernier contact réunis) qui tient dans la largeur de l\u2019écran. Réglages : bloc Notion masqué. Accueil : mention « Notion + Brevo » retirée.' },
   { v:'2.0.4', titre:'Date de la dernière sauvegarde', texte:'Réglages › Sauvegarde affiche maintenant la date de la dernière sauvegarde dans le cloud (automatique chaque matin ou « Sauvegarder maintenant »), et non plus celle du dernier fichier téléchargé. Le rappel de sauvegarde n\u2019apparaît plus tant qu\u2019une sauvegarde récente existe.' },
   { v:'2.0.3', titre:'Sauvegarder maintenant', texte:'Réglages › Sauvegarde : bouton « Sauvegarder maintenant » pour une copie complète immédiate dans le cloud (en plus de celle de chaque matin). Missions : bouton « Confirmer le RDV » retiré de la liste (la confirmation s\u2019ouvre automatiquement à la validation de la réservation) et déplacé dans la fenêtre « Modifier la mission », pour les missions créées à la main.' },
   { v:'2.0.2', titre:'Sauvegarde quotidienne réparée, données protégées', texte:'La sauvegarde automatique de chaque nuit tourne de nouveau (elle ne partait plus depuis le 24 juillet). À l\u2019ouverture du CRM, un problème de connexion au cloud n\u2019entraîne plus le renvoi de la copie de votre navigateur : vos données plus récentes (missions mises à jour par un agent ou une agence) ne peuvent plus être écrasées.' },
