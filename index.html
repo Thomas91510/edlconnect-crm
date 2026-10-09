@@ -546,6 +546,9 @@ label.btn{margin:0}
 .tbl td{padding:15px 16px;border-bottom:1px solid #F0F1F3;max-width:240px}
 /* Missions : tient dans la largeur de l'écran (8 colonnes, textes abrégés) */
 /* Clients : 7 colonnes à largeur fixe, textes abrégés (tient dans l'écran) */
+.tbl-avis{table-layout:fixed;width:100%}
+.tbl-avis th,.tbl-avis td{padding:10px 12px;max-width:none}
+.tbl-avis td.avis-actions{overflow:visible;white-space:nowrap;text-align:right}
 .tbl-contacts{table-layout:fixed}
 .tbl-contacts th,.tbl-contacts td{padding:10px 10px;max-width:none}
 .tbl-contacts .c-titre{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2134,9 +2137,9 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 </div>
 
 <div class="modal-bg" id="modal-avis-google">
-  <div class="modal" style="max-width:760px">
+  <div class="modal" style="width:980px;max-width:95vw">
     <div class="modal-title">⭐ Demandes d'avis Google en attente</div>
-    <p style="font-size:13px;color:var(--text2);margin:0 0 12px">États des lieux passés dont la demande d'avis n'est jamais partie. « Envoyer » adresse au locataire l'email « Comment s'est passé votre état des lieux ? » avec votre lien d'avis ; « Ignorer » retire l'état des lieux de la liste sans rien envoyer (utile quand il est trop ancien).</p>
+    <p style="font-size:13px;color:var(--text2);margin:0 0 12px">États des lieux passés dont la demande d'avis n'est jamais partie. « Envoyer » adresse au locataire l'email « Comment s'est passé votre état des lieux ? » avec votre lien d'avis ; « Ne pas envoyer » retire l'état des lieux de la liste sans rien envoyer au locataire (utile quand il est trop ancien ou quand vous ne souhaitez pas solliciter d'avis).</p>
     <div id="avis-google-liste"></div>
     <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap">
       <button class="btn btn-primary" id="btn-avis-tous" onclick="envoyerAvisRecents()" style="margin-right:auto"><i class="ti ti-send"></i>Envoyer à tous (moins de 30 jours)</button>

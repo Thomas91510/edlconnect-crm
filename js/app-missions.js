@@ -731,10 +731,10 @@ function renderAvisGoogle(){
   const btnTous = document.getElementById('btn-avis-tous');
   const nbRecents = liste.filter(_avisRecent).length;
   if(btnTous){ btnTous.disabled = !nbRecents; btnTous.innerHTML = `<i class="ti ti-send"></i>Envoyer à tous (moins de 30 jours) · ${nbRecents}`; }
-  box.innerHTML = liste.length ? `<div style="overflow-x:auto"><table class="tbl tbl-dash"><thead><tr><th style="width:16%">Date</th><th>Adresse · locataire</th><th style="width:36%"></th></tr></thead><tbody>${liste.map(m => `<tr>
+  box.innerHTML = liste.length ? `<div style="overflow-x:auto"><table class="tbl tbl-dash tbl-avis"><thead><tr><th style="width:110px">Date</th><th>Adresse · locataire</th><th style="width:290px"></th></tr></thead><tbody>${liste.map(m => `<tr>
       <td>${esc(new Date(m.date).toLocaleDateString('fr-FR'))}${_avisRecent(m) ? '' : '<div class="d-sous">plus de 30 j</div>'}</td>
       <td><div class="d-titre" title="${esc(m.adresse || '')}">${esc(m.adresse || '—')}</div><div class="d-sous">${esc([m.locataireNom, m.locataireEmail].filter(Boolean).join(' · '))}</div></td>
-      <td style="text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" onclick="envoyerDemandeAvis('${esc(m.id)}')"><i class="ti ti-send"></i>Envoyer</button> <button class="btn btn-sm" onclick="ignorerDemandeAvis('${esc(m.id)}')">Ignorer</button></td>
+      <td class="avis-actions"><button class="btn btn-sm btn-primary" onclick="envoyerDemandeAvis('${esc(m.id)}')"><i class="ti ti-send"></i>Envoyer</button> <button class="btn btn-sm" onclick="ignorerDemandeAvis('${esc(m.id)}')" title="Retirer de la liste sans rien envoyer au locataire"><i class="ti ti-x"></i>Ne pas envoyer</button></td>
     </tr>`).join('')}</tbody></table></div>` : '<div class="empty">Aucune demande d\u2019avis en attente 🎉</div>';
 }
 function _majAvisMission(m){
