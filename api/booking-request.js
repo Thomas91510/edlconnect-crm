@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' };
 import { erreurReservation } from './_lib/reservation-validation.js';
 import { origineAutorisee } from './_lib/cors.js';
-import { identiteAbonne } from './_lib/identite.js';
+import { identiteAbonne, enteteEmail } from './_lib/identite.js';
 import { escapeIlike } from './_lib/ilike.js';
 
 const SUPA_URL_IDENT = 'https://pvuctwflxvvxdawsxceu.supabase.co';
@@ -245,9 +245,7 @@ export default async function handler(req) {
           subject: `✅ Demande d'EDL reçue — ${typeEdl} · ${adresse}`,
           htmlContent: `
             <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-              <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-                <div style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</div>
-              </div>
+              ${enteteEmail(IDENT)}
               <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
                 <h2 style="font-size:20px;margin-bottom:6px">✅ Votre demande est bien reçue !</h2>
                 <p style="color:#6b6b6b;margin-bottom:20px">Bonjour <strong>${esc(contact)}</strong>, ${esc(EXPERT)} vous contactera sous <strong>2h</strong> pour confirmer la date définitive.</p>

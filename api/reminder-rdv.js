@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-import { identiteAbonne as identiteAbonneBase } from './_lib/identite.js';
+import { identiteAbonne as identiteAbonneBase, enteteEmail } from './_lib/identite.js';
 
 // Identite d'envoi propre a chaque abonne (repli neutre Lokentia), avec cache
 // pour eviter de refaire l'appel Supabase a chaque mission d'un meme abonne.
@@ -188,9 +188,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px">
-    <span style="color:#fff;font-size:17px;font-weight:700">${esc(IDENT.nom)}</span>
-  </div>
+  ${enteteEmail(IDENT)}
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <div style="background:#FAEEDA;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;font-weight:700;color:#633806;text-align:center">
       ⏰ Rappel — Votre état des lieux est <strong>demain</strong>
@@ -291,9 +289,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:17px;font-weight:700">${esc(IDENT.nom)}</span>
-  </div>
+  ${enteteEmail(IDENT)}
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + esc(salutation) + '</strong>' : ''},</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
@@ -380,9 +376,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:17px;font-weight:700">${esc(IDENT.nom)}</span>
-  </div>
+  ${enteteEmail(IDENT)}
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">Bonjour${salutation ? ' <strong>' + esc(salutation) + '</strong>' : ''},</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 16px 0">
