@@ -1,18 +1,38 @@
 export const config = { runtime: 'edge' };
 
+import { SUPABASE_URL } from './_lib/supabase.js';
+
+// Sauvegarde quotidienne (api/backup-auto.js). Lancée EN PREMIER : elle était
+// en fin de fonction, après des « return » anticipés (aucun essai à J+13,
+// presque tous les jours) — elle ne tournait donc jamais (dernière sauvegarde
+// automatique : 24/07/2026). Ne bloque jamais le reste du cron.
+async function sauvegardeQuotidienne(fetchFn = fetch) {
+  try {
+    const bResp = await fetchFn('https://app.lokentia.fr/api/backup-auto', {
+      headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` }
+    });
+    const bj = await bResp.json().catch(() => ({}));
+    return bj.journal || { erreur: 'HTTP ' + bResp.status };
+  } catch(e) {
+    return { erreur: String(e && e.message || e) };
+  }
+}
+
 export default async function handler(req) {
   // Sécurité : vérifier le token Vercel Cron
   const authHeader = req.headers.get('authorization');
-  if(authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if(!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 });
   }
 
+  const sauvegarde = await sauvegardeQuotidienne();
+
   const BREVO_KEY = process.env.BREVO_API_KEY;
-  const SUPA_URL  = process.env.SUPABASE_URL;
+  const SUPA_URL  = SUPABASE_URL;
   const SUPA_KEY  = process.env.SUPABASE_SERVICE_KEY;
 
   if(!BREVO_KEY || !SUPA_URL || !SUPA_KEY) {
-    return new Response(JSON.stringify({ error: 'Variables manquantes' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'Variables manquantes', sauvegarde }), { status: 500 });
   }
 
   try {
@@ -38,7 +58,7 @@ export default async function handler(req) {
 
     const users = await resp.json();
     if(!users || !users.length) {
-      return new Response(JSON.stringify({ sent: 0, message: 'Aucun utilisateur à J+13' }), { status: 200 });
+      return new Response(JSON.stringify({ sent: 0, message: 'Aucun utilisateur à J+13', sauvegarde }), { status: 200 });
     }
 
     let sent = 0;
@@ -108,22 +128,10 @@ export default async function handler(req) {
       if(emailResp.ok) sent++;
     }
 
-    // ── Sauvegarde quotidienne automatique (ne doit jamais bloquer le cron) ──
-    let sauvegarde = null;
-    try {
-      const bResp = await fetch('https://app.lokentia.fr/api/backup-auto', {
-        headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` }
-      });
-      const bj = await bResp.json();
-      sauvegarde = bj.journal || { erreur: 'HTTP ' + bResp.status };
-    } catch(e) {
-      sauvegarde = { erreur: String(e && e.message || e) };
-    }
-
     return new Response(JSON.stringify({ sent, total: users.length, sauvegarde }), { status: 200 });
 
   } catch(e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: e.message, sauvegarde }), { status: 500 });
   }
 }
 

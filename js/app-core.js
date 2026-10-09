@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.1';
+const APP_VERSION = '2.0.2';
 const NOUVEAUTES = [
+  { v:'2.0.2', titre:'Sauvegarde quotidienne réparée, données protégées', texte:'La sauvegarde automatique de chaque nuit tourne de nouveau (elle ne partait plus depuis le 24 juillet). À l\u2019ouverture du CRM, un problème de connexion au cloud n\u2019entraîne plus le renvoi de la copie de votre navigateur : vos données plus récentes (missions mises à jour par un agent ou une agence) ne peuvent plus être écrasées.' },
   { v:'2.0.1', titre:'Missions lisibles sur un seul écran', texte:'Le tableau des missions tient dans la largeur de l\u2019écran : nom de l\u2019agence au lieu de son email, type et bien réunis, statut modifiable directement dans sa pastille, TVA visible au survol du TTC. Accueil : « Dernières missions » et « Contacts récents » ne débordent plus.' },
   { v:'2.0.0', titre:'Version 2 en production', texte:'La refonte V2 (CRM, extranet des agences, espace agent) est en service. Espaces agences : Immo Gestion, Arthurimmo Asnières et les autres agences déjà utilisatrices apparaissent bien comme activées.' },
   { v:'2.0.0-beta.27', titre:'Boutons de relève Edouard retirés', texte:'Les boutons « Relever maintenant » (Clients › Rapports) et « Sync Edouard » (Missions) sont retirés : les rapports s\u2019ajoutent uniquement à la main, dans la fiche client › Documents.' },

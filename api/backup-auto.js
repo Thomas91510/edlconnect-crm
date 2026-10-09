@@ -13,7 +13,7 @@ const PAGE = 1000;
 export default async function handler(req) {
   // Acces : le cron Vercel, ou un administrateur connecte
   const authHeader = req.headers.get('authorization') || '';
-  let autorise = (authHeader === `Bearer ${process.env.CRON_SECRET}`);
+  let autorise = !!process.env.CRON_SECRET && (authHeader === `Bearer ${process.env.CRON_SECRET}`);
   let declencheur = 'cron';
 
   if (!autorise) {
