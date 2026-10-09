@@ -797,6 +797,26 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 .suivi-qui{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .suivi-objet{font-size:11.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .suivi-date{font-size:11px;color:var(--text3)}
+
+/* Contrat de sous-traitance RGPD (js/app-contrat.js) */
+#contrat-rgpd-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:10000;display:none;align-items:center;justify-content:center;padding:16px}
+#contrat-rgpd-overlay.open{display:flex}
+.contrat-boite{background:var(--bg,#fff);border-radius:14px;width:820px;max-width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.contrat-entete{display:flex;align-items:center;gap:10px;padding:16px 20px 8px}
+.contrat-titre{font-size:16px;font-weight:700;flex:1;display:flex;align-items:center;gap:8px}
+.contrat-intro{padding:0 20px 10px;font-size:13px;color:var(--text2)}
+.contrat-texte{overflow:auto;padding:4px 20px 12px;font-size:12.5px;line-height:1.6;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex:1;min-height:180px}
+.contrat-texte h2{font-size:17px;margin:14px 0 2px}
+.contrat-texte h3{font-size:13.5px;margin:16px 0 4px}
+.contrat-texte .contrat-version{color:var(--text2);font-size:12px;margin:0 0 6px}
+.contrat-texte ul{padding-left:18px}
+.contrat-table{border-collapse:collapse;width:100%;font-size:11.5px}
+.contrat-table th,.contrat-table td{border:1px solid var(--border);padding:5px 7px;text-align:left;vertical-align:top}
+.contrat-pied{padding:12px 20px 16px;display:flex;flex-direction:column;gap:10px}
+.contrat-case{display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer}
+.contrat-case input{margin-top:2px;width:auto}
+.contrat-erreur{color:var(--red-text);font-size:12.5px;min-height:0}
+@media (max-width:600px){.contrat-texte{padding:4px 14px 10px}.contrat-entete,.contrat-intro,.contrat-pied{padding-left:14px;padding-right:14px}}
 </style>
 </head>
 <body>
@@ -1941,6 +1961,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         </div>
         <div id="sauvegarde-cloud-statut" style="font-size:12.5px;color:var(--text2);margin-top:10px"></div>
       </div>
+      <div class="settings-section" data-rubrique="contrat" id="reglages-contrat"></div>
       <div class="settings-section" data-rubrique="version" id="reglages-version"></div>
       <button class="btn btn-primary" id="settings-save-btn" onclick="saveSettings()"><i class="ti ti-check"></i>Enregistrer les réglages</button>
       </div>
@@ -2391,6 +2412,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 <script src="/js/app-reservations.js"></script>
 <script src="/js/app-remuneration.js"></script>
 <script src="/js/app-equipe.js"></script>
+<script src="/js/app-contrat.js"></script>
 
 <!-- NAV BAR MOBILE -->
 <div id="mobile-nav-bar">
@@ -2441,7 +2463,11 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Mot de passe (min. 6 caractères)</label>
       <input type="password" id="signup-password" placeholder="••••••••" style="margin-bottom:12px;width:100%">
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Nom de votre entreprise</label>
-      <input type="text" id="signup-company" placeholder="Votre société" style="margin-bottom:20px;width:100%" onkeydown="if(event.key==='Enter')doSignup()">
+      <input type="text" id="signup-company" placeholder="Votre société" style="margin-bottom:14px;width:100%" onkeydown="if(event.key==='Enter')doSignup()">
+      <label id="signup-rgpd-ligne" style="display:none;gap:8px;align-items:flex-start;font-size:12px;color:var(--text2);margin-bottom:16px;cursor:pointer">
+        <input type="checkbox" id="signup-rgpd" style="width:auto;margin-top:2px">
+        <span>J’accepte le <a href="#" onclick="event.preventDefault();ouvrirContratRgpd()">contrat de sous-traitance des données (RGPD)</a>, que je signerai électroniquement à ma première connexion.</span>
+      </label>
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doSignup()" id="signup-btn">
         <i class="ti ti-user-plus"></i> Créer mon compte
       </button>

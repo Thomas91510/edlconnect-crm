@@ -1555,6 +1555,9 @@ async function doSignup(){
   const company=document.getElementById('signup-company').value.trim();
   if(!email||!password){showAuthError('Email et mot de passe requis');return;}
   if(password.length<6){showAuthError('Mot de passe trop court (min. 6 caractères)');return;}
+  const caseRgpd=document.getElementById('signup-rgpd');
+  const ligneRgpd=document.getElementById('signup-rgpd-ligne');
+  if(caseRgpd && ligneRgpd && ligneRgpd.style.display!=='none' && !caseRgpd.checked){showAuthError('Vous devez accepter le contrat de sous-traitance des données (RGPD)');return;}
   const btn=document.getElementById('signup-btn');
   btn.innerHTML='<i class="ti ti-loader"></i> Création…';btn.disabled=true;
   try{
@@ -1616,6 +1619,9 @@ async function onAuthSuccess(user){
     securiteSection.style.display = estAdmin ? '' : 'none';
     if(estAdmin) chargerEtatMfa();
   }
+  // Contrat de sous-traitance RGPD : signature obligatoire de la version
+  // en cours (js/app-contrat.js) — ne bloque pas le chargement du CRM.
+  if(typeof verifierContratRgpd === 'function') verifierContratRgpd();
   // Charger le plan de l'utilisateur
   await loadUserPlan();
   // Gérer le retour de paiement Stripe (?abonnement=succes|annule)

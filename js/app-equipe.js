@@ -45,6 +45,7 @@ const RUBRIQUES_REGLAGES = [
   { cle:'integrations', label:'Intégrations',       icone:'ti-plug',        droit:'reglages' },
   { cle:'securite',     label:'Sécurité',           icone:'ti-shield-lock' },
   { cle:'sauvegarde',   label:'Sauvegarde',         icone:'ti-device-floppy', droit:'export' },
+  { cle:'contrat',      label:'Contrat RGPD',       icone:'ti-file-certificate' },
   { cle:'version',      label:'À propos & version', icone:'ti-info-circle' }
 ];
 
@@ -164,6 +165,7 @@ function renderReglagesV2(){
   if(!navEl) return;
   renderSectionEquipe();
   renderSectionVersion();
+  if(typeof renderSectionContrat === 'function') renderSectionContrat();
   const rubriques = rubriquesVisibles();
   if(!rubriques.some(r=>r.cle===_rubriqueReglages) && rubriques.length) _rubriqueReglages = rubriques[0].cle;
   navEl.innerHTML = rubriques.map(r=>
