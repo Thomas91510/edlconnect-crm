@@ -1919,8 +1919,9 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <div class="settings-section" data-rubrique="equipe" id="reglages-equipe"></div>
       <div class="settings-section" data-rubrique="sauvegarde" data-perm="export">
         <div class="settings-title"><i class="ti ti-device-floppy" style="font-size:18px"></i>Sauvegarde</div>
-        <div class="info-box" style="margin-bottom:16px">Vos données sont synchronisées dans le cloud. Une sauvegarde manuelle (fichier .json) reste utile avant une opération importante.</div>
+        <div class="info-box" style="margin-bottom:16px">Vos données sont synchronisées dans le cloud et sauvegardées automatiquement chaque matin à 8h (copie complète conservée 30 jours). « Sauvegarder maintenant » en fait une tout de suite, avant une opération importante par exemple.</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-primary" id="btn-sauvegarde-cloud" onclick="sauvegarderCloudMaintenant()"><i class="ti ti-cloud-upload"></i>Sauvegarder maintenant</button>
           <button class="btn" onclick="saveBackup()"><i class="ti ti-download"></i>Télécharger une sauvegarde</button>
           <label class="btn" title="Restaurer">
             <i class="ti ti-upload"></i>Restaurer un fichier
@@ -1928,6 +1929,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
           </label>
           <span id="last-backup-date" style="font-size:12.5px;color:var(--text2)"></span>
         </div>
+        <div id="sauvegarde-cloud-statut" style="font-size:12.5px;color:var(--text2);margin-top:10px"></div>
       </div>
       <div class="settings-section" data-rubrique="version" id="reglages-version"></div>
       <button class="btn btn-primary" id="settings-save-btn" onclick="saveSettings()"><i class="ti ti-check"></i>Enregistrer les réglages</button>

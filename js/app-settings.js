@@ -1766,3 +1766,33 @@ async function checkAuth(){
 
 
 // ═══════════════════════════════════════════════════════════
+
+// Sauvegarde complète dans le cloud (bucket Supabase « sauvegardes », et
+// Google Drive s'il est configuré) à la demande — la même que celle de
+// chaque matin (api/backup-auto.js, réservée à l'administrateur).
+async function sauvegarderCloudMaintenant(){
+  const btn = document.getElementById('btn-sauvegarde-cloud');
+  const statut = document.getElementById('sauvegarde-cloud-statut');
+  if(btn) btn.disabled = true;
+  if(statut) statut.textContent = 'Sauvegarde en cours…';
+  try{
+    const r = await fetch('/api/backup-auto', { headers: await _authHeaders() });
+    const d = await r.json().catch(() => ({}));
+    if(!r.ok || !d.success){
+      const msg = (d && d.error) || ('HTTP ' + r.status);
+      if(statut) statut.textContent = '⚠️ Sauvegarde impossible : ' + msg;
+      notify('⚠️ Sauvegarde impossible : ' + msg, 'warn');
+      return;
+    }
+    const j = d.journal || {};
+    const drive = j.drive && typeof j.drive === 'object' && j.drive.fichierId ? ' · copie Google Drive ✓' : '';
+    const texte = `✅ Sauvegarde faite (${j.poidsKo || '?'} Ko)${drive}`;
+    if(statut) statut.textContent = texte + ' — ' + new Date().toLocaleString('fr-FR');
+    notify(texte);
+  }catch(e){
+    if(statut) statut.textContent = '⚠️ Sauvegarde impossible (connexion)';
+    notify('⚠️ Sauvegarde impossible (connexion)', 'warn');
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}

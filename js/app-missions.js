@@ -104,7 +104,6 @@ function renderMissions(){
         ${['planifiée','en cours','terminée','annulée'].map(s=>`<option${s===m.statut?' selected':''}>${s}</option>`).join('')}
       </select></td>
       <td class="tbl-cards-actions m-actions">
-        <button class="btn btn-sm" onclick="openConfirmRdvModal('${m.id}')" title="Confirmer le RDV et envoyer les convocations" style="background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue)"><i class="ti ti-calendar-check"></i></button>
         <button class="btn btn-sm" onclick="editMission(${realIdx})" title="Modifier"><i class="ti ti-edit"></i></button>
         <button class="btn btn-sm" onclick="deleteMission(${realIdx})" title="Supprimer" style="color:var(--red-text);border-color:var(--red-text);background:var(--red-bg)"><i class="ti ti-trash"></i></button>
       </td>
