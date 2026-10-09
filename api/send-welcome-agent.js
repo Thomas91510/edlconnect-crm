@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { identiteAbonne, enteteEmail } from './_lib/identite.js';
+import { limiteAtteinte } from './_lib/rate-limit.js';
 
 // Envoie automatiquement à un nouvel "Agent EDL" (renseigné avec un email
 // dans Paramètres → Agents EDL) le lien vers son espace agent — appelé
@@ -46,6 +47,24 @@ export default async function handler(req) {
   try {
     const { email, nom } = await req.json();
     if (!email) return new Response(JSON.stringify({ error: 'Email requis' }), { status: 400, headers });
+
+    // Le commentaire ci-dessus est désormais vérifié : l'email doit figurer
+    // parmi les agents enregistrés du compte (settings.data.agents), sinon
+    // n'importe quel compte, même gratuit, pouvait envoyer un email vers
+    // une adresse quelconque via le compte Brevo partagé.
+    if (limiteAtteinte('welcome-agent:' + user.id, { max: 20, fenetreMs: 60 * 60 * 1000 })) {
+      return new Response(JSON.stringify({ error: 'Trop d\'envois, réessayez plus tard' }), { status: 429, headers });
+    }
+    const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+    const sResp = serviceKey ? await fetch(`${SUPABASE_URL}/rest/v1/settings?select=data&user_id=eq.${encodeURIComponent(user.id)}`, {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    }) : null;
+    const sRows = sResp && sResp.ok ? await sResp.json() : [];
+    const agents = (sRows[0] && sRows[0].data && sRows[0].data.agents) || [];
+    const cible = String(email).trim().toLowerCase();
+    if (!Array.isArray(agents) || !agents.some(a => String((a && a.email) || '').trim().toLowerCase() === cible)) {
+      return new Response(JSON.stringify({ error: 'Cet email ne figure pas parmi vos agents' }), { status: 403, headers });
+    }
 
     const IDENT = await identiteAbonne(SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, user && user.id);
     const lienEspaceAgent = 'https://app.lokentia.fr/agent';

@@ -126,12 +126,32 @@ export default async function handler(req) {
     // /api/brevo-tracking (qui interroge les statistiques Brevo) ne peut pas
     // distinguer les emails d'un abonné de ceux des autres. Voir aussi
     // brevo-tracking.js qui filtre ses requêtes sur ce même tag.
+    //
+    // Seuls les champs utilisés par le CRM sont transmis : un « ...body »
+    // laissait passer messageVersions (envoi en masse hors plafond de 50),
+    // des en-têtes arbitraires ou un tag « sub_<autre abonné> » qui aurait
+    // fait apparaître l'envoi dans le suivi Brevo d'un autre compte.
+    const enTetes = {};
+    if (body.headers && typeof body.headers === 'object' && body.headers['X-CRM-ID']) {
+      enTetes['X-CRM-ID'] = String(body.headers['X-CRM-ID']).slice(0, 100);
+    }
+    const tagsClient = (Array.isArray(body.tags) ? body.tags : [])
+      .map(t => String(t).slice(0, 50))
+      .filter(t => t && !/^sub_/i.test(t))
+      .slice(0, 10);
     const bodyTague = {
-      ...body,
+      to: body.to,
+      subject: body.subject,
       sender,
-      replyTo,
-      tags: [...(Array.isArray(body.tags) ? body.tags : []), 'sub_' + _user.id]
+      tags: [...tagsClient, 'sub_' + _user.id]
     };
+    if (body.cc) bodyTague.cc = body.cc;
+    if (body.bcc) bodyTague.bcc = body.bcc;
+    if (body.htmlContent) bodyTague.htmlContent = body.htmlContent;
+    if (body.textContent) bodyTague.textContent = body.textContent;
+    if (Array.isArray(body.attachment) && body.attachment.length) bodyTague.attachment = body.attachment.slice(0, 5);
+    if (replyTo) bodyTague.replyTo = replyTo;
+    if (Object.keys(enTetes).length) bodyTague.headers = enTetes;
 
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',

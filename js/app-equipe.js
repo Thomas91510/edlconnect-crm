@@ -167,7 +167,7 @@ function renderReglagesV2(){
   const rubriques = rubriquesVisibles();
   if(!rubriques.some(r=>r.cle===_rubriqueReglages) && rubriques.length) _rubriqueReglages = rubriques[0].cle;
   navEl.innerHTML = rubriques.map(r=>
-    `<button type="button" class="${r.cle===_rubriqueReglages?'active':''}" aria-current="${r.cle===_rubriqueReglages?'page':'false'}" onclick="ouvrirRubriqueReglages('${r.cle}')"><i class="ti ${r.icone}"></i>${esc(r.label)}</button>`
+    `<button type="button" class="${r.cle===_rubriqueReglages?'active':''}" aria-current="${r.cle===_rubriqueReglages?'page':'false'}" onclick="ouvrirRubriqueReglages('${jsq(r.cle)}')"><i class="ti ${r.icone}"></i>${esc(r.label)}</button>`
   ).join('');
   document.querySelectorAll('#view-settings .settings-section[data-rubrique]').forEach(s=>{
     s.hidden = s.getAttribute('data-rubrique') !== _rubriqueReglages;
@@ -194,7 +194,7 @@ function renderSectionEquipe(){
       const note = x.adminSeul && role !== 'admin' ? '<span class="perm-row-note">Réservé à l’administrateur</span>' : '';
       return `<div class="perm-row">
         <span class="perm-row-label">${esc(x.label)}${note}</span>
-        <button type="button" class="switch" role="switch" aria-checked="${!!droits[x.cle]}" aria-label="${esc(x.label)}"${verrou?' disabled':''} onclick="basculerDroit('${x.cle}')"></button>
+        <button type="button" class="switch" role="switch" aria-checked="${!!droits[x.cle]}" aria-label="${esc(x.label)}"${verrou?' disabled':''} onclick="basculerDroit('${jsq(x.cle)}')"></button>
       </div>`;
     }).join('');
     return `<div class="perm-group-title">${esc(g)}</div>${rows}`;

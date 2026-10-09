@@ -625,6 +625,7 @@ let _remuneration = null; // calculée côté serveur (api/_lib/agent-remunerati
 let _agentEmail = '';
 
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function jsq(s){return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'\\r').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029'));}
 
 const LABEL_CATEGORIE = { entrant:'Entrant', sortant:'Sortant', simultane:'Sortant + Entrant', autre:'Autre' };
 const LABEL_STATUT = { 'planifiée':'Planifiée', 'en cours':'En cours', 'terminée':'Terminée', 'annulée':'Annulée' };
@@ -1536,7 +1537,7 @@ function renderFacturation(){
         <td style="font-weight:600">${esc(x.numero)}</td><td>${esc(x.mois ? libelleMoisFac(x.mois) : '—')}</td><td>${esc(x.nbLignes || 0)}</td>
         <td style="text-align:right;font-weight:600">${esc(eurosFac(x.totalHT))}</td>
         <td>${esc(x.envoyeeLe ? new Date(x.envoyeeLe).toLocaleDateString('fr-FR') : '—')}</td>
-        <td style="text-align:right"><button class="btn-sm" onclick="telechargerFactureEnvoyee('${esc(x.numero)}')"><i class="ti ti-download"></i> PDF</button></td>
+        <td style="text-align:right"><button class="btn-sm" onclick="telechargerFactureEnvoyee('${jsq(x.numero)}')"><i class="ti ti-download"></i> PDF</button></td>
       </tr>`).join('')}</tbody></table>`
     : '<div class="empty">Aucune facture envoyée pour l’instant.</div>'}</div></section>`;
   box.innerHTML = alerte + choix + editeur + histo;
@@ -1694,7 +1695,7 @@ function renderDocuments(documents){
       <div class="doc-info">
         <div class="doc-adresse">${esc(LABEL_DOCUMENT[type])}</div>
       </div>
-      <button class="btn-sm" onclick="telechargerDocument('${type}', this)"><i class="ti ti-download"></i> Télécharger</button>
+      <button class="btn-sm" onclick="telechargerDocument('${jsq(type)}', this)"><i class="ti ti-download"></i> Télécharger</button>
     </div>`).join('');
 }
 
@@ -1745,7 +1746,7 @@ function renderHistorique(missions){
 <div id="app-version"></div>
 <script>
 (async function afficherVersionAgent(){
-  const APP_VERSION = '2.0.14';
+  const APP_VERSION = '2.0.15';
   const el = document.getElementById('app-version');
   if(el) el.textContent = 'v' + APP_VERSION;
   try {

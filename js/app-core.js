@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.14';
+const APP_VERSION = '2.0.15';
 const NOUVEAUTES = [
+  { v:'2.0.15', titre:'Sécurité renforcée (suite)', texte:'Agents EDL, formulaires et envois d\u2019emails mieux protégés contre les usages abusifs. Rien ne change dans votre utilisation.' },
   { v:'2.0.14', titre:'Sécurité renforcée', texte:'Contrôles serveur renforcés : fichiers privés, adresse d\u2019expédition des emails, page de réservation et espaces extranet strictement séparés entre comptes. Rien ne change dans votre utilisation.' },
   { v:'2.0.13', titre:'Demandes d\u2019avis : plusieurs locataires', texte:'Quand une mission contient plusieurs adresses email de locataires (« a@x.fr / b@y.fr »), la demande d\u2019avis part à chacune au lieu d\u2019échouer. En cas d\u2019erreur, le message indique la raison.' },
   { v:'2.0.12', titre:'Fenêtre des demandes d\u2019avis agrandie', texte:'La fenêtre des demandes d\u2019avis Google en attente est plus large : dates, adresses et locataires lisibles, et le bouton « Ne pas envoyer » (anciennement « Ignorer ») bien visible à côté de « Envoyer ».' },
@@ -138,6 +139,12 @@ function initials(n){const w=(n||'?').trim().split(' ');return((w[0]||'?')[0]+((
 // pour empêcher l'injection de code (XSS). Priorité : données externes (agences,
 // locataires, réservations issues des formulaires publics).
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+// Valeur insérée dans une chaîne JS entre apostrophes, elle-même dans un
+// attribut HTML (onclick="f('${jsq(v)}')"). esc() seul ne suffit pas : le
+// navigateur décode &#39; en ' AVANT d'exécuter l'attribut, ce qui ferme la
+// chaîne (ex. une pièce jointe ou un email saisis sur le formulaire public).
+// On échappe donc d'abord pour JS (antislash, apostrophe, retours ligne), puis pour HTML.
+function jsq(s){return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'\\r').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029'));}
 
 // Couleur de marque de l'agence (Paramètres) : dérive les nuances déjà
 // utilisées dans tout le CSS du CRM (--blue/--blue-bg/--blue-text) à partir

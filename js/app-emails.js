@@ -150,7 +150,7 @@ function renderTracking(){
       <div><b>${recents.length}</b><span>envoyés</span></div>
       <div><b>${pct(ouverts)}</b><span>ouverts</span></div>
       <div><b>${pct(cliques)}</b><span>cliqués</span></div>
-    </div>`+tries.slice(0,8).map(t=>`<div class="suivi-ligne" role="button" tabindex="0" onclick="openFicheByEmail('${esc(String(t.email||'').replace(/'/g,''))}')">
+    </div>`+tries.slice(0,8).map(t=>`<div class="suivi-ligne" role="button" tabindex="0" onclick="openFicheByEmail('${jsq(String(t.email||'').replace(/'/g,''))}')">
       <div class="suivi-info"><div class="suivi-qui">${esc(nomContact(t))}</div><div class="suivi-objet">${esc(t.objet||t.subject||'—')}</div><div class="suivi-date">${fmtDT(t.date)}</div></div>
       ${badge(t)}
     </div>`).join('');
@@ -167,7 +167,7 @@ function autocompleteContact(val){
   if(!matches.length){box.style.display='none';return;}
   box.style.display='block';
   box.innerHTML=matches.map(c=>`
-    <div onclick="selectContact('${(c.email||'').replace(/'/g,"\\'")}','${(c.entreprise||c.contact||'').replace(/'/g,"\\'")}','${c.id}')"
+    <div onclick="selectContact('${jsq(c.email||'')}','${jsq(c.entreprise||c.contact||'')}','${jsq(c.id)}')"
       style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:8px"
       onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
       <div style="width:24px;height:24px;border-radius:50%;background:var(--blue-bg);color:var(--blue-text);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0">${initials(c.entreprise||c.contact)}</div>

@@ -194,10 +194,10 @@ function renderProspection(){
         const jStagnation=['gagne','perdu'].includes(p.etape)?null:joursDepuis(p.lastAction||p.createdAt);
         const stagnant=jStagnation!==null&&jStagnation>=STAGNATION_JOURS;
         const st=PROSP_STAGES.find(x=>x.key===p.etape)||PROSP_STAGES[0];
-        return `<article class="prosp-card" onclick="openProspCard('${esc(p.id)}')">
+        return `<article class="prosp-card" onclick="openProspCard('${jsq(p.id)}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
           <div class="prosp-card-name" style="flex:1">${esc(p.agence)}</div>
-          <button type="button" onclick="event.stopPropagation();deleteProspect('${esc(p.id)}')" title="Supprimer ce prospect" aria-label="Supprimer ${esc(p.agence)}"
+          <button type="button" onclick="event.stopPropagation();deleteProspect('${jsq(p.id)}')" title="Supprimer ce prospect" aria-label="Supprimer ${esc(p.agence)}"
             style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 2px;line-height:1;flex-shrink:0"><i class="ti ti-x"></i></button>
         </div>
         ${p.contact?`<div style="font-size:12px;color:var(--text2)">${esc(p.contact)}</div>`:''}
@@ -210,13 +210,13 @@ function renderProspection(){
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid #F0F1F3">
           <span class="prosp-card-date">${p.lastAction?'Dernier contact : '+fmtDate(p.lastAction):'Aucun contact'}</span>
           <span style="display:flex;gap:4px">
-            <button type="button" onclick="event.stopPropagation();emailProspect('${esc(p.id)}')" title="Écrire un email" aria-label="Écrire à ${esc(p.agence)}" class="btn btn-sm" style="height:28px;padding:0 8px"><i class="ti ti-mail"></i></button>
-            ${suivante?`<button type="button" onclick="event.stopPropagation();moveProspect('${esc(p.id)}','${suivante.etapes[0]}')" title="Passer à : ${esc(suivante.label)}" class="btn btn-sm" style="height:28px;padding:0 8px"><i class="ti ti-arrow-right"></i></button>`:''}
+            <button type="button" onclick="event.stopPropagation();emailProspect('${jsq(p.id)}')" title="Écrire un email" aria-label="Écrire à ${esc(p.agence)}" class="btn btn-sm" style="height:28px;padding:0 8px"><i class="ti ti-mail"></i></button>
+            ${suivante?`<button type="button" onclick="event.stopPropagation();moveProspect('${jsq(p.id)}','${jsq(suivante.etapes[0])}')" title="Passer à : ${esc(suivante.label)}" class="btn btn-sm" style="height:28px;padding:0 8px"><i class="ti ti-arrow-right"></i></button>`:''}
           </span>
         </div>
       </article>`;
       }).join('')}
-      <button type="button" onclick="quickAddProspect('${col.etapes[0]}')"
+      <button type="button" onclick="quickAddProspect('${jsq(col.etapes[0])}')"
         style="width:100%;font-size:12.5px;height:36px;border:1px dashed var(--border2);background:none;border-radius:var(--radius);cursor:pointer;color:var(--text2);margin-top:2px">
         + Ajouter
       </button>
@@ -324,7 +324,7 @@ function renderCAPanel(){
     <td style="font-size:11px;color:#1A5FA8">${fmtTTC((p.ca||0)*3)}</td>
     <td style="font-size:12px">${((p.ca||0)*12).toLocaleString('fr-FR')} € HT</td>
     <td style="font-size:11px;color:var(--text2)">${fmtDate(p.lastAction)||'—'}</td>
-    <td><button class="btn btn-sm" onclick="editCA('${p.id}')" title="Modifier le CA"><i class="ti ti-edit" style="font-size:11px"></i></button></td>
+    <td><button class="btn btn-sm" onclick="editCA('${jsq(p.id)}')" title="Modifier le CA"><i class="ti ti-edit" style="font-size:11px"></i></button></td>
   </tr>`).join(''):'<tr><td colspan="8" class="empty">Aucun client gagné avec CA renseigné</td></tr>';
 
   updateObjectifs();
@@ -472,7 +472,7 @@ function autocompleteProspectAgence(val){
   if(!matches.length){if(box)box.style.display='none';return;}
   if(box){
     box.style.display='block';
-    box.innerHTML=matches.map(c=>`<div onclick="selectProspectContact('${esc(c.id)}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(c.entreprise||c.contact)}</div><div style="color:var(--text2);font-size:10px">${esc(c.email||'')} ${c.tel?'· '+esc(c.tel):''}</div></div>`).join('');
+    box.innerHTML=matches.map(c=>`<div onclick="selectProspectContact('${jsq(c.id)}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(c.entreprise||c.contact)}</div><div style="color:var(--text2);font-size:10px">${esc(c.email||'')} ${c.tel?'· '+esc(c.tel):''}</div></div>`).join('');
   }
 }
 function selectProspectContact(id){
@@ -486,7 +486,7 @@ function selectProspectContact(id){
   const lienBox=document.getElementById('pp-lien-contact');
   if(lienBox){
     lienBox.style.display='block';
-    lienBox.innerHTML=`<button type="button" class="btn btn-sm" onclick="closeModal('modal-prosp');openFiche('${c.id}')" style="width:100%;justify-content:center">
+    lienBox.innerHTML=`<button type="button" class="btn btn-sm" onclick="closeModal('modal-prosp');openFiche('${jsq(c.id)}')" style="width:100%;justify-content:center">
       <i class="ti ti-address-book"></i> Voir la fiche contact — ${esc(c.entreprise||c.contact||'')}
     </button>`;
   }
@@ -504,7 +504,7 @@ function openProspCard(id){
   if(lienBox){
     if(contactLie){
       lienBox.style.display='block';
-      lienBox.innerHTML=`<button type="button" class="btn btn-sm" onclick="closeModal('modal-prosp');openFiche('${contactLie.id}')" style="width:100%;justify-content:center">
+      lienBox.innerHTML=`<button type="button" class="btn btn-sm" onclick="closeModal('modal-prosp');openFiche('${jsq(contactLie.id)}')" style="width:100%;justify-content:center">
         <i class="ti ti-address-book"></i> Voir la fiche contact — ${esc(contactLie.entreprise||contactLie.contact||'')}
       </button>`;
     } else {
@@ -864,7 +864,7 @@ function renderModelesRapides(){
   if(!box) return;
   box.innerHTML = GROUPES_MODELES.map(g => `<div class="modeles-groupe">
       <div class="modeles-groupe-titre" style="color:${g.couleur}">${g.titre}</div>
-      ${g.modeles.filter(m => TEMPLATES[m.cle]).map(m => `<button type="button" class="modele-carte" data-tpl="${m.cle}" onclick="applyTpl('${m.cle}')" title="${TEMPLATES[m.cle].subj.replace(/"/g, '&quot;')}">
+      ${g.modeles.filter(m => TEMPLATES[m.cle]).map(m => `<button type="button" class="modele-carte" data-tpl="${m.cle}" onclick="applyTpl('${jsq(m.cle)}')" title="${TEMPLATES[m.cle].subj.replace(/"/g, '&quot;')}">
         <span class="modele-icone" style="background:${g.couleur}14;color:${g.couleur}"><i class="ti ${m.icone}"></i></span>
         <span class="modele-texte"><b>${TEMPLATES[m.cle].label}</b><span>${m.desc}</span></span>
       </button>`).join('')}

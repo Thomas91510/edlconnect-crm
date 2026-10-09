@@ -34,7 +34,7 @@ function fabriquerFetchMock({ userOk = true, brevoOk = true } = {}) {
       return userOk ? { ok: true, json: async () => ({ id: 'owner-1', email: 'agence@exemple.fr' }) } : { ok: false, status: 401 };
     }
     if (String(url).includes('/rest/v1/settings')) {
-      return { ok: true, json: async () => [{ data: {} }] };
+      return { ok: true, json: async () => [{ data: { agents: [{ id: 'a1', email: 'Jean@Exemple.fr' }] } }] };
     }
     if (String(url).includes('api.brevo.com')) {
       appels.brevo = { url, corps: JSON.parse(opts.body) };
@@ -100,4 +100,12 @@ test('clé Brevo absente : 500 sans jamais appeler Brevo', async () => {
 test('refuse les méthodes autres que POST/OPTIONS', async () => {
   const resp = await handler({ url: 'https://x.test/api/send-welcome-agent', method: 'GET', headers: new Headers() });
   assert.equal(resp.status, 405);
+});
+
+test('email absent des agents du compte : 403, aucun envoi Brevo', async () => {
+  const { fn, appels } = fabriquerFetchMock();
+  global.fetch = fn;
+  const resp = await handler(requete({ email: 'inconnu@ailleurs.fr', nom: 'X' }));
+  assert.equal(resp.status, 403);
+  assert.equal(appels.brevo, null);
 });

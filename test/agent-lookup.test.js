@@ -56,3 +56,27 @@ test('email ou clé de service absents : null sans appeler le réseau', async ()
   assert.equal(await resolverAgentParEmail('jean@exemple.fr', ''), null);
   assert.equal(appele, false);
 });
+
+test('email déclaré par deux prestataires : l’admin l’emporte, jamais « le premier trouvé »', async () => {
+  global.fetch = async (url) => {
+    if (String(url).includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'adm', email: 'contact@edl-idf.com' }] }) };
+    return { ok: true, json: async () => [
+      { user_id: 'pirate', data: { agents: [{ id: 'x', email: 'jean@exemple.fr' }] } },
+      { user_id: 'adm', data: { agents: [{ id: 'a1', email: 'jean@exemple.fr' }] } },
+    ] };
+  };
+  const r = await resolverAgentParEmail('jean@exemple.fr', 'cle-test');
+  assert.equal(r.ownerId, 'adm');
+  assert.equal(r.agent.id, 'a1');
+});
+
+test('email déclaré par deux abonnés sans l’admin : refus (null), jamais un choix au hasard', async () => {
+  global.fetch = async (url) => {
+    if (String(url).includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'adm', email: 'contact@edl-idf.com' }] }) };
+    return { ok: true, json: async () => [
+      { user_id: 'b', data: { agents: [{ id: 'x', email: 'jean@exemple.fr' }] } },
+      { user_id: 'c', data: { agents: [{ id: 'y', email: 'jean@exemple.fr' }] } },
+    ] };
+  };
+  assert.equal(await resolverAgentParEmail('jean@exemple.fr', 'cle-test'), null);
+});
