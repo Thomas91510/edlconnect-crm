@@ -999,19 +999,19 @@ function renderContacts(){
     const emailOk=cleanName(c.email);
     const checked=emailOk && _selectedEmails.has(c.email.toLowerCase())?'checked':'';
     const checkbox=emailOk?`<input type="checkbox" class="contact-check" ${checked} onclick="event.stopPropagation();toggleContactSelect('${c.email}',this.checked)" style="cursor:pointer;width:15px;height:15px">`:'';
+    const nomContact=cleanName(c.contact);
+    const tel=cleanName(c.tel);
+    const moyen=cleanName(c.moyenContact);
     return `<tr class="clickable ${dup?'dup-row':''}" onclick="openFiche('${c.id}')">
       <td style="text-align:center" onclick="event.stopPropagation()">${checkbox}</td>
-      <td data-label="Entreprise"><div class="flex-row"><div class="avatar" style="font-size:9px;${dup?'background:var(--amber-bg);color:var(--amber-text)':''}">${initials(disp.name)}</div><span style="font-size:11px;font-weight:500;${disp.muted?'color:var(--text2);font-style:italic':''}">${esc(disp.name)}</span>${dup?'<span class="badge b-amber" style="font-size:9px">doublon</span>':''}</div></td>
-      <td data-label="Contact">${contactCell}</td>
-      <td data-label="Email">${emailOk?`<a href="mailto:${encodeURIComponent(c.email)}" style="color:var(--blue);text-decoration:none;font-size:11px" onclick="event.stopPropagation()">${esc(c.email)}</a>`:empty}</td>
-      <td data-label="Tél">${cleanName(c.tel)?`<span style="font-size:11px">${esc(c.tel)}</span>`:empty}</td>
+      <td data-label="Client"><div class="c-client"><div class="avatar" style="font-size:9px;flex-shrink:0;${dup?'background:var(--amber-bg);color:var(--amber-text)':''}">${initials(disp.name)}</div><div><div class="c-titre" style="${disp.muted?'color:var(--text2);font-style:italic;font-weight:500':''}" title="${esc(disp.name)}">${esc(disp.name)}${dup?' <span class="badge b-amber" style="font-size:9px">doublon</span>':''}</div>${nomContact?`<div class="c-sous">${esc(nomContact)}</div>`:''}</div></div></td>
+      <td data-label="Coordonnées">${emailOk?`<div class="c-sous"><a href="mailto:${encodeURIComponent(c.email)}" style="color:var(--blue);text-decoration:none" onclick="event.stopPropagation()" title="${esc(c.email)}">${esc(c.email)}</a></div>`:''}${tel?`<div class="c-sous">${esc(tel)}</div>`:''}${!emailOk&&!tel?empty:''}</td>
       <td data-label="Type"><span class="badge ${c.typeClient==='Particulier'?'b-teal':'b-blue'}" style="font-size:9px">${esc(c.typeClient||'Pro')}</span></td>
       <td data-label="Statut">${statusBadge(c.statut)}</td>
-      <td data-label="Dernier contact" style="font-size:10px;color:var(--text2)">${c.lastContact?`<strong style="color:var(--text)">${fmtDate(c.lastContact)}</strong>`:empty}</td>
-      <td data-label="Moyen" style="font-size:10px">${cleanName(c.moyenContact)?esc(c.moyenContact):empty}</td>
-      <td class="tbl-cards-actions"><button class="btn btn-sm" onclick="event.stopPropagation();emailContactQuick('${c.email}')"><i class="ti ti-mail" style="font-size:12px"></i></button></td>
+      <td data-label="Dernier contact">${c.lastContact?`<div class="c-sous" style="color:var(--text)">${fmtDate(c.lastContact)}</div>`:''}${moyen?`<div class="c-sous">${esc(moyen)}</div>`:''}${!c.lastContact&&!moyen?empty:''}</td>
+      <td class="tbl-cards-actions"><button class="btn btn-sm" onclick="event.stopPropagation();emailContactQuick('${c.email}')" title="Écrire un email"><i class="ti ti-mail" style="font-size:12px"></i></button></td>
     </tr>`;
-  }).join(''):'<tr><td colspan="10" class="empty">Aucun contact</td></tr>';
+  }).join(''):'<tr><td colspan="7" class="empty">Aucun contact</td></tr>';
   updateSelectionBar();
 }
 function filterContactsTab(f,btn){
