@@ -816,6 +816,9 @@ function renderDashboard(){
   // fiche mission par dossier. cf. ajustementsPourMois() dans app-core.js.
   const ajPeriode = ajustementsPourMois(_dashMonth);
   document.getElementById('k-missions').textContent=missions.length + ajPeriode.nb;
+  // Sous-titre selon le filtre : "ce mois" était figé, y compris sur « Tous les mois ».
+  const subMissions=document.getElementById('k-missions-sub');
+  if(subMissions) subMissions.textContent = _dashMonth==='all' ? 'au total' : 'sur le mois';
 
   // États des lieux — compteur global (toutes missions, tous statuts, indépendant
   // du filtre de mois), mis à jour à chaque rendu du dashboard donc à chaque
