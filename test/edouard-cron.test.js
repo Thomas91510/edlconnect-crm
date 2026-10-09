@@ -37,6 +37,7 @@ function mockComplet({ mission, situations = [], accId = 'acc-1' }) {
       patchs.push(JSON.parse(opts.body));
       return { ok: true };
     }
+    if (u.includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'u1', email: 'contact@edl-idf.com' }] }) };
     if (u.includes('/rest/v1/settings')) {
       return { ok: true, json: async () => [{ user_id: 'u1' }] };
     }

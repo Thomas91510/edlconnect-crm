@@ -25,8 +25,9 @@ function mockFetch({ callerEmail, contactRows, patchSpy, slackSpy }) {
   global.fetch = async (url, opts) => {
     const u = String(url);
     if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: callerEmail }) };
+    if (u.includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'adm', email: ADMIN_EMAIL }] }) };
     if (u.includes('/rest/v1/contacts') && (!opts || opts.method !== 'PATCH')) {
-      return { ok: true, json: async () => contactRows ?? [] };
+      return { ok: true, json: async () => (contactRows ?? []).map(r => ({ user_id: 'adm', ...r })) };
     }
     if (opts && opts.method === 'PATCH') {
       if (patchSpy) patchSpy(JSON.parse(opts.body));

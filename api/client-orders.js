@@ -3,7 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { escapeIlike } from './_lib/ilike.js';
-import { statutEspace, MESSAGE_ESPACE_INACTIF } from './_lib/espace-agence.js';
+import { contexteAgence, MESSAGE_ESPACE_INACTIF } from './_lib/espace-agence.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -54,24 +54,30 @@ export default async function handler(req) {
     // en précisant "clientEmail" dans le corps — jamais accepté pour un
     // appelant non-admin, qui ne voit toujours que ses propres commandes.
     let userEmail = callerEmail;
-    if (ADMIN_EMAILS.includes(callerEmail)) {
-      let body = {};
-      try { body = await req.json(); } catch (_) {}
+    let body = {};
+    try { body = await req.json(); } catch (_) {}
+    const estAdmin = ADMIN_EMAILS.includes(callerEmail);
+    if (estAdmin) {
       const clientEmail = (body && body.clientEmail || '').toLowerCase().trim();
       if (clientEmail) userEmail = clientEmail;
     }
 
     // Espace extranet non activé (CRM › fiche client) : accès refusé
     // (api/_lib/espace-agence.js). L'administrateur n'est jamais concerné.
-    if (!ADMIN_EMAILS.includes(String(callerEmail || '').toLowerCase().trim())) {
-      const statut = await statutEspace(callerEmail, SUPABASE_SERVICE_KEY);
-      if (!statut.actif) {
-        return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
-        });
+    // Cloisonnement par prestataire : réservations, missions et documents
+    // du seul prestataire retenu (ownerId / user_id), jamais d'un autre
+    // abonné ayant une fiche avec le même email.
+    const ctx = await contexteAgence(userEmail, SUPABASE_SERVICE_KEY, { estAdmin, expertDemande: String((body && body.expert) || '') });
+    if (!ctx.actif || !ctx.expertId) {
+      if (ctx.raison === 'erreur' || ctx.raison === 'admin') {
+        return new Response(JSON.stringify({ error: 'Erreur lors de la récupération des commandes.' }), { status: 500 });
       }
+      return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
+      });
     }
+    const expert = encodeURIComponent(ctx.expertId);
 
     const supaHeaders = {
       'apikey': SUPABASE_SERVICE_KEY,
@@ -81,7 +87,7 @@ export default async function handler(req) {
     // 2) Récupérer uniquement les commandes liées à cette adresse email
     //    (filtre direct côté base, on ne renvoie jamais les données des autres clients)
     // Filtre sur la colonne JSONB "data" — syntaxe PostgREST correcte
-    const filterUrl = `${SUPABASE_URL}/rest/v1/bookings?select=id,data,created_at&data->email=eq.%22${encodeURIComponent(userEmail)}%22&order=created_at.desc`;
+    const filterUrl = `${SUPABASE_URL}/rest/v1/bookings?select=id,data,created_at&data->email=eq.%22${encodeURIComponent(userEmail)}%22&data->>ownerId=eq.${expert}&order=created_at.desc`;
 
     const bookingsResp = await fetch(filterUrl, { headers: supaHeaders });
 
@@ -94,7 +100,7 @@ export default async function handler(req) {
     // Récupérer aussi les missions liées à cet email pour synchroniser le statut "réalisé"
     // Insensible à la casse : « Agence@x.fr » sur la mission et « agence@x.fr »
     // pour le compte extranet désignent bien la même agence.
-    const missionsUrl = `${SUPABASE_URL}/rest/v1/missions?select=id,data&data->>emailClient=ilike.${encodeURIComponent(escapeIlike(userEmail))}`;
+    const missionsUrl = `${SUPABASE_URL}/rest/v1/missions?select=id,data&data->>emailClient=ilike.${encodeURIComponent(escapeIlike(userEmail))}&user_id=eq.${expert}`;
     let missionRows = [];
     try {
       const mResp = await fetch(missionsUrl, { headers: supaHeaders });
@@ -113,20 +119,11 @@ export default async function handler(req) {
     // lien direct vers CE rapport plutôt qu'une liste de documents non
     // reliée à la demande consultée.
     const docsParMission = {};
-    try {
-      const docsResp = await fetch(
-        `${SUPABASE_URL}/rest/v1/contacts?select=data&data->>email=ilike.${encodeURIComponent(escapeIlike(userEmail))}`,
-        { headers: supaHeaders }
-      );
-      if (docsResp.ok) {
-        const contactRows = await docsResp.json();
-        (contactRows || []).forEach(c => {
-          (c.data?.documents || []).forEach(d => {
-            if (d && d.url && d.missionId) docsParMission[d.missionId] = d;
-          });
-        });
-      }
-    } catch(_){}
+    (ctx.contacts || []).forEach(c => {
+      (c.data?.documents || []).forEach(d => {
+        if (d && d.url && d.missionId) docsParMission[d.missionId] = d;
+      });
+    });
 
     const missions = (missionRows || []).map(m => ({ ...(m.data || {}), id: m.id }));
     // Missions déjà réclamées par le missionId d'une réservation : jamais

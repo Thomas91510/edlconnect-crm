@@ -19,12 +19,34 @@ test('sans userId/supaUrl/serviceKey : repli neutre', async () => {
   assert.equal(ident.nom, 'Lokentia');
 });
 
-test('domaine vérifié : expédie sous sa propre adresse, pas de reply-to', async (t) => {
-  mockFetchOnce(t, [{ data: { expediteurNom: 'Agence Test', expediteurEmail: 'contact@lokentia.fr' } }]);
+function mockSettingsEtCompte(t, rows, emailCompte) {
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    if (String(url).includes('/auth/v1/admin/users/')) return { ok: true, json: async () => ({ email: emailCompte }) };
+    return { ok: true, json: async () => rows };
+  });
+}
+
+test('domaine vérifié + compte admin : expédie sous sa propre adresse, pas de reply-to', async (t) => {
+  mockSettingsEtCompte(t, [{ data: { expediteurNom: 'Agence Test', expediteurEmail: 'contact@lokentia.fr' } }], 'contact@edl-idf.com');
   const ident = await identiteAbonne(SUPA_URL, SERVICE_KEY, 'user-1');
   assert.equal(ident.nom, 'Agence Test');
   assert.equal(ident.email, 'contact@lokentia.fr');
   assert.equal(ident.replyTo, '');
+});
+
+test('domaine vérifié saisi par un autre abonné : expéditeur neutre, pas de reply-to usurpé', async (t) => {
+  mockSettingsEtCompte(t, [{ data: { expediteurNom: 'Pirate', expediteurEmail: 'contact@edl-idf.com' } }], 'pirate@gmail.com');
+  const ident = await identiteAbonne(SUPA_URL, SERVICE_KEY, 'user-9');
+  assert.equal(ident.email, NEUTRE_EMAIL);
+  assert.equal(ident.replyTo, '');
+});
+
+test('domaine vérifié, compte illisible : expéditeur neutre', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (url) => String(url).includes('/auth/v1/admin/users/')
+    ? { ok: false, json: async () => ({}) }
+    : { ok: true, json: async () => [{ data: { expediteurEmail: 'contact@edl-idf.com' } }] });
+  const ident = await identiteAbonne(SUPA_URL, SERVICE_KEY, 'user-8');
+  assert.equal(ident.email, NEUTRE_EMAIL);
 });
 
 test('domaine non vérifié : repli neutre + reply-to vers l\'abonné', async (t) => {

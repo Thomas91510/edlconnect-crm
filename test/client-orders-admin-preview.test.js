@@ -4,13 +4,13 @@
 // ses propres données.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import handlerOrders from '../api/client-orders.js';
 // client-documents.js lit SUPABASE_SERVICE_KEY comme constante de module (au
 // chargement, pas dans le handler) : il faut donc que la variable d'env soit
 // déjà positionnée avant son premier import, d'où l'import dynamique ici
 // plutôt qu'un import statique (hissé avant toute affectation à process.env).
 process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key';
 const { default: handlerDocs } = await import('../api/client-documents.js');
+const { default: handlerOrders } = await import('../api/client-orders.js');
 
 const ADMIN_EMAIL = 'contact@edl-idf.com';
 const AUTRE_EMAIL = 'immogestionlocative@gmail.com';
@@ -24,6 +24,12 @@ function mockFetchOrders(callerEmail) {
     urlsAppelees.push(String(url));
     if (String(url).includes('/auth/v1/user')) {
       return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: callerEmail }) };
+    }
+    if (String(url).includes('/auth/v1/admin/users')) {
+      return { ok: true, json: async () => ({ users: [{ id: 'adm', email: ADMIN_EMAIL }] }) };
+    }
+    if (String(url).includes('/rest/v1/contacts')) {
+      return { ok: true, json: async () => [{ id: 'c1', user_id: 'adm', data: {} }] };
     }
     if (String(url).includes('/rest/v1/bookings')) {
       return { ok: true, json: async () => [] };
@@ -47,6 +53,7 @@ test('client-orders : un admin peut consulter un autre email via clientEmail', a
   await handlerOrders(requete(AUTRE_EMAIL));
   const urlBookings = urls.find(u => u.includes('/rest/v1/bookings'));
   assert.ok(urlBookings.includes(encodeURIComponent('"' + AUTRE_EMAIL + '"')), urlBookings);
+  assert.ok(urlBookings.includes('ownerId=eq.adm'), 'aperçu admin limité aux réservations de l’admin');
 });
 
 test('client-orders : un non-admin ne peut PAS consulter un autre email via clientEmail', async () => {

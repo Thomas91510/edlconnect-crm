@@ -66,7 +66,7 @@ async function edouardGet(path, apiKey) {
 }
 
 import { SUPABASE_URL as SUPA_URL, SUPABASE_ANON_KEY as SUPA_ANON } from './_lib/supabase.js';
-import { ADMIN_EMAILS } from './_lib/admin.js';
+import { ADMIN_EMAILS, resoudreAdminId } from './_lib/admin.js';
 import { verifierJetonGithub } from './_lib/github-oidc.js';
 
 export const AUDIENCE_RELEVE = 'lokentia-edouard-cron';
@@ -145,13 +145,12 @@ export default async function handler(req) {
     }
     const rows = await missResp.json();
     // Intégration Edouard : réservée au compte administrateur de la plateforme
-    let _adminId = '';
-    try {
-      const aResp = await fetch(SUPA_URL + '/rest/v1/settings?select=user_id&data->>userEmail=eq.contact@edl-idf.com&limit=1', { headers: supaHeaders });
-      if (aResp.ok) { const aRows = await aResp.json(); _adminId = (aRows[0] && aRows[0].user_id) || ''; }
-    } catch (e) { /* silencieux */ }
+    // (compte résolu côté Auth ; introuvable = aucune mission traitée, jamais
+    // celles de tous les abonnés)
+    const _adminId = await resoudreAdminId(SUPA_URL, SUPA_KEY);
+    if (!_adminId) journal.erreurs.push('Compte administrateur introuvable : aucune mission traitée');
 
-    const candidats = (rows || []).filter(r => (r.data || {}).edouardAccommodationId && (!_adminId || r.user_id === _adminId));
+    const candidats = (rows || []).filter(r => (r.data || {}).edouardAccommodationId && _adminId && r.user_id === _adminId);
 
     // ── Liste des états des lieux : un seul appel, filtrage côté Lokentia ──
     // (le filtre serveur ?accommodationID=... renvoie une erreur 500 chez Edouard)

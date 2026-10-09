@@ -185,7 +185,7 @@ textarea{min-height:75px;resize:vertical}
     <div style="font-size:11px;color:var(--text2)">Demande d'état des lieux</div>
   </div>
   <div style="margin-left:auto;font-size:11px;color:var(--text2);text-align:right">
-    ${IDENT.tel ? `📞 <a href="tel:${identTelHref}" style="color:var(--blue);text-decoration:none">${IDENT.tel}</a>` : ``}<br>
+    ${IDENT.tel ? `📞 <a href="tel:${identTelHref}" style="color:var(--blue);text-decoration:none">${escHtml(IDENT.tel)}</a>` : ``}<br>
     <span style="font-size:10px">Lun–Sam · 9h–19h30</span>
   </div>
 </div>
@@ -291,7 +291,7 @@ textarea{min-height:75px;resize:vertical}
           </div>
           <div class="hint">Les jours en bleu ont au moins un créneau disponible. Ces créneaux sont proposés à partir de 48h suivant votre demande.</div>
           <div style="background:#FFF3CD;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11.5px;color:#633806;line-height:1.6">
-            ⚡ Besoin d'un état des lieux en urgence (aujourd'hui ou demain) ? Contactez-nous directement${IDENT.tel ? ` au <a href="tel:${identTelHref}" style="color:#633806;font-weight:600">${IDENT.tel}</a>` : ` par email à <a href="mailto:${IDENT.email}" style="color:#633806;font-weight:600">${IDENT.email}</a>`} plutôt que via ce formulaire.
+            ⚡ Besoin d'un état des lieux en urgence (aujourd'hui ou demain) ? Contactez-nous directement${IDENT.tel ? ` au <a href="tel:${identTelHref}" style="color:#633806;font-weight:600">${escHtml(IDENT.tel)}</a>` : ` par email à <a href="mailto:${escHtml(IDENT.email)}" style="color:#633806;font-weight:600">${escHtml(IDENT.email)}</a>`} plutôt que via ce formulaire.
           </div>
         </div>
         <div id="slots-loading" style="display:none;font-size:12px;color:var(--text2);margin-bottom:14px">⏳ Recherche des créneaux disponibles…</div>
@@ -390,13 +390,13 @@ textarea{min-height:75px;resize:vertical}
     <div style="font-size:13px;color:var(--text2);line-height:1.7">Thomas vous contactera sous <strong>2h</strong> pour confirmer la date définitive.</div>
     <div class="recap-box" id="success-recap"></div>
     <div style="margin-top:20px;font-size:12px;color:var(--text2)">
-      ${IDENT.tel ? `Une question ? 📞 <a href="tel:${identTelHref}" style="color:var(--blue)">${IDENT.tel}</a>` : ``}
+      ${IDENT.tel ? `Une question ? 📞 <a href="tel:${identTelHref}" style="color:var(--blue)">${escHtml(IDENT.tel)}</a>` : ``}
     </div>
   </div>
 
   <div class="footer">
     <strong>Lokentia</strong> — Expert en État des Lieux<br>
-    <a href="mailto:${IDENT.email}" style="color:var(--blue)">${IDENT.email}</a>${IDENT.tel ? ` · <a href="tel:${identTelHref}" style="color:var(--blue)">${IDENT.tel}</a>` : ``}
+    <a href="mailto:${escHtml(IDENT.email)}" style="color:var(--blue)">${escHtml(IDENT.email)}</a>${IDENT.tel ? ` · <a href="tel:${identTelHref}" style="color:var(--blue)">${escHtml(IDENT.tel)}</a>` : ``}
   </div>
 
 </div>

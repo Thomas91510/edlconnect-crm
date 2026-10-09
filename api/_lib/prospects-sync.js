@@ -12,20 +12,14 @@
 // plus avancé fait avancer la carte, un signal en retrait (ex. un email
 // ré-ouvert après un RDV déjà planifié) ne la fait jamais reculer.
 import { escapeIlike } from './ilike.js';
+import { resoudreAdminId } from './admin.js';
 
 export const ETAPE_ORDER = ['a_contacter', 'email_envoye', 'email_ouvert', 'reponse_recue', 'rdv_planifie', 'devis_envoye', 'negociation', 'gagne', 'perdu'];
 
 // Résolu une seule fois par invocation (voir edouard-cron.js, même pattern) :
 // l'intégration est réservée au compte administrateur de la plateforme.
 export async function resoudreAdminUserId(SUPABASE_URL, SUPABASE_SERVICE_KEY) {
-  try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/settings?select=user_id&data->>userEmail=eq.contact@edl-idf.com&limit=1`, {
-      headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` }
-    });
-    if (!resp.ok) return '';
-    const rows = await resp.json();
-    return (rows && rows[0] && rows[0].user_id) || '';
-  } catch (e) { return ''; }
+  return resoudreAdminId(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 }
 
 // Best-effort : une erreur ici (réseau, RLS, etc.) ne doit jamais bloquer

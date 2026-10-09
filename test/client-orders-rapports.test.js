@@ -20,7 +20,8 @@ test('rapports et missions CRM visibles par l’agence', async () => {
       { id: 'm1', data: { adresse: '4 rue de l’ancienne gare, 91120 PALAISEAU', date: '2026-07-22T10:00:00', statut: 'terminée', rapports: [{ nom: 'R', url: 'https://s/r1.pdf', type: 1 }] } },
       { id: 'm2', data: { adresse: '8 résidence du Parc', date: '2026-07-23T09:00:00', type: 'EDL sortant', statut: 'terminée', rapportUrl: 'https://s/r2.pdf' } },
     ] }; }
-    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [] };
+    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [{ id: 'c1', user_id: 'adm', data: {} }] };
+    if (u.includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'adm', email: 'contact@edl-idf.com' }] }) };
     throw new Error('URL inattendue ' + u);
   };
   const resp = await handler({ method: 'POST', headers: new Headers({ authorization: 'Bearer t' }), json: async () => ({}) });

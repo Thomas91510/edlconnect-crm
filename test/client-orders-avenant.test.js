@@ -3,7 +3,8 @@
 // du mécanisme docsParMission qui ne gère que le rapport EDL.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import handlerOrders from '../api/client-orders.js';
+process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-key';
+const { default: handlerOrders } = await import('../api/client-orders.js');
 
 const CLIENT_EMAIL = 'e2t.immo@gmail.com';
 
@@ -16,6 +17,8 @@ function mockFetch({ avenantUrl, statut }) {
     if (u.includes('/auth/v1/user')) {
       return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: CLIENT_EMAIL }) };
     }
+    if (u.includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'adm', email: 'contact@edl-idf.com' }] }) };
+    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [{ id: 'c1', user_id: 'adm', data: {} }] };
     if (u.includes('/rest/v1/bookings')) {
       return {
         ok: true,
@@ -64,6 +67,8 @@ test('client-orders : avenantUrl vide quand aucune mission n\'est liée', async 
   global.fetch = async (url) => {
     const u = String(url);
     if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: CLIENT_EMAIL }) };
+    if (u.includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'adm', email: 'contact@edl-idf.com' }] }) };
+    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [{ id: 'c1', user_id: 'adm', data: {} }] };
     if (u.includes('/rest/v1/bookings')) {
       return { ok: true, json: async () => [{ id: 'b2', created_at: '2026-06-01T00:00:00Z', data: { email: CLIENT_EMAIL, typeEdl: 'EDL sortant' } }] };
     }

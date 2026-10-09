@@ -14,7 +14,8 @@ function mockFetch(documents) {
   global.fetch = async (url) => {
     const u = String(url);
     if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ created_at: '2025-01-01T00:00:00Z', last_sign_in_at: '2026-01-01T00:00:00Z', email: CLIENT_EMAIL }) };
-    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [{ data: { documents } }] };
+    if (u.includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'adm', email: 'contact@edl-idf.com' }] }) };
+    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [{ user_id: 'adm', data: { documents } }] };
     return { ok: true, json: async () => [] };
   };
 }
