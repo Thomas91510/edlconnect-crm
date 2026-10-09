@@ -75,7 +75,7 @@ function renderEvtListItem(e){
     ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#2F7A3E;margin-right:6px;vertical-align:middle"></span>'
     : '';
 
-  return `<div style="border-left:${bordure};background:${fond};padding:7px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')">
+  return `<div style="border-left:${bordure};background:${fond};padding:7px 10px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;cursor:pointer" onclick="openEvtDetail('${jsq(e.evtType)}','${jsq(e.id||e._supaId||'')}')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div style="font-size:11px;font-weight:${graisse};color:${couleur}">${pastille}${esc(e.titre||e.agence||'—')}</div>
       ${gcalUrl?`<a href="${gcalUrl}" target="_blank" title="Ajouter à Google Agenda" style="font-size:10px;color:#1A5FA8;text-decoration:none;flex-shrink:0;margin-left:6px" onclick="event.stopPropagation()">📅</a>`:''}
@@ -144,8 +144,8 @@ function renderCalendar(){
       const fd=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const isT=d.getTime()===today.getTime();
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd)).sort(calTriHoraire);
-      return `<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)" style="min-height:110px">
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${esc(e.titre||e.agence||'')}" style="font-size:10px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${fmtDT(e.date).split(' ')[1]||''} ${esc(e.titre||e.agence||'')}${e.evtType==='mission'&&e.dureeEstimee?' ('+e.dureeEstimee+')':''}</div>`).join('')}
+      return `<div class="cal-day${isT?' today':''}" onclick="calDayClick('${jsq(fd)}',event)" style="min-height:110px">
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${esc(e.titre||e.agence||'')}" style="font-size:10px;margin-bottom:2px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${jsq(e.contactId)}','${jsq(e.id)}')`:`openEvtDetail('${jsq(e.evtType)}','${jsq(e.id||e._supaId||'')}')`}">${fmtDT(e.date).split(' ')[1]||''} ${esc(e.titre||e.agence||'')}${e.evtType==='mission'&&e.dureeEstimee?' ('+e.dureeEstimee+')':''}</div>`).join('')}
         ${evts.length===0?'<div style="font-size:10px;color:var(--text3);padding:4px">Libre</div>':''}
       </div>`;
     }).join('');
@@ -177,9 +177,9 @@ function renderCalendar(){
       const dt=new Date(UI.calYear,UI.calMonth,d);
       const isT=dt.getTime()===today.getTime();
       const evts=allEvts.filter(e=>e.date&&e.date.startsWith(fd)).sort(calTriHoraire);
-      html+=`<div class="cal-day${isT?' today':''}" onclick="calDayClick('${fd}',event)">
+      html+=`<div class="cal-day${isT?' today':''}" onclick="calDayClick('${jsq(fd)}',event)">
         <div class="cal-day-num">${d}</div>
-        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${esc(e.titre||e.agence||'')}" style="cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${e.contactId}','${e.id}')`:`openEvtDetail('${e.evtType}','${e.id||e._supaId||''}')`}">${esc(e.titre||e.agence||'')}</div>`).join('')}
+        ${evts.map(e=>`<div class="cal-ev ${e.evtType==='mission'?'ev-green':e.evtType==='task'?'ev-amber':'ev-blue'}" title="${esc(e.titre||e.agence||'')}" style="cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${e.evtType==='mission'?';font-weight:700':''}" onclick="event.stopPropagation();${e.evtType==='task'?`openTaskFromCalendar('${jsq(e.contactId)}','${jsq(e.id)}')`:`openEvtDetail('${jsq(e.evtType)}','${jsq(e.id||e._supaId||'')}')`}">${esc(e.titre||e.agence||'')}</div>`).join('')}
       </div>`;
     }
     const body=document.getElementById('cal-body');
@@ -371,7 +371,7 @@ async function loadBrevo(){
 }
 
 function renderBrevoTable(){
-  document.getElementById('brevo-tbody').innerHTML=DB.brevoContacts.length?DB.brevoContacts.map(c=>`<tr class="clickable" onclick="openFiche('${c.id}')">
+  document.getElementById('brevo-tbody').innerHTML=DB.brevoContacts.length?DB.brevoContacts.map(c=>`<tr class="clickable" onclick="openFiche('${jsq(c.id)}')">
     <td><div class="flex-row"><div class="avatar" style="font-size:9px">${initials(c.entreprise||c.contact)}</div><div><div style="font-size:11px;font-weight:600">${c.entreprise||c.contact||'—'}</div></div></div></td>
     <td style="font-size:11px"><a href="mailto:${c.email}" style="color:var(--blue);text-decoration:none" onclick="event.stopPropagation()">${c.email||'—'}</a></td>
     <td style="font-size:11px;font-weight:500;color:var(--text)">${c.tel||'<span style="color:var(--red);font-size:10px">Manquant</span>'}</td>
@@ -505,9 +505,8 @@ function autocompleteMission(val){
     // d'abord JS (proteger le litteral '...'), puis HTML (proteger l'attribut
     // "..." et le contenu affiche) — necessaire car agence/email peuvent
     // venir d'une reservation publique non authentifiee.
-    const jsAttr = v => esc(String(v||'').replace(/'/g,"\\'"));
-    const contactRows=matches.map(c=>`<div onclick="selectMissionContact('${jsAttr(c.id)}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(c.entreprise||c.contact)}</div><div style="color:var(--text2);font-size:10px">${esc(c.email||'')} ${c.tel?'· '+esc(c.tel):''}</div></div>`).join('');
-    const missionRows=extraMatches.map(m=>`<div onclick="selectMissionAgence('${jsAttr(m.agence)}','${jsAttr(m.email)}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(m.agence)}</div><div style="color:var(--text2);font-size:10px">Déjà utilisé en mission · pas encore en contact</div></div>`).join('');
+    const contactRows=matches.map(c=>`<div onclick="selectMissionContact('${jsq((c.id))}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(c.entreprise||c.contact)}</div><div style="color:var(--text2);font-size:10px">${esc(c.email||'')} ${c.tel?'· '+esc(c.tel):''}</div></div>`).join('');
+    const missionRows=extraMatches.map(m=>`<div onclick="selectMissionAgence('${jsq((m.agence))}','${jsq((m.email))}')" style="padding:7px 10px;cursor:pointer;font-size:11px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(m.agence)}</div><div style="color:var(--text2);font-size:10px">Déjà utilisé en mission · pas encore en contact</div></div>`).join('');
     box.innerHTML=contactRows+missionRows;
   }
 }

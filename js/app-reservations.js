@@ -159,7 +159,7 @@ function renderReservations(list){
       : '<span class="badge b-amber">⏳ En attente</span>';
     const pieces = Array.isArray(r.piecesJointes) ? r.piecesJointes : [];
     const piecesHtml = pieces.length
-      ? pieces.map(p => `<a href="#" onclick="event.preventDefault();telechargerPieceJointeReservation('${esc(p.path)}',this)" style="display:block;font-size:10.5px;color:var(--blue);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px" title="${esc(p.nom)}">📎 ${esc(p.nom)}</a>`).join('')
+      ? pieces.map(p => `<a href="#" onclick="event.preventDefault();telechargerPieceJointeReservation('${jsq(p.path)}',this)" style="display:block;font-size:10.5px;color:var(--blue);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px" title="${esc(p.nom)}">📎 ${esc(p.nom)}</a>`).join('')
       : '<span style="color:var(--text3,#c8c8c8)">—</span>';
 
     return `<tr>
@@ -173,10 +173,10 @@ function renderReservations(list){
       <td data-label="Statut">${statut}</td>
       <td data-label="Pièces jointes">${piecesHtml}</td>
       <td class="tbl-cards-actions" style="display:flex;gap:4px;flex-wrap:wrap">
-        <button class="btn btn-sm" onclick="confirmRdvFromReservation('${esc(r.id || r._supaId)}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
+        <button class="btn btn-sm" onclick="confirmRdvFromReservation('${jsq(r.id || r._supaId)}')" title="Confirmer le RDV, envoyer les convocations et créer la mission" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);font-size:10px">
           <i class="ti ti-calendar-check" style="font-size:11px"></i> Confirmer & Créer
         </button>
-        <button class="btn btn-sm" onclick="supprimerReservation('${esc(r.id || r._supaId)}')" title="Supprimer cette réservation" style="padding:3px 7px;background:var(--red-bg);color:var(--red-text);border-color:var(--red);font-size:10px">
+        <button class="btn btn-sm" onclick="supprimerReservation('${jsq(r.id || r._supaId)}')" title="Supprimer cette réservation" style="padding:3px 7px;background:var(--red-bg);color:var(--red-text);border-color:var(--red);font-size:10px">
           <i class="ti ti-trash" style="font-size:11px"></i>
         </button>
       </td>

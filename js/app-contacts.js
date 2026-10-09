@@ -19,28 +19,28 @@ function optionsType(types,selection){
 
 function renderEmailRows(c){
   const principal=`<div class="fiche-multi-row">
-      <select onchange="quickUpdateContact('${c.id}','emailType',this.value)">${optionsType(TYPES_EMAIL,c.emailType||'pro')}</select>
-      <input type="email" placeholder="email@exemple.fr" value="${esc(c.email||'')}" onchange="quickUpdateContact('${c.id}','email',this.value)">
+      <select onchange="quickUpdateContact('${jsq(c.id)}','emailType',this.value)">${optionsType(TYPES_EMAIL,c.emailType||'pro')}</select>
+      <input type="email" placeholder="email@exemple.fr" value="${esc(c.email||'')}" onchange="quickUpdateContact('${jsq(c.id)}','email',this.value)">
     </div>`;
   const autres=(Array.isArray(c.emailsAutres)?c.emailsAutres:[]).map((e,i)=>`
     <div class="fiche-multi-row">
-      <select onchange="modifierEmailAutre('${c.id}',${i},'type',this.value)">${optionsType(TYPES_EMAIL,e.type||'autre')}</select>
-      <input type="email" placeholder="email@exemple.fr" value="${esc(e.valeur||'')}" onchange="modifierEmailAutre('${c.id}',${i},'valeur',this.value)">
-      <button type="button" class="btn-mini-remove" onclick="retirerEmailAutre('${c.id}',${i})" title="Retirer"><i class="ti ti-x"></i></button>
+      <select onchange="modifierEmailAutre('${jsq(c.id)}',${i},'type',this.value)">${optionsType(TYPES_EMAIL,e.type||'autre')}</select>
+      <input type="email" placeholder="email@exemple.fr" value="${esc(e.valeur||'')}" onchange="modifierEmailAutre('${jsq(c.id)}',${i},'valeur',this.value)">
+      <button type="button" class="btn-mini-remove" onclick="retirerEmailAutre('${jsq(c.id)}',${i})" title="Retirer"><i class="ti ti-x"></i></button>
     </div>`).join('');
   return principal+autres;
 }
 
 function renderTelRows(c){
   const principal=`<div class="fiche-multi-row">
-      <select onchange="quickUpdateContact('${c.id}','telType',this.value)">${optionsType(TYPES_TEL,c.telType||'mobile')}</select>
-      <input placeholder="06 12 34 56 78" value="${esc(c.tel||'')}" onchange="quickUpdateContact('${c.id}','tel',this.value)">
+      <select onchange="quickUpdateContact('${jsq(c.id)}','telType',this.value)">${optionsType(TYPES_TEL,c.telType||'mobile')}</select>
+      <input placeholder="06 12 34 56 78" value="${esc(c.tel||'')}" onchange="quickUpdateContact('${jsq(c.id)}','tel',this.value)">
     </div>`;
   const autres=(Array.isArray(c.telsAutres)?c.telsAutres:[]).map((t,i)=>`
     <div class="fiche-multi-row">
-      <select onchange="modifierTelAutre('${c.id}',${i},'type',this.value)">${optionsType(TYPES_TEL,t.type||'autre')}</select>
-      <input placeholder="06 12 34 56 78" value="${esc(t.valeur||'')}" onchange="modifierTelAutre('${c.id}',${i},'valeur',this.value)">
-      <button type="button" class="btn-mini-remove" onclick="retirerTelAutre('${c.id}',${i})" title="Retirer"><i class="ti ti-x"></i></button>
+      <select onchange="modifierTelAutre('${jsq(c.id)}',${i},'type',this.value)">${optionsType(TYPES_TEL,t.type||'autre')}</select>
+      <input placeholder="06 12 34 56 78" value="${esc(t.valeur||'')}" onchange="modifierTelAutre('${jsq(c.id)}',${i},'valeur',this.value)">
+      <button type="button" class="btn-mini-remove" onclick="retirerTelAutre('${jsq(c.id)}',${i})" title="Retirer"><i class="ti ti-x"></i></button>
     </div>`).join('');
   return principal+autres;
 }
@@ -112,20 +112,20 @@ function openFiche(id){
       <div class="fiche-section-title">Coordonnées</div>
       <div class="fiche-grid">
         <div class="fiche-inline-field"><label>Entreprise</label>
-          <input value="${esc(c.entreprise||'')}" onchange="quickUpdateContact('${c.id}','entreprise',this.value)">
+          <input value="${esc(c.entreprise||'')}" onchange="quickUpdateContact('${jsq(c.id)}','entreprise',this.value)">
         </div>
         <div class="fiche-inline-field"><label>Contact</label>
-          <input value="${esc(c.contact||'')}" onchange="quickUpdateContact('${c.id}','contact',this.value)">
+          <input value="${esc(c.contact||'')}" onchange="quickUpdateContact('${jsq(c.id)}','contact',this.value)">
         </div>
         <div class="fiche-inline-field fiche-field-wide">
           <label>Email(s)</label>
           <div id="fiche-emails-rows">${renderEmailRows(c)}</div>
-          <button type="button" class="btn btn-sm btn-mini-add" onclick="ajouterEmailContact('${c.id}')"><i class="ti ti-plus"></i> Ajouter un email</button>
+          <button type="button" class="btn btn-sm btn-mini-add" onclick="ajouterEmailContact('${jsq(c.id)}')"><i class="ti ti-plus"></i> Ajouter un email</button>
         </div>
         <div class="fiche-inline-field fiche-field-wide">
           <label>Téléphone(s)</label>
           <div id="fiche-tels-rows">${renderTelRows(c)}</div>
-          <button type="button" class="btn btn-sm btn-mini-add" onclick="ajouterTelContact('${c.id}')"><i class="ti ti-plus"></i> Ajouter un numéro</button>
+          <button type="button" class="btn btn-sm btn-mini-add" onclick="ajouterTelContact('${jsq(c.id)}')"><i class="ti ti-plus"></i> Ajouter un numéro</button>
         </div>
       </div>
     </div>
@@ -134,25 +134,25 @@ function openFiche(id){
       <div class="fiche-section-title">Suivi commercial</div>
       <div class="fiche-grid">
         <div class="fiche-inline-field"><label>Statut</label>
-          <select onchange="quickUpdateContact('${c.id}','statut',this.value)">
+          <select onchange="quickUpdateContact('${jsq(c.id)}','statut',this.value)">
             ${['Cible potentielle','Client actif','Client signé ✅','Partenaire','Inactif'].map(v=>`<option${v===(c.statut||'Cible potentielle')?' selected':''}>${v}</option>`).join('')}
           </select>
         </div>
         <div class="fiche-inline-field"><label>Type client</label>
-          <select onchange="quickUpdateContact('${c.id}','typeClient',this.value)">
+          <select onchange="quickUpdateContact('${jsq(c.id)}','typeClient',this.value)">
             ${['Professionnel','Particulier'].map(v=>`<option${v===(c.typeClient||'Professionnel')?' selected':''}>${v}</option>`).join('')}
           </select>
         </div>
         <div class="fiche-inline-field"><label>Source</label>
-          <select onchange="quickUpdateContact('${c.id}','source',this.value)">
+          <select onchange="quickUpdateContact('${jsq(c.id)}','source',this.value)">
             ${['Démarchage','Recommandation','Relation','Site web','Brevo','Excel','Cal.com'].map(v=>`<option${v===(c.source||'Démarchage')?' selected':''}>${v}</option>`).join('')}
           </select>
         </div>
         <div class="fiche-inline-field"><label>Dernier contact</label>
-          <input type="date" value="${c.lastContact||''}" onchange="quickUpdateContact('${c.id}','lastContact',this.value)">
+          <input type="date" value="${c.lastContact||''}" onchange="quickUpdateContact('${jsq(c.id)}','lastContact',this.value)">
         </div>
         <div class="fiche-inline-field"><label>Moyen de contact</label>
-          <select onchange="quickUpdateContact('${c.id}','moyenContact',this.value)">
+          <select onchange="quickUpdateContact('${jsq(c.id)}','moyenContact',this.value)">
             ${['— Non renseigné —','📧 Email','📞 Téléphone','💬 SMS','👤 Rendez-vous physique','💻 Visio','📱 WhatsApp','🔗 LinkedIn'].map(v=>`<option${v===(c.moyenContact||'')?' selected':''}>${v}</option>`).join('')}
           </select>
         </div>
@@ -173,7 +173,7 @@ function openFiche(id){
 
     <div class="fiche-section">
       <div class="fiche-section-title">Notes</div>
-      <textarea style="width:100%;min-height:60px;font-size:12.5px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);font-family:inherit" placeholder="Remarques, historique, infos importantes…" onchange="quickUpdateContact('${c.id}','notes',this.value)">${esc(c.notes||'')}</textarea>
+      <textarea style="width:100%;min-height:60px;font-size:12.5px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);font-family:inherit" placeholder="Remarques, historique, infos importantes…" onchange="quickUpdateContact('${jsq(c.id)}','notes',this.value)">${esc(c.notes||'')}</textarea>
     </div>
   `;
   document.getElementById('fiche-email-btn').onclick=()=>{
@@ -315,13 +315,13 @@ function renderContactTasks(){
   el.innerHTML = sorted.map(t => {
     const isOverdue = t.date && !t.done && new Date(t.date + (t.heure?'T'+t.heure:'')) < new Date();
     return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius);background:${t.done?'var(--bg2)':'var(--bg)'};border:1px solid var(--border);margin-bottom:6px;opacity:${t.done?'0.6':'1'}">
-      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')" style="margin-top:2px;cursor:pointer">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${jsq(t.id)}')" style="margin-top:2px;cursor:pointer">
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:500;${t.done?'text-decoration:line-through;color:var(--text3)':''}">${t.titre}</div>
         ${t.date?`<div style="font-size:11px;color:${isOverdue?'var(--red-text)':'var(--text2)'};margin-top:2px">📅 ${t.date}${t.heure?' à '+t.heure:''}${isOverdue?' — En retard ⚠️':''}</div>`:''}
         ${t.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${t.notes}</div>`:''}
       </div>
-      <button onclick="deleteTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px" title="Supprimer">✕</button>
+      <button onclick="deleteTask('${jsq(t.id)}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px" title="Supprimer">✕</button>
     </div>`;
   }).join('');
 }
@@ -635,7 +635,7 @@ function renderSectionTabs(v){
       const b=document.getElementById(o.badge);
       if(b && b.style.display!=='none' && b.textContent) badge=` <span class="nav-badge nb-red">${esc(b.textContent)}</span>`;
     }
-    return `<button type="button" role="tab" class="section-tab${actif?' active':''}" aria-selected="${actif}" onclick="nav('${o.v}')">${esc(o.label)}${badge}</button>`;
+    return `<button type="button" role="tab" class="section-tab${actif?' active':''}" aria-selected="${actif}" onclick="nav('${jsq(o.v)}')">${esc(o.label)}${badge}</button>`;
   }).join('');
 }
 function nav(v){
@@ -998,18 +998,18 @@ function renderContacts(){
     const contactCell=cleanName(c.contact)?`<span style="font-size:11px">${esc(cleanName(c.contact))}</span>`:empty;
     const emailOk=cleanName(c.email);
     const checked=emailOk && _selectedEmails.has(c.email.toLowerCase())?'checked':'';
-    const checkbox=emailOk?`<input type="checkbox" class="contact-check" ${checked} onclick="event.stopPropagation();toggleContactSelect('${c.email}',this.checked)" style="cursor:pointer;width:15px;height:15px">`:'';
+    const checkbox=emailOk?`<input type="checkbox" class="contact-check" ${checked} onclick="event.stopPropagation();toggleContactSelect('${jsq(c.email)}',this.checked)" style="cursor:pointer;width:15px;height:15px">`:'';
     const nomContact=cleanName(c.contact);
     const tel=cleanName(c.tel);
     const moyen=cleanName(c.moyenContact);
-    return `<tr class="clickable ${dup?'dup-row':''}" onclick="openFiche('${c.id}')">
+    return `<tr class="clickable ${dup?'dup-row':''}" onclick="openFiche('${jsq(c.id)}')">
       <td style="text-align:center" onclick="event.stopPropagation()">${checkbox}</td>
       <td data-label="Client"><div class="c-client"><div class="avatar" style="font-size:9px;flex-shrink:0;${dup?'background:var(--amber-bg);color:var(--amber-text)':''}">${initials(disp.name)}</div><div><div class="c-titre" style="${disp.muted?'color:var(--text2);font-style:italic;font-weight:500':''}" title="${esc(disp.name)}">${esc(disp.name)}${dup?' <span class="badge b-amber" style="font-size:9px">doublon</span>':''}</div>${nomContact?`<div class="c-sous">${esc(nomContact)}</div>`:''}</div></div></td>
       <td data-label="Coordonnées">${emailOk?`<div class="c-sous"><a href="mailto:${encodeURIComponent(c.email)}" style="color:var(--blue);text-decoration:none" onclick="event.stopPropagation()" title="${esc(c.email)}">${esc(c.email)}</a></div>`:''}${tel?`<div class="c-sous">${esc(tel)}</div>`:''}${!emailOk&&!tel?empty:''}</td>
       <td data-label="Type"><span class="badge ${c.typeClient==='Particulier'?'b-teal':'b-blue'}" style="font-size:9px">${esc(c.typeClient||'Pro')}</span></td>
       <td data-label="Statut">${statusBadge(c.statut)}</td>
       <td data-label="Dernier contact">${c.lastContact?`<div class="c-sous" style="color:var(--text)">${fmtDate(c.lastContact)}</div>`:''}${moyen?`<div class="c-sous">${esc(moyen)}</div>`:''}${!c.lastContact&&!moyen?empty:''}</td>
-      <td class="tbl-cards-actions"><button class="btn btn-sm" onclick="event.stopPropagation();emailContactQuick('${c.email}')" title="Écrire un email"><i class="ti ti-mail" style="font-size:12px"></i></button></td>
+      <td class="tbl-cards-actions"><button class="btn btn-sm" onclick="event.stopPropagation();emailContactQuick('${jsq(c.email)}')" title="Écrire un email"><i class="ti ti-mail" style="font-size:12px"></i></button></td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="empty">Aucun contact</td></tr>';
   updateSelectionBar();
@@ -1143,8 +1143,8 @@ function renderRapports(){
     const nb = g.missions.reduce((n, m) => n + rapportsDeMission(m).length, 0);
     return `<details class="rapports-client" open>
       <summary><span class="rapports-client-nom">${esc(g.nom)}</span><span class="rapports-client-meta">${g.email ? esc(g.email) + ' · ' : ''}${nb} rapport${nb > 1 ? 's' : ''}</span>
-        ${g.contactId ? `<button type="button" class="btn btn-sm" onclick="event.preventDefault();openFiche('${esc(g.contactId)}')">Fiche</button>` : ''}
-        ${g.email ? `<button type="button" class="btn btn-sm" onclick="event.preventDefault();ouvrirEspaceAgence('${esc(g.email)}')"><i class="ti ti-building-store"></i>Son espace</button>` : ''}
+        ${g.contactId ? `<button type="button" class="btn btn-sm" onclick="event.preventDefault();openFiche('${jsq(g.contactId)}')">Fiche</button>` : ''}
+        ${g.email ? `<button type="button" class="btn btn-sm" onclick="event.preventDefault();ouvrirEspaceAgence('${jsq(g.email)}')"><i class="ti ti-building-store"></i>Son espace</button>` : ''}
       </summary>
       <div style="overflow-x:auto"><table class="tbl tbl-remu"><thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>Locataire</th><th>Rapport(s)</th></tr></thead><tbody>
       ${g.missions.map(m => `<tr>
@@ -1235,9 +1235,9 @@ function renderBlocEspacesAgences(){
   if(champ) champ.style.display = (actifs.length > SEUIL_RECHERCHE_ESPACES || q) ? '' : 'none';
   const liste = actifs.filter(correspond);
   box.innerHTML = liste.length ? liste.map(c => `<div class="espaces-agences-carte-wrap">
-      <button type="button" class="espaces-agences-carte" onclick="ouvrirEspaceAgence('${esc(c.email)}')" title="Ouvrir l'espace de ${esc(c.entreprise || c.email)} (lecture seule)">
+      <button type="button" class="espaces-agences-carte" onclick="ouvrirEspaceAgence('${jsq(c.email)}')" title="Ouvrir l'espace de ${esc(c.entreprise || c.email)} (lecture seule)">
         <span style="min-width:0;flex:1"><b>${esc(c.entreprise || c.contact || c.email)}</b><span>${esc(c.email)}</span></span><i class="ti ti-external-link"></i></button>
-      <button type="button" class="espaces-agences-off" title="Désactiver l'espace de ${esc(c.entreprise || c.email)}" aria-label="Désactiver l'espace" onclick="basculerEspaceAgence('${esc(c.id)}', false)">Désactiver</button>
+      <button type="button" class="espaces-agences-off" title="Désactiver l'espace de ${esc(c.entreprise || c.email)}" aria-label="Désactiver l'espace" onclick="basculerEspaceAgence('${jsq(c.id)}', false)">Désactiver</button>
     </div>`).join('')
     : `<div class="espaces-agences-vide">${q ? 'Aucun espace activé ne correspond.' : 'Aucun espace activé pour l’instant : activez-en un ci-dessous ou depuis la fiche du client.'}</div>`;
   const inactifs = tous.filter(c => !espaceActif(c));
@@ -1254,7 +1254,7 @@ function renderBlocEspacesAgences(){
     const vus = trouves.slice(0, 30);
     if(qi.length < 2){ boxI.innerHTML = '<div class="espaces-agences-vide" style="padding:8px 4px">Tapez le nom ou l’email du client pour l’activer.</div>'; return; }
     boxI.innerHTML = vus.length ? vus.map(c => `<div class="espaces-agences-inactif"><span><b style="color:#F4F7FA">${esc(c.entreprise || c.contact || c.email)}</b> · ${esc(c.email)}</span>
-        <button type="button" onclick="basculerEspaceAgence('${esc(c.id)}', true)">Activer</button></div>`).join('')
+        <button type="button" onclick="basculerEspaceAgence('${jsq(c.id)}', true)">Activer</button></div>`).join('')
       + (trouves.length > vus.length ? '<div class="espaces-agences-vide" style="padding:8px 4px">Affinez la recherche pour voir les autres.</div>' : '')
       : '<div class="espaces-agences-vide" style="padding:8px 4px">Aucun client ne correspond.</div>';
   }

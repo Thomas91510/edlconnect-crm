@@ -178,3 +178,29 @@ test('confirm-rdv : laisse passer un id qui ne correspond à aucune mission exis
   const res = await handlerConfirmRdv(requete({ mission: { id: '__resa__resa1', type: 'EDL entrant', adresse: '1 rue Test' }, agentEmail: 'a@x.fr' }));
   assert.equal(res.status, 200);
 });
+
+test('send-email : seuls les champs du CRM partent chez Brevo (pas de messageVersions ni de tag sub_ d’un autre abonné)', async () => {
+  let brevoBody = null;
+  global.fetch = async (url, opts) => {
+    const u = String(url);
+    if (u.includes('/auth/v1/user') || u.includes('/auth/v1/admin/users/')) return { ok: true, json: async () => ({ id: 'u1', email: 'contact@edl-idf.com' }) };
+    if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ data: { expediteurNom: 'EDL IDF', expediteurEmail: 'contact@edl-idf.com' } }] };
+    if (u.includes('api.brevo.com')) { brevoBody = JSON.parse(opts.body); return { ok: true, status: 201, json: async () => ({ messageId: 'x' }) }; }
+    return { ok: true, json: async () => [] };
+  };
+  const res = await handlerSendEmail(requete({
+    to: [{ email: 'a@x.fr' }],
+    subject: 'Test',
+    htmlContent: '<p>hi</p>',
+    headers: { 'X-CRM-ID': 'email_1', 'X-Mailin-IP': '1.2.3.4' },
+    tags: ['campagne', 'sub_victime'],
+    messageVersions: Array.from({ length: 500 }, (_, i) => ({ to: [{ email: `v${i}@x.fr` }] })),
+    templateId: 12,
+  }));
+  assert.equal(res.status, 201);
+  assert.equal(brevoBody.messageVersions, undefined);
+  assert.equal(brevoBody.templateId, undefined);
+  assert.deepEqual(brevoBody.tags, ['campagne', 'sub_u1']);
+  assert.deepEqual(brevoBody.headers, { 'X-CRM-ID': 'email_1' });
+  assert.equal(brevoBody.htmlContent, '<p>hi</p>');
+});

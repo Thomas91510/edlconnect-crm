@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' };
 
 import { origineAutorisee } from './_lib/cors.js';
-import { resolverAgentParEmail } from './_lib/agent-lookup.js';
+import { emailAgentDeclare } from './_lib/agent-lookup.js';
 import { ipAppelant, limiteAtteinte } from './_lib/rate-limit.js';
 
 // Vérifie, AVANT l'envoi du lien magique, si un email correspond à un
@@ -36,8 +36,8 @@ export default async function handler(req) {
     // une preuve que l'email est inconnu : on échoue ouvert comme pour les
     // autres pannes ci-dessous, plutôt que de bloquer tous les agents.
     if (!serviceKey) return new Response(JSON.stringify({ registered: true }), { status: 200, headers });
-    const resolu = await resolverAgentParEmail(email, serviceKey);
-    return new Response(JSON.stringify({ registered: !!resolu }), { status: 200, headers });
+    const declare = await emailAgentDeclare(email, serviceKey);
+    return new Response(JSON.stringify({ registered: declare !== false }), { status: 200, headers });
   } catch (e) {
     // En cas de souci (JSON invalide, panne réseau vers Supabase...), on
     // laisse passer plutôt que de bloquer : ce contrôle n'est qu'un filtre

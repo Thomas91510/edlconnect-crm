@@ -84,7 +84,7 @@ function renderMissions(){
     const replie=_moisReplies.has(key);
     const slug=slugMois(key);
     const chevron=replie?'▸':'▾';
-    const header=`<tr class="mois-header" style="background:var(--bg2);cursor:pointer" onclick="toggleMoisMissions('${key}')" title="${replie?'Afficher':'Masquer'} les missions de ${group.label}">
+    const header=`<tr class="mois-header" style="background:var(--bg2);cursor:pointer" onclick="toggleMoisMissions('${jsq(key)}')" title="${replie?'Afficher':'Masquer'} les missions de ${group.label}">
       <td colspan="8" style="font-weight:700;font-size:12px;padding:9px 10px">
         <span style="display:inline-block;width:14px;color:var(--text2);font-size:11px">${chevron}</span>📅 ${group.label} — ${group.items.length} mission${group.items.length>1?'s':''} · <span style="color:var(--blue)">${totalHT.toLocaleString('fr-FR')} € HT</span> · <span style="color:var(--green)">${totalTTC.toLocaleString('fr-FR')} € TTC</span>${replie?'<span style="color:var(--text3);font-weight:400;font-size:11px;margin-left:8px">(replié)</span>':''}
       </td></tr>`;
@@ -469,7 +469,7 @@ function _ajustementsListeHtml(filtreMois){
         <strong>${label}</strong> — ${Number(a.nbEdl) || 0} EDL · ${(Number(a.ca) || 0).toLocaleString('fr-FR')} € HT
         ${a.note ? `<div style="color:var(--text3);font-size:11px">${esc(a.note)}</div>` : ''}
       </div>
-      <button class="btn btn-sm" onclick="removeAjustementExterne('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
+      <button class="btn btn-sm" onclick="removeAjustementExterne('${jsq(a.id)}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
     </div>`;
   }).join('');
 }
@@ -734,7 +734,7 @@ function renderAvisGoogle(){
   box.innerHTML = liste.length ? `<div style="overflow-x:auto"><table class="tbl tbl-dash tbl-avis"><thead><tr><th style="width:110px">Date</th><th>Adresse · locataire</th><th style="width:290px"></th></tr></thead><tbody>${liste.map(m => `<tr>
       <td>${esc(new Date(m.date).toLocaleDateString('fr-FR'))}${_avisRecent(m) ? '' : '<div class="d-sous">plus de 30 j</div>'}</td>
       <td><div class="d-titre" title="${esc(m.adresse || '')}">${esc(m.adresse || '—')}</div><div class="d-sous">${esc([m.locataireNom, m.locataireEmail].filter(Boolean).join(' · '))}</div></td>
-      <td class="avis-actions"><button class="btn btn-sm btn-primary" onclick="envoyerDemandeAvis('${esc(m.id)}')"><i class="ti ti-send"></i>Envoyer</button> <button class="btn btn-sm" onclick="ignorerDemandeAvis('${esc(m.id)}')" title="Retirer de la liste sans rien envoyer au locataire"><i class="ti ti-x"></i>Ne pas envoyer</button></td>
+      <td class="avis-actions"><button class="btn btn-sm btn-primary" onclick="envoyerDemandeAvis('${jsq(m.id)}')"><i class="ti ti-send"></i>Envoyer</button> <button class="btn btn-sm" onclick="ignorerDemandeAvis('${jsq(m.id)}')" title="Retirer de la liste sans rien envoyer au locataire"><i class="ti ti-x"></i>Ne pas envoyer</button></td>
     </tr>`).join('')}</tbody></table></div>` : '<div class="empty">Aucune demande d\u2019avis en attente 🎉</div>';
 }
 function _majAvisMission(m){

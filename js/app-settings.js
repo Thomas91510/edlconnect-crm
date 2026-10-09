@@ -193,8 +193,8 @@ function blocZonesAgent(a){
       <div style="width:100%;margin-top:8px;padding:8px 10px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber-text);font-size:11.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span>📍 Demande de zones en attente — ${nbPrimaire} code${nbPrimaire>1?'s':''} primaire, ${nbSecondaire} secondaire${nbSecondaire>1?'s':''}</span>
         <span style="margin-left:auto;display:flex;gap:6px">
-          <button class="btn btn-sm" onclick="approuverZonesAgent('${a.id}')"><i class="ti ti-check"></i> Approuver</button>
-          <button class="btn btn-sm" onclick="refuserZonesAgent('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-x"></i> Refuser</button>
+          <button class="btn btn-sm" onclick="approuverZonesAgent('${jsq(a.id)}')"><i class="ti ti-check"></i> Approuver</button>
+          <button class="btn btn-sm" onclick="refuserZonesAgent('${jsq(a.id)}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-x"></i> Refuser</button>
         </span>
       </div>`;
   }
@@ -231,14 +231,14 @@ function renderAgentsSettings(){
       </div>
       <label class="btn btn-sm" style="cursor:pointer" title="${a.contratPath ? 'Remplacer le contrat déposé' : 'Déposer le contrat signé (PDF)'}">
         <i class="ti ${a.contratPath ? 'ti-file-check' : 'ti-file-upload'}"></i> Contrat
-        <input type="file" accept="application/pdf" style="display:none" onchange="televerserDocumentAgent('${a.id}','contrat',this)">
+        <input type="file" accept="application/pdf" style="display:none" onchange="televerserDocumentAgent('${jsq(a.id)}','contrat',this)">
       </label>
       <label class="btn btn-sm" style="cursor:pointer" title="${a.avenantPath ? 'Remplacer l\'avenant déposé' : 'Déposer un avenant (PDF)'}">
         <i class="ti ${a.avenantPath ? 'ti-file-check' : 'ti-file-upload'}"></i> Avenant
-        <input type="file" accept="application/pdf" style="display:none" onchange="televerserDocumentAgent('${a.id}','avenant',this)">
+        <input type="file" accept="application/pdf" style="display:none" onchange="televerserDocumentAgent('${jsq(a.id)}','avenant',this)">
       </label>
-      <button class="btn btn-sm" onclick="editerAgent('${a.id}')"><i class="ti ti-pencil"></i></button>
-      <button class="btn btn-sm" onclick="removeAgent('${a.id}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
+      <button class="btn btn-sm" onclick="editerAgent('${jsq(a.id)}')"><i class="ti ti-pencil"></i></button>
+      <button class="btn btn-sm" onclick="removeAgent('${jsq(a.id)}')" style="color:#c0392b;border-color:#c0392b"><i class="ti ti-trash"></i></button>
       ${blocZonesAgent(a)}
     </div>`).join('');
 }
@@ -538,7 +538,7 @@ function renderRemunerationsAgents(){
     const aPayer = ls.filter(l => !l.payee && l.montant !== null).length;
     return `<tr class="remu-mois-entete"><td colspan="4">${esc(_libMoisRemu(k))} · ${ls.length} mission${ls.length > 1 ? 's' : ''}</td>
         <td style="text-align:right">${esc(_eurosRemu(Math.round(total * 100) / 100, u))}</td>
-        <td>${aPayer ? `<button type="button" class="btn btn-sm" onclick="marquerMoisRemuPaye('${esc(agent.id)}','${esc(k)}')">Tout marquer payé</button>` : ''}</td></tr>`
+        <td>${aPayer ? `<button type="button" class="btn btn-sm" onclick="marquerMoisRemuPaye('${jsq(agent.id)}','${jsq(k)}')">Tout marquer payé</button>` : ''}</td></tr>`
       + ls.map(l => `<tr>
         <td>${esc(l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—')}</td>
         <td>${esc(l.adresse || '—')}</td>
@@ -546,7 +546,7 @@ function renderRemunerationsAgents(){
         <td>${esc(l.ligneGrille || (l.typologie !== 'Non renseignée' ? l.typologie : '—'))}</td>
         <td style="text-align:right;font-weight:600">${esc(_eurosRemu(l.montant, u))}${l.frais ? `<div style="font-size:11.5px;font-weight:400;color:var(--text2)">dont ${esc(_eurosRemu(l.frais, u))} dépl. (${esc((window.Remuneration.ZONES || {})[l.zone] || '')})</div>` : ''}</td>
         <td><label class="remu-paye"${l.montant === null ? ' title="Pas de tarif dans la grille de l’agent"' : ''}>
-          <input type="checkbox"${l.payee ? ' checked' : ''}${l.montant === null ? ' disabled' : ''} onchange="marquerRemuPayee('${esc(l.id)}', this.checked)">
+          <input type="checkbox"${l.payee ? ' checked' : ''}${l.montant === null ? ' disabled' : ''} onchange="marquerRemuPayee('${jsq(l.id)}', this.checked)">
           ${l.payee ? 'Payée' + (l.payeeLe ? ' le ' + esc(new Date(l.payeeLe).toLocaleDateString('fr-FR')) : '') : 'À payer'}
         </label></td></tr>`).join('');
   }).join('');
@@ -580,7 +580,7 @@ function blocFacturesAgent(agent){
       <td style="text-align:right">${esc(_eurosRemu(f.totalHT, 'HT'))}</td>
       <td style="text-align:right;font-weight:600">${esc(_eurosRemu(f.totalTTC, 'HT').replace(' HT', ''))}</td>
       <td>${esc(f.envoyeeLe ? new Date(f.envoyeeLe).toLocaleDateString('fr-FR') : '—')}</td>
-      <td>${f.chemin ? `<button type="button" class="btn btn-sm" onclick="telechargerFactureAgent('${esc(agent.id)}','${esc(f.numero)}')"><i class="ti ti-download"></i> PDF</button>` : ''}</td>
+      <td>${f.chemin ? `<button type="button" class="btn btn-sm" onclick="telechargerFactureAgent('${jsq(agent.id)}','${jsq(f.numero)}')"><i class="ti ti-download"></i> PDF</button>` : ''}</td>
     </tr>`).join('')}</tbody></table></div>` : '<div class="empty" style="padding:12px 0">Aucune facture reçue pour l’instant.</div>'}
   </div>`;
 }
@@ -607,7 +607,7 @@ function blocAnnuleesRemu(agent, missions, u){
   return `<details style="margin-top:18px"><summary style="cursor:pointer;font-weight:600;font-size:13.5px">Missions annulées (${annulees.length}) — déplacement infructueux</summary>
     <div style="font-size:12.5px;color:var(--text2);margin:8px 0">Cochez si l'agent s'est déplacé pour rien${tarif !== null ? ' : ' + esc(_eurosRemu(tarif, u)) + ' lui sont dus' : ' (tarif à renseigner dans sa fiche)'}.</div>
     ${annulees.map(m => `<label class="remu-paye" style="display:flex;padding:6px 0">
-      <input type="checkbox"${m.deplacementInfructueux ? ' checked' : ''} onchange="marquerDeplacementInfructueux('${esc(m.id)}', this.checked)">
+      <input type="checkbox"${m.deplacementInfructueux ? ' checked' : ''} onchange="marquerDeplacementInfructueux('${jsq(m.id)}', this.checked)">
       ${esc(m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '—')} · ${esc(m.adresse || '—')} · ${esc(m.type || '')}
     </label>`).join('')}
   </details>`;
@@ -717,7 +717,7 @@ function addAgent(){
   }
 
   saveToStorage();
-  persistAgents();
+  const persistance = persistAgents();
   annulerEditionAgent();
   renderAgentsSettings();
   notify('✅ Agent enregistré');
@@ -726,7 +726,9 @@ function addAgent(){
   // lors d'une simple modification, pour ne pas renvoyer l'email à chaque
   // correction de coordonnées). Best-effort : un échec d'envoi ne doit
   // jamais bloquer ni annuler la création de l'agent elle-même.
-  if(estUneCreation && email) envoyerBienvenueAgent(email, nom);
+  // Après l'enregistrement côté serveur : l'endpoint vérifie que l'email
+  // figure bien parmi les agents du compte avant d'envoyer.
+  if(estUneCreation && email) persistance.then(() => envoyerBienvenueAgent(email, nom));
 }
 
 async function envoyerBienvenueAgent(email, nom){
@@ -1367,7 +1369,7 @@ async function loadAdminData(){
         <td style="font-size:11px;color:var(--text2)">${p.created_at?new Date(p.created_at).toLocaleDateString('fr-FR'):'—'}</td>
         <td style="font-size:11px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis">${p.notes||'—'}</td>
         <td>
-          <button class="btn btn-sm" onclick="editAdminPlan('${p.user_id}','${p.email||''}','${p.plan||'free'}','${p.status||'active'}','${p.expires_at||''}','${(p.notes||'').replace(/'/g,'')}')">
+          <button class="btn btn-sm" onclick="editAdminPlan('${jsq(p.user_id)}','${jsq(p.email||'')}','${jsq(p.plan||'free')}','${jsq(p.status||'active')}','${jsq(p.expires_at||'')}','${jsq((p.notes||'').replace(/'/g,''))}')">
             <i class="ti ti-edit" style="font-size:11px"></i>
           </button>
         </td>
