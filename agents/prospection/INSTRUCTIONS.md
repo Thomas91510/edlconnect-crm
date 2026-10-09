@@ -122,15 +122,15 @@ pas) pour ne pas le retraiter demain.
     juridique, tranquillité.
 - Ne jamais promettre de date, de prix ou de remise. Ne rien inventer sur
   l'entreprise : en cas de doute, laisser un `[à compléter]`.
-- Signature :
+- Écrire au nom de l'entreprise (« nous »), jamais au nom d'une personne :
+  aucun prénom ni nom dans le corps ni dans la signature.
+- Signature (uniquement le numéro fixe) :
 
   ```
   Bien cordialement,
 
-  Thomas Langlade
-  Directeur Général – EDL IDF
+  EDL IDF – Expert en état des lieux
   01 89 29 14 29
-  contact@edl-idf.com
   ```
 
 ### 5. « Appels du jour » (5 prospects maximum)

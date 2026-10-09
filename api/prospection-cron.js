@@ -36,11 +36,12 @@ const TABLE = 'prospection';
 const QUOTA_JOUR = 250;
 const MAX_ENVOIS_PAR_RUN = 60;
 
-// Templates Brevo de la séquence v2 (08/10, courts, signés Thomas, nom de
-// l'agence en paramètre AGENCE) : stage 1 = premier email, stage 2 = relance
-// J+4, stage 3 = dernier message J+10. Remplacent les 53/54/55 (mise en page
+// Templates Brevo de la séquence v3 (09/10, courts, au nom d'EDL IDF sans
+// nom de personne, signature limitée au numéro fixe, nom de l'agence en
+// paramètre AGENCE) : stage 1 = premier email, stage 2 = relance J+4,
+// stage 3 = dernier message J+10. Remplacent les 53/54/55 (mise en page
 // newsletter, 0 réponse sur 256 envois). Ils doivent être actifs dans Brevo.
-const TEMPLATES = { 1: 59, 2: 57, 3: 58 };
+const TEMPLATES = { 1: 60, 2: 61, 3: 62 };
 const REPLY_TO = 'contact@edl-idf.com';
 
 // Listes Brevo sources des nouveaux prospects : une liste "Agence <département>"
