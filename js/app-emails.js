@@ -255,7 +255,7 @@ function emailHtmlPro(corps){
   // En-tête blanc épuré : le logo seul, centré (à défaut le nom de la
   // société en couleur de marque), et un trait de couleur dessous.
   const bandeau = logo
-    ? `<img src="${esc(logo)}" alt="${esc(societe)}" style="max-height:64px;max-width:240px;display:inline-block">`
+    ? `<img src="${esc(logo)}" alt="${esc(societe)}" width="96" style="width:96px;max-height:96px;max-width:240px;height:auto;display:inline-block">`
     : `<span style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:${couleur};letter-spacing:.01em">${esc(societe)}</span>`;
   const ligneAccroche = '';
   return `<!doctype html><html><body style="margin:0;padding:0;background:#F4F6F9">
