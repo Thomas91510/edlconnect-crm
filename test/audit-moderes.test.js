@@ -69,7 +69,7 @@ test('send-email : ignore le sender fourni par le client, utilise l\'identité v
   let brevoBody = null;
   global.fetch = async (url, opts) => {
     const u = String(url);
-    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ id: 'u1', email: 'contact@edl-idf.com' }) };
+    if (u.includes('/auth/v1/user') || u.includes('/auth/v1/admin/users/')) return { ok: true, json: async () => ({ id: 'u1', email: 'contact@edl-idf.com' }) };
     if (u.includes('/rest/v1/settings')) {
       return { ok: true, json: async () => [{ data: { expediteurNom: 'EDL IDF', expediteurEmail: 'contact@edl-idf.com' } }] };
     }

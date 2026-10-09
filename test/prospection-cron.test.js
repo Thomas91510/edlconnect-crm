@@ -43,6 +43,7 @@ function mockComplet({ prospectionRows = [], listes = {}, brevoOk = true, contac
       if (!contactsOk) return { ok: false, json: async () => ({}) };
       return { ok: true, json: async () => (u.includes('offset=0') ? contacts : []) };
     }
+    if (u.includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'admin-1', email: 'contact@edl-idf.com' }] }) };
     if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ user_id: 'admin-1' }] };
     if (u.includes('/rest/v1/prospects') && u.includes('select=email:')) {
       return { ok: true, json: async () => (u.includes('offset=0') ? noms : []) };
@@ -120,6 +121,7 @@ test('prospection-cron : le premier envoi à un nouveau prospect fait aussi avan
   let ecritureProspects = null;
   global.fetch = async (url, opts) => {
     const u = String(url);
+    if (u.includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'u1', email: 'contact@edl-idf.com' }] }) };
     if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ user_id: 'u1' }] };
     if (u.includes('/rest/v1/prospects') && (!opts || opts.method !== 'POST')) return { ok: true, json: async () => [] };
     if (u.includes('/rest/v1/prospects') && opts && opts.method === 'POST') {

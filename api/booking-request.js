@@ -3,6 +3,7 @@ import { erreurReservation } from './_lib/reservation-validation.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { identiteAbonne, enteteEmail } from './_lib/identite.js';
 import { escapeIlike } from './_lib/ilike.js';
+import { cheminPieceJointeValide } from './_lib/chemin-stockage.js';
 
 const SUPA_URL_IDENT = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 
@@ -93,7 +94,7 @@ export default async function handler(req) {
     const piecesJointesValidees = Array.isArray(pieceJointes)
       ? pieceJointes.slice(0, 10)
           .map(p => ({ nom: String(p?.nom || '').slice(0, 200), path: String(p?.path || '').slice(0, 300) }))
-          .filter(p => p.path)
+          .filter(p => cheminPieceJointeValide(p.path))
       : [];
 
     // ── Limite de débit par IP (endpoint public, sans authentification) ──

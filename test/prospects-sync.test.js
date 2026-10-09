@@ -14,13 +14,20 @@ const KEY = 'service-key';
 const fetchOriginal = global.fetch;
 test.after(() => { global.fetch = fetchOriginal; });
 
-test('resoudreAdminUserId : renvoie le user_id trouvé dans settings', async () => {
+test('resoudreAdminUserId : lit le compte admin dans Supabase Auth, pas dans settings', async () => {
   global.fetch = async (url) => {
-    assert.ok(String(url).includes('/rest/v1/settings'));
-    assert.ok(String(url).includes('contact@edl-idf.com'));
-    return { ok: true, json: async () => [{ user_id: 'u1' }] };
+    assert.ok(String(url).includes('/auth/v1/admin/users'));
+    return { ok: true, json: async () => ({ users: [
+      { id: 'pirate', email: 'pirate@gmail.com' },
+      { id: 'u1', email: 'Contact@EDL-IDF.com' },
+    ] }) };
   };
   assert.equal(await resoudreAdminUserId(SUPABASE_URL, KEY), 'u1');
+});
+
+test('resoudreAdminUserId : aucun compte admin → chaîne vide', async () => {
+  global.fetch = async () => ({ ok: true, json: async () => ({ users: [{ id: 'x', email: 'a@b.fr' }] }) });
+  assert.equal(await resoudreAdminUserId(SUPABASE_URL, KEY), '');
 });
 
 test('resoudreAdminUserId : renvoie une chaîne vide si la requête échoue (best-effort)', async () => {

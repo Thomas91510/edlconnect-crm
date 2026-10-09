@@ -2,8 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
-import { escapeIlike } from './_lib/ilike.js';
-import { statutEspace, MESSAGE_ESPACE_INACTIF } from './_lib/espace-agence.js';
+import { contexteAgence, MESSAGE_ESPACE_INACTIF } from './_lib/espace-agence.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -58,24 +57,13 @@ export default async function handler(req) {
     // ── Aperçu admin : voir cf. api/client-orders.js — un administrateur
     // peut demander les documents d'un autre client via "clientEmail" dans
     // le corps, jamais accepté pour un appelant non-admin.
+    let body = {};
+    try { body = await req.json(); } catch (_) {}
+    const estAdmin = ADMIN_EMAILS.includes((callerEmail || '').toLowerCase().trim());
     let email = callerEmail;
-    if (ADMIN_EMAILS.includes((callerEmail || '').toLowerCase().trim())) {
-      let body = {};
-      try { body = await req.json(); } catch (_) {}
+    if (estAdmin) {
       const clientEmail = (body && body.clientEmail || '').toLowerCase().trim();
       if (clientEmail) email = clientEmail;
-    }
-
-    // Espace extranet non activé (CRM › fiche client) : accès refusé
-    // (api/_lib/espace-agence.js). L'administrateur n'est jamais concerné.
-    if (!ADMIN_EMAILS.includes(String(callerEmail || '').toLowerCase().trim())) {
-      const statut = await statutEspace(callerEmail, SUPABASE_SERVICE_KEY);
-      if (!statut.actif) {
-        return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
-        });
-      }
     }
 
     if (!email) {
@@ -85,23 +73,20 @@ export default async function handler(req) {
       });
     }
 
-    // Chercher tous les contacts dont l'email correspond (dans toutes les agences)
-    // Les documents sont stockés dans la colonne JSONB data des contacts
-    const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/contacts?select=data&data->>email=ilike.${encodeURIComponent(escapeIlike(email))}`,
-      {
-        headers: {
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-        }
+    // Espace extranet non activé (CRM › fiche client) : accès refusé
+    // (api/_lib/espace-agence.js). L'administrateur n'est jamais concerné.
+    // Documents des seules fiches du prestataire retenu (cloisonnement).
+    const ctx = await contexteAgence(email, SUPABASE_SERVICE_KEY, { estAdmin, expertDemande: String((body && body.expert) || '') });
+    if (!ctx.actif) {
+      if (ctx.raison === 'erreur') {
+        return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
       }
-    );
-
-    if (!resp.ok) {
-      return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) } });
+      return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
+      });
     }
-
-    const rows = await resp.json();
+    const rows = ctx.contacts;
 
     // Collecter tous les documents trouvés (un client peut être dans plusieurs agences)
     let documents = [];

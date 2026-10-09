@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.13';
+const APP_VERSION = '2.0.14';
 const NOUVEAUTES = [
+  { v:'2.0.14', titre:'Sécurité renforcée', texte:'Contrôles serveur renforcés : fichiers privés, adresse d\u2019expédition des emails, page de réservation et espaces extranet strictement séparés entre comptes. Rien ne change dans votre utilisation.' },
   { v:'2.0.13', titre:'Demandes d\u2019avis : plusieurs locataires', texte:'Quand une mission contient plusieurs adresses email de locataires (« a@x.fr / b@y.fr »), la demande d\u2019avis part à chacune au lieu d\u2019échouer. En cas d\u2019erreur, le message indique la raison.' },
   { v:'2.0.12', titre:'Fenêtre des demandes d\u2019avis agrandie', texte:'La fenêtre des demandes d\u2019avis Google en attente est plus large : dates, adresses et locataires lisibles, et le bouton « Ne pas envoyer » (anciennement « Ignorer ») bien visible à côté de « Envoyer ».' },
   { v:'2.0.11', titre:'Même en-tête pour les emails automatiques', texte:'Confirmations de rendez-vous, rappels, demandes d\u2019avis automatiques, accusé de réservation et emails de bienvenue (agences, agents) : en-tête blanc avec votre logo seul et le trait de couleur, comme les emails envoyés depuis le CRM.' },

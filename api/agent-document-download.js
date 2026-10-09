@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { resolverAgentParEmail } from './_lib/agent-lookup.js';
+import { cheminSur } from './_lib/chemin-stockage.js';
 
 const BUCKET = 'agent-documents';
 const TYPES_AUTORISES = ['contrat', 'avenant'];
@@ -58,6 +59,9 @@ export default async function handler(req) {
     const chemin = resolu.agent[type + 'Path'];
     if (!chemin) {
       return new Response(JSON.stringify({ error: 'Document non disponible pour l\'instant' }), { status: 404, headers });
+    }
+    if (!cheminSur(chemin, encodeURIComponent(resolu.agent.id))) {
+      return new Response(JSON.stringify({ error: 'Accès refusé' }), { status: 403, headers });
     }
 
     const signResp = await fetch(

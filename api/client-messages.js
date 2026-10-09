@@ -2,8 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
-import { escapeIlike } from './_lib/ilike.js';
-import { statutEspace, MESSAGE_ESPACE_INACTIF } from './_lib/espace-agence.js';
+import { contexteAgence, MESSAGE_ESPACE_INACTIF } from './_lib/espace-agence.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -66,25 +65,21 @@ export default async function handler(req) {
 
     // Espace extranet non activé (CRM › fiche client) : accès refusé
     // (api/_lib/espace-agence.js). L'administrateur n'est jamais concerné.
-    if (!ADMIN_EMAILS.includes(String(callerEmail || '').toLowerCase().trim())) {
-      const statut = await statutEspace(callerEmail, SUPABASE_SERVICE_KEY);
-      if (!statut.actif) {
-        return new Response(JSON.stringify({ error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
-        });
-      }
+    // Cloisonnement par prestataire : seules les fiches du prestataire
+    // retenu sont lues ou modifiées, jamais celles d'un autre abonné qui
+    // aurait une fiche avec le même email.
+    const estAdmin = ADMIN_EMAILS.includes(callerEmail);
+    const ctx = await contexteAgence(email, SUPABASE_SERVICE_KEY, { estAdmin, expertDemande: String(body?.expert || '') });
+    if (!ctx.actif) {
+      const status = ctx.raison === 'erreur' ? 500 : 403;
+      const corps = ctx.raison === 'erreur'
+        ? { error: 'Erreur lors de la récupération des messages' }
+        : { error: MESSAGE_ESPACE_INACTIF, code: 'espace_inactif' };
+      return new Response(JSON.stringify(corps), { status, headers: cors });
     }
 
     const supaHeaders = { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` };
-    const contactsResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/contacts?select=id,data&data->>email=ilike.${encodeURIComponent(escapeIlike(email))}`,
-      { headers: supaHeaders }
-    );
-    if (!contactsResp.ok) {
-      return new Response(JSON.stringify({ error: 'Erreur lors de la récupération des messages' }), { status: 500, headers: cors });
-    }
-    const rows = await contactsResp.json();
+    const rows = ctx.contacts;
 
     if (action === 'list') {
       const messages = [];
@@ -142,7 +137,8 @@ export default async function handler(req) {
       // confidentialité, seulement un repère visuel pour trier plus vite.
       try {
         const slackUrl = process.env.SLACK_WEBHOOK_URL;
-        if (slackUrl) {
+        // Canal Slack du titulaire de la plateforme : uniquement pour SES agences.
+        if (slackUrl && ctx.expertEstAdmin) {
           const agence = (rows[0]?.data?.entreprise || rows[0]?.data?.contact || '').trim();
           const expediteur = agence ? `${agence} (${email})` : email;
           await fetch(slackUrl, {

@@ -182,3 +182,19 @@ test('booking-page : le fetch des créneaux transmet AGENCY_ID et CONTACT_ID du 
   assert.match(ligne, /agencyId=.*AGENCY_ID/);
   assert.match(ligne, /contactId=.*CONTACT_ID/);
 });
+
+test('booking-page : téléphone et email de l\'abonné sont échappés (XSS stockée)', async () => {
+  process.env.SUPABASE_SERVICE_KEY = 'test-key';
+  global.fetch = async (url) => {
+    const u = String(url);
+    if (u.includes('/rest/v1/contacts')) return { ok: true, json: async () => [{ user_id: 'owner1' }] };
+    if (u.includes('/rest/v1/settings')) {
+      return { ok: true, json: async () => [{ data: { expediteurTel: '01<script>alert(1)</script>', expediteurEmail: 'x"><img src=x onerror=alert(2)>@a.fr' } }] };
+    }
+    return { ok: true, json: async () => [] };
+  };
+  const html = await (await handler(req('c=contact123'))).text();
+  assert.ok(!html.includes('<script>alert(1)</script>'));
+  assert.ok(!html.includes('<img src=x onerror'));
+  assert.ok(html.includes('01&lt;script&gt;alert(1)&lt;/script&gt;'));
+});

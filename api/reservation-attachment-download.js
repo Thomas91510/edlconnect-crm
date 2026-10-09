@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
+import { cheminPieceJointeValide } from './_lib/chemin-stockage.js';
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BUCKET = 'reservations';
@@ -55,6 +56,11 @@ export default async function handler(req) {
     const chemin = String(body?.path || '').trim();
     if (!chemin) {
       return new Response(JSON.stringify({ error: 'Chemin manquant' }), { status: 400, headers: cors });
+    }
+    // Le chemin est enregistré sur la réservation, modifiable par son
+    // propriétaire : on n'accepte que le format produit par le dépôt.
+    if (!cheminPieceJointeValide(chemin)) {
+      return new Response(JSON.stringify({ error: 'Pièce jointe introuvable' }), { status: 404, headers: cors });
     }
 
     const supaHeaders = { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` };

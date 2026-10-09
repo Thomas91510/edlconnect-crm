@@ -11,7 +11,28 @@
 // Ne lance jamais d'exception : un email dégradé (expéditeur neutre) vaut
 // mieux qu'un envoi bloqué par une erreur réseau ou une ligne settings
 // absente.
+import { ADMIN_EMAILS } from './admin.js';
+
 const DOMAINES_VERIFIES = ['edl-idf.com', 'lokentia.fr'];
+
+// Les domaines vérifiés appartiennent au titulaire de la plateforme. Le
+// champ expediteurEmail est modifiable par chaque abonné dans ses propres
+// réglages : on ne l'utilise comme expéditeur que si le COMPTE (email
+// d'authentification, lu côté serveur) est un compte admin — sinon un
+// abonné pourrait écrire contact@edl-idf.com et envoyer en son nom.
+async function compteAdmin(supaUrl, serviceKey, userId) {
+  try {
+    const r = await fetch(supaUrl + '/auth/v1/admin/users/' + encodeURIComponent(userId), {
+      headers: { 'apikey': serviceKey, 'Authorization': 'Bearer ' + serviceKey }
+    });
+    if (!r.ok) return false;
+    const u = await r.json();
+    const email = String((u && (u.email || (u.user && u.user.email))) || '').toLowerCase().trim();
+    return !!email && ADMIN_EMAILS.includes(email);
+  } catch (_) {
+    return false;
+  }
+}
 
 const IDENTITE_NEUTRE = {
   nom: 'Lokentia',
@@ -54,11 +75,12 @@ export async function identiteAbonne(supaUrl, serviceKey, userId) {
     const nom = (d.expediteurNom || d.companyName || '').trim() || IDENTITE_NEUTRE.nom;
     const mail = (d.expediteurEmail || d.userEmail || '').trim();
     const domaine = mail.includes('@') ? mail.split('@')[1].toLowerCase() : '';
-    const peutExpedier = domaine && DOMAINES_VERIFIES.includes(domaine);
+    const peutExpedier = !!domaine && DOMAINES_VERIFIES.includes(domaine)
+      && await compteAdmin(supaUrl, serviceKey, userId);
     return {
       nom,
       email: peutExpedier ? mail : IDENTITE_NEUTRE.email,
-      replyTo: (!peutExpedier && mail) ? mail : '',
+      replyTo: (!peutExpedier && mail && !DOMAINES_VERIFIES.includes(domaine)) ? mail : '',
       tel: (d.expediteurTel || '').trim(),
       slogan: typeof d.slogan === 'string' ? d.slogan.trim() : 'Expert en État des Lieux',
       signature: (d.expediteurSignature || '').trim(),

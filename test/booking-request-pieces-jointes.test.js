@@ -41,9 +41,9 @@ const BASE = {
 test('booking-request : stocke les pièces jointes valides', async () => {
   let booking = null;
   mockFetch(b => { booking = b; });
-  await handler(requete({ ...BASE, pieceJointes: [{ nom: 'photo.jpg', path: 'sub_1/a.jpg' }] }));
+  await handler(requete({ ...BASE, pieceJointes: [{ nom: 'photo.jpg', path: 'sub_1/1700000000000-abc123.jpg' }] }));
   assert.ok(booking);
-  assert.deepEqual(booking.data.piecesJointes, [{ nom: 'photo.jpg', path: 'sub_1/a.jpg' }]);
+  assert.deepEqual(booking.data.piecesJointes, [{ nom: 'photo.jpg', path: 'sub_1/1700000000000-abc123.jpg' }]);
 });
 
 test('booking-request : ignore une entrée sans chemin de stockage', async () => {
@@ -56,7 +56,7 @@ test('booking-request : ignore une entrée sans chemin de stockage', async () =>
 test('booking-request : plafonne à 10 pièces jointes', async () => {
   let booking = null;
   mockFetch(b => { booking = b; });
-  const pieceJointes = Array.from({ length: 15 }, (_, i) => ({ nom: 'f' + i, path: 'sub_1/' + i }));
+  const pieceJointes = Array.from({ length: 15 }, (_, i) => ({ nom: 'f' + i, path: 'sub_1/1700000000000-f' + i }));
   await handler(requete({ ...BASE, pieceJointes }));
   assert.equal(booking.data.piecesJointes.length, 10);
 });

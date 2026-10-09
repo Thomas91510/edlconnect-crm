@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { resolverAgentParEmail } from './_lib/agent-lookup.js';
+import { cheminSur } from './_lib/chemin-stockage.js';
 
 const BUCKET = 'agent-documents';
 
@@ -52,6 +53,8 @@ export default async function handler(req) {
   if (!agent) return reponse({ error: 'Accès refusé' }, 403);
   const facture = (Array.isArray(agent.factures) ? agent.factures : []).find(f => f && f.numero === numero);
   if (!facture || !facture.chemin) return reponse({ error: 'Facture introuvable' }, 404);
+  // Le chemin vient des réglages de l'abonné : il doit rester dans le dossier de CET agent.
+  if (!cheminSur(facture.chemin, encodeURIComponent(agent.id))) return reponse({ error: 'Accès refusé' }, 403);
 
   const signResp = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${BUCKET}/${facture.chemin}`, {
     method: 'POST',

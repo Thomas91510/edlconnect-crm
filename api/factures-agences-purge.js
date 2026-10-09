@@ -61,7 +61,17 @@ export default async function handler(req) {
     const docs = Array.isArray(data.documents) ? data.documents : [];
     const anciennes = docs.filter(d => d && d.type === 'facture');
     factures += anciennes.length;
-    anciennes.forEach(d => { if (d.url && !/^https?:/i.test(d.url)) chemins.push(cheminStockage(d.url)); });
+    // Les PDF étaient rangés sous l'email du client : un abonné ne supprime
+    // que ceux du dossier de SA fiche, jamais un chemin arbitraire du bucket.
+    const dossier = String(data.email || '').trim().toLowerCase();
+    anciennes.forEach(d => {
+      if (!d.url || /^https?:/i.test(d.url)) return;
+      const chemin = cheminStockage(d.url);
+      const segments = chemin.split('/');
+      if (segments.some(s => !s || s === '.' || s === '..')) return;
+      if (!estAdmin && (!dossier || segments[0].toLowerCase() !== dossier)) return;
+      chemins.push(chemin);
+    });
     return { id: row.id, data: { ...data, documents: docs.filter(d => !(d && d.type === 'facture')) } };
   }).filter(m => m);
 

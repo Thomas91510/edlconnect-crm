@@ -117,6 +117,7 @@ test('prospection-click : fait aussi avancer la carte du prospect dans le pipeli
     if (u.includes('/rest/v1/prospection') && opts && opts.method === 'POST') {
       return { ok: true };
     }
+    if (u.includes('/auth/v1/admin/users')) return { ok: true, json: async () => ({ users: [{ id: 'u1', email: 'contact@edl-idf.com' }] }) };
     if (u.includes('/rest/v1/settings')) return { ok: true, json: async () => [{ user_id: 'u1' }] };
     if (u.includes('/rest/v1/prospects') && (!opts || opts.method !== 'PATCH')) {
       return { ok: true, json: async () => [{ id: 'p1', data: { agence: 'Agence Prospect', email: 'prospect@agence.fr', etape: 'email_envoye' } }] };
