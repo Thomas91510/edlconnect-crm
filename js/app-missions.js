@@ -104,7 +104,6 @@ function renderMissions(){
         ${['planifiée','en cours','terminée','annulée'].map(s=>`<option${s===m.statut?' selected':''}>${s}</option>`).join('')}
       </select></td>
       <td class="tbl-cards-actions m-actions">
-        <button class="btn btn-sm" onclick="openConfirmRdvModal('${m.id}')" title="Confirmer le RDV et envoyer les convocations" style="background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue)"><i class="ti ti-calendar-check"></i></button>
         <button class="btn btn-sm" onclick="editMission(${realIdx})" title="Modifier"><i class="ti ti-edit"></i></button>
         <button class="btn btn-sm" onclick="deleteMission(${realIdx})" title="Supprimer" style="color:var(--red-text);border-color:var(--red-text);background:var(--red-bg)"><i class="ti ti-trash"></i></button>
       </td>
@@ -187,8 +186,21 @@ function editMission(i){
   const btn = document.getElementById('mission-save-btn');
   btn.innerHTML = '<i class="ti ti-check"></i>Mettre à jour';
   btn.onclick = saveEditMission;
+  const conf = document.getElementById('mission-confirm-rdv-btn');
+  if(conf) conf.style.display = '';
 
   openModal('modal-mission');
+}
+
+// Fenêtre « Modifier la mission » : confirmer le rendez-vous et envoyer les
+// convocations (utile pour une mission créée à la main, sans réservation —
+// la validation d'une réservation ouvre déjà cette confirmation seule).
+function confirmerRdvDepuisEdition(){
+  const m = _editMissionIdx === null ? null : DB.missions[_editMissionIdx];
+  if(!m) return;
+  const id = m.id;
+  saveEditMission();
+  setTimeout(() => openConfirmRdvModal(id), 300);
 }
 
 function saveEditMission(){
@@ -232,6 +244,7 @@ function saveEditMission(){
 
   // Réinitialiser le modal pour les prochains ajouts
   document.getElementById('modal-mission-title').textContent = 'Nouvelle mission EDL';
+  { const cb = document.getElementById('mission-confirm-rdv-btn'); if(cb) cb.style.display = 'none'; }
   const btn = document.getElementById('mission-save-btn');
   btn.innerHTML = '<i class="ti ti-check"></i>Enregistrer';
   btn.onclick = saveMission;
