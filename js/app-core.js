@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.5';
+const APP_VERSION = '2.0.6';
 const NOUVEAUTES = [
+  { v:'2.0.6', titre:'Demandes d\u2019avis Google en attente', texte:'Accueil › carte « Avis Google » › « Envoyer les demandes » : liste des états des lieux dont la demande d\u2019avis n\u2019est jamais partie, avec « Envoyer » (email au locataire avec votre lien d\u2019avis), « Ignorer » (trop ancien) et « Envoyer à tous (moins de 30 jours) ».' },
   { v:'2.0.5', titre:'Clients sur un seul écran, Notion retiré', texte:'Page Clients : filtre « Notion » retiré, tableau en 7 colonnes (entreprise et contact, email et téléphone, date et moyen du dernier contact réunis) qui tient dans la largeur de l\u2019écran. Réglages : bloc Notion masqué. Accueil : mention « Notion + Brevo » retirée.' },
   { v:'2.0.4', titre:'Date de la dernière sauvegarde', texte:'Réglages › Sauvegarde affiche maintenant la date de la dernière sauvegarde dans le cloud (automatique chaque matin ou « Sauvegarder maintenant »), et non plus celle du dernier fichier téléchargé. Le rappel de sauvegarde n\u2019apparaît plus tant qu\u2019une sauvegarde récente existe.' },
   { v:'2.0.3', titre:'Sauvegarder maintenant', texte:'Réglages › Sauvegarde : bouton « Sauvegarder maintenant » pour une copie complète immédiate dans le cloud (en plus de celle de chaque matin). Missions : bouton « Confirmer le RDV » retiré de la liste (la confirmation s\u2019ouvre automatiquement à la validation de la réservation) et déplacé dans la fenêtre « Modifier la mission », pour les missions créées à la main.' },
@@ -621,7 +622,7 @@ function renderAujourdhui(){
   // d'avis (envoyee automatiquement par le cron J+1) n'est pas encore partie.
   const avisAttente = missions.filter(m=>{
     if(!m.date || estAnnulee(m)) return false;
-    if(!m.locataireEmail || m.avisEnvoye) return false;
+    if(!m.locataireEmail || m.avisEnvoye || m.avisIgnore) return false;
     return new Date(m.date) < debutAuj;
   });
 
@@ -630,7 +631,7 @@ function renderAujourdhui(){
   const items = [
     { kicker:'Réservations en ligne', label:'à confirmer', count:'—', id:'dash-today-resa', dot:'var(--violet)', cta:'Confirmer', action:"nav('reservations')", perm:'reservations' },
     { kicker:'Planning', label:"RDV aujourd'hui et demain", count: rdvProches.length, dot:'var(--blue)', cta:'Voir le planning', action:"nav('agenda')", perm:'missions' },
-    { kicker:'Avis Google', label:'demandes en attente', count: avisAttente.length, dot:'var(--green)', cta:'Voir les missions', action:"nav('missions')", perm:'missions' },
+    { kicker:'Avis Google', label:'demandes en attente', count: avisAttente.length, dot:'var(--green)', cta:'Envoyer les demandes', action:"ouvrirAvisGoogle()", perm:'missions' },
     { kicker:'Prospection', label:'prospects qui stagnent', count: stagnants.length, dot:'var(--amber)', cta:'Relancer', action:"nav('prospection')", perm:'prospection' }
   ].filter(it=>typeof peut!=='function' || peut(it.perm));
 
