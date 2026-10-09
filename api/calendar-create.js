@@ -76,7 +76,7 @@ export default async function handler(req, res) {
     const event = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: {
-        summary: titre || 'RDV EDL IDF',
+        summary: titre || 'RDV',
         location: lieu || '',
         description: (description || '') + '\n\n[Créé par Lokentia CRM]',
         start: { dateTime: startDt.toISOString(), timeZone: 'Europe/Paris' },

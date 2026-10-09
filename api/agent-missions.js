@@ -6,6 +6,7 @@ import { resolverAgentParEmail } from './_lib/agent-lookup.js';
 import { calculerKpiAgent } from './_lib/agent-kpi.js';
 import { nettoyerInfosLegales } from './_lib/agent-facture.js';
 import { calculerRemuneration } from './_lib/agent-remuneration.js';
+import { vitrineDepuisReglages } from './_lib/identite.js';
 
 const BAREME_PAR_DEFAUT = [
   { label: 'Secteur primaire', montant: '0' },
@@ -125,6 +126,9 @@ export default async function handler(req) {
     // Couleur de marque choisie par l'agence (Paramètres) — recolore
     // l'espace agent pour qu'il reste cohérent avec l'identité de l'agence.
     couleurPrimaire: data.couleurPrimaire || '',
+    // Nom, accroche et contact du prestataire, affichés dans l'espace agent
+    // à la place d'un nom codé en dur.
+    prestataire: vitrineDepuisReglages(data, SUPABASE_URL),
     // Destinataire des factures de l'agent : identité légale de l'agence
     // (Réglages › Profil), modifiable par l'agent sur chaque facture.
     destinataireFacture: {

@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.15';
+const APP_VERSION = '2.0.16';
 const NOUVEAUTES = [
+  { v:'2.0.16', titre:'Espaces à votre nom', texte:'Extranet des agences, espace agent et page de réservation affichent le nom, l\u2019accroche, le contact et le téléphone renseignés dans vos Réglages (plus aucun nom écrit en dur). Les objets d\u2019emails et titres d\u2019agenda reprennent le nom de votre société.' },
   { v:'2.0.15', titre:'Sécurité renforcée (suite)', texte:'Agents EDL, formulaires et envois d\u2019emails mieux protégés contre les usages abusifs. Rien ne change dans votre utilisation.' },
   { v:'2.0.14', titre:'Sécurité renforcée', texte:'Contrôles serveur renforcés : fichiers privés, adresse d\u2019expédition des emails, page de réservation et espaces extranet strictement séparés entre comptes. Rien ne change dans votre utilisation.' },
   { v:'2.0.13', titre:'Demandes d\u2019avis : plusieurs locataires', texte:'Quand une mission contient plusieurs adresses email de locataires (« a@x.fr / b@y.fr »), la demande d\u2019avis part à chacune au lieu d\u2019échouer. En cas d\u2019erreur, le message indique la raison.' },
@@ -145,6 +146,12 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 // chaîne (ex. une pièce jointe ou un email saisis sur le formulaire public).
 // On échappe donc d'abord pour JS (antislash, apostrophe, retours ligne), puis pour HTML.
 function jsq(s){return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'\\r').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029'));}
+// « 📋 <Société> — <texte> » avec le nom de SA société (Réglages), jamais un
+// nom codé en dur ; sans nom de société : « 📋 <texte> ».
+function prefixeSociete(pictogramme, texte){
+  const societe = (typeof CFG !== 'undefined' && CFG.companyName) || '';
+  return (pictogramme || '') + [societe, texte].filter(Boolean).join(' — ');
+}
 
 // Couleur de marque de l'agence (Paramètres) : dérive les nuances déjà
 // utilisées dans tout le CSS du CRM (--blue/--blue-bg/--blue-text) à partir

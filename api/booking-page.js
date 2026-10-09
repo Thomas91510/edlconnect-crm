@@ -76,6 +76,10 @@ export default async function handler(req) {
     }
   } catch (e) { /* identite neutre */ }
   const identTelHref = IDENT.tel.replace(/[^0-9+]/g, '');
+  // Nom du prestataire affiché sur la page (jamais un prénom codé en dur) :
+  // « Lokentia » seulement quand le propriétaire de la page est inconnu.
+  const NOM_HTML = escHtml(IDENT.nom);
+  const QUI_RAPPELLE = IDENT.nom && IDENT.nom !== 'Lokentia' ? NOM_HTML : 'Votre expert';
   const palette = deriverPaletteMarque(couleurPrimaire);
 
   const html = `<!DOCTYPE html>
@@ -83,7 +87,7 @@ export default async function handler(req) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demande d'état des lieux — Lokentia</title>
+<title>Demande d'état des lieux — ${NOM_HTML}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -181,7 +185,7 @@ textarea{min-height:75px;resize:vertical}
 <div class="header">
   <svg viewBox="0 0 120 120" width="36" height="36" style="flex-shrink:0"><rect width="120" height="120" rx="26" fill="#0F1E2E"/><path d="M36 26 h12 v56 h42 v12 H36 Z" fill="#F4F7FA"/><path d="M86 32 A34 34 0 0 1 52 66" fill="none" stroke="#C29A5B" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="32" r="4" fill="#C29A5B"/></svg>
   <div>
-    <div style="font-size:14px;font-weight:600">Lokentia</div>
+    <div style="font-size:14px;font-weight:600">${NOM_HTML}</div>
     <div style="font-size:11px;color:var(--text2)">Demande d'état des lieux</div>
   </div>
   <div style="margin-left:auto;font-size:11px;color:var(--text2);text-align:right">
@@ -375,7 +379,7 @@ textarea{min-height:75px;resize:vertical}
       <div class="card-body" id="recap" style="font-size:12px;line-height:2;color:var(--text2)"></div>
     </div>
     <div class="info-box">
-      <strong>📬 Après envoi :</strong> Vous recevrez un email de confirmation sous 2h. Thomas vous contactera pour confirmer la date définitive. Le locataire recevra sa convocation une fois le RDV planifié.
+      <strong>📬 Après envoi :</strong> Vous recevrez un email de confirmation sous 2h. ${QUI_RAPPELLE} vous contactera pour confirmer la date définitive. Le locataire recevra sa convocation une fois le RDV planifié.
     </div>
     <div class="btn-row">
       <button class="btn" onclick="prev(3)"><i class="ti ti-arrow-left"></i> Retour</button>
@@ -387,7 +391,7 @@ textarea{min-height:75px;resize:vertical}
   <div class="success" id="success">
     <div class="success-icon">✅</div>
     <div style="font-size:22px;font-weight:700;margin-bottom:8px">Demande envoyée !</div>
-    <div style="font-size:13px;color:var(--text2);line-height:1.7">Thomas vous contactera sous <strong>2h</strong> pour confirmer la date définitive.</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">${QUI_RAPPELLE} vous contactera sous <strong>2h</strong> pour confirmer la date définitive.</div>
     <div class="recap-box" id="success-recap"></div>
     <div style="margin-top:20px;font-size:12px;color:var(--text2)">
       ${IDENT.tel ? `Une question ? 📞 <a href="tel:${identTelHref}" style="color:var(--blue)">${escHtml(IDENT.tel)}</a>` : ``}
@@ -395,7 +399,7 @@ textarea{min-height:75px;resize:vertical}
   </div>
 
   <div class="footer">
-    <strong>Lokentia</strong> — Expert en État des Lieux<br>
+    <strong>${NOM_HTML}</strong> — Expert en État des Lieux<br>
     <a href="mailto:${escHtml(IDENT.email)}" style="color:var(--blue)">${escHtml(IDENT.email)}</a>${IDENT.tel ? ` · <a href="tel:${identTelHref}" style="color:var(--blue)">${escHtml(IDENT.tel)}</a>` : ``}
   </div>
 

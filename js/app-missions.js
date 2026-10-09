@@ -294,7 +294,6 @@ async function notifierChangementHoraireMission(m, ancienneDateIso){
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
         body: JSON.stringify({
-          sender: { name: 'EDL IDF', email: 'contact@edl-idf.com' },
           to: [{ email: dest }],
           subject: sujet,
           htmlContent: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${corps.replace(/\n/g,'<br>')}</div>`,
@@ -337,7 +336,6 @@ async function notifierAnnulationMission(m){
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
         body: JSON.stringify({
-          sender: { name: 'EDL IDF', email: 'contact@edl-idf.com' },
           to: [{ email: dest }],
           subject: sujet,
           htmlContent: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${corps.replace(/\n/g,'<br>')}</div>`,
