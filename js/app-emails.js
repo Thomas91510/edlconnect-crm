@@ -46,8 +46,13 @@ function afficherExpediteurCompose(){
 // si l'abonné n'a encore rien configuré (pas de signature générique inventée).
 function genererSignatureEmail(){
   const nom = CFG.expediteurSignature || CFG.expediteurNom || CFG.companyName || '';
-  const societeSig = [CFG.expediteurNom, CFG.companyName].find(v => v && v !== nom) || '';
-  const accrocheSig = (CFG.slogan || '').trim();
+  // Pas de répétition : une ligne dont tous les mots figurent déjà au-dessus
+  // (société, accroche déjà écrite dans la signature) n'est pas réaffichée.
+  const mots = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/[^a-z0-9@.]+/).filter(Boolean);
+  const dejaDit = (texte, deja) => { const d = new Set(mots(deja)); const m = mots(texte); return m.length > 0 && m.every(x => d.has(x)); };
+  const societeSig = [CFG.expediteurNom, CFG.companyName].find(v => v && !dejaDit(v, nom)) || '';
+  const accrocheBrute = (CFG.slogan || '').trim();
+  const accrocheSig = accrocheBrute && !dejaDit(accrocheBrute, nom + ' ' + societeSig) ? accrocheBrute : '';
   const sousTitre = [societeSig, accrocheSig].filter(Boolean).join(' — ');
   const tel = CFG.expediteurTel || '';
   const email = CFG.expediteurEmail || '';

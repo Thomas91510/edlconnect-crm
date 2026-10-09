@@ -108,3 +108,15 @@ test('genererSignatureEmail : renvoie une chaîne vide si rien n\'est configuré
   const w = setupSignature(`Object.defineProperty(CFG, 'companyName', { get: function(){ return ''; } });`);
   assert.equal(w.genererSignatureEmail(), '');
 });
+
+test('genererSignatureEmail : ne répète pas la société ni l\'accroche déjà écrites dans la signature', () => {
+  const w = setupSignature(`
+    CFG.expediteurSignature = 'Thomas LANGLADE — Directeur Général — EDL IDF Expert en État des Lieux';
+    CFG.expediteurNom = 'EDL IDF Expert en Etat des Lieux';
+    localStorage.setItem('edl_co_name', 'LANGLADE Thomas');
+    CFG.slogan = 'Expert en État des Lieux';
+  `);
+  const html = w.genererSignatureEmail();
+  assert.equal((html.match(/Expert en [EÉ]tat des Lieux/g) || []).length, 1, 'accroche une seule fois');
+  assert.doesNotMatch(html, /LANGLADE Thomas/);
+});
