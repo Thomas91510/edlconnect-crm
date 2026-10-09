@@ -1787,7 +1787,9 @@ async function sauvegarderCloudMaintenant(){
     const j = d.journal || {};
     const drive = j.drive && typeof j.drive === 'object' && j.drive.fichierId ? ' · copie Google Drive ✓' : '';
     const texte = `✅ Sauvegarde faite (${j.poidsKo || '?'} Ko)${drive}`;
-    if(statut) statut.textContent = texte + ' — ' + new Date().toLocaleString('fr-FR');
+    if(statut) statut.textContent = '';
+    _derniereSauvegardeCloud = new Date().toISOString();
+    if(typeof updateBackupDate === 'function') updateBackupDate();
     notify(texte);
   }catch(e){
     if(statut) statut.textContent = '⚠️ Sauvegarde impossible (connexion)';

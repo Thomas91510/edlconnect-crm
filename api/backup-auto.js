@@ -52,6 +52,20 @@ export default async function handler(req) {
     'Content-Type': 'application/json'
   };
 
+  // ?statut=1 : renvoie seulement la dernière sauvegarde (affichée dans
+  // Réglages › Sauvegarde), sans en lancer une nouvelle.
+  if (new URL(req.url, 'https://app.lokentia.fr').searchParams.get('statut') === '1') {
+    const lr = await fetch(SUPA_URL + '/storage/v1/object/list/' + BUCKET, {
+      method: 'POST', headers: headers,
+      body: JSON.stringify({ prefix: '', limit: 1, sortBy: { column: 'created_at', order: 'desc' } })
+    });
+    const liste = lr.ok ? await lr.json() : [];
+    const f = (liste || []).find(x => x && String(x.name || '').startsWith('lokentia-'));
+    return new Response(JSON.stringify({
+      derniere: f ? { nom: f.name, date: f.created_at || f.updated_at || '', poidsKo: f.metadata && f.metadata.size ? Math.round(f.metadata.size / 1024) : null } : null
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+
   const journal = { declencheur: declencheur, tables: {}, erreurs: [] };
 
   try {

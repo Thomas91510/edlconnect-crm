@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.3';
+const APP_VERSION = '2.0.4';
 const NOUVEAUTES = [
+  { v:'2.0.4', titre:'Date de la dernière sauvegarde', texte:'Réglages › Sauvegarde affiche maintenant la date de la dernière sauvegarde dans le cloud (automatique chaque matin ou « Sauvegarder maintenant »), et non plus celle du dernier fichier téléchargé. Le rappel de sauvegarde n\u2019apparaît plus tant qu\u2019une sauvegarde récente existe.' },
   { v:'2.0.3', titre:'Sauvegarder maintenant', texte:'Réglages › Sauvegarde : bouton « Sauvegarder maintenant » pour une copie complète immédiate dans le cloud (en plus de celle de chaque matin). Missions : bouton « Confirmer le RDV » retiré de la liste (la confirmation s\u2019ouvre automatiquement à la validation de la réservation) et déplacé dans la fenêtre « Modifier la mission », pour les missions créées à la main.' },
   { v:'2.0.2', titre:'Sauvegarde quotidienne réparée, données protégées', texte:'La sauvegarde automatique de chaque nuit tourne de nouveau (elle ne partait plus depuis le 24 juillet). À l\u2019ouverture du CRM, un problème de connexion au cloud n\u2019entraîne plus le renvoi de la copie de votre navigateur : vos données plus récentes (missions mises à jour par un agent ou une agence) ne peuvent plus être écrasées.' },
   { v:'2.0.1', titre:'Missions lisibles sur un seul écran', texte:'Le tableau des missions tient dans la largeur de l\u2019écran : nom de l\u2019agence au lieu de son email, type et bien réunis, statut modifiable directement dans sa pastille, TVA visible au survol du TTC. Accueil : « Dernières missions » et « Contacts récents » ne débordent plus.' },
@@ -433,31 +434,52 @@ function restoreBackup(input){
   reader.readAsText(file);
 }
 
+// Dernière sauvegarde : celle du cloud (automatique chaque matin à 8h, ou
+// « Sauvegarder maintenant »), demandée au serveur ; à défaut, le dernier
+// fichier téléchargé sur cet ordinateur.
+let _derniereSauvegardeCloud = null;
+async function chargerDerniereSauvegardeCloud(){
+  try{
+    if(typeof _authHeaders !== 'function') return null;
+    const r = await fetch('/api/backup-auto?statut=1', { headers: await _authHeaders() });
+    if(!r.ok) return null;
+    const d = await r.json();
+    _derniereSauvegardeCloud = d && d.derniere && d.derniere.date ? d.derniere.date : null;
+    return _derniereSauvegardeCloud;
+  }catch(e){ return null; }
+}
+function _texteDate(d){ return d.toLocaleDateString('fr-FR')+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
 function updateBackupDate(){
-  const last=localStorage.getItem('edl_last_backup');
   const el=document.getElementById('last-backup-date');
   if(!el) return;
-  if(!last){
-    el.textContent='⚠️ Aucune sauvegarde effectuée';
-    el.style.color='var(--amber, #B45309)';
-    return;
-  }
-  const d=new Date(last);
-  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-  const overdue = (Date.now() - d.getTime()) > SEVEN_DAYS;
-  el.textContent=(overdue?'⚠️ ':'')+'Sauvegardé le '+d.toLocaleDateString('fr-FR')+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-  el.style.color = overdue ? 'var(--amber, #B45309)' : 'var(--text3)';
+  const afficher = () => {
+    const cloud = _derniereSauvegardeCloud ? new Date(_derniereSauvegardeCloud) : null;
+    const local = localStorage.getItem('edl_last_backup') ? new Date(localStorage.getItem('edl_last_backup')) : null;
+    if(!cloud && !local){
+      el.textContent='⚠️ Aucune sauvegarde trouvée';
+      el.style.color='var(--amber, #B45309)';
+      return;
+    }
+    const d = cloud || local;
+    const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
+    const enRetard = (Date.now() - d.getTime()) > TWO_DAYS;
+    el.textContent=(enRetard?'⚠️ ':'✅ ')+(cloud?'Dernière sauvegarde : ':'Dernier fichier téléchargé : ')+_texteDate(d);
+    el.style.color = enRetard ? 'var(--amber, #B45309)' : 'var(--text2)';
+  };
+  afficher();
+  chargerDerniereSauvegardeCloud().then(afficher);
 }
 
-function checkBackupReminder(){
-  const last = localStorage.getItem('edl_last_backup');
-  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-  const overdue = !last || (Date.now() - new Date(last).getTime()) > SEVEN_DAYS;
-  if(overdue){
-    setTimeout(() => {
-      notify('💾 Pense à faire ta sauvegarde hebdomadaire (bouton "Sauvegarder" en bas du menu) !', 'warn');
-    }, 2500);
-  }
+// Rappel seulement si AUCUNE sauvegarde récente (cloud ou fichier) : la
+// sauvegarde du cloud est automatique chaque matin.
+async function checkBackupReminder(){
+  const cloud = await chargerDerniereSauvegardeCloud();
+  const local = localStorage.getItem('edl_last_backup');
+  const recente = (iso, jours) => iso && (Date.now() - new Date(iso).getTime()) < jours * 86400000;
+  if(recente(cloud, 2) || recente(local, 7)) return;
+  setTimeout(() => {
+    notify('💾 Aucune sauvegarde récente : Réglages › Sauvegarde › « Sauvegarder maintenant ».', 'warn');
+  }, 2500);
 }
 
 // ─── RECHERCHE GLOBALE (Cmd+K / Ctrl+K) ──────────────────────────────
