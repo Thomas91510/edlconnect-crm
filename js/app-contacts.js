@@ -1184,7 +1184,8 @@ async function chargerEspacesHistoriques(){
   _espacesHistoriquesCharges = true;
   try{
     const r = await fetch('/api/espaces-agences-statuts', { headers: await _authHeaders() });
-    if(!r.ok) return;
+    // Session pas encore prête (ouverture rapide d'une fiche) : on réessaiera.
+    if(!r.ok){ _espacesHistoriquesCharges = false; return; }
     const d = await r.json();
     _espacesHistoriques = new Set((d.historiques || []).map(e => String(e).toLowerCase()));
     renderBlocEspacesAgences();
@@ -1198,7 +1199,7 @@ function espaceActif(c){
   if(!c) return false;
   if(c.espaceActif === false) return false;
   if(c.espaceActif === true) return true;
-  return _espacesHistoriques.has(String(c.email || '').toLowerCase());
+  return _espacesHistoriques.has(String(c.email || '').trim().toLowerCase());
 }
 function basculerEspaceAgence(id, oui){
   const c = (DB.contacts || []).find(x => x.id === id);

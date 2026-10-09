@@ -29,11 +29,15 @@ export default async function handler(req) {
   const estAdmin = ADMIN_EMAILS.includes(String(user.email || '').toLowerCase().trim());
 
   const supaHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
-  let url = `${SUPABASE_URL}/rest/v1/contacts?select=data->>email&limit=5000`;
+  // On ne demande QUE les fiches des agences historiques : une lecture de
+  // toutes les fiches était tronquée à 1 000 lignes par Supabase (plus de
+  // 2 500 contacts), et Immo Gestion / Arthurimmo n'en faisaient pas partie.
+  const filtre = EMAILS_HISTORIQUES.map(e => `data->>email.ilike."${e}"`).join(',');
+  let url = `${SUPABASE_URL}/rest/v1/contacts?select=data->>email&or=(${encodeURIComponent(filtre)})`;
   if (!estAdmin) url += `&user_id=eq.${encodeURIComponent(user.id)}`;
   const r = await fetch(url, { headers: supaHeaders });
   const lignes = r.ok ? await r.json() : [];
-  const emailsContacts = new Set((lignes || []).map(l => String(l && (l.email || l['data->>email']) || '').toLowerCase()).filter(Boolean));
+  const emailsContacts = new Set((lignes || []).map(l => String(l && (l.email || l['data->>email']) || '').trim().toLowerCase()).filter(Boolean));
 
   const historiques = EMAILS_HISTORIQUES.filter(e => emailsContacts.has(e));
   return reponse({ historiques, dateActivation: DATE_ACTIVATION }, 200);
