@@ -13,7 +13,7 @@ const CFG={
   set brevoKey(v){localStorage.setItem('edl_brevo_key',v);},
   // Nom de société : sert aussi de repli pour le nom d'expéditeur des
   // emails (cf. identiteAbonne() côté serveur) quand expediteurNom est vide.
-  get companyName(){return localStorage.getItem('edl_co_name')||'EDL IDF';},
+  get companyName(){return localStorage.getItem('edl_co_name')||'';},
   set companyName(v){localStorage.setItem('edl_co_name',v);},
   // ── Profil de l'abonne ──
   get userName(){return localStorage.getItem('edl_user_name')||'';},
@@ -578,7 +578,7 @@ function emailProspect(id){
   nav('compose');
   setTimeout(()=>{
     document.getElementById('to-f').value=p.email;
-    document.getElementById('subj-f').value=`📋 EDL IDF — ${p.agence}`;
+    document.getElementById('subj-f').value=prefixeSociete('📋 ', p.agence);
     notify(`✅ Prospect déplacé vers "Email envoyé"`);
     renderProspection();
   },150);

@@ -183,7 +183,7 @@ function selectContact(email,nom,id){
   document.getElementById('to-suggest').style.display='none';
   // Pré-remplir l'objet si vide
   const subj=document.getElementById('subj-f');
-  if(!subj.value)subj.value=`📋 EDL IDF — ${nom}`;
+  if(!subj.value)subj.value=prefixeSociete('📋 ', nom);
   notify(`✅ Contact sélectionné : ${nom}`);
 }
 
@@ -406,7 +406,6 @@ async function sendEmail(){
 
     try{
       const payload={
-        sender:{name:'EDL IDF',email:'contact@edl-idf.com'},
         to:[{email:dest}],
         subject:subj,
         htmlContent:emailHtmlPro(body),

@@ -94,3 +94,36 @@ export async function identiteAbonne(supaUrl, serviceKey, userId) {
     return IDENTITE_NEUTRE;
   }
 }
+
+// Vitrine publique d'un prestataire (abonné), affichée à SES agences
+// (extranet) et à SES agents (espace agent) à la place d'un nom codé en
+// dur : société, accroche, nom de la personne à contacter, téléphone,
+// email, logo et couleur. Jamais de donnée sensible (IBAN, clés...).
+export function vitrineDepuisReglages(d, supaUrl = '') {
+  const r = d || {};
+  const txt = (v) => (typeof v === 'string' ? v.trim() : '');
+  const tel = txt(r.expediteurTel);
+  return {
+    nom: txt(r.companyName) || txt(r.expediteurNom) || txt(r.legalRaisonSociale),
+    accroche: txt(r.slogan),
+    contact: txt(r.userName),
+    tel,
+    telLien: tel.replace(/[^0-9+]/g, ''),
+    email: txt(r.expediteurEmail) || txt(r.userEmail),
+    logoUrl: r.logoPath && supaUrl ? supaUrl + BUCKET_LOGOS + encodeURI(String(r.logoPath)) : '',
+    couleur: /^#[0-9a-fA-F]{6}$/.test(r.couleurPrimaire || '') ? r.couleurPrimaire : '',
+  };
+}
+
+export async function vitrineAbonne(supaUrl, serviceKey, userId) {
+  if (!userId || !supaUrl || !serviceKey) return vitrineDepuisReglages({});
+  try {
+    const r = await fetch(supaUrl + '/rest/v1/settings?select=data&user_id=eq.' + encodeURIComponent(userId), {
+      headers: { 'apikey': serviceKey, 'Authorization': 'Bearer ' + serviceKey }
+    });
+    const rows = r.ok ? await r.json() : [];
+    return vitrineDepuisReglages(rows && rows[0] && rows[0].data, supaUrl);
+  } catch (_) {
+    return vitrineDepuisReglages({});
+  }
+}

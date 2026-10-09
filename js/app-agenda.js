@@ -65,7 +65,7 @@ function renderEvtListItem(e){
   const estEdl = e.evtType === 'mission';
   const gcalUrl = e.evtType === 'rdv'
     ? googleCalLink(e.titre, e.date, e.duree, e.contact, e.type)
-    : googleCalLink(`EDL IDF — ${e.type||'EDL'} · ${e.agence}`, e.date, e.dureeEstimee || '2h', e.adresse, missionCalDesc(e));
+    : googleCalLink(prefixeSociete('', `${e.type||'EDL'} · ${e.agence}`), e.date, e.dureeEstimee || '2h', e.adresse, missionCalDesc(e));
 
   const bordure   = estEdl ? '4px solid #2F7A3E' : '3px solid #1A5FA8';
   const fond      = estEdl ? '#EDF7EF' : 'transparent';
@@ -607,9 +607,9 @@ function googleCalLink(titre, date, duree, lieu, description){
 
   const params = new URLSearchParams({
     action : 'TEMPLATE',
-    text   : titre || 'RDV EDL IDF',
+    text   : titre || 'RDV',
     dates  : `${startStr}/${endStr}`,
-    details: description || 'RDV via EDL IDF CRM',
+    details: description || 'RDV via Lokentia',
     location: lieu || '',
     sf     : 'true',
     output : 'xml'
@@ -646,7 +646,7 @@ function missionCalDesc(m){
 function openMissionInGoogleCalendar(idx){
   const m = DB.missions[idx];
   if(!m) return;
-  const titre = `EDL IDF — ${m.type} · ${m.agence}`;
+  const titre = prefixeSociete('', `${m.type} · ${m.agence}`);
   const url   = googleCalLink(titre, m.date, m.dureeEstimee || '2h', m.adresse, missionCalDesc(m));
   if(!url){ notify('Date invalide','warn'); return; }
   window.open(url, '_blank');

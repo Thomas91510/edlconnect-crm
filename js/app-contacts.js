@@ -181,7 +181,7 @@ function openFiche(id){
     nav('compose');
     setTimeout(()=>{
       document.getElementById('to-f').value=c.email||'';
-      document.getElementById('subj-f').value=`📋 EDL IDF — ${c.entreprise||''}`;
+      document.getElementById('subj-f').value=prefixeSociete('📋 ', c.entreprise||'');
     },100);
   };
 
