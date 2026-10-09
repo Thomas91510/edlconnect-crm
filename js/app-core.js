@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.9';
+const APP_VERSION = '2.0.10';
 const NOUVEAUTES = [
+  { v:'2.0.10', titre:'Fin des emails allégée', texte:'Les modèles se terminent par « Bien cordialement, » sans la ligne « L\u2019équipe … » : la signature avec votre nom, votre logo et vos coordonnées suit directement. La rédaction IA fait de même.' },
   { v:'2.0.9', titre:'Signature des emails sans répétition', texte:'La signature n\u2019affiche plus deux fois la société ou l\u2019accroche quand elles figurent déjà dans votre texte de signature.' },
   { v:'2.0.8', titre:'Logo des emails', texte:'Le logo garde ses proportions dans la signature (il n\u2019est plus écrasé en ovale) et s\u2019affiche plus grand en haut des emails.' },
   { v:'2.0.7', titre:'En-tête des emails épuré, bouton d\u2019avis Google', texte:'Emails envoyés depuis le CRM : en-tête blanc avec votre logo seul, centré, et un trait de couleur dessous. Le lien d\u2019avis Google devient un bouton « ⭐ Laisser un avis Google ».' },
