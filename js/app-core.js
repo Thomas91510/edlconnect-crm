@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.7';
+const APP_VERSION = '2.0.8';
 const NOUVEAUTES = [
+  { v:'2.0.8', titre:'Logo des emails', texte:'Le logo garde ses proportions dans la signature (il n\u2019est plus écrasé en ovale) et s\u2019affiche plus grand en haut des emails.' },
   { v:'2.0.7', titre:'En-tête des emails épuré, bouton d\u2019avis Google', texte:'Emails envoyés depuis le CRM : en-tête blanc avec votre logo seul, centré, et un trait de couleur dessous. Le lien d\u2019avis Google devient un bouton « ⭐ Laisser un avis Google ».' },
   { v:'2.0.6', titre:'Demandes d\u2019avis Google en attente', texte:'Accueil › carte « Avis Google » › « Envoyer les demandes » : liste des états des lieux dont la demande d\u2019avis n\u2019est jamais partie, avec « Envoyer » (email au locataire avec votre lien d\u2019avis), « Ignorer » (trop ancien) et « Envoyer à tous (moins de 30 jours) ».' },
   { v:'2.0.5', titre:'Clients sur un seul écran, Notion retiré', texte:'Page Clients : filtre « Notion » retiré, tableau en 7 colonnes (entreprise et contact, email et téléphone, date et moyen du dernier contact réunis) qui tient dans la largeur de l\u2019écran. Réglages : bloc Notion masqué. Accueil : mention « Notion + Brevo » retirée.' },
