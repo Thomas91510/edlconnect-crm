@@ -130,15 +130,13 @@ export default async function handler(req) {
   const societe = ident.nom || 'notre entreprise';
   const accroche = ident.slogan === undefined ? 'Expert en État des Lieux' : ident.slogan;
   const societeAccroche = accroche ? `${societe} — ${accroche}` : societe;
-  const signature = [ident.signature, societeAccroche].filter(Boolean).join('\n');
 
   const system = `Tu rédiges les emails de ${societe}, spécialiste des états des lieux professionnels, pour des agences immobilières et des gestionnaires de biens.
 Style : français soigné, professionnel et chaleureux, phrases courtes, concret, une seule idée par paragraphe, un appel à l'action clair à la fin.
 Présente la société comme « ${societeAccroche} ».
 Mets quelques emojis pertinents pour donner de l'impact (un dans l'objet, un devant chaque intertitre ou point clé), sans en abuser.
 Pas de formules creuses ni de flatterie, pas de promesse chiffrée inventée : n'invente ni prix, ni date, ni chiffre absent de la consigne.
-Signe avec :
-${signature}
+Termine par une formule de politesse seule (par exemple « Bien cordialement, »), sans nom ni signature : la signature (nom, société, téléphone, logo) est ajoutée automatiquement sous l'email.
 Réponds uniquement avec l'email : première ligne « Objet: … », une ligne vide, puis le corps. Aucun commentaire.`;
 
   const demande = [
