@@ -2,7 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
-import { identiteAbonne } from './_lib/identite.js';
+import { identiteAbonne, enteteEmail } from './_lib/identite.js';
 
 // Envoie automatiquement à un nouvel "Agent EDL" (renseigné avec un email
 // dans Paramètres → Agents EDL) le lien vers son espace agent — appelé
@@ -55,10 +55,7 @@ export default async function handler(req) {
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:580px;margin:0 auto;padding:20px 0">
 
-  <div style="background:#1A5FA8;padding:24px;border-radius:12px 12px 0 0;text-align:center">
-    <div style="color:#fff;font-size:21px;font-weight:700">${esc(IDENT.nom)}</div>
-    <div style="color:rgba(255,255,255,0.75);font-size:12px;margin-top:4px">Votre espace agent</div>
-  </div>
+  ${enteteEmail(IDENT)}
 
   <div style="background:#fff;padding:32px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:15px;color:#1a1a1a;margin:0 0 16px 0">

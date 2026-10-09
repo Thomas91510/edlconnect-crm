@@ -2,7 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
-import { identiteAbonne } from './_lib/identite.js';
+import { identiteAbonne, enteteEmail } from './_lib/identite.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 
 // Echappement HTML : mission/message/locataires proviennent en bout de chaine
@@ -175,9 +175,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</span>
-  </div>
+  ${enteteEmail(IDENT)}
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <h2 style="font-size:20px;margin:0 0 16px 0">✅ Confirmation de votre état des lieux</h2>
     <table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:20px">
@@ -210,9 +208,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</span>
-  </div>
+  ${enteteEmail(IDENT)}
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_BONJOUR__</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
@@ -271,9 +267,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</span>
-  </div>
+  ${enteteEmail(IDENT)}
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
@@ -338,9 +332,7 @@ export default async function handler(req) {
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8f8f6;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:20px 0">
-  <div style="background:#1A5FA8;padding:20px 24px;border-radius:12px 12px 0 0">
-    <span style="color:#fff;font-size:18px;font-weight:700">${esc(IDENT.nom)}</span>
-  </div>
+  ${enteteEmail(IDENT)}
   <div style="background:#fff;padding:28px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
     <p style="font-size:14px;color:#1a1a1a;margin:0 0 16px 0">__SALUT_FORMEL__</p>
     <p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 20px 0">
