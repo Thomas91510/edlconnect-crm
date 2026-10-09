@@ -240,23 +240,28 @@ function emailHtmlPro(corps){
       const puce = /^\s*(?:[•\-–✅✔☑]|\d+[.)])\s+(.*)$/.exec(l);
       if(puce){ liste.push(puce[1]); return; }
       viderListe();
+      // Ligne qui ne contient que le lien d'avis Google : vrai bouton.
+      const avis = (CFG.avisGoogleLien || '').trim();
+      if(avis && l.replace(/^[\s⭐★]+/, '').trim() === avis){
+        html += `<p style="margin:20px 0 22px;text-align:center"><a href="${esc(avis)}" style="display:inline-block;background:${couleur};color:#ffffff;font-weight:700;font-size:15px;padding:13px 28px;border-radius:8px;text-decoration:none">⭐ Laisser un avis Google</a></p>`;
+        return;
+      }
       if(/:\s*$/.test(l) && l.length < 70) html += `<p style="margin:18px 0 6px;font-weight:700;color:#111827;font-size:15px">${esc(l.replace(/\s*:\s*$/, ''))}</p>`;
       else html += `<p style="margin:0 0 12px">${lien(esc(l))}</p>`;
     });
     viderListe();
     return html;
   }).join('');
-  // En-tête blanc : logo (sinon le nom de la société en couleur de marque),
-  // accroche dessous, et un trait de couleur sous l'en-tête.
+  // En-tête blanc épuré : le logo seul, centré (à défaut le nom de la
+  // société en couleur de marque), et un trait de couleur dessous.
   const bandeau = logo
-    ? `<img src="${esc(logo)}" alt="${esc(societe)}" style="max-height:52px;max-width:220px;display:block">`
-    : `<span style="font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;color:${couleur};letter-spacing:.01em">${esc(societe)}</span>`;
-  const accroche = (CFG.slogan || '').trim();
-  const ligneAccroche = accroche ? `<div style="font-family:Arial,Helvetica,sans-serif;font-size:12.5px;letter-spacing:.04em;margin-top:6px;color:#475467">${esc(accroche)}</div>` : '';
+    ? `<img src="${esc(logo)}" alt="${esc(societe)}" width="96" style="width:96px;max-height:96px;max-width:240px;height:auto;display:inline-block">`
+    : `<span style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:${couleur};letter-spacing:.01em">${esc(societe)}</span>`;
+  const ligneAccroche = '';
   return `<!doctype html><html><body style="margin:0;padding:0;background:#F4F6F9">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F9;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #E5E9F0">
-<tr><td style="background:#ffffff;padding:24px 32px 18px;border-bottom:3px solid ${couleur}">${bandeau}${ligneAccroche}</td></tr>
+<tr><td align="center" style="background:#ffffff;padding:26px 32px 20px;border-bottom:3px solid ${couleur};text-align:center">${bandeau}${ligneAccroche}</td></tr>
 <tr><td style="padding:26px 32px 10px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#1F2937">${blocs}</td></tr>
 <tr><td style="padding:0 32px 26px;font-family:Arial,Helvetica,sans-serif">${genererSignatureEmail()}</td></tr>
 </table>
