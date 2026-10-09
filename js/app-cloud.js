@@ -170,7 +170,14 @@ async function fetchAllRows(table){
   return { data: allRows, error: null };
 }
 
+// Vrai seulement si le dernier chargement a RÉUSSI et trouvé un cloud vide
+// (vraie première connexion) : c'est le seul cas où le CRM peut envoyer sa
+// copie locale. Une erreur de chargement (réseau, session expirée) ne doit
+// jamais déclencher cet envoi, qui écraserait des données plus récentes
+// (missions mises à jour par un agent ou une agence, par exemple).
+let _cloudVideConfirme = false;
 async function loadFromSupabase(){
+  _cloudVideConfirme = false;
   if(!_supaReady) return false;
   if(window._EXTRANET_MODE) return false;
   try{
@@ -180,10 +187,11 @@ async function loadFromSupabase(){
       )
     );
 
-    let anyData = false;
+    let anyData = false, anyError = false;
     for(const [dbKey, result] of results){
       if(result.error){
         console.warn(`Erreur chargement ${dbKey}:`, result.error.message);
+        anyError = true;
         continue;
       }
       if(result.data && result.data.length > 0){
@@ -198,6 +206,7 @@ async function loadFromSupabase(){
       if(el){ el.textContent = '☁️ Sync cloud active'; el.style.color = 'var(--green)'; }
       return true;
     }
+    _cloudVideConfirme = !anyError && !!_currentUser;
     return false;
   }catch(e){
     console.warn('Erreur Supabase loadFromSupabase:', e);

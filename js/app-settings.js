@@ -1643,9 +1643,14 @@ async function onAuthSuccess(user){
       renderCalendar();
       if(typeof renderProspection==='function') renderProspection();
       if(typeof renderMissions==='function') renderMissions();
-    } else {
-      // Première connexion → pousser les données locales
+    } else if(typeof _cloudVideConfirme !== 'undefined' && _cloudVideConfirme){
+      // Vraie première connexion (cloud vide, chargement réussi) → pousser
+      // les données locales.
       pushAllToSupabase();
+    } else {
+      // Chargement en échec : on n'écrase surtout pas le cloud avec la copie
+      // locale, qui peut être plus ancienne.
+      notify('⚠️ Chargement depuis le cloud impossible pour le moment — actualisez la page dans un instant.', 'warn');
     }
     // Enregistrer le client dans user_plans s'il n'existe pas encore.
     // Passe par le serveur (api/register-plan) car la policy RLS "Admin only"
