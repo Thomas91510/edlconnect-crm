@@ -104,7 +104,7 @@ test('prospection-cron : envoie le premier email aux nouveaux prospects des list
   assert.equal(res.status, 200);
   assert.equal(body.envoyes.nouveauxProspects, 1);
   assert.equal(mock.envois.length, 1);
-  assert.equal(mock.envois[0].templateId, 59);
+  assert.equal(mock.envois[0].templateId, 60);
   assert.equal(mock.envois[0].to[0].email, 'nouveau@agence.fr');
 
   const ligneProspect = mock.derniereLigne('nouveau@agence.fr');
@@ -162,7 +162,7 @@ test('prospection-cron : relance en J+4 un prospect stage 1 non cliqué, envoyé
   const body = await res.json();
 
   assert.equal(body.envoyes.relanceJ4, 1);
-  assert.equal(mock.envois[0].templateId, 57);
+  assert.equal(mock.envois[0].templateId, 61);
   const ligne = mock.derniereLigne('ancien@agence.fr');
   assert.equal(ligne.data.stage, 2);
   assert.ok(ligne.data.sentAt2);
@@ -213,7 +213,7 @@ test('prospection-cron : relance en J+6 un prospect stage 2 non cliqué, envoyé
   const body = await res.json();
 
   assert.equal(body.envoyes.relanceJ6, 1);
-  assert.equal(mock.envois[0].templateId, 58);
+  assert.equal(mock.envois[0].templateId, 62);
   const ligne = mock.derniereLigne('stage2@agence.fr');
   assert.equal(ligne.data.stage, 3);
 });
@@ -363,7 +363,7 @@ test('prospection-cron : contacte les vraies agences "À contacter" du pipeline 
   assert.equal(body.envoyes.dontPipeline, 1);
   assert.equal(mock.envois.length, 1);
   assert.equal(mock.envois[0].to[0].email, 'vitry@agence-test.fr');
-  assert.equal(mock.envois[0].templateId, 59);
+  assert.equal(mock.envois[0].templateId, 60);
   assert.equal(mock.derniereLigne('vitry@agence-test.fr').data.stage, 1);
 }));
 
@@ -442,7 +442,7 @@ test('prospection-cron : personnalise les relances avec le nom connu dans le CRM
   global.fetch = mock.fetchMock;
 
   await handler(requete('test-cron-secret'));
-  assert.equal(mock.envois[0].templateId, 57);
+  assert.equal(mock.envois[0].templateId, 61);
   assert.deepEqual(mock.envois[0].params, { AGENCE: 'Sixième Avenue Paris 4' });
 });
 
