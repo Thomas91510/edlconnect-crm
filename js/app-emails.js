@@ -56,7 +56,7 @@ function genererSignatureEmail(){
 
   const couleur = /^#[0-9a-fA-F]{6}$/.test(CFG.couleurPrimaire || '') ? CFG.couleurPrimaire : '#1A5FA8';
   const blocLogo = logo
-    ? `<td style="padding-right:16px;vertical-align:middle"><img src="${esc(logo)}" alt="${esc(nom||sousTitre)}" style="width:120px;max-height:70px;height:auto;display:block"></td>`
+    ? `<td style="padding-right:16px;vertical-align:middle"><img src="${esc(logo)}" alt="${esc(nom||sousTitre)}" height="72" style="height:72px;width:auto;max-width:150px;display:block"></td>`
     : '';
 
   return `
@@ -253,9 +253,11 @@ function emailHtmlPro(corps){
     return html;
   }).join('');
   // En-tête blanc épuré : le logo seul, centré (à défaut le nom de la
-  // société en couleur de marque), et un trait de couleur dessous.
+  // société en couleur de marque), et un trait de couleur dessous. Taille
+  // fixée par la HAUTEUR (largeur auto) : un logo carré ou rond garde ses
+  // proportions au lieu d'être écrasé en ovale.
   const bandeau = logo
-    ? `<img src="${esc(logo)}" alt="${esc(societe)}" width="96" style="width:96px;max-height:96px;max-width:240px;height:auto;display:inline-block">`
+    ? `<img src="${esc(logo)}" alt="${esc(societe)}" height="140" style="height:140px;width:auto;max-width:280px;display:inline-block">`
     : `<span style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:${couleur};letter-spacing:.01em">${esc(societe)}</span>`;
   const ligneAccroche = '';
   return `<!doctype html><html><body style="margin:0;padding:0;background:#F4F6F9">
