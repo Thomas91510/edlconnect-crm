@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.11';
+const APP_VERSION = '2.0.12';
 const NOUVEAUTES = [
+  { v:'2.0.12', titre:'Fenêtre des demandes d\u2019avis agrandie', texte:'La fenêtre des demandes d\u2019avis Google en attente est plus large : dates, adresses et locataires lisibles, et le bouton « Ne pas envoyer » (anciennement « Ignorer ») bien visible à côté de « Envoyer ».' },
   { v:'2.0.11', titre:'Même en-tête pour les emails automatiques', texte:'Confirmations de rendez-vous, rappels, demandes d\u2019avis automatiques, accusé de réservation et emails de bienvenue (agences, agents) : en-tête blanc avec votre logo seul et le trait de couleur, comme les emails envoyés depuis le CRM.' },
   { v:'2.0.10', titre:'Fin des emails allégée', texte:'Les modèles se terminent par « Bien cordialement, » sans la ligne « L\u2019équipe … » : la signature avec votre nom, votre logo et vos coordonnées suit directement. La rédaction IA fait de même.' },
   { v:'2.0.9', titre:'Signature des emails sans répétition', texte:'La signature n\u2019affiche plus deux fois la société ou l\u2019accroche quand elles figurent déjà dans votre texte de signature.' },
