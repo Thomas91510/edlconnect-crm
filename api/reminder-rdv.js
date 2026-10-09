@@ -268,7 +268,7 @@ export default async function handler(req) {
       if(!r.data) return false;
       const m = r.data;
       if(!m.date || !destinataireAvis(m)) return false;
-      if(m.avisEnvoye) return false;
+      if(m.avisEnvoye || m.avisIgnore) return false;
       if((m.statut || '').toLowerCase().includes('annul')) return false;
       return m.date.split('T')[0] === yesterdayStr;
     });
@@ -360,7 +360,7 @@ export default async function handler(req) {
       const m = r.data;
       if(!m.date || !destinataireAvis(m)) return false;
       if(!m.avisEnvoye) return false;      // la 1re demande doit avoir ete envoyee
-      if(m.avis2Envoye) return false;      // pas deja relance une 2e fois
+      if(m.avis2Envoye || m.avisIgnore) return false; // pas deja relance une 2e fois / ignoree
       if((m.statut || '').toLowerCase().includes('annul')) return false;
       return m.date.split('T')[0] === day3Str;
     });

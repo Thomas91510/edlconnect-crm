@@ -702,3 +702,91 @@ function filtrerAjustementsListe(){
 }
 
 // ─── CAMPAIGNS ────────────────────────────────────────────
+
+// ─── Demandes d'avis Google en attente (carte de l'accueil) ───────────
+// Le cron (api/reminder-rdv.js) n'envoie la demande d'avis que pour les
+// états des lieux de la VEILLE : un jour raté et la mission restait « en
+// attente » pour toujours. Ici on les liste pour les envoyer à la main, ou
+// les ignorer (trop anciennes).
+function missionsAvisEnAttente(){
+  const debutAuj = new Date(); debutAuj.setHours(0,0,0,0);
+  return (DB.missions || []).filter(m => m && m.date && m.locataireEmail && !m.avisEnvoye && !m.avisIgnore
+    && !String(m.statut || '').toLowerCase().includes('annul') && new Date(m.date) < debutAuj)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+const AVIS_RECENT_JOURS = 30;
+const _avisRecent = m => (Date.now() - new Date(m.date).getTime()) < AVIS_RECENT_JOURS * 86400000;
+function ouvrirAvisGoogle(){
+  if(!CFG.avisGoogleLien){
+    notify("⚠️ Renseignez d'abord votre lien d'avis Google dans Réglages › Profil.", 'warn');
+    return;
+  }
+  renderAvisGoogle();
+  openModal('modal-avis-google');
+}
+function renderAvisGoogle(){
+  const box = document.getElementById('avis-google-liste');
+  if(!box) return;
+  const liste = missionsAvisEnAttente();
+  const btnTous = document.getElementById('btn-avis-tous');
+  const nbRecents = liste.filter(_avisRecent).length;
+  if(btnTous){ btnTous.disabled = !nbRecents; btnTous.innerHTML = `<i class="ti ti-send"></i>Envoyer à tous (moins de 30 jours) · ${nbRecents}`; }
+  box.innerHTML = liste.length ? `<div style="overflow-x:auto"><table class="tbl tbl-dash"><thead><tr><th style="width:16%">Date</th><th>Adresse · locataire</th><th style="width:36%"></th></tr></thead><tbody>${liste.map(m => `<tr>
+      <td>${esc(new Date(m.date).toLocaleDateString('fr-FR'))}${_avisRecent(m) ? '' : '<div class="d-sous">plus de 30 j</div>'}</td>
+      <td><div class="d-titre" title="${esc(m.adresse || '')}">${esc(m.adresse || '—')}</div><div class="d-sous">${esc([m.locataireNom, m.locataireEmail].filter(Boolean).join(' · '))}</div></td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" onclick="envoyerDemandeAvis('${esc(m.id)}')"><i class="ti ti-send"></i>Envoyer</button> <button class="btn btn-sm" onclick="ignorerDemandeAvis('${esc(m.id)}')">Ignorer</button></td>
+    </tr>`).join('')}</tbody></table></div>` : '<div class="empty">Aucune demande d\u2019avis en attente 🎉</div>';
+}
+function _majAvisMission(m){
+  saveToStorage();
+  if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
+}
+async function envoyerDemandeAvis(id, silencieux){
+  const m = (DB.missions || []).find(x => String(x.id) === String(id));
+  if(!m || !m.locataireEmail) return false;
+  const t = TEMPLATES.avis_google;
+  let corps = remplacerPlaceholdersModele(t.body);
+  const nom = [m.locataireCivilite, m.locataireNom].filter(Boolean).join(' ');
+  if(nom) corps = corps.replace(/^Bonjour,/, 'Bonjour ' + nom + ',');
+  try{
+    const r = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ to: [{ email: m.locataireEmail }], subject: remplacerPlaceholdersModele(t.subj), htmlContent: emailHtmlPro(corps), textContent: corps }),
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+  }catch(e){
+    if(!silencieux) notify('⚠️ Envoi impossible pour ' + m.locataireEmail, 'warn');
+    return false;
+  }
+  m.avisEnvoye = new Date().toISOString();
+  m.avis2Envoye = true; // pas de relance automatique J+3 pour un envoi tardif
+  _majAvisMission(m);
+  if(!silencieux){ notify('✅ Demande d\u2019avis envoyée à ' + m.locataireEmail); renderAvisGoogle(); if(typeof renderDashboard === 'function') renderDashboard(); }
+  return true;
+}
+function ignorerDemandeAvis(id){
+  const m = (DB.missions || []).find(x => String(x.id) === String(id));
+  if(!m) return;
+  m.avisIgnore = true;
+  m.avisEnvoye = m.avisEnvoye || false;
+  m.avis2Envoye = true;
+  _majAvisMission(m);
+  renderAvisGoogle();
+  if(typeof renderDashboard === 'function') renderDashboard();
+}
+async function envoyerAvisRecents(){
+  const recents = missionsAvisEnAttente().filter(_avisRecent);
+  if(!recents.length) return;
+  if(!confirm(`Envoyer la demande d'avis Google à ${recents.length} locataire(s) ?`)) return;
+  const btn = document.getElementById('btn-avis-tous');
+  if(btn) btn.disabled = true;
+  let ok = 0;
+  for(const m of recents){
+    if(await envoyerDemandeAvis(m.id, true)) ok++;
+    await new Promise(r => setTimeout(r, 400));
+  }
+  notify(`✅ ${ok} demande(s) d'avis envoyée(s)` + (ok < recents.length ? ` — ${recents.length - ok} échec(s)` : ''), ok < recents.length ? 'warn' : undefined);
+  renderAvisGoogle();
+  if(typeof renderDashboard === 'function') renderDashboard();
+}

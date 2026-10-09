@@ -2133,6 +2133,17 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
   </div>
 </div>
 
+<div class="modal-bg" id="modal-avis-google">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-title">⭐ Demandes d'avis Google en attente</div>
+    <p style="font-size:13px;color:var(--text2);margin:0 0 12px">États des lieux passés dont la demande d'avis n'est jamais partie. « Envoyer » adresse au locataire l'email « Comment s'est passé votre état des lieux ? » avec votre lien d'avis ; « Ignorer » retire l'état des lieux de la liste sans rien envoyer (utile quand il est trop ancien).</p>
+    <div id="avis-google-liste"></div>
+    <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btn-avis-tous" onclick="envoyerAvisRecents()" style="margin-right:auto"><i class="ti ti-send"></i>Envoyer à tous (moins de 30 jours)</button>
+      <button class="btn" onclick="closeModal('modal-avis-google')">Fermer</button>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="modal-mission">
   <div class="modal">
     <div class="modal-title"><span id="modal-mission-title">Nouvelle mission EDL</span> <button class="modal-close" onclick="closeModal('modal-mission')"><i class="ti ti-x"></i></button></div>
