@@ -697,7 +697,7 @@ function closeMobileSidebar(){
 
 function openNewMissionModal(){
   _editMissionIdx=null;
-  document.getElementById('modal-mission-title').textContent='Nouvelle mission EDL';
+  document.getElementById('modal-mission-title').textContent='Nouvelle mission EDL';{const cb=document.getElementById('mission-confirm-rdv-btn');if(cb)cb.style.display='none';}
   const btn=document.getElementById('mission-save-btn');
   if(btn){btn.innerHTML='<i class="ti ti-check"></i>Enregistrer';btn.onclick=saveMission;}
   document.getElementById('m-agence').value='';
@@ -725,7 +725,7 @@ function closeModal(id){
   // Réinitialiser le modal mission si on le ferme en mode édition
   if(id==='modal-mission' && _editMissionIdx!==null){
     _editMissionIdx=null;
-    document.getElementById('modal-mission-title').textContent='Nouvelle mission EDL';
+    document.getElementById('modal-mission-title').textContent='Nouvelle mission EDL';{const cb=document.getElementById('mission-confirm-rdv-btn');if(cb)cb.style.display='none';}
     const btn=document.getElementById('mission-save-btn');
     if(btn){btn.innerHTML='<i class="ti ti-check"></i>Enregistrer';btn.onclick=saveMission;}
   }

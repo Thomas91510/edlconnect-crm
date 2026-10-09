@@ -2146,7 +2146,8 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
     </div>
     <label>Notes</label><textarea id="m-notes" style="min-height:50px"></textarea>
     <label>Avenant (lien du document, optionnel)</label><input id="m-avenant-url" placeholder="https://drive.google.com/...">
-    <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end">
+    <div style="margin-top:14px;display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn" id="mission-confirm-rdv-btn" onclick="confirmerRdvDepuisEdition()" style="display:none;margin-right:auto;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue)" title="Enregistre les modifications puis ouvre la confirmation du rendez-vous (convocations agence, locataire et agent)"><i class="ti ti-calendar-check"></i>Confirmer le RDV et envoyer les convocations</button>
       <button class="btn" onclick="closeModal('modal-mission')">Annuler</button>
       <button class="btn btn-primary" id="mission-save-btn" onclick="saveMission()"><i class="ti ti-check"></i>Enregistrer</button>
     </div>
