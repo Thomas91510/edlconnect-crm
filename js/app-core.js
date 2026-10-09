@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.12';
+const APP_VERSION = '2.0.13';
 const NOUVEAUTES = [
+  { v:'2.0.13', titre:'Demandes d\u2019avis : plusieurs locataires', texte:'Quand une mission contient plusieurs adresses email de locataires (« a@x.fr / b@y.fr »), la demande d\u2019avis part à chacune au lieu d\u2019échouer. En cas d\u2019erreur, le message indique la raison.' },
   { v:'2.0.12', titre:'Fenêtre des demandes d\u2019avis agrandie', texte:'La fenêtre des demandes d\u2019avis Google en attente est plus large : dates, adresses et locataires lisibles, et le bouton « Ne pas envoyer » (anciennement « Ignorer ») bien visible à côté de « Envoyer ».' },
   { v:'2.0.11', titre:'Même en-tête pour les emails automatiques', texte:'Confirmations de rendez-vous, rappels, demandes d\u2019avis automatiques, accusé de réservation et emails de bienvenue (agences, agents) : en-tête blanc avec votre logo seul et le trait de couleur, comme les emails envoyés depuis le CRM.' },
   { v:'2.0.10', titre:'Fin des emails allégée', texte:'Les modèles se terminent par « Bien cordialement, » sans la ligne « L\u2019équipe … » : la signature avec votre nom, votre logo et vos coordonnées suit directement. La rédaction IA fait de même.' },

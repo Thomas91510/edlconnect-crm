@@ -34,3 +34,10 @@ test('ignorer : retire de la liste sans envoi ni relance automatique', () => {
   assert.equal(m.avis2Envoye, true);
   assert.deepEqual(w.missionsAvisEnAttente().map(x => x.id), ['a']);
 });
+
+test('plusieurs adresses dans le champ email du locataire : chacune est reconnue', () => {
+  const w = preparer();
+  assert.deepEqual([...w.emailsLocataire({ locataireEmail: 'reno13@hotmail.fr /  aude.cano@gmail.com' })], ['reno13@hotmail.fr', 'aude.cano@gmail.com']);
+  assert.deepEqual([...w.emailsLocataire({ locataireEmail: 'FCLDENTAL@GMAIL.COM' })], ['fcldental@gmail.com']);
+  assert.deepEqual([...w.emailsLocataire({ locataireEmail: 'pas une adresse' })], []);
+});

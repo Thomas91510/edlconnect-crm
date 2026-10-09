@@ -741,9 +741,20 @@ function _majAvisMission(m){
   saveToStorage();
   if(typeof pushToSupabase === 'function') pushToSupabase('missions', m);
 }
+// Un champ email peut contenir plusieurs locataires (« a@x.fr / b@y.fr ») :
+// on garde chaque adresse valide, chacune reçoit la demande.
+function emailsLocataire(m){
+  return [...new Set(String((m && m.locataireEmail) || '').split(/[\s,;\/]+/)
+    .map(e => e.trim().toLowerCase()).filter(e => /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(e)))];
+}
 async function envoyerDemandeAvis(id, silencieux){
   const m = (DB.missions || []).find(x => String(x.id) === String(id));
   if(!m || !m.locataireEmail) return false;
+  const destinataires = emailsLocataire(m);
+  if(!destinataires.length){
+    if(!silencieux) notify('⚠️ Adresse email du locataire invalide (« ' + m.locataireEmail + ' ») : corrigez-la dans la mission.', 'warn');
+    return false;
+  }
   const t = TEMPLATES.avis_google;
   let corps = remplacerPlaceholdersModele(t.body);
   const nom = [m.locataireCivilite, m.locataireNom].filter(Boolean).join(' ');
@@ -752,17 +763,20 @@ async function envoyerDemandeAvis(id, silencieux){
     const r = await fetch('/api/send-email', {
       method: 'POST',
       headers: await _authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ to: [{ email: m.locataireEmail }], subject: remplacerPlaceholdersModele(t.subj), htmlContent: emailHtmlPro(corps), textContent: corps }),
+      body: JSON.stringify({ to: destinataires.map(email => ({ email })), subject: remplacerPlaceholdersModele(t.subj), htmlContent: emailHtmlPro(corps), textContent: corps }),
     });
-    if(!r.ok) throw new Error('HTTP ' + r.status);
+    if(!r.ok){
+      const d = await r.json().catch(() => ({}));
+      throw new Error((d && (d.message || d.error)) || ('HTTP ' + r.status));
+    }
   }catch(e){
-    if(!silencieux) notify('⚠️ Envoi impossible pour ' + m.locataireEmail, 'warn');
+    if(!silencieux) notify('⚠️ Envoi impossible pour ' + destinataires.join(', ') + ' — ' + (e.message || 'erreur'), 'warn');
     return false;
   }
   m.avisEnvoye = new Date().toISOString();
   m.avis2Envoye = true; // pas de relance automatique J+3 pour un envoi tardif
   _majAvisMission(m);
-  if(!silencieux){ notify('✅ Demande d\u2019avis envoyée à ' + m.locataireEmail); renderAvisGoogle(); if(typeof renderDashboard === 'function') renderDashboard(); }
+  if(!silencieux){ notify('✅ Demande d\u2019avis envoyée à ' + destinataires.join(', ')); renderAvisGoogle(); if(typeof renderDashboard === 'function') renderDashboard(); }
   return true;
 }
 function ignorerDemandeAvis(id){
