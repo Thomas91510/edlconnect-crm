@@ -26,6 +26,18 @@ function toggleMoisMissions(cle){
   renderMissions();
 }
 
+// Couleur du sélecteur de statut (remplace l'ancien badge + menu séparés).
+const STATUT_CLASSE={'planifiée':'b-blue','en cours':'b-amber','terminée':'b-teal','annulée':'b-red'};
+// Nom de l'agence plutôt que son email quand la fiche client est connue.
+function nomAgenceMission(m){
+  const brut=String(m.agence||'').trim();
+  const email=String(m.emailClient||(brut.includes('@')?brut:'')).trim().toLowerCase();
+  if(email){
+    const c=(DB.contacts||[]).find(x=>String(x.email||'').trim().toLowerCase()===email);
+    if(c&&(c.entreprise||c.contact)) return c.entreprise||c.contact;
+  }
+  return brut||email||'—';
+}
 function renderMissions(){
   const list=(UI.missionFilter==='all'?DB.missions:DB.missions.filter(m=>m.statut===UI.missionFilter))
     .slice()
@@ -36,7 +48,7 @@ function renderMissions(){
     });
 
   if(!list.length){
-    document.getElementById('missions-tbody').innerHTML='<tr><td colspan="10" class="empty">Aucune mission</td></tr>';
+    document.getElementById('missions-tbody').innerHTML='<tr><td colspan="8" class="empty">Aucune mission</td></tr>';
     return;
   }
 
@@ -73,29 +85,28 @@ function renderMissions(){
     const slug=slugMois(key);
     const chevron=replie?'▸':'▾';
     const header=`<tr class="mois-header" style="background:var(--bg2);cursor:pointer" onclick="toggleMoisMissions('${key}')" title="${replie?'Afficher':'Masquer'} les missions de ${group.label}">
-      <td colspan="10" style="font-weight:700;font-size:12px;padding:9px 10px">
+      <td colspan="8" style="font-weight:700;font-size:12px;padding:9px 10px">
         <span style="display:inline-block;width:14px;color:var(--text2);font-size:11px">${chevron}</span>📅 ${group.label} — ${group.items.length} mission${group.items.length>1?'s':''} · <span style="color:var(--blue)">${totalHT.toLocaleString('fr-FR')} € HT</span> · <span style="color:var(--green)">${totalTTC.toLocaleString('fr-FR')} € TTC</span>${replie?'<span style="color:var(--text3);font-weight:400;font-size:11px;margin-left:8px">(replié)</span>':''}
       </td></tr>`;
     if(replie) return header;
     const rows=group.items.map(m=>{
       const realIdx=DB.missions.indexOf(m);
+      const bien=[m.bienType,m.bienTypo,m.bienMeuble].filter(Boolean).join(' · ');
+      const agence=nomAgenceMission(m);
       return `<tr class="mrow-${slug}">
-      <td data-label="Agence" style="font-weight:600;font-size:11px">${esc(m.agence)}</td>
-      <td data-label="Adresse" style="font-size:10px;color:var(--text2)">${esc(m.adresse)||'—'}</td>
-      <td data-label="Type" style="font-size:10px">${esc(m.type)}</td>
-      <td data-label="Bien" style="font-size:10px;color:var(--text2)">${esc([m.bienType,m.bienTypo,m.bienMeuble].filter(Boolean).join(' · '))||'—'}</td>
-      <td data-label="Date" style="font-size:11px">${fmtDT(m.date)}</td>
-      <td data-label="Montant HT" style="font-weight:600;color:var(--blue)">${(m.montant||0).toLocaleString('fr-FR')} € <span style="font-size:9px;color:var(--text2)">HT</span></td>
-      <td data-label="TVA 20%" style="font-size:10px;color:var(--text2)">${fmtTVA(m.montant)}</td>
-      <td data-label="TTC" style="font-weight:600;color:var(--green)">${fmtTTC(m.montant)}</td>
-      <td data-label="Statut">${statusBadge(m.statut)}</td>
-      <td><select style="font-size:10px;padding:3px 5px;width:auto" onchange="updateMissionStatus(${realIdx},this.value)">
+      <td data-label="Agence" class="m-agence" title="${esc(m.agence||'')}">${esc(agence)}</td>
+      <td data-label="Adresse" class="m-adresse" title="${esc(m.adresse||'')}">${esc(m.adresse)||'—'}</td>
+      <td data-label="Type"><div class="m-type">${esc(m.type)||'—'}</div>${bien?`<div class="m-sous">${esc(bien)}</div>`:''}</td>
+      <td data-label="Date" class="m-date">${fmtDT(m.date)}</td>
+      <td data-label="HT" class="m-ht">${(m.montant||0).toLocaleString('fr-FR')} €</td>
+      <td data-label="TTC" class="m-ttc" title="TVA 20 % : ${esc(fmtTVA(m.montant))}">${fmtTTC(m.montant)}</td>
+      <td data-label="Statut"><select class="m-statut ${STATUT_CLASSE[m.statut]||'b-gray'}" onchange="updateMissionStatus(${realIdx},this.value)" title="Changer le statut">
         ${['planifiée','en cours','terminée','annulée'].map(s=>`<option${s===m.statut?' selected':''}>${s}</option>`).join('')}
       </select></td>
-      <td class="tbl-cards-actions" style="display:flex;gap:4px">
-        <button class="btn btn-sm" onclick="openConfirmRdvModal('${m.id}')" title="Confirmer le RDV et envoyer les convocations" style="padding:3px 7px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue)"><i class="ti ti-calendar-check" style="font-size:12px"></i></button>
-        <button class="btn btn-sm" onclick="editMission(${realIdx})" title="Modifier" style="padding:3px 7px"><i class="ti ti-edit" style="font-size:12px"></i></button>
-        <button class="btn btn-sm" onclick="deleteMission(${realIdx})" title="Supprimer" style="padding:3px 7px;color:var(--red-text);border-color:var(--red-text);background:var(--red-bg)"><i class="ti ti-trash" style="font-size:12px"></i></button>
+      <td class="tbl-cards-actions m-actions">
+        <button class="btn btn-sm" onclick="openConfirmRdvModal('${m.id}')" title="Confirmer le RDV et envoyer les convocations" style="background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue)"><i class="ti ti-calendar-check"></i></button>
+        <button class="btn btn-sm" onclick="editMission(${realIdx})" title="Modifier"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm" onclick="deleteMission(${realIdx})" title="Supprimer" style="color:var(--red-text);border-color:var(--red-text);background:var(--red-bg)"><i class="ti ti-trash"></i></button>
       </td>
     </tr>`;}).join('');
     return header+rows;
