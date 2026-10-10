@@ -13,7 +13,9 @@ async function chargerContratRgpd(){
   const headers = (typeof _currentUser !== 'undefined' && _currentUser) ? await _authHeaders({}) : {};
   const r = await fetch('/api/contrat-rgpd', { headers });
   if(!r.ok) throw new Error('Contrat indisponible');
-  _contratRgpd = await r.json();
+  const c = await r.json();
+  if(!c || !c.version || typeof c.html !== 'string') throw new Error('Contrat indisponible');
+  _contratRgpd = c;
   return _contratRgpd;
 }
 
@@ -53,7 +55,7 @@ function afficherContratRgpd(contrat, mode){
   document.getElementById('contrat-rgpd-intro').innerHTML = signature
     ? 'Pour utiliser le CRM, vous devez signer le contrat qui encadre le traitement des données de vos clients, locataires et agents par la plateforme (article 28 du RGPD). Une copie vous sera envoyée par email.'
     : (contrat.signature
-        ? `✅ Signé le ${esc(new Date(contrat.signature.date).toLocaleString('fr-FR'))} (version du ${esc(contrat.version.split('-').reverse().join('/'))}).`
+        ? `✅ Signé le ${esc(new Date(contrat.signature.date).toLocaleString('fr-FR'))} (version du ${esc(String(contrat.version || '').split('-').reverse().join('/'))}).`
         : 'Version en vigueur du contrat.');
   // Texte produit par le serveur à partir de constantes (api/_lib/contrat-rgpd.js), sans saisie utilisateur.
   document.getElementById('contrat-rgpd-texte').innerHTML = contrat.html;
@@ -141,7 +143,7 @@ function renderSectionContrat(){
   else statut = '<span style="color:var(--red-text);font-weight:600">À signer</span>';
   el.innerHTML = `
     <div class="settings-title"><i class="ti ti-file-certificate" style="font-size:18px"></i>Contrat de sous-traitance RGPD</div>
-    <p style="font-size:12.5px;color:var(--text2);margin:0 0 10px">Encadre le traitement des données de vos clients, locataires et agents par la plateforme (article 28 du RGPD).${c ? ' Version du ' + esc(c.version.split('-').reverse().join('/')) + '.' : ''}</p>
+    <p style="font-size:12.5px;color:var(--text2);margin:0 0 10px">Encadre le traitement des données de vos clients, locataires et agents par la plateforme (article 28 du RGPD).${c && c.version ? ' Version du ' + esc(String(c.version).split('-').reverse().join('/')) + '.' : ''}</p>
     <div style="font-size:13px;margin-bottom:10px">${statut}</div>
     <button type="button" class="btn" onclick="ouvrirContratRgpd()"><i class="ti ti-eye"></i>${c && c.actif && !c.exempt && !c.signature ? 'Lire et signer' : 'Lire le contrat'}</button>`;
 }
@@ -153,6 +155,7 @@ function renderSectionContrat(){
     const r = await fetch('/api/contrat-rgpd');
     if(!r.ok) return;
     const c = await r.json();
+    if(!c || !c.version) return;
     if(!_contratRgpd) _contratRgpd = c;
     const ligne = document.getElementById('signup-rgpd-ligne');
     if(ligne && c.actif) ligne.style.display = 'flex';

@@ -58,12 +58,6 @@ export default async function handler(req) {
 
   try {
     const { companyName } = await req.json();
-    // Générer le lien booking personnalisé
-    const agencySlug = (companyName||'').toLowerCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g,'')
-      .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-    const bookingLink = `https://app.lokentia.fr/booking?agency=${agencySlug}&name=${encodeURIComponent(companyName||'')}`;
-
     const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -71,7 +65,7 @@ export default async function handler(req) {
         'api-key': BREVO_KEY
       },
       body: JSON.stringify({
-        sender: { name: 'Thomas — Lokentia', email: 'contact@lokentia.fr' },
+        sender: { name: 'Lokentia', email: 'contact@lokentia.fr' },
         to: [{ email: recipientEmail }],
         subject: '👋 Bienvenue sur Lokentia — votre essai de 15 jours commence !',
         htmlContent: `
@@ -91,10 +85,10 @@ export default async function handler(req) {
               <div style="background:#F4F7FA;border-radius:8px;padding:16px;margin-bottom:24px">
                 <div style="font-weight:600;color:#1A5FA8;margin-bottom:8px">🚀 Pour bien démarrer :</div>
                 <div style="font-size:13px;color:#0C447C;line-height:1.8">
-                  ✅ Configurez votre profil dans <strong>Paramètres</strong><br>
-                  ✅ Ajoutez vos premiers contacts dans <strong>Contacts & Agences</strong><br>
-                  ✅ Créez votre première mission dans <strong>Missions EDL</strong><br>
-                  ✅ Connectez Brevo pour l'envoi d'emails
+                  ✅ Complétez votre profil dans <strong>Réglages › Profil & identité</strong> (logo, téléphone, signature)<br>
+                  ✅ Ajoutez vos agences clientes dans <strong>Clients</strong><br>
+                  ✅ Créez votre première mission dans <strong>Missions</strong><br>
+                  ✅ Vos emails partent automatiquement à votre nom : rien à configurer
                 </div>
               </div>
               <div style="text-align:center;margin-bottom:20px">
@@ -103,19 +97,17 @@ export default async function handler(req) {
                   Accéder à mon CRM →
                 </a>
               </div>
-              ${companyName ? `
               <div style="background:#EAF3DE;border-radius:8px;padding:16px;margin-bottom:20px">
-                <div style="font-weight:600;color:#3B6D11;margin-bottom:6px">🔗 Votre lien de réservation personnalisé</div>
-                <div style="font-size:12px;color:#27500A;margin-bottom:10px">Partagez ce lien à vos agences pour qu'elles puissent faire leurs demandes d'état des lieux directement :</div>
-                <a href="${bookingLink}" style="display:block;background:#fff;border:1px solid #3B6D11;border-radius:6px;padding:10px 14px;font-size:11px;color:#1A5FA8;text-decoration:none;word-break:break-all">${bookingLink}</a>
-              </div>` : ''}
+                <div style="font-weight:600;color:#3B6D11;margin-bottom:6px">🔗 Vos liens de réservation</div>
+                <div style="font-size:12px;color:#27500A">Chaque agence cliente a son lien de réservation personnel : copiez-le depuis sa fiche client (bouton « Lien booking ») et envoyez-le-lui. Ses demandes arrivent directement dans votre CRM.</div>
+              </div>
               <div style="background:#f8f8f6;border-radius:8px;padding:14px;font-size:13px;color:#6b6b6b;line-height:1.7">
-                <strong>Une question ?</strong> Je suis disponible pour vous aider à bien démarrer.<br>
+                <strong>Une question ?</strong> Nous sommes là pour vous aider à bien démarrer.<br>
                 📞 <a href="tel:0185460033" style="color:#1A5FA8">01 85 46 00 33</a> · 
                 ✉️ <a href="mailto:contact@lokentia.fr" style="color:#1A5FA8">contact@lokentia.fr</a>
               </div>
               <p style="font-size:12px;color:#999;text-align:center;margin-top:20px">
-                Thomas Langlade — Lokentia<br>
+                L'équipe Lokentia<br>
                 L'outil CRM pensé pour les experts en état des lieux
               </p>
             </div>
