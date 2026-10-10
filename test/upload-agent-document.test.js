@@ -101,10 +101,12 @@ test('dépôt réussi : upload dans le bucket et chemin rattaché à la bonne fi
   assert.equal(autreAgent.avenantPath, undefined);
 });
 
-test('agent introuvable dans les settings de l\'appelant : 404 après l\'upload', async () => {
-  global.fetch = fabriquerFetchMock({ agentsExistants: [{ id: 'autre-agent', nom: 'X' }] }).fn;
+test('agent introuvable dans les settings de l\'appelant : 404 SANS aucun dépôt de fichier', async () => {
+  const { fn, appels } = fabriquerFetchMock({ agentsExistants: [{ id: 'autre-agent', nom: 'X' }] });
+  global.fetch = fn;
   const resp = await handler(requete({ agentId: 'agent-inconnu' }));
   assert.equal(resp.status, 404);
+  assert.ok(!appels.upload, 'aucun fichier ne doit être écrit pour un agent d’un autre compte');
 });
 
 test('échec de l\'upload storage : 500 propre', async () => {

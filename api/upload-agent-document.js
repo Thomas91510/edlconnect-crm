@@ -83,6 +83,24 @@ export default async function handler(req) {
 
     const supaHeaders = { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` };
 
+    // L'agent doit appartenir AU COMPTE APPELANT (settings du compte) AVANT
+    // tout dépôt : sinon n'importe quel compte connecté pouvait écrire des
+    // PDF dans le dossier d'un agent d'un autre prestataire. Lecture puis
+    // écriture pour fusionner sans écraser le reste de settings.data.
+    const settingsResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/settings?select=data&user_id=eq.${encodeURIComponent(user.id)}`,
+      { headers: supaHeaders }
+    );
+    if (!settingsResp.ok) {
+      return new Response(JSON.stringify({ error: 'Impossible de lire la fiche agent' }), { status: 500, headers: cors });
+    }
+    const settingsRows = await settingsResp.json();
+    const data = (settingsRows[0] && settingsRows[0].data) || {};
+    const agents = Array.isArray(data.agents) ? data.agents.slice() : [];
+    const idx = agents.findIndex(a => a && a.id === agentId);
+    if (idx === -1) {
+      return new Response(JSON.stringify({ error: 'Agent introuvable' }), { status: 404, headers: cors });
+    }
     const chemin = `${encodeURIComponent(agentId)}/${type}-${Date.now()}.pdf`;
     const buf = await file.arrayBuffer();
     const uploadResp = await fetch(
@@ -93,23 +111,6 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'Échec du téléversement — le bucket "agent-documents" existe-t-il dans Supabase Storage ?' }), { status: 500, headers: cors });
     }
 
-    // Rattache le document à la fiche agent, dans les settings DU COMPTE
-    // APPELANT (jamais une autre agence) — lecture puis écriture pour
-    // fusionner sans écraser le reste de settings.data.
-    const settingsResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/settings?select=data&user_id=eq.${encodeURIComponent(user.id)}`,
-      { headers: supaHeaders }
-    );
-    if (!settingsResp.ok) {
-      return new Response(JSON.stringify({ error: 'Document déposé, mais impossible de mettre à jour la fiche agent' }), { status: 500, headers: cors });
-    }
-    const settingsRows = await settingsResp.json();
-    const data = (settingsRows[0] && settingsRows[0].data) || {};
-    const agents = Array.isArray(data.agents) ? data.agents.slice() : [];
-    const idx = agents.findIndex(a => a && a.id === agentId);
-    if (idx === -1) {
-      return new Response(JSON.stringify({ error: 'Document déposé, mais agent introuvable' }), { status: 404, headers: cors });
-    }
     agents[idx] = { ...agents[idx], [type + 'Path']: chemin };
 
     await fetch(`${SUPABASE_URL}/rest/v1/settings?user_id=eq.${encodeURIComponent(user.id)}`, {

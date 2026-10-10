@@ -8,7 +8,7 @@ const fenetres = new Map();
 const TAILLE_MAX_CARTE = 5000;
 
 export function ipAppelant(req) {
-  const xff = req.headers.get('x-forwarded-for') || '';
+  const xff = (req && req.headers && typeof req.headers.get === 'function' && req.headers.get('x-forwarded-for')) || '';
   return xff.split(',')[0].trim() || 'inconnu';
 }
 
