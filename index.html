@@ -1401,51 +1401,120 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
     <input type="text" placeholder="Rechercher dans l'aide…" oninput="searchHelp(this.value)" id="help-search">
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
-    <button class="btn btn-sm" onclick="scrollToHelp('h-dashboard')">📊 Dashboard</button>
-    <button class="btn btn-sm" onclick="scrollToHelp('h-contacts')">👥 Contacts</button>
-    <button class="btn btn-sm" onclick="scrollToHelp('h-prospection')">🎯 Prospection</button>
-    <button class="btn btn-sm" onclick="scrollToHelp('h-missions')">📋 Missions</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-dashboard')">🏠 Aujourd'hui</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-reservations')">📥 Réservations</button>
-    <button class="btn btn-sm" onclick="scrollToHelp('h-extranet')">🔑 Extranet</button>
-    <button class="btn btn-sm" onclick="scrollToHelp('h-agents')">👤 Agents</button>
-    <button class="btn btn-sm" onclick="scrollToHelp('h-emails')">✉️ Emails</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-missions')">📋 Missions</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-agenda')">📅 Agenda</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-contacts')">👥 Clients</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-extranet')">🔑 Espaces agences</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-prospection')">🎯 Prospection</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-emails')">✉️ Emails</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-agents')">👤 Agents</button>
+    <button class="btn btn-sm" onclick="scrollToHelp('h-reglages')">⚙️ Réglages</button>
     <button class="btn btn-sm" onclick="scrollToHelp('h-faq')">❓ FAQ</button>
   </div>
   <div id="help-content">
 
   <div class="settings-section" id="h-dashboard">
-    <div class="settings-title">📊 Dashboard</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Vue d'ensemble de toute votre activité commerciale.</p>
+    <div class="settings-title">🏠 Aujourd'hui</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">L'accueil du CRM : ce qui demande votre attention et les chiffres de votre activité.</p>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>KPIs principaux</strong> : Contacts, Missions, CA HT/TTC (cliquer pour basculer), Doublons<br>
-      <strong>Email tracking</strong> : Taux d'ouverture, clics, réponses, sans suite<br>
-      <strong>Filtrer par mois</strong> : menu déroulant en haut pour analyser une période précise<br>
-      <strong>Sync tout</strong> : synchronise contacts Brevo + cloud Supabase
+      <strong>À traiter</strong> → réservations à confirmer, doublons détectés, demandes d'avis Google en attente…<br>
+      <strong>Chiffres clés</strong> → contacts, missions du mois, états des lieux, CA, doublons<br>
+      <strong>Suivi des emails</strong> → envoyés, ouverts, cliqués, réponses, sans suite<br>
+      <strong>Filtrer par mois</strong> → menu en haut de page (« Tout » pour toute la période)<br>
+      <strong>Synchroniser</strong> → recharge vos données depuis le cloud<br>
+      <strong>Nouvelle mission</strong> → raccourci vers la création d'une mission
     </div>
     <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
-      ✅ Astuce : Cliquer sur HT/TTC dans le KPI CA pour basculer entre les deux affichages.
+      ✅ Astuce : cliquez sur le chiffre d'affaires pour basculer entre HT et TTC. Carte « Avis Google » › « Envoyer les demandes » pour relancer les locataires dont la demande d'avis n'est jamais partie.
+    </div>
+  </div>
+
+  <div class="settings-section" id="h-reservations">
+    <div class="settings-title">📥 Réservations</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Menu <strong>Missions › Réservations</strong> : les demandes d'état des lieux envoyées par vos agences.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>D'où viennent-elles ?</strong> → de l'extranet de l'agence ou de votre page de réservation publique <code>app.lokentia.fr/booking?agency=…</code><br>
+      <strong>Saisie manuelle</strong> → bouton « Saisie manuelle » pour une demande reçue par téléphone ou email<br>
+      <strong>Champs obligatoires</strong> → téléphone et email de chaque locataire, nom du propriétaire, superficie, date de l'entrée pour une sortie<br>
+      <strong>Pièces jointes</strong> → plusieurs fichiers possibles, en une ou plusieurs fois<br>
+      <strong>Confirmer</strong> → choisir date, heure et agent : le ou les locataires reçoivent leur convocation, la mission est créée et l'agence voit « Confirmé » dans son extranet<br>
+      <strong>Nouvelles demandes</strong> → pastille rouge dans le menu ; « 🔔 Activer » pour recevoir une notification
+    </div>
+    <div style="margin-top:10px;background:var(--blue-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--blue-text)">
+      ℹ️ Le nom et le mobile de l'agent choisi apparaissent dans la convocation. Un rappel est envoyé automatiquement avant le rendez-vous.
+    </div>
+  </div>
+
+  <div class="settings-section" id="h-missions">
+    <div class="settings-title">📋 Missions</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Menu <strong>Missions › Missions</strong> : tous vos états des lieux, planifiés ou réalisés.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Créer</strong> → « Nouvelle mission » → agence, type, adresse, date, bien (type, typologie, meublé), montant<br>
+      <strong>Modifier</strong> → icône ✏️ sur la ligne ; « Confirmer le RDV » s'y trouve pour une mission créée à la main<br>
+      <strong>Changer le statut</strong> → cliquer directement sur la pastille de statut<br>
+      <strong>Filtrer</strong> → Toutes / Planifiées / En cours / Terminées / Annulées<br>
+      <strong>Montants</strong> → le TTC est affiché, la TVA apparaît au survol
+    </div>
+    <div style="margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+      <div style="background:var(--blue-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--blue-text)">📅 <strong>Planifiée</strong></div>
+      <div style="background:var(--amber-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--amber-text)">⏳ <strong>En cours</strong></div>
+      <div style="background:var(--teal-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--teal-text)">🏁 <strong>Terminée</strong></div>
+      <div style="background:var(--red-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--red-text)">✕ <strong>Annulée</strong></div>
+    </div>
+    <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
+      ✅ Une mission terminée entre dans la rémunération de l'agent et peut déclencher la demande d'avis Google au locataire.
+    </div>
+  </div>
+
+  <div class="settings-section" id="h-agenda">
+    <div class="settings-title">📅 Agenda</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Menu <strong>Missions › Agenda</strong> : missions et rendez-vous dans un calendrier.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Affichage</strong> → « 7 jours » ou « Mois », navigation ← →, « Aujourd'hui » pour revenir à la date du jour<br>
+      <strong>Nouveau RDV</strong> → titre, date, durée, type<br>
+      <strong>Google Agenda</strong> → icône 📅 sur un événement pour l'ajouter à votre agenda
+    </div>
+    <div style="margin-top:10px;background:var(--blue-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--blue-text)">
+      ℹ️ Missions en <span style="color:var(--green);font-weight:600">vert</span>, RDV en <span style="color:var(--blue);font-weight:600">bleu</span>.
     </div>
   </div>
 
   <div class="settings-section" id="h-contacts">
-    <div class="settings-title">👥 Contacts & Agences</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Centralisez tous vos contacts professionnels.</p>
+    <div class="settings-title">👥 Clients & Rapports</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Menu <strong>Clients</strong> : vos agences, partenaires et cibles.</p>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Ajouter</strong> → bouton "+ Nouveau contact"<br>
-      <strong>Ouvrir une fiche</strong> → cliquer sur une ligne (4 onglets : Infos, Commandes, Emails, Modifier)<br>
-      <strong>Filtrer</strong> → Tous / Clients actifs / Cibles / Brevo / Doublons<br>
-      <strong>Rechercher</strong> → barre de recherche (nom, email, entreprise)<br>
-      <strong>Envoyer un email</strong> → icône ✉️ à droite de chaque ligne
+      <strong>Ajouter</strong> → « Nouveau client »<br>
+      <strong>Filtrer</strong> → Tous / Clients actifs / Cibles / Brevo / Doublons, ou barre de recherche<br>
+      <strong>Fiche client</strong> → cliquer sur une ligne : Informations, Commandes (avec les rapports), Tâches, Messages, Documents, Emails & tracking<br>
+      <strong>Email groupé</strong> → cocher plusieurs clients → « Envoyer un email »<br>
+      <strong>Doublons</strong> → lignes en orange ; filtre « Doublons » pour les fusionner<br>
+      <strong>Rapports</strong> → onglet <strong>Clients › Rapports</strong> : tous les rapports d'état des lieux, classés par client, avec recherche par adresse ou locataire
     </div>
     <div style="margin-top:10px;background:var(--blue-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--blue-text)">
-      ℹ️ Le statut passe automatiquement en "Client actif" quand vous créez une mission liée au contact.
+      ℹ️ Les rapports s'ajoutent à la main : fiche client › Documents (nom + lien). Ils apparaissent alors dans la fiche et dans l'extranet de l'agence.
+    </div>
+  </div>
+
+  <div class="settings-section" id="h-extranet">
+    <div class="settings-title">🔑 Espaces agences (extranet)</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Chaque agence cliente peut avoir son espace pour commander et suivre ses états des lieux.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Activer un espace</strong> → fiche client › interrupteur « Espace extranet activé », ou page <strong>Espaces agences</strong> › « Activer l'espace d'un autre client »<br>
+      <strong>Email de bienvenue</strong> → proposé quand vous passez le client en « Client signé ✅ »<br>
+      <strong>Connexion de l'agence</strong> → <code>app.lokentia.fr/extranet</code>, par lien reçu par email (aucun mot de passe)<br>
+      <strong>Ce que voit l'agence</strong> → prochains rendez-vous, suivi de ses états des lieux, rapports, documents, messages, formulaire de commande<br>
+      <strong>Voir comme l'agence</strong> → page Espaces agences › ouvrir un espace en lecture seule (dépannage, paramétrage)
+    </div>
+    <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
+      ✅ Une agence dont l'espace est désactivé ne peut plus se connecter. Chaque agence ne voit que ses propres commandes.
     </div>
   </div>
 
   <div class="settings-section" id="h-prospection">
-    <div class="settings-title">🎯 Pipeline de Prospection</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Le pipeline commercial et la prospection ne font plus qu'un : suivez vos prospects à travers 9 étapes, de la prise de contact jusqu'au client gagné (ou perdu).</p>
+    <div class="settings-title">🎯 Prospection</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Suivez vos prospects à travers 9 étapes, de la prise de contact jusqu'au client gagné (ou perdu).</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
       <div style="background:#F1F0EC;border-left:3px solid #888780;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#888780;font-weight:500">À contacter</div>
       <div style="background:#F4F7FA;border-left:3px solid #1A5FA8;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#1A5FA8;font-weight:500">Email envoyé</div>
@@ -1458,124 +1527,89 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <div style="background:#FCEBEB;border-left:3px solid #A32D2D;padding:6px 8px;border-radius:var(--radius);font-size:11px;color:#A32D2D;font-weight:500">Perdu ❌</div>
     </div>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Déplacer</strong> → boutons → sur chaque carte prospect<br>
-      <strong>Modifier / voir la fiche contact liée</strong> → cliquer sur la carte<br>
-      <strong>Supprimer</strong> → bouton ✕ en haut à droite de la carte<br>
-      <strong>Analyse CA</strong> → bouton en haut pour voir le CA des prospects Gagnés
+      <strong>Ajouter</strong> → « Ajouter un prospect », ou « Sync contacts » pour reprendre vos clients<br>
+      <strong>Déplacer</strong> → boutons → sur chaque carte<br>
+      <strong>Modifier / voir la fiche liée</strong> → cliquer sur la carte<br>
+      <strong>Supprimer</strong> → ✕ en haut à droite de la carte<br>
+      <strong>Analyse CA</strong> → CA mensuel, trimestriel, annuel projeté et prévisionnel pondéré
     </div>
     <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
-      ✅ Astuce : quand un prospect passe en "Gagné", renseignez le CA mensuel — il compte directement dans l'Analyse CA, plus besoin de le ressaisir ailleurs. En "Perdu", vous pouvez indiquer le motif pour garder une trace.
-    </div>
-  </div>
-
-  <div class="settings-section" id="h-missions">
-    <div class="settings-title">📋 Missions EDL</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Planifiez et suivez tous vos états des lieux.</p>
-    <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Créer</strong> → "+ Nouvelle mission" → agence, type, adresse, date, montant<br>
-      <strong>Modifier</strong> → icône ✏️ à droite de la ligne<br>
-      <strong>Supprimer</strong> → icône 🗑️ à droite de la ligne<br>
-      <strong>Changer le statut</strong> → menu déroulant directement dans le tableau
-    </div>
-    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-      <div style="background:var(--blue-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--blue-text)">📅 <strong>Planifiée</strong> — Mission programmée</div>
-      <div style="background:var(--amber-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--amber-text)">⏳ <strong>En cours</strong> — En réalisation</div>
-      <div style="background:var(--teal-bg);padding:8px;border-radius:var(--radius);font-size:11px;color:var(--teal-text)">🏁 <strong>Terminée</strong> — Réalisée</div>
+      ✅ Astuce : en « Gagné », renseignez le CA mensuel — il compte directement dans l'Analyse CA. En « Perdu », notez le motif pour garder une trace.
     </div>
   </div>
 
   <div class="settings-section" id="h-emails">
     <div class="settings-title">✉️ Emails & Campagnes</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Envoyez et trackez vos emails via Brevo.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Menu <strong>Emails</strong> : écrivez à vos clients et suivez ouvertures et clics.</p>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Envoyer</strong> → Composer → destinataire → message → "Envoyer via Brevo"<br>
-      <strong>Modèles</strong> → 11 modèles disponibles (bouton "Modèle" ou liste à droite)<br>
-      <strong>IA</strong> → bouton "✨ Rédiger avec IA" → décrire l'email souhaité<br>
-      <strong>Annuler</strong> → bouton Annuler dans le toast (15 secondes)<br>
-      <strong>Tracking</strong> → liste à droite du Composer + fiche contact → onglet Emails
+      <strong>Écrire</strong> → destinataire, objet, message, pièce jointe (25 Mo max) → « Aperçu » puis « Envoyer »<br>
+      <strong>Modèles rapides</strong> → Prospection, Missions, Fidélisation : un clic remplit l'email<br>
+      <strong>Rédiger avec l'IA</strong> → décrivez l'email souhaité → « Générer »<br>
+      <strong>Campagnes</strong> → onglet Campagnes : un même email à un segment (tous, cibles, clients actifs, contacts Brevo)<br>
+      <strong>Suivi</strong> → panneau « Suivi des envois » (30 derniers jours) et fiche client › Emails & tracking
     </div>
     <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
-      ✅ La rédaction IA est assurée par le serveur (Mistral, gratuit, ou Claude si une clé Anthropic est configurée), sans clé à saisir.
-    </div>
-  </div>
-
-  <div class="settings-section" id="h-agenda">
-    <div class="settings-title">📅 Agenda</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Visualisez RDV et missions dans un calendrier.</p>
-    <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Vue semaine</strong> → 7 jours glissants, navigation ← →<br>
-      <strong>Vue mois</strong> → grille mensuelle complète<br>
-      <strong>Nouveau RDV</strong> → bouton "+ Nouveau RDV" → titre, date, durée, type<br>
-      <strong>Google Agenda</strong> → icône 📅 sur chaque événement pour l'ajouter en 1 clic<br>
-      <strong>Aujourd'hui</strong> → bouton pour revenir à la période actuelle
-    </div>
-    <div style="margin-top:10px;background:var(--blue-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--blue-text)">
-      ℹ️ Missions en <span style="color:var(--green);font-weight:600">vert</span>, RDV en <span style="color:var(--blue);font-weight:600">bleu</span> dans le calendrier.
-    </div>
-  </div>
-
-  <div class="settings-section" id="h-reservations">
-    <div class="settings-title">📥 Réservations entrantes</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Recevez et gérez les demandes d'état des lieux de vos agences clientes.</p>
-    <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Lien de réservation</strong> → à communiquer à chaque agence : <code>app.lokentia.fr/booking?agency=XXX</code><br>
-      <strong>Nouvelle demande</strong> → apparaît automatiquement dans l'onglet Réservations avec une alerte sonore<br>
-      <strong>Confirmer un RDV</strong> → bouton "Confirmer" → choisir date, heure, agent → envoie la convocation au(x) locataire(s)<br>
-      <strong>Importer en mission</strong> → bouton "Importer" → crée automatiquement une mission dans l'onglet Missions<br>
-      <strong>Plusieurs locataires</strong> → le formulaire permet d'ajouter plusieurs locataires, chacun reçoit sa convocation<br>
-      <strong>Actualisation auto</strong> → toutes les 2 minutes, avec notification push si activée
-    </div>
-    <div style="margin-top:10px;background:var(--blue-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--blue-text)">
-      ℹ️ L'agent EDL qui se déplace peut être sélectionné lors de la confirmation — ses coordonnées apparaissent dans la convocation.
-    </div>
-  </div>
-
-  <div class="settings-section" id="h-extranet">
-    <div class="settings-title">🔑 Extranet client</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Offrez à vos agences clientes un espace personnel pour suivre leurs commandes.</p>
-    <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Activer pour un client</strong> → passer le contact en statut "Client signé ✅" → il reçoit un email de bienvenue avec son lien<br>
-      <strong>Lien d'accès</strong> → <code>app.lokentia.fr/extranet</code> → connexion par lien magique (sans mot de passe)<br>
-      <strong>Ce que voit le client</strong> → ses commandes avec statuts, statistiques annuelles, formulaire nouvelle commande, documents<br>
-      <strong>Ajouter des documents</strong> → fiche contact → onglet "Modifier" → section "Documents extranet" → coller l'URL Google Drive<br>
-      <strong>Statuts synchronisés</strong> → quand vous confirmez un RDV, le client voit "Confirmé" dans son espace automatiquement
-    </div>
-    <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
-      ✅ Astuce : Le client peut passer commande directement depuis son extranet sans chercher son lien de réservation.
+      ✅ Aucune clé à saisir : les emails partent par le compte de la plateforme, avec votre logo, vos couleurs et votre signature (Réglages › Profil & identité).
     </div>
   </div>
 
   <div class="settings-section" id="h-agents">
     <div class="settings-title">👤 Agents EDL</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Gérez les experts qui réalisent les états des lieux sur le terrain.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Les experts qui réalisent les états des lieux sur le terrain.</p>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Ajouter un agent</strong> → Paramètres → section "Agents EDL" → nom + mobile → "Ajouter cet agent"<br>
-      <strong>Assigner à un RDV</strong> → lors de la confirmation d'un RDV → menu "Expert EDL qui se déplace"<br>
-      <strong>Dans la convocation</strong> → le nom et le mobile de l'agent apparaissent automatiquement dans l'email du locataire
+      <strong>Ajouter un agent</strong> → Réglages › Agents EDL → nom, mobile, email, secteurs (codes postaux) → il reçoit automatiquement le lien de son espace<br>
+      <strong>Rémunération</strong> → dans la fiche agent : grille par bien (« Charger la grille du contrat 2026 »), forfait par type d'EDL ou pourcentage, plus frais de déplacement par zone<br>
+      <strong>Paiements</strong> → Réglages › Agents EDL › Rémunérations : reste à payer, case « Payée » par mission<br>
+      <strong>Assigner</strong> → à la confirmation d'une réservation ou dans la mission<br>
+      <strong>Espace agent</strong> → <code>app.lokentia.fr/agent</code>, connexion par lien reçu par email : ses missions, itinéraires, sa rémunération et ses factures
+    </div>
+    <div style="margin-top:10px;background:var(--blue-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--blue-text)">
+      ℹ️ L'agent prépare sa facture mensuelle depuis son espace (pré-remplie avec ses missions) ; vous la retrouvez dans les Rémunérations.
+    </div>
+  </div>
+
+  <div class="settings-section" id="h-reglages">
+    <div class="settings-title">⚙️ Réglages</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Tout le paramétrage, rangé par rubrique.</p>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+      <strong>Profil & identité</strong> → nom de la société, accroche, coordonnées, logo, couleurs, signature et identité légale<br>
+      <strong>Équipe & droits</strong> → droits de l'assistante, et « voir comme l'assistante » pour vérifier ce qu'elle voit<br>
+      <strong>Agents EDL</strong> → fiches agents, barème de déplacement, rémunérations<br>
+      <strong>Intégrations</strong> → rédaction des emails par IA (rien à configurer)<br>
+      <strong>Sécurité</strong> → double authentification (application type Google Authenticator)<br>
+      <strong>Sauvegarde</strong> → « Sauvegarder maintenant » et « Télécharger une sauvegarde »<br>
+      <strong>Mon compte</strong> → télécharger toutes vos données ou supprimer votre compte<br>
+      <strong>Contrat RGPD</strong> → le contrat de sous-traitance signé à l'inscription<br>
+      <strong>À propos & version</strong> → numéro de version et nouveautés
+    </div>
+    <div style="margin-top:10px;background:var(--green-bg);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--green-text)">
+      ✅ Conseil : activez la double authentification — elle protège les données de vos clients, locataires et agents.
     </div>
   </div>
 
   <div class="settings-section" id="h-faq">
     <div class="settings-title">❓ FAQ</div>
     <div style="font-size:11px;color:var(--text2);line-height:1.8">
-      <strong>Q : Comment envoyer un email via Brevo ?</strong><br>
-      R : Composer → destinataire → message → "Envoyer via Brevo". Clé API Brevo requise dans Paramètres.<br><br>
-      <strong>Q : Comment voir les emails envoyés à un contact ?</strong><br>
-      R : Fiche contact → onglet "Emails & tracking" → historique de tous les emails envoyés via Lokentia.<br><br>
       <strong>Q : Mes données sont-elles sauvegardées ?</strong><br>
-      R : Oui, via Supabase (cloud) + localStorage. Faire des sauvegardes JSON régulières via "💾 Sauvegarder".<br><br>
+      R : Oui. Elles sont synchronisées dans le cloud et une copie complète est faite automatiquement chaque nuit (conservée 30 jours). Vous recevez un email si une sauvegarde échoue. Réglages › Sauvegarde pour en lancer une ou télécharger une copie.<br><br>
+      <strong>Q : Faut-il une clé Brevo pour envoyer des emails ?</strong><br>
+      R : Non. Les emails partent automatiquement par le compte de la plateforme.<br><br>
+      <strong>Q : Comment voir les emails envoyés à un client ?</strong><br>
+      R : Fiche client › onglet « Emails & tracking » : historique, ouvertures et clics mis à jour automatiquement.<br><br>
+      <strong>Q : Comment donner accès à l'extranet à une agence ?</strong><br>
+      R : Activez son espace (interrupteur dans la fiche client) puis passez-la en « Client signé ✅ » pour lui envoyer l'email de bienvenue avec son lien.<br><br>
+      <strong>Q : Une agence peut-elle voir les commandes des autres ?</strong><br>
+      R : Non, chaque agence ne voit que ses propres commandes.<br><br>
+      <strong>Q : Comment ajouter un rapport ou un document pour une agence ?</strong><br>
+      R : Fiche client › Documents → nom + lien → Enregistrer. Il apparaît aussi dans son extranet.<br><br>
       <strong>Q : Comment fusionner les doublons ?</strong><br>
-      R : Sync Brevo → "Fusionner tous les doublons". Ou Contacts → filtre "Doublons".<br><br>
-      <strong>Q : Le CRM fonctionne sur mobile ?</strong><br>
-      R : Oui ! Menu ☰ en haut à gauche, navigation rapide en bas de l'écran.<br><br>
-      <strong>Q : Comment envoyer le lien extranet à un client ?</strong><br>
-      R : Passez le contact en "Client signé ✅" → il reçoit automatiquement un email avec son lien d'accès.<br><br>
-      <strong>Q : Le client peut-il voir les commandes des autres agences ?</strong><br>
-      R : Non, chaque client ne voit que ses propres commandes — l'isolation est garantie par son email de connexion.<br><br>
-      <strong>Q : Comment ajouter un document pour un client dans l'extranet ?</strong><br>
-      R : Fiche contact → Modifier → "Documents extranet" → coller le nom + l'URL Google Drive → Enregistrer.<br><br>
-      <strong>Q : Comment sauvegarder mes données ?</strong><br>
-      R : Bouton "💾 Sauvegarder" en bas du menu de gauche → télécharge un fichier JSON complet. À faire toutes les semaines.
+      R : Clients → filtre « Doublons » (lignes en orange), ou carte « Doublons » de l'accueil.<br><br>
+      <strong>Q : J'ai oublié mon mot de passe.</strong><br>
+      R : Lien « Mot de passe oublié » sur l'écran de connexion : vous recevez un email pour en choisir un nouveau (8 caractères minimum).<br><br>
+      <strong>Q : Le CRM fonctionne-t-il sur mobile ?</strong><br>
+      R : Oui : menu ☰ en haut à gauche et barre de navigation rapide en bas de l'écran.<br><br>
+      <strong>Q : Comment savoir ce qui a changé ?</strong><br>
+      R : Réglages › À propos & version : liste des nouveautés de chaque version.
     </div>
   </div>
 
@@ -1634,11 +1668,25 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       </div>
       <!-- Tableau clients -->
       <div class="card">
-        <div class="card-head">Comptes clients</div>
+        <div class="card-head">Abonnés du CRM</div>
         <div style="overflow-x:auto">
           <table class="tbl" style="min-width:700px">
-            <thead><tr><th>Email</th><th>Plan</th><th>Statut</th><th>Expiration</th><th>Inscription</th><th>Notes</th><th></th></tr></thead>
+            <thead><tr><th>Email</th><th>Plan</th><th>Statut</th><th>Expiration</th><th>Inscription</th><th>Notes</th><th>Accès</th><th></th></tr></thead>
             <tbody id="admin-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Agences connectées à leur extranet : comptées à part, accès géré dans Espaces agences -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span>Comptes agences (extranet)</span>
+          <button class="btn btn-sm" onclick="nav('espaces')"><i class="ti ti-building-store"></i>Gérer dans Espaces agences</button>
+        </div>
+        <div style="font-size:11.5px;color:var(--text2);padding:0 14px 8px">Agences connectées à leur extranet : elles ne sont pas des abonnés et ne comptent pas dans les chiffres ci-dessus. Leur accès s'active ou se coupe dans Espaces agences.</div>
+        <div style="overflow-x:auto">
+          <table class="tbl" style="min-width:500px">
+            <thead><tr><th>Email</th><th>Première connexion</th><th>Dernière connexion</th></tr></thead>
+            <tbody id="admin-agences-tbody"></tbody>
           </table>
         </div>
       </div>

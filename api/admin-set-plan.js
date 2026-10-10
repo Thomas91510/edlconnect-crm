@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 const PLANS_VALIDES = ['free', 'starter', 'pro'];
-const STATUTS_VALIDES = ['active', 'suspended', 'expired', 'signed'];
+const STATUTS_VALIDES = ['active', 'suspended', 'expired', 'signed', 'disabled'];
 const ROLES_VALIDES = ['expert', 'agence'];
 
 // Colonnes reellement presentes dans user_plans :
@@ -87,30 +87,38 @@ export default async function handler(req) {
     // On recupere aussi le role actuel pour ne pas le perdre lors de l'upsert.
     let targetUserId = userId || null;
     let roleExistant = null;
+    let statutExistant = null;
 
     const filtre = targetUserId
       ? 'user_id=eq.' + encodeURIComponent(targetUserId)
       : 'email=eq.' + encodeURIComponent(emailPropre);
 
     const lookupResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_plans?select=user_id,role&${filtre}`,
+      `${SUPABASE_URL}/rest/v1/user_plans?select=user_id,role,status&${filtre}`,
       { headers: svcHeaders }
     );
     const rows = lookupResp.ok ? await lookupResp.json() : [];
     if (rows && rows[0]) {
       targetUserId = targetUserId || rows[0].user_id;
       roleExistant = rows[0].role || null;
+      statutExistant = rows[0].status || null;
     }
 
     if (!targetUserId) {
       return new Response(JSON.stringify({ error: 'Utilisateur non trouvé — il doit se connecter au moins une fois' }), { status: 404, headers });
     }
 
+    // « disabled » va de pair avec le bannissement Supabase Auth posé par
+    // api/admin-compte.js : seul l'interrupteur de l'onglet Plateforme le
+    // pose ou le lève, sinon le statut affiché contredirait l'accès réel.
+    const statutEcrit = statutExistant === 'disabled' ? 'disabled'
+      : (statutFinal === 'disabled' ? (statutExistant || 'active') : statutFinal);
+
     const row = {
       user_id: targetUserId,
       email: emailPropre,
       plan: planFinal,
-      status: statutFinal,
+      status: statutEcrit,
       notes: notes || null,
       expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       role: role || roleExistant || 'expert'

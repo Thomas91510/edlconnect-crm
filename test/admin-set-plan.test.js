@@ -114,3 +114,32 @@ test('admin-set-plan : renvoie 502 si l\'upsert échoue côté Supabase', async 
   const res = await handler(requete({ email: 'x@x.fr', plan: 'pro' }));
   assert.equal(res.status, 502);
 });
+
+// « disabled » suit le bannissement posé par api/admin-compte.js : la
+// fenêtre « Modifier le plan » ne doit ni le poser ni le lever.
+function mockStatut(statutExistant) {
+  const ecrit = {};
+  global.fetch = async (url, opts = {}) => {
+    const u = String(url);
+    if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ id: 'caller', email: 'contact@edl-idf.com' }) };
+    if (u.includes('user_plans?select=')) return { ok: true, json: async () => [{ user_id: 'u42', role: 'expert', status: statutExistant }] };
+    if (u.includes('user_plans?on_conflict')) { Object.assign(ecrit, JSON.parse(opts.body)); return { ok: true }; }
+    throw new Error('URL inattendue ' + u);
+  };
+  return ecrit;
+}
+
+test('admin-set-plan : un compte désactivé le reste quand on modifie son plan', async () => {
+  const ecrit = mockStatut('disabled');
+  const res = await handler(requete({ userId: 'u42', email: 'x@x.fr', plan: 'pro', status: 'active' }));
+  assert.equal(res.status, 200);
+  assert.equal(ecrit.plan, 'pro');
+  assert.equal(ecrit.status, 'disabled');
+});
+
+test('admin-set-plan : « disabled » ne peut pas être posé depuis la fenêtre du plan', async () => {
+  const ecrit = mockStatut('active');
+  const res = await handler(requete({ userId: 'u42', email: 'x@x.fr', plan: 'free', status: 'disabled' }));
+  assert.equal(res.status, 200);
+  assert.equal(ecrit.status, 'active');
+});

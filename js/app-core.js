@@ -51,9 +51,12 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.22';
+const APP_VERSION = '2.0.26';
 const NOUVEAUTES = [
-  { v:'2.0.22', titre:'Campagnes enregistrées dans le cloud', texte:'Vos campagnes d\u2019emails sont maintenant sauvegardées dans le cloud et retrouvées sur tous vos appareils. Sur l\u2019accueil, la carte Missions indique « au total » ou « sur le mois » selon la période choisie.' },
+  { v:'2.0.26', titre:'Campagnes enregistrées dans le cloud', texte:'Vos campagnes d\u2019emails sont maintenant sauvegardées dans le cloud et retrouvées sur tous vos appareils. Sur l\u2019accueil, la carte Missions indique « au total » ou « sur le mois » selon la période choisie.' },
+  { v:'2.0.25', titre:'Plateforme : abonnés et agences séparés', texte:'Onglet Plateforme (administrateur) : les abonnés du CRM et les agences connectées à leur extranet sont listés séparément ; les chiffres (abonnés, plans, MRR, conversion) ne comptent plus que les abonnés. Les comptes inscrits sans plan apparaissent désormais.' },
+  { v:'2.0.24', titre:'Gestion des comptes de la plateforme', texte:'Onglet Plateforme (administrateur) : interrupteur pour désactiver ou réactiver un compte (connexion bloquée, données conservées) et bouton de suppression définitive. Un compte désactivé voit un message clair à la connexion.' },
+  { v:'2.0.23', titre:'Aide mise à jour', texte:'La page Aide suit le menu actuel (Aujourd\u2019hui, Réservations, Missions, Agenda, Clients et rapports, Espaces agences, Prospection, Emails, Agents, Réglages) et sa FAQ ne mentionne plus la clé Brevo ni l\u2019ancien bouton de sauvegarde. L\u2019onglet Plateforme charge les comptes dès son ouverture.' },
   { v:'2.0.21', titre:'Emails Lokentia', texte:'Les emails de bienvenue et de fin d\u2019essai affichent le téléphone et l\u2019email de Lokentia (01 85 46 00 33 · contact@lokentia.fr).' },
   { v:'2.0.19', titre:'Mon compte, mot de passe oublié', texte:'Réglages › Mon compte : téléchargez toutes vos données ou supprimez votre compte. Le lien « mot de passe oublié » ouvre désormais l\u2019écran de choix du nouveau mot de passe (8 caractères minimum). Plus de clé Brevo à saisir : vos emails partent automatiquement.' },
   { v:'2.0.18', titre:'Sauvegarde surveillée, sécurité renforcée', texte:'La sauvegarde quotidienne a son propre horaire (4 h, heure de Paris) et vous recevez un email si elle échoue ou manque. Page de réservation, dépôts de fichiers et pages du CRM mieux protégés. Les logos SVG ne sont plus acceptés (PNG, JPG ou WebP).' },
