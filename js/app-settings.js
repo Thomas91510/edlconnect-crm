@@ -1279,10 +1279,11 @@ function getPlanBadge(plan, status){
 async function loadAdminData(){
   if(!isAdmin()){ notify('Accès refusé','err'); return; }
   try{
-    const { data: plans } = await supabaseClient
+    const { data: plans, error } = await supabaseClient
       .from('user_plans')
       .select('*')
       .order('created_at', { ascending: false });
+    if(error) throw error;
 
     const list = plans || [];
     const active = list.filter(p=>p.status==='active');

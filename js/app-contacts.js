@@ -671,6 +671,7 @@ function nav(v){
   if(v==='agenda')renderCalendar();
   if(v==='reservations')loadReservations();
   if(v!=='reservations' && _resaAutoRefreshInterval) silentRefreshReservations();
+  if(v==='admin' && typeof loadAdminData==='function')loadAdminData();
   if(v==='settings'){loadSettingsForm(); if(typeof renderReglagesV2==='function') renderReglagesV2();}
   if(v==='help'){}
   // Barre mobile : les rubriques sans raccourci allument "Plus".
