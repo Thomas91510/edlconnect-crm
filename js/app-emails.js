@@ -551,7 +551,7 @@ function sendCampaign(){
   if(seg.includes('Cibles'))count=DB.contacts.filter(c=>c.statut==='Cible potentielle').length;
   else if(seg.includes('Clients'))count=DB.contacts.filter(c=>c.statut==='Client actif').length;
   else if(seg.includes('Brevo'))count=DB.contacts.filter(c=>c.presence==='brevo'||c.presence==='both').length;
-  DB.campaigns.unshift({id:DB.campaigns.length+1,nom,envoyes:count||1,ouverts:0,clics:0,reponses:0,date:new Date().toISOString().split('T')[0],statut:'Active'});
+  DB.campaigns.unshift({id:'camp_'+Date.now(),nom,envoyes:count||1,ouverts:0,clics:0,reponses:0,date:new Date().toISOString().split('T')[0],statut:'Active'});
   saveToStorage();notify(`✅ Campagne "${nom}" créée — ${count} contacts`);
   document.getElementById('camp-name').value='';renderCampaigns();
 }

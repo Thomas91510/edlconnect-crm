@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.25';
+const APP_VERSION = '2.0.26';
 const NOUVEAUTES = [
+  { v:'2.0.26', titre:'Campagnes enregistrées dans le cloud', texte:'Vos campagnes d\u2019emails sont maintenant sauvegardées dans le cloud et retrouvées sur tous vos appareils. Sur l\u2019accueil, la carte Missions indique « au total » ou « sur le mois » selon la période choisie.' },
   { v:'2.0.25', titre:'Plateforme : abonnés et agences séparés', texte:'Onglet Plateforme (administrateur) : les abonnés du CRM et les agences connectées à leur extranet sont listés séparément ; les chiffres (abonnés, plans, MRR, conversion) ne comptent plus que les abonnés. Les comptes inscrits sans plan apparaissent désormais.' },
   { v:'2.0.24', titre:'Gestion des comptes de la plateforme', texte:'Onglet Plateforme (administrateur) : interrupteur pour désactiver ou réactiver un compte (connexion bloquée, données conservées) et bouton de suppression définitive. Un compte désactivé voit un message clair à la connexion.' },
   { v:'2.0.23', titre:'Aide mise à jour', texte:'La page Aide suit le menu actuel (Aujourd\u2019hui, Réservations, Missions, Agenda, Clients et rapports, Espaces agences, Prospection, Emails, Agents, Réglages) et sa FAQ ne mentionne plus la clé Brevo ni l\u2019ancien bouton de sauvegarde. L\u2019onglet Plateforme charge les comptes dès son ouverture.' },
@@ -396,6 +397,16 @@ if(typeof document !== 'undefined'){
   });
 }
 
+function migrerIdsCampagnes(liste){
+  let change=false;
+  (liste||[]).forEach((c,i)=>{
+    if(c && /^\d+$/.test(String(c.id))){
+      c.id='camp_'+Date.now().toString(36)+'_'+i+'_'+Math.random().toString(36).slice(2,8);
+      change=true;
+    }
+  });
+  return change;
+}
 function loadFromStorage(){
   try{
     const s=localStorage.getItem('edl_crm_db');
@@ -405,6 +416,11 @@ function loadFromStorage(){
   // s'assurer que tous les tableaux attendus existent pour éviter les erreurs "Cannot read properties of undefined"
   const expectedArrays=['contacts','deals','missions','campaigns','rdvs','invoices','trackings','prospects','dups','brevoContacts','agents','ajustementsExternes','baremeDeplacement'];
   expectedArrays.forEach(key=>{ if(!Array.isArray(DB[key])) DB[key]=[]; });
+  // Campagnes créées avant la synchronisation cloud : identifiants 1, 2, 3…
+  // La table "campagnes" a "id" pour clé unique, toutes comptes confondus :
+  // ces identifiants entreraient en conflit d'un compte à l'autre. On les
+  // remplace une fois pour toutes (puis on enregistre, pour garder le même).
+  if(migrerIdsCampagnes(DB.campaigns)) saveToStorage();
   // Dédoublonner les contacts au chargement (protection permanente)
   const seen=new Set();
   DB.contacts=DB.contacts.filter(c=>{

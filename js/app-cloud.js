@@ -34,7 +34,11 @@ const SUPA_TABLES = {
   missions : 'missions',
   prospects: 'prospects',
   rdvs     : 'rdvs',
-  campagnes: 'campagnes',
+  // Clé = nom du tableau dans DB (DB.campaigns, lu par renderCampaigns),
+  // valeur = nom de la table Supabase. La clé était "campagnes" : chargement,
+  // envoi et temps réel passaient par un DB.campagnes que l'interface ne lit
+  // jamais, donc les campagnes ne quittaient pas le navigateur.
+  campaigns: 'campagnes',
   trackings: 'trackings',
   invoices : 'invoices'
 };

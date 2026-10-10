@@ -10,12 +10,27 @@ function esc(s) {
   });
 }
 
+// Seul endpoint appelé depuis le site vitrine (lokentia.fr, projet Vercel
+// edlconnect-landing) et non depuis l'app : origineAutorisee() n'accepte que
+// app.lokentia.fr, ce qui faisait échouer le preflight CORS du formulaire de
+// contact du site. On élargit ici seulement, pas dans cors.js, pour ne pas
+// ouvrir les autres endpoints au site vitrine.
+const ORIGINES_VITRINE = ['https://lokentia.fr', 'https://www.lokentia.fr'];
+const RE_PREVIEW_VITRINE = /^https:\/\/edlconnect-landing(-[a-z0-9-]+)?\.vercel\.app$/;
+
+function origineContact(req) {
+  const origin = (req && req.headers && typeof req.headers.get === 'function') ? (req.headers.get('origin') || '') : '';
+  if (ORIGINES_VITRINE.includes(origin) || RE_PREVIEW_VITRINE.test(origin)) return origin;
+  return origineAutorisee(req);
+}
+
 // Endpoint public (visiteurs anonymes du site vitrine) — pas d'authentification
 // requise, contrairement à send-email.js qui est réservé aux abonnés connectés.
 export default async function handler(req) {
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': origineAutorisee(req),
+    'Access-Control-Allow-Origin': origineContact(req),
+    'Vary': 'Origin',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };

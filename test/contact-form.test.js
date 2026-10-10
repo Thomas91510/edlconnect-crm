@@ -86,3 +86,21 @@ test('contact-form : la limite de débit est bien PAR IP, une autre IP n\'est pa
   const respAutreIp = await handler(requete({ nom: 'Marie', email: 'marie@exemple.fr', message: 'bonjour' }, '7.7.7.7'));
   assert.equal(respAutreIp.status, 200);
 });
+
+function preflight(origin) {
+  return { method: 'OPTIONS', headers: new Headers(origin ? { origin } : {}), json: async () => ({}) };
+}
+
+test('contact-form : CORS autorise le site vitrine (lokentia.fr, www, previews edlconnect-landing)', async () => {
+  for (const o of ['https://lokentia.fr', 'https://www.lokentia.fr', 'https://edlconnect-landing-git-ma-branche-equipe.vercel.app', 'https://app.lokentia.fr']) {
+    const resp = await handler(preflight(o));
+    assert.equal(resp.headers.get('Access-Control-Allow-Origin'), o);
+  }
+});
+
+test('contact-form : CORS ne reflète jamais une origine tierce', async () => {
+  for (const o of ['https://evil.fr', 'https://lokentia.fr.evil.fr', 'https://autre-projet.vercel.app', 'https://edlconnect-landing.evil.app']) {
+    const resp = await handler(preflight(o));
+    assert.equal(resp.headers.get('Access-Control-Allow-Origin'), 'https://app.lokentia.fr');
+  }
+});
