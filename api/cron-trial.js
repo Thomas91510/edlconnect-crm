@@ -140,7 +140,8 @@ export default async function handler(req) {
                 </div>
                 <p style="font-size:12px;color:#999;text-align:center">
                   Des questions ? Contactez-nous : 
-                  <a href="mailto:contact@lokentia.fr" style="color:#1A5FA8">contact@lokentia.fr</a>
+                  <a href="mailto:contact@lokentia.fr" style="color:#1A5FA8">contact@lokentia.fr</a> · 
+                  <a href="tel:0185460033" style="color:#1A5FA8">01 85 46 00 33</a>
                 </p>
               </div>
             </div>
