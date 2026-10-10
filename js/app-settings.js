@@ -1279,13 +1279,18 @@ function getPlanBadge(plan, status){
 async function loadAdminData(){
   if(!isAdmin()){ notify('Accès refusé','err'); return; }
   try{
-    const { data: plans, error } = await supabaseClient
-      .from('user_plans')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if(error) throw error;
+    // Tous les comptes de connexion, classés côté serveur (api/admin-comptes.js) :
+    // les agences connectées à leur extranet ne sont pas des abonnés et ne
+    // comptent pas dans les chiffres ; le compte admin non plus.
+    const resp = await fetch('/api/admin-comptes', { headers: await _authHeaders() });
+    const result = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(result.error || 'HTTP ' + resp.status);
+    const comptes = result.comptes || [];
+    const estCompteAdmin = p => ADMIN_EMAILS.includes(String(p.email||'').toLowerCase().trim());
+    const abonnes = comptes.filter(p => p.type !== 'agence');
+    const agences = comptes.filter(p => p.type === 'agence');
 
-    const list = plans || [];
+    const list = abonnes.filter(p => !estCompteAdmin(p));
     const active = list.filter(p=>p.status==='active');
     const proCount = list.filter(p=>p.plan==='pro'&&p.status==='active').length;
     const starterCount = list.filter(p=>p.plan==='starter'&&p.status==='active').length;
@@ -1357,7 +1362,7 @@ async function loadAdminData(){
       </div>`;
     }
 
-    document.getElementById('admin-tbody').innerHTML = list.length ? list.map(p=>{
+    document.getElementById('admin-tbody').innerHTML = abonnes.length ? abonnes.map(p=>{
       const compteAdmin = ADMIN_EMAILS.includes(String(p.email||'').toLowerCase().trim());
       const desactive = p.status === 'disabled';
       const acces = compteAdmin ? '<span style="font-size:11px;color:var(--text3)">Admin</span>' : `
@@ -1368,7 +1373,7 @@ async function loadAdminData(){
       return `
       <tr${desactive?' style="opacity:.6"':''}>
         <td style="font-size:11px;font-weight:500">${esc(p.email||'—')}</td>
-        <td>${getPlanBadge(p.plan, p.status)}</td>
+        <td>${p.sans_plan ? '<span class="badge b-gray" title="Inscription au CRM jamais finalisée">Aucun plan</span>' : getPlanBadge(p.plan, p.status)}</td>
         <td><span class="badge ${p.status==='active'?'b-green':(p.status==='suspended'||desactive)?'b-red':'b-gray'}">${desactive?'désactivé':esc(p.status||'active')}</span></td>
         <td style="font-size:11px">${p.expires_at?new Date(p.expires_at).toLocaleDateString('fr-FR'):'—'}</td>
         <td style="font-size:11px;color:var(--text2)">${p.created_at?new Date(p.created_at).toLocaleDateString('fr-FR'):'—'}</td>
@@ -1383,6 +1388,15 @@ async function loadAdminData(){
           </button>`}
         </td>
       </tr>`;}).join('') : '<tr><td colspan="8" class="empty">Aucun client enregistré</td></tr>';
+
+    const fmtJour = d => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
+    const tbodyAgences = document.getElementById('admin-agences-tbody');
+    if(tbodyAgences) tbodyAgences.innerHTML = agences.length ? agences.map(p=>`
+      <tr>
+        <td style="font-size:11px;font-weight:500">${esc(p.email||'—')}</td>
+        <td style="font-size:11px;color:var(--text2)">${fmtJour(p.created_at)}</td>
+        <td style="font-size:11px;color:var(--text2)">${fmtJour(p.derniere_connexion)}</td>
+      </tr>`).join('') : '<tr><td colspan="3" class="empty">Aucune agence connectée</td></tr>';
   } catch(e){
     notify('Erreur chargement admin: '+e.message,'err');
   }
