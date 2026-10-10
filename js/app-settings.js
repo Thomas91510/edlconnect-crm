@@ -1357,22 +1357,84 @@ async function loadAdminData(){
       </div>`;
     }
 
-    document.getElementById('admin-tbody').innerHTML = list.length ? list.map(p=>`
-      <tr>
+    document.getElementById('admin-tbody').innerHTML = list.length ? list.map(p=>{
+      const compteAdmin = ADMIN_EMAILS.includes(String(p.email||'').toLowerCase().trim());
+      const desactive = p.status === 'disabled';
+      const acces = compteAdmin ? '<span style="font-size:11px;color:var(--text3)">Admin</span>' : `
+        <label class="espace-switch" style="margin-left:0" title="${desactive?'Compte désactivé : cliquer pour le réactiver':'Compte actif : cliquer pour le désactiver'}">
+          <input type="checkbox" ${desactive?'':'checked'} onchange="basculerAccesCompte('${jsq(p.user_id)}','${jsq(p.email||'')}',this)">
+          <span class="espace-switch-piste"><span></span></span>
+        </label>`;
+      return `
+      <tr${desactive?' style="opacity:.6"':''}>
         <td style="font-size:11px;font-weight:500">${esc(p.email||'—')}</td>
         <td>${getPlanBadge(p.plan, p.status)}</td>
-        <td><span class="badge ${p.status==='active'?'b-green':p.status==='suspended'?'b-red':'b-gray'}">${esc(p.status||'active')}</span></td>
+        <td><span class="badge ${p.status==='active'?'b-green':(p.status==='suspended'||desactive)?'b-red':'b-gray'}">${desactive?'désactivé':esc(p.status||'active')}</span></td>
         <td style="font-size:11px">${p.expires_at?new Date(p.expires_at).toLocaleDateString('fr-FR'):'—'}</td>
         <td style="font-size:11px;color:var(--text2)">${p.created_at?new Date(p.created_at).toLocaleDateString('fr-FR'):'—'}</td>
         <td style="font-size:11px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis">${esc(p.notes||'—')}</td>
-        <td>
-          <button class="btn btn-sm" onclick="editAdminPlan('${jsq(p.user_id)}','${jsq(p.email||'')}','${jsq(p.plan||'free')}','${jsq(p.status||'active')}','${jsq(p.expires_at||'')}','${jsq((p.notes||'').replace(/'/g,''))}')">
+        <td>${acces}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-sm" title="Modifier le plan" onclick="editAdminPlan('${jsq(p.user_id)}','${jsq(p.email||'')}','${jsq(p.plan||'free')}','${jsq(p.status||'active')}','${jsq(p.expires_at||'')}','${jsq((p.notes||'').replace(/'/g,''))}')">
             <i class="ti ti-edit" style="font-size:11px"></i>
           </button>
+          ${compteAdmin ? '' : `<button class="btn btn-sm btn-danger" title="Supprimer définitivement ce compte" onclick="supprimerCompteAdmin('${jsq(p.user_id)}','${jsq(p.email||'')}')">
+            <i class="ti ti-trash" style="font-size:11px"></i>
+          </button>`}
         </td>
-      </tr>`).join('') : '<tr><td colspan="7" class="empty">Aucun client enregistré</td></tr>';
+      </tr>`;}).join('') : '<tr><td colspan="8" class="empty">Aucun client enregistré</td></tr>';
   } catch(e){
     notify('Erreur chargement admin: '+e.message,'err');
+  }
+}
+
+// Interrupteur « Accès » : désactiver bloque la connexion du compte
+// (bannissement côté Supabase Auth, api/admin-compte.js) sans toucher à
+// ses données ; réactiver lève le blocage.
+async function basculerAccesCompte(userId, email, caseACocher){
+  if(!isAdmin()) return;
+  const activer = caseACocher.checked;
+  const question = activer
+    ? 'Réactiver le compte ' + email + ' ? Il pourra de nouveau se connecter.'
+    : 'Désactiver le compte ' + email + ' ? Il ne pourra plus se connecter (ses données sont conservées).';
+  if(!confirm(question)){ caseACocher.checked = !activer; return; }
+  caseACocher.disabled = true;
+  try{
+    const resp = await fetch('/api/admin-compte', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ action: activer ? 'activer' : 'desactiver', userId })
+    });
+    const result = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(result.error || 'HTTP ' + resp.status);
+    notify(result.avertissement ? '⚠️ ' + result.avertissement : (activer ? '✅ Compte réactivé' : '✅ Compte désactivé'), result.avertissement ? 'warn' : '');
+    loadAdminData();
+  }catch(e){
+    caseACocher.checked = !activer;
+    caseACocher.disabled = false;
+    notify('⚠️ ' + e.message, 'err');
+  }
+}
+
+// Suppression définitive d'un compte abonné : mêmes effacements que la
+// suppression par l'abonné lui-même (données, fichiers, compte de connexion).
+async function supprimerCompteAdmin(userId, email){
+  if(!isAdmin()) return;
+  const saisie = prompt('Supprimer définitivement le compte ' + email + ' ?\n\nToutes ses données (clients, missions, réservations, agents, fichiers) et son compte de connexion seront effacés. Cette action est irréversible.\n\nTapez SUPPRIMER pour confirmer :');
+  if(saisie === null) return;
+  if(saisie.trim() !== 'SUPPRIMER'){ notify('Suppression annulée : il fallait taper SUPPRIMER', 'warn'); return; }
+  try{
+    const resp = await fetch('/api/admin-compte', {
+      method: 'POST',
+      headers: await _authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ action: 'supprimer', userId, confirmation: 'SUPPRIMER' })
+    });
+    const result = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(result.error || 'HTTP ' + resp.status);
+    notify('✅ Compte ' + email + ' supprimé');
+    loadAdminData();
+  }catch(e){
+    notify('⚠️ ' + e.message, 'err');
   }
 }
 
@@ -1538,7 +1600,7 @@ async function doLogin(){
     if(error)throw error;
     await tenterOuvrirSession(data.user);
   }catch(e){
-    showAuthError(e.message==='Invalid login credentials'?'Email ou mot de passe incorrect':e.message);
+    showAuthError(e.message==='Invalid login credentials'?'Email ou mot de passe incorrect':/banned/i.test(e.message||'')?'Ce compte a été désactivé. Contactez contact@lokentia.fr.':e.message);
     btn.innerHTML='<i class="ti ti-login"></i> Se connecter';btn.disabled=false;
   }
 }

@@ -51,7 +51,7 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.23';
+const APP_VERSION = '2.0.24';
 const NOUVEAUTES = [
   { v:'2.0.23', titre:'Aide mise à jour', texte:'La page Aide suit le menu actuel (Aujourd\u2019hui, Réservations, Missions, Agenda, Clients et rapports, Espaces agences, Prospection, Emails, Agents, Réglages) et sa FAQ ne mentionne plus la clé Brevo ni l\u2019ancien bouton de sauvegarde. L\u2019onglet Plateforme charge les comptes dès son ouverture.' },
   { v:'2.0.21', titre:'Emails Lokentia', texte:'Les emails de bienvenue et de fin d\u2019essai affichent le téléphone et l\u2019email de Lokentia (01 85 46 00 33 · contact@lokentia.fr).' },
