@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/index.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@5/index.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1895,11 +1895,11 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
             <img id="set-logo-apercu" src="" alt="Logo" style="display:none;width:52px;height:52px;border-radius:8px;object-fit:contain;border:1px solid var(--border2);background:#fff">
             <label class="btn btn-sm" style="cursor:pointer">
               <i class="ti ti-upload"></i> Choisir un logo
-              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none" onchange="televerserLogoAgence(this)">
+              <input type="file" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="televerserLogoAgence(this)">
             </label>
             <button class="btn btn-sm" id="set-logo-retirer" style="display:none;color:#c0392b;border-color:#c0392b" onclick="retirerLogoAgence()"><i class="ti ti-trash"></i> Retirer</button>
           </div>
-          <div style="font-size:11px;color:var(--text2);margin-top:6px">PNG, JPG, WebP ou SVG — 2 Mo maximum. Enregistré immédiatement (pas besoin de cliquer sur "Enregistrer").</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:6px">PNG, JPG ou WebP — 2 Mo maximum. Enregistré immédiatement (pas besoin de cliquer sur "Enregistrer").</div>
         </div>
       </div>
 

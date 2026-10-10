@@ -51,8 +51,9 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.17';
+const APP_VERSION = '2.0.18';
 const NOUVEAUTES = [
+  { v:'2.0.18', titre:'Sauvegarde surveillée, sécurité renforcée', texte:'La sauvegarde quotidienne a son propre horaire (4 h, heure de Paris) et vous recevez un email si elle échoue ou manque. Page de réservation, dépôts de fichiers et pages du CRM mieux protégés. Les logos SVG ne sont plus acceptés (PNG, JPG ou WebP).' },
   { v:'2.0.17', titre:'Contrat de sous-traitance RGPD', texte:'Réglages › Contrat RGPD : le contrat qui encadre le traitement des données de vos clients, locataires et agents par la plateforme. Il est signé électroniquement dès l\u2019inscription (preuve horodatée et copie par email).' },
   { v:'2.0.16', titre:'Espaces à votre nom', texte:'Extranet des agences, espace agent et page de réservation affichent le nom, l\u2019accroche, le contact et le téléphone renseignés dans vos Réglages (plus aucun nom écrit en dur). Les objets d\u2019emails et titres d\u2019agenda reprennent le nom de votre société.' },
   { v:'2.0.15', titre:'Sécurité renforcée (suite)', texte:'Agents EDL, formulaires et envois d\u2019emails mieux protégés contre les usages abusifs. Rien ne change dans votre utilisation.' },

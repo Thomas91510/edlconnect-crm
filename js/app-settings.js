@@ -167,7 +167,7 @@ function populateExpertDropdown(selectedId){
   if(!sel) return;
   const agents = DB.agents || [];
   sel.innerHTML = '<option value="">— Non précisé —</option>' +
-    agents.map(a => `<option value="${a.id}"${a.id===selectedId?' selected':''}>${a.nom}${a.tel ? ' — ' + a.tel : ''}</option>`).join('');
+    agents.map(a => `<option value="${esc(a.id)}"${a.id===selectedId?' selected':''}>${esc(a.nom)}${a.tel ? ' — ' + esc(a.tel) : ''}</option>`).join('');
 }
 
 // ─── AGENTS EDL ────────────────────────────────────────────
@@ -1362,12 +1362,12 @@ async function loadAdminData(){
 
     document.getElementById('admin-tbody').innerHTML = list.length ? list.map(p=>`
       <tr>
-        <td style="font-size:11px;font-weight:500">${p.email||'—'}</td>
+        <td style="font-size:11px;font-weight:500">${esc(p.email||'—')}</td>
         <td>${getPlanBadge(p.plan, p.status)}</td>
-        <td><span class="badge ${p.status==='active'?'b-green':p.status==='suspended'?'b-red':'b-gray'}">${p.status||'active'}</span></td>
+        <td><span class="badge ${p.status==='active'?'b-green':p.status==='suspended'?'b-red':'b-gray'}">${esc(p.status||'active')}</span></td>
         <td style="font-size:11px">${p.expires_at?new Date(p.expires_at).toLocaleDateString('fr-FR'):'—'}</td>
         <td style="font-size:11px;color:var(--text2)">${p.created_at?new Date(p.created_at).toLocaleDateString('fr-FR'):'—'}</td>
-        <td style="font-size:11px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis">${p.notes||'—'}</td>
+        <td style="font-size:11px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis">${esc(p.notes||'—')}</td>
         <td>
           <button class="btn btn-sm" onclick="editAdminPlan('${jsq(p.user_id)}','${jsq(p.email||'')}','${jsq(p.plan||'free')}','${jsq(p.status||'active')}','${jsq(p.expires_at||'')}','${jsq((p.notes||'').replace(/'/g,''))}')">
             <i class="ti ti-edit" style="font-size:11px"></i>
