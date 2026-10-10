@@ -5,6 +5,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 import { identiteAbonne } from './_lib/identite.js';
+import { limiteAtteinte } from './_lib/rate-limit.js';
 
 // « Rédiger avec IA » du Composer (Emails › Écrire), rédigé par Claude, ou
 // par Mistral (gratuit) tant qu'aucune clé Anthropic n'est configurée.
@@ -107,6 +108,10 @@ export default async function handler(req) {
   const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } });
   if (!userResp.ok) return reponse({ error: 'Session invalide ou expirée' }, 401);
   const user = await userResp.json();
+  // Garde-fou de coût (clé IA partagée par toute la plateforme).
+  if (user && user.id && limiteAtteinte('redaction-ia:' + user.id, { max: 60, fenetreMs: 60 * 60 * 1000 })) {
+    return reponse({ error: 'Trop de demandes de rédaction, réessayez dans un moment.' }, 429);
+  }
   if (!(await planAutorise(user && user.id, user && user.email))) {
     return reponse({ error: 'La rédaction assistée par IA est réservée aux plans Starter et Pro.', planRequis: true }, 403);
   }

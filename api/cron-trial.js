@@ -1,11 +1,14 @@
 export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL } from './_lib/supabase.js';
+import { alerterAdmin } from './_lib/alerte-admin.js';
 
-// Sauvegarde quotidienne (api/backup-auto.js). Lancée EN PREMIER : elle était
-// en fin de fonction, après des « return » anticipés (aucun essai à J+13,
-// presque tous les jours) — elle ne tournait donc jamais (dernière sauvegarde
-// automatique : 24/07/2026). Ne bloque jamais le reste du cron.
+// Sauvegarde quotidienne : elle a désormais son propre cron (vercel.json,
+// 2 h UTC). Ce cron-ci joue le rôle de chien de garde : si la dernière
+// sauvegarde a plus de 30 h (cron de sauvegarde raté, délai dépassé…), il
+// la relance, et prévient l'exploitant par email si elle échoue encore.
+const AGE_MAX_SAUVEGARDE_H = 30;
+
 async function sauvegardeQuotidienne(fetchFn = fetch) {
   try {
     const bResp = await fetchFn('https://app.lokentia.fr/api/backup-auto', {
@@ -18,6 +21,27 @@ async function sauvegardeQuotidienne(fetchFn = fetch) {
   }
 }
 
+export async function verifierSauvegarde(fetchFn = fetch, maintenant = Date.now()) {
+  let derniere = null;
+  try {
+    const r = await fetchFn('https://app.lokentia.fr/api/backup-auto?statut=1', {
+      headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` }
+    });
+    const d = await r.json().catch(() => ({}));
+    derniere = d && d.derniere;
+  } catch (_) { /* statut illisible : on relance par prudence */ }
+  const ageH = derniere && derniere.date ? (maintenant - new Date(derniere.date).getTime()) / 3600000 : Infinity;
+  if (ageH <= AGE_MAX_SAUVEGARDE_H) return { aJour: true, derniere: derniere.nom };
+  const journal = await sauvegardeQuotidienne(fetchFn);
+  if (!journal || journal.erreur || !journal.fichier) {
+    await alerterAdmin('Aucune sauvegarde récente', [
+      'Dernière sauvegarde : ' + (derniere ? derniere.nom + ' (' + derniere.date + ')' : 'aucune'),
+      'Relance automatique : ' + ((journal && (journal.erreur || (journal.erreurs || []).join(' ; '))) || 'échec sans détail'),
+    ], fetchFn);
+  }
+  return { aJour: false, relance: journal };
+}
+
 export default async function handler(req) {
   // Sécurité : vérifier le token Vercel Cron
   const authHeader = req.headers.get('authorization');
@@ -25,7 +49,7 @@ export default async function handler(req) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  const sauvegarde = await sauvegardeQuotidienne();
+  const sauvegarde = await verifierSauvegarde();
 
   const BREVO_KEY = process.env.BREVO_API_KEY;
   const SUPA_URL  = SUPABASE_URL;
@@ -79,14 +103,14 @@ export default async function handler(req) {
             <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
               <div style="background:#1A5FA8;padding:24px;text-align:center;border-radius:12px 12px 0 0">
                 <div style="background:#F4F7FA;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:11px;margin-bottom:8px">
-                  <span style="font-size:22px;font-weight:700;color:#1A5FA8">ED</span>
+                  <span style="font-size:22px;font-weight:700;color:#1A5FA8">L</span>
                 </div>
                 <div style="color:#fff;font-size:20px;font-weight:700">Lokentia</div>
               </div>
               <div style="background:#fff;padding:32px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
                 <h2 style="font-size:20px;margin-bottom:12px">⏰ Votre essai se termine demain !</h2>
                 <p style="color:#6b6b6b;line-height:1.7;margin-bottom:20px">
-                  Votre période d'essai gratuit d'Lokentia arrive à son terme dans <strong>24 heures</strong>.
+                  Votre période d'essai gratuit de Lokentia arrive à son terme dans <strong>24 heures</strong>.
                 </p>
                 <p style="color:#6b6b6b;line-height:1.7;margin-bottom:24px">
                   Pour continuer à gérer vos missions, contacts et factures sans interruption, 

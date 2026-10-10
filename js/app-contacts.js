@@ -317,9 +317,9 @@ function renderContactTasks(){
     return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius);background:${t.done?'var(--bg2)':'var(--bg)'};border:1px solid var(--border);margin-bottom:6px;opacity:${t.done?'0.6':'1'}">
       <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${jsq(t.id)}')" style="margin-top:2px;cursor:pointer">
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:500;${t.done?'text-decoration:line-through;color:var(--text3)':''}">${t.titre}</div>
-        ${t.date?`<div style="font-size:11px;color:${isOverdue?'var(--red-text)':'var(--text2)'};margin-top:2px">📅 ${t.date}${t.heure?' à '+t.heure:''}${isOverdue?' — En retard ⚠️':''}</div>`:''}
-        ${t.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${t.notes}</div>`:''}
+        <div style="font-size:12px;font-weight:500;${t.done?'text-decoration:line-through;color:var(--text3)':''}">${esc(t.titre)}</div>
+        ${t.date?`<div style="font-size:11px;color:${isOverdue?'var(--red-text)':'var(--text2)'};margin-top:2px">📅 ${esc(t.date)}${t.heure?' à '+esc(t.heure):''}${isOverdue?' — En retard ⚠️':''}</div>`:''}
+        ${t.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${esc(t.notes)}</div>`:''}
       </div>
       <button onclick="deleteTask('${jsq(t.id)}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px" title="Supprimer">✕</button>
     </div>`;
@@ -876,13 +876,13 @@ function renderDashboard(){
     const idx=DB.rdvs.indexOf(r);
     return `<div style="border-left:3px solid var(--blue);padding:5px 9px;margin-bottom:7px;border-radius:0 var(--radius) var(--radius) 0;position:relative">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-        <div style="font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.titre}</div>
+        <div style="font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.titre)}</div>
         <div style="display:flex;gap:4px;flex-shrink:0">
           ${url?`<a href="${url}" target="_blank" title="Google Agenda" style="font-size:11px;text-decoration:none;line-height:1.6">📅</a>`:''}
           <button onclick="deleteRdvDash(${idx})" title="Supprimer" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:13px;padding:0 2px;line-height:1">✕</button>
         </div>
       </div>
-      <div style="font-size:10px;color:var(--text2)">${fmtDT(r.date)} · ${r.duree||'—'}${r.contact?' · '+r.contact:''}</div>
+      <div style="font-size:10px;color:var(--text2)">${fmtDT(r.date)} · ${esc(r.duree||'—')}${r.contact?' · '+esc(r.contact):''}</div>
     </div>`;}).join(''):'<div class="empty">Aucun RDV à venir</div>';
 
   // Statistiques EDL (volume, typologie, particulier/agence) — definies

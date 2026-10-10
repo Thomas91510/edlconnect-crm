@@ -372,10 +372,10 @@ async function loadBrevo(){
 
 function renderBrevoTable(){
   document.getElementById('brevo-tbody').innerHTML=DB.brevoContacts.length?DB.brevoContacts.map(c=>`<tr class="clickable" onclick="openFiche('${jsq(c.id)}')">
-    <td><div class="flex-row"><div class="avatar" style="font-size:9px">${initials(c.entreprise||c.contact)}</div><div><div style="font-size:11px;font-weight:600">${c.entreprise||c.contact||'—'}</div></div></div></td>
-    <td style="font-size:11px"><a href="mailto:${c.email}" style="color:var(--blue);text-decoration:none" onclick="event.stopPropagation()">${c.email||'—'}</a></td>
-    <td style="font-size:11px;font-weight:500;color:var(--text)">${c.tel||'<span style="color:var(--red);font-size:10px">Manquant</span>'}</td>
-    <td style="font-size:11px;color:var(--text2)">${c.ville||c.cp||'—'}</td>
+    <td><div class="flex-row"><div class="avatar" style="font-size:9px">${esc(initials(c.entreprise||c.contact))}</div><div><div style="font-size:11px;font-weight:600">${esc(c.entreprise||c.contact||'—')}</div></div></div></td>
+    <td style="font-size:11px"><a href="mailto:${esc(c.email)}" style="color:var(--blue);text-decoration:none" onclick="event.stopPropagation()">${esc(c.email||'—')}</a></td>
+    <td style="font-size:11px;font-weight:500;color:var(--text)">${c.tel?esc(c.tel):'<span style="color:var(--red);font-size:10px">Manquant</span>'}</td>
+    <td style="font-size:11px;color:var(--text2)">${esc(c.ville||c.cp||'—')}</td>
     <td>${c.emailStatus?statusBadge(c.emailStatus):'—'}</td>
     <td style="font-size:11px">${c.opens||0}</td>
     <td style="font-size:11px">${c.clicks||0}</td>

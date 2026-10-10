@@ -155,3 +155,13 @@ test('upload-booking-attachment : une panne de la vérification de débit global
   const resp = await handler(requeteAvecForm(form));
   assert.equal(resp.status, 200);
 });
+
+test('upload-booking-attachment : un fichier HTML/SVG est stocké comme fichier brut, jamais exécutable', async () => {
+  const { typeStockage } = await import('../api/upload-booking-attachment.js');
+  assert.equal(typeStockage('text/html'), 'application/octet-stream');
+  assert.equal(typeStockage('image/svg+xml'), 'application/octet-stream');
+  assert.equal(typeStockage('application/xhtml+xml'), 'application/octet-stream');
+  assert.equal(typeStockage(''), 'application/octet-stream');
+  assert.equal(typeStockage('application/pdf'), 'application/pdf');
+  assert.equal(typeStockage('image/jpeg'), 'image/jpeg');
+});

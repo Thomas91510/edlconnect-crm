@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY as SUPA_ANON } from './_lib/supabase.js
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
 import { configDrive, sauvegarderSurDrive } from './_lib/google-drive.js';
+import { alerterAdmin } from './_lib/alerte-admin.js';
 
 const BUCKET = 'sauvegardes';
 const TABLES = ['contacts', 'missions', 'prospects', 'deals', 'rdvs', 'campagnes', 'trackings', 'invoices', 'settings'];
@@ -120,6 +121,7 @@ export default async function handler(req) {
     });
     if (!upResp.ok) {
       const t = await upResp.text();
+      await alerterAdmin('Sauvegarde quotidienne impossible', ['Écriture du fichier ' + chemin + ' refusée : HTTP ' + upResp.status + ' ' + t.slice(0, 200)].concat(journal.erreurs));
       return new Response(JSON.stringify({
         error: 'Ecriture de la sauvegarde impossible',
         status: upResp.status,
@@ -171,12 +173,19 @@ export default async function handler(req) {
       journal.erreurs.push('Purge : ' + String(e && e.message || e));
     }
 
+    // Sauvegarde écrite mais incomplète (table illisible, Drive en échec…) :
+    // on prévient l'exploitant plutôt que de le laisser dans le journal.
+    if (journal.erreurs.length) {
+      await alerterAdmin('Sauvegarde quotidienne incomplète', ['Fichier : ' + chemin].concat(journal.erreurs));
+    }
+
     return new Response(JSON.stringify({ success: true, journal: journal }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origineAutorisee(req) }
     });
 
   } catch (e) {
+    await alerterAdmin('Sauvegarde quotidienne en erreur', [String(e && e.message || e)].concat(journal.erreurs));
     return new Response(JSON.stringify({
       error: 'Erreur serveur',
       details: String(e && e.message || e),

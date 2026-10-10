@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Espace client</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
   <script src="/js/reservation-validation.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/index.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@5/index.css">
@@ -728,7 +728,7 @@ function resetAttachments(){
 // utile pour vérifier en un coup d'œil qu'un déploiement a bien pris effet.
 // Numéro de version : aligné sur APP_VERSION (js/app-core.js), vérifié par
 // test/frontend-version-coherente.test.js.
-const APP_VERSION = '2.0.18';
+const APP_VERSION = '2.0.22';
 (async function afficherVersion(){
   const el0 = document.getElementById('app-version');
   if(el0) el0.textContent = 'v' + APP_VERSION;

@@ -797,15 +797,15 @@ function buildRecap(){
   let bien = [document.getElementById('btype').value, document.getElementById('btypo').value, document.getElementById('meuble').value].filter(Boolean).join(' · ');
   if(superficie) bien += (bien ? ' · ' : '') + superficie + ' m²';
   var r = '<table style="width:100%;border-collapse:collapse">';
-  r += '<tr><td style="color:#999;padding:2px 0;width:35%">Agence</td><td style="font-weight:600">'+document.getElementById('agence').value+'</td></tr>';
-  r += '<tr><td style="color:#999;padding:2px 0">Type</td><td style="font-weight:600">'+type+'</td></tr>';
-  r += '<tr><td style="color:#999;padding:2px 0">Adresse</td><td>'+document.getElementById('adresse').value+'</td></tr>';
+  r += '<tr><td style="color:#999;padding:2px 0;width:35%">Agence</td><td style="font-weight:600">'+escAtt(document.getElementById('agence').value)+'</td></tr>';
+  r += '<tr><td style="color:#999;padding:2px 0">Type</td><td style="font-weight:600">'+escAtt(type)+'</td></tr>';
+  r += '<tr><td style="color:#999;padding:2px 0">Adresse</td><td>'+escAtt(document.getElementById('adresse').value)+'</td></tr>';
   if(dateEntree){
     const dEntreeStr = new Date(dateEntree).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
-    r += '<tr><td style="color:#999;padding:2px 0">Date d&#39;entrée</td><td>'+dEntreeStr+'</td></tr>';
+    r += '<tr><td style="color:#999;padding:2px 0">Date d&#39;entrée</td><td>'+escAtt(dEntreeStr)+'</td></tr>';
   }
-  if(bien) r += '<tr><td style="color:#999;padding:2px 0">Bien</td><td>'+bien+'</td></tr>';
-  r += '<tr><td style="color:#999;padding:2px 0">Date</td><td style="font-weight:600;color:#1A5FA8">'+dateStr+' · '+heure+'</td></tr>';
+  if(bien) r += '<tr><td style="color:#999;padding:2px 0">Bien</td><td>'+escAtt(bien)+'</td></tr>';
+  r += '<tr><td style="color:#999;padding:2px 0">Date</td><td style="font-weight:600;color:#1A5FA8">'+escAtt(dateStr+' · '+heure)+'</td></tr>';
   r += '</table>';
   document.getElementById('recap').innerHTML = r;
 }
@@ -923,8 +923,8 @@ async function submit(){
       document.getElementById('p3').style.display='none';
       document.getElementById('success').style.display='block';
       const dateStr = new Date(payload.dateSouhaitee).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-      const locsList = (payload.locataires||[locataires[0]]).map(l => l.civilite+' '+l.nom+' · '+l.tel).join('<br>👤 ');
-      document.getElementById('success-recap').innerHTML = '<strong>📋 '+payload.typeEdl+'</strong><br>📍 '+payload.adresse+'<br>📅 '+dateStr+' · '+(payload.heure||'Flexible')+'<br>👤 '+locsList;
+      const locsList = (payload.locataires||[locataires[0]]).map(l => escAtt(l.civilite+' '+l.nom+' · '+l.tel)).join('<br>👤 ');
+      document.getElementById('success-recap').innerHTML = '<strong>📋 '+escAtt(payload.typeEdl)+'</strong><br>📍 '+escAtt(payload.adresse)+'<br>📅 '+escAtt(dateStr+' · '+(payload.heure||'Flexible'))+'<br>👤 '+locsList;
       window.scrollTo({top:0,behavior:'smooth'});
     } else {
       showErr("Erreur lors de l'envoi. Veuillez réessayer ou nous contacter directement.");

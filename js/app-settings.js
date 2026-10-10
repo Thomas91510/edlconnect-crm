@@ -167,7 +167,7 @@ function populateExpertDropdown(selectedId){
   if(!sel) return;
   const agents = DB.agents || [];
   sel.innerHTML = '<option value="">— Non précisé —</option>' +
-    agents.map(a => `<option value="${a.id}"${a.id===selectedId?' selected':''}>${a.nom}${a.tel ? ' — ' + a.tel : ''}</option>`).join('');
+    agents.map(a => `<option value="${esc(a.id)}"${a.id===selectedId?' selected':''}>${esc(a.nom)}${a.tel ? ' — ' + esc(a.tel) : ''}</option>`).join('');
 }
 
 // ─── AGENTS EDL ────────────────────────────────────────────
@@ -790,10 +790,6 @@ function loadSettingsForm(){
   afficherApercuLogo(CFG.logoPath ? AGENCY_LOGOS_BUCKET_URL+CFG.logoPath : '');
   const ck=document.getElementById('set-claude-key');
   if(ck) ck.value=localStorage.getItem('edl_claude_key')||'';
-  // Afficher une alerte si les clés ne sont pas configurées
-  if(!CFG.brevoKey){
-    setTimeout(()=>notify('⚠️ Clé API Brevo non configurée — va dans Paramètres','warn'),1000);
-  }
 }
 function saveSettings(){
   CFG.notionToken=document.getElementById('set-notion-token').value.trim();
@@ -1362,12 +1358,12 @@ async function loadAdminData(){
 
     document.getElementById('admin-tbody').innerHTML = list.length ? list.map(p=>`
       <tr>
-        <td style="font-size:11px;font-weight:500">${p.email||'—'}</td>
+        <td style="font-size:11px;font-weight:500">${esc(p.email||'—')}</td>
         <td>${getPlanBadge(p.plan, p.status)}</td>
-        <td><span class="badge ${p.status==='active'?'b-green':p.status==='suspended'?'b-red':'b-gray'}">${p.status||'active'}</span></td>
+        <td><span class="badge ${p.status==='active'?'b-green':p.status==='suspended'?'b-red':'b-gray'}">${esc(p.status||'active')}</span></td>
         <td style="font-size:11px">${p.expires_at?new Date(p.expires_at).toLocaleDateString('fr-FR'):'—'}</td>
         <td style="font-size:11px;color:var(--text2)">${p.created_at?new Date(p.created_at).toLocaleDateString('fr-FR'):'—'}</td>
-        <td style="font-size:11px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis">${p.notes||'—'}</td>
+        <td style="font-size:11px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis">${esc(p.notes||'—')}</td>
         <td>
           <button class="btn btn-sm" onclick="editAdminPlan('${jsq(p.user_id)}','${jsq(p.email||'')}','${jsq(p.plan||'free')}','${jsq(p.status||'active')}','${jsq(p.expires_at||'')}','${jsq((p.notes||'').replace(/'/g,''))}')">
             <i class="ti ti-edit" style="font-size:11px"></i>
@@ -1493,18 +1489,14 @@ function obBack(step){
   }
 }
 async function obFinish(){
-  // Sauvegarder étape 2
-  const brevo=document.getElementById('ob-brevo').value.trim();
-  const mistral=document.getElementById('ob-mistral').value.trim();
-  if(brevo) localStorage.setItem('edl_brevo_key', brevo);
-  if(mistral) localStorage.setItem('edl_claude_key', mistral);
   // Marquer l'onboarding comme complété
   localStorage.setItem('edl_onboarding_done_'+(_currentUser?.id||''), '1');
-  // Pousser les settings vers Supabase
+  // Pousser les settings vers Supabase. Plus de clé Brevo/IA à saisir : les
+  // emails et la rédaction passent par les comptes de la plateforme. Le nom
+  // de l'utilisateur alimente « Votre expert » dans l'extranet des agences.
   const settingsData={
     companyName: localStorage.getItem('edl_co_name')||'',
-    brevoKey: brevo||'',
-    claudeKey: mistral||''
+    userName: localStorage.getItem('edl_user_name')||''
   };
   await saveSettingsToSupabase(settingsData);
   // Envoyer email de bienvenue
@@ -1554,7 +1546,7 @@ async function doSignup(){
   const password=document.getElementById('signup-password').value;
   const company=document.getElementById('signup-company').value.trim();
   if(!email||!password){showAuthError('Email et mot de passe requis');return;}
-  if(password.length<6){showAuthError('Mot de passe trop court (min. 6 caractères)');return;}
+  if(password.length<MDP_LONGUEUR_MIN){showAuthError('Mot de passe trop court (min. '+MDP_LONGUEUR_MIN+' caractères)');return;}
   const caseRgpd=document.getElementById('signup-rgpd');
   const ligneRgpd=document.getElementById('signup-rgpd-ligne');
   if(caseRgpd && ligneRgpd && ligneRgpd.style.display!=='none' && !caseRgpd.checked){showAuthError('Vous devez accepter le contrat de sous-traitance des données (RGPD)');return;}
@@ -1569,11 +1561,57 @@ async function doSignup(){
   }catch(e){showAuthError(e.message);}
   btn.innerHTML='<i class="ti ti-user-plus"></i> Créer mon compte';btn.disabled=false;
 }
+// ─── Nouveau mot de passe (après le lien « mot de passe oublié ») ───
+const MDP_LONGUEUR_MIN = 8;
+function afficherNouveauMotDePasse(){
+  if(document.getElementById('mdp-overlay')) { document.getElementById('mdp-overlay').classList.add('open'); return; }
+  const el = document.createElement('div');
+  el.id = 'mdp-overlay';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  el.setAttribute('aria-labelledby', 'mdp-titre');
+  el.innerHTML = `
+    <div class="contrat-boite" style="width:420px">
+      <div class="contrat-entete"><div id="mdp-titre" class="contrat-titre"><i class="ti ti-lock"></i> Nouveau mot de passe</div></div>
+      <div class="contrat-pied">
+        <label for="mdp-nouveau" style="font-size:12px;color:var(--text2)">Nouveau mot de passe (${MDP_LONGUEUR_MIN} caractères minimum)</label>
+        <input type="password" id="mdp-nouveau" autocomplete="new-password">
+        <label for="mdp-confirme" style="font-size:12px;color:var(--text2)">Confirmez-le</label>
+        <input type="password" id="mdp-confirme" autocomplete="new-password" onkeydown="if(event.key==='Enter')enregistrerNouveauMotDePasse()">
+        <div id="mdp-erreur" class="contrat-erreur" role="alert"></div>
+        <div style="display:flex;justify-content:flex-end"><button type="button" class="btn btn-primary" id="mdp-valider" onclick="enregistrerNouveauMotDePasse()"><i class="ti ti-check"></i>Enregistrer</button></div>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+  el.classList.add('open');
+  setTimeout(() => { const c = document.getElementById('mdp-nouveau'); if(c) c.focus(); }, 50);
+}
+async function enregistrerNouveauMotDePasse(){
+  const mdp = document.getElementById('mdp-nouveau').value;
+  const conf = document.getElementById('mdp-confirme').value;
+  const err = document.getElementById('mdp-erreur');
+  err.textContent = '';
+  if(mdp.length < MDP_LONGUEUR_MIN){ err.textContent = 'Au moins ' + MDP_LONGUEUR_MIN + ' caractères.'; return; }
+  if(mdp !== conf){ err.textContent = 'Les deux mots de passe ne sont pas identiques.'; return; }
+  const btn = document.getElementById('mdp-valider');
+  btn.disabled = true;
+  try{
+    const { error } = await supabaseClient.auth.updateUser({ password: mdp });
+    if(error) throw error;
+    _recuperationMdp = false;
+    document.getElementById('mdp-overlay').remove();
+    notify('✅ Mot de passe modifié');
+  }catch(e){
+    err.textContent = e.message || 'Modification impossible';
+    btn.disabled = false;
+  }
+}
+
 async function showForgotPassword(){
   const email=document.getElementById('auth-email').value.trim();
   if(!email){showAuthError('Entrez votre email');return;}
-  await supabaseClient.auth.resetPasswordForEmail(email);
-  showAuthSuccess('Email de réinitialisation envoyé !');
+  await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/' });
+  showAuthSuccess('Email de réinitialisation envoyé ! Cliquez sur le lien reçu pour choisir un nouveau mot de passe.');
 }
 async function onAuthSuccess(user){
   _currentUser=user;
@@ -1610,6 +1648,9 @@ async function onAuthSuccess(user){
   // Sync Brevo : réservée à l'admin côté serveur (api/brevo-contacts.js —
   // le compte Brevo est unique et partagé, sans tag par abonné pour filtrer
   // les contacts), donc masquée pour tout autre compte.
+  // Outils propres au compte admin (outil Brevo d'EDL IDF, etc.) : masqués
+  // pour tout autre compte.
+  document.querySelectorAll('.admin-seul').forEach(el => { el.style.display = ADMIN_EMAILS.includes(user.email) ? '' : 'none'; });
   const navBrevo = document.getElementById('nav-brevo');
   if(navBrevo && ADMIN_EMAILS.includes(user.email)) navBrevo.style.display='flex';
   // Section Sécurité (double authentification) : réservée au compte admin
@@ -1619,6 +1660,8 @@ async function onAuthSuccess(user){
     securiteSection.style.display = estAdmin ? '' : 'none';
     if(estAdmin) chargerEtatMfa();
   }
+  // Arrivée par le lien « mot de passe oublié » : choisir le nouveau mot de passe.
+  if(typeof _recuperationMdp !== 'undefined' && _recuperationMdp) afficherNouveauMotDePasse();
   // Contrat de sous-traitance RGPD : signature obligatoire de la version
   // en cours (js/app-contrat.js) — ne bloque pas le chargement du CRM.
   if(typeof verifierContratRgpd === 'function') verifierContratRgpd();
@@ -1748,6 +1791,7 @@ async function checkAuth(){
   supabaseClient.auth.onAuthStateChange((event,session)=>{
     // Si on est en mode extranet, ignorer complètement cet événement
     if(window._EXTRANET_MODE) return;
+    if(event==='PASSWORD_RECOVERY'){ _recuperationMdp = true; afficherNouveauMotDePasse(); }
     if(event==='SIGNED_IN'&&session){_currentUser=session.user;tenterOuvrirSession(session.user);}
     if(event==='SIGNED_OUT'){
       _currentUser=null;

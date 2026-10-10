@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' };
 
 import { SUPABASE_URL } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
+import { ipAppelant, limiteAtteinte } from './_lib/rate-limit.js';
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BUCKET = 'reservations';
@@ -13,6 +14,18 @@ const MAX_FICHIERS_PAR_DEMANDE = 10;
 // réservation. Généreux pour ne jamais gêner un usage légitime (bien plus
 // de 10 réservations/heure en conditions réelles).
 const MAX_UPLOADS_GLOBAL_PAR_HEURE = 200;
+// Plafond par visiteur (IP) : sans lui, un seul script épuise le plafond
+// global et bloque les vraies réservations de tous les prestataires.
+const MAX_UPLOADS_PAR_IP_PAR_HEURE = 30;
+// Tous les formats restent acceptés (demande explicite), mais ceux qu'un
+// navigateur exécuterait (HTML, SVG, XML, scripts) sont stockés comme
+// fichiers bruts : le type déclaré par le client n'est jamais repris tel quel.
+const TYPES_EXECUTABLES = /(html|xml|svg|javascript|ecmascript|x-sh|x-php)/i;
+export function typeStockage(typeClient) {
+  const t = String(typeClient || '').toLowerCase().split(';')[0].trim();
+  if (!t || TYPES_EXECUTABLES.test(t) || !/^[a-z]+\/[a-z0-9.+-]+$/.test(t)) return 'application/octet-stream';
+  return t;
+}
 
 // Dépôt de pièce jointe pour une demande de réservation publique
 // (api/booking-page.js) : endpoint PUBLIC, non authentifié — comme
@@ -32,6 +45,10 @@ export default async function handler(req) {
   }
   if (!SUPABASE_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: 'Config serveur manquante' }), { status: 500, headers: cors });
+  }
+
+  if (limiteAtteinte('upload-booking:' + ipAppelant(req), { max: MAX_UPLOADS_PAR_IP_PAR_HEURE, fenetreMs: 60 * 60 * 1000 })) {
+    return new Response(JSON.stringify({ error: 'Trop de dépôts récents, réessayez plus tard.' }), { status: 429, headers: cors });
   }
 
   try {
@@ -103,7 +120,7 @@ export default async function handler(req) {
     const buf = await file.arrayBuffer();
     const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${chemin}`, {
       method: 'POST',
-      headers: { ...supaHeaders, 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+      headers: { ...supaHeaders, 'Content-Type': typeStockage(file.type), 'x-upsert': 'true' },
       body: buf
     });
     if (!uploadResp.ok) {

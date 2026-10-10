@@ -605,6 +605,9 @@ function openConfirmRdvModal(missionId){
 // n'est pas configuré ou indisponible.
 async function ajouterRdvGoogleCalendar(m){
   if(!m || !m.date) return;
+  // Agenda Google de la plateforme : réservé au compte admin (le serveur
+  // refuse les autres comptes — inutile de leur faire l'appel).
+  if(typeof isAdmin === 'function' && !isAdmin()) return;
   try{
     const resp = await fetch('/api/calendar-create', {
       method: 'POST',
@@ -923,6 +926,8 @@ async function sendConfirmRdv(){
 // ─── SYNC EDOUARD : pousse logement + contacts vers l’API Edouard ───
 async function pushMissionToEdouard(mission){
   if(!mission || !mission.adresse) return;
+  // Intégration Edouard : compte admin uniquement (refusée côté serveur sinon).
+  if(typeof isAdmin === 'function' && !isAdmin()) return;
   if(mission.edouardAccommodationId) return; // déjà synchronisée
   try {
     const resp = await fetch('/api/edouard-push', {

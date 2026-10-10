@@ -7,7 +7,8 @@ import { ADMIN_EMAILS } from './_lib/admin.js';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BUCKET = 'agency-logos';
 const TAILLE_MAX = 2 * 1024 * 1024; // 2 Mo — un logo, pas une photo
-const TYPES_AUTORISES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/svg+xml': 'svg' };
+// Pas de SVG : servi depuis un bucket public, il peut contenir du script.
+const TYPES_AUTORISES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
 // Dépôt du logo de l'agence (Paramètres → Identité visuelle), affiché dans
 // le CRM à la place du logo Lokentia par défaut — réservé aux agences avec

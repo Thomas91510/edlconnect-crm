@@ -44,7 +44,11 @@ export default async function handler(req) {
   const url = new URL(req.url);
   // &debug=1 renvoie le détail de l'appel Cal.com (utile en cas de nouveau
   // souci) au lieu de dégrader silencieusement — sans, comportement normal.
-  const debug = url.searchParams.get('debug') === '1';
+  // Réservé à l'exploitant (secret serveur) : endpoint public, le détail
+  // de l'appel Cal.com n'a pas à être exposé à n'importe quel visiteur.
+  const debug = url.searchParams.get('debug') === '1'
+    && !!process.env.CRON_SECRET
+    && (req.headers.get('authorization') || '') === `Bearer ${process.env.CRON_SECRET}`;
   const repli = (extra) => new Response(JSON.stringify(Object.assign({ available: false, slots: [], configured: false }, debug ? extra : {})), { status: 200, headers });
 
   if (!CAL_API_KEY) {

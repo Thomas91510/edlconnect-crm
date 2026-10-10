@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/index.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@5/index.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -799,8 +799,9 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 .suivi-date{font-size:11px;color:var(--text3)}
 
 /* Contrat de sous-traitance RGPD (js/app-contrat.js) */
-#contrat-rgpd-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:10000;display:none;align-items:center;justify-content:center;padding:16px}
-#contrat-rgpd-overlay.open{display:flex}
+#contrat-rgpd-overlay,#mdp-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:10000;display:none;align-items:center;justify-content:center;padding:16px}
+#contrat-rgpd-overlay.open,#mdp-overlay.open{display:flex}
+#mdp-overlay{z-index:10001}
 .contrat-boite{background:var(--bg,#fff);border-radius:14px;width:820px;max-width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .contrat-entete{display:flex;align-items:center;gap:10px;padding:16px 20px 8px}
 .contrat-titre{font-size:16px;font-weight:700;flex:1;display:flex;align-items:center;gap:8px}
@@ -1083,7 +1084,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <h1 class="page-title">Prospection</h1>
         <div style="display:flex;gap:7px">
           <button class="btn btn-sm" data-perm="ca" onclick="toggleCAPanel()"><i class="ti ti-chart-bar"></i>Analyse CA</button>
-          <button class="btn btn-sm" onclick="syncFromBrevoSender()"><i class="ti ti-wand"></i>Sync contacts</button>
+          <button class="btn btn-sm admin-seul" style="display:none" onclick="syncFromBrevoSender()"><i class="ti ti-wand"></i>Sync contacts</button>
           <button class="btn btn-primary" onclick="quickAddProspect('a_contacter')"><i class="ti ti-plus"></i>Ajouter un prospect</button>
         </div>
       </div>
@@ -1747,7 +1748,8 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <label>Token d'intégration</label><input type="password" id="set-notion-token" placeholder="ntn_...">
         <label>Page ID</label><input id="set-notion-page" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
       </div>
-      <div class="settings-section" data-rubrique="integrations">
+      <!-- Clé Brevo : plus utilisée (les emails partent par le compte de la plateforme, api/send-email.js) -->
+      <div class="settings-section" data-rubrique="integrations" style="display:none" hidden>
         <div class="settings-title"><i class="ti ti-mail" style="font-size:18px"></i>Brevo</div>
         <label>Clé API</label><input type="password" id="set-brevo-key" placeholder="xkeysib-...">
       </div>
@@ -1895,11 +1897,11 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
             <img id="set-logo-apercu" src="" alt="Logo" style="display:none;width:52px;height:52px;border-radius:8px;object-fit:contain;border:1px solid var(--border2);background:#fff">
             <label class="btn btn-sm" style="cursor:pointer">
               <i class="ti ti-upload"></i> Choisir un logo
-              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none" onchange="televerserLogoAgence(this)">
+              <input type="file" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="televerserLogoAgence(this)">
             </label>
             <button class="btn btn-sm" id="set-logo-retirer" style="display:none;color:#c0392b;border-color:#c0392b" onclick="retirerLogoAgence()"><i class="ti ti-trash"></i> Retirer</button>
           </div>
-          <div style="font-size:11px;color:var(--text2);margin-top:6px">PNG, JPG, WebP ou SVG — 2 Mo maximum. Enregistré immédiatement (pas besoin de cliquer sur "Enregistrer").</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:6px">PNG, JPG ou WebP — 2 Mo maximum. Enregistré immédiatement (pas besoin de cliquer sur "Enregistrer").</div>
         </div>
       </div>
 
@@ -1949,9 +1951,9 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <div class="settings-section" data-rubrique="equipe" id="reglages-equipe"></div>
       <div class="settings-section" data-rubrique="sauvegarde" data-perm="export">
         <div class="settings-title"><i class="ti ti-device-floppy" style="font-size:18px"></i>Sauvegarde</div>
-        <div class="info-box" style="margin-bottom:16px">Vos données sont synchronisées dans le cloud et sauvegardées automatiquement chaque matin à 8h (copie complète conservée 30 jours). « Sauvegarder maintenant » en fait une tout de suite, avant une opération importante par exemple.</div>
+        <div class="info-box" style="margin-bottom:16px">Vos données sont synchronisées dans le cloud et sauvegardées automatiquement chaque nuit (copie complète conservée 30 jours). « Télécharger une sauvegarde » vous en donne une copie à tout moment.</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <button class="btn btn-primary" id="btn-sauvegarde-cloud" onclick="sauvegarderCloudMaintenant()"><i class="ti ti-cloud-upload"></i>Sauvegarder maintenant</button>
+          <button class="btn btn-primary admin-seul" style="display:none" id="btn-sauvegarde-cloud" onclick="sauvegarderCloudMaintenant()"><i class="ti ti-cloud-upload"></i>Sauvegarder maintenant</button>
           <button class="btn" onclick="saveBackup()"><i class="ti ti-download"></i>Télécharger une sauvegarde</button>
           <label class="btn" title="Restaurer">
             <i class="ti ti-upload"></i>Restaurer un fichier
@@ -1961,6 +1963,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         </div>
         <div id="sauvegarde-cloud-statut" style="font-size:12.5px;color:var(--text2);margin-top:10px"></div>
       </div>
+      <div class="settings-section" data-rubrique="compte" id="reglages-compte"></div>
       <div class="settings-section" data-rubrique="contrat" id="reglages-contrat"></div>
       <div class="settings-section" data-rubrique="version" id="reglages-version"></div>
       <button class="btn btn-primary" id="settings-save-btn" onclick="saveSettings()"><i class="ti ti-check"></i>Enregistrer les réglages</button>
@@ -2413,6 +2416,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 <script src="/js/app-remuneration.js"></script>
 <script src="/js/app-equipe.js"></script>
 <script src="/js/app-contrat.js"></script>
+<script src="/js/app-compte.js"></script>
 
 <!-- NAV BAR MOBILE -->
 <div id="mobile-nav-bar">
@@ -2460,7 +2464,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
     <div id="auth-signup" style="display:none">
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Email professionnel</label>
       <input type="email" id="signup-email" placeholder="contact@monentreprise.fr" style="margin-bottom:12px;width:100%">
-      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Mot de passe (min. 6 caractères)</label>
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Mot de passe (min. 8 caractères)</label>
       <input type="password" id="signup-password" placeholder="••••••••" style="margin-bottom:12px;width:100%">
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Nom de votre entreprise</label>
       <input type="text" id="signup-company" placeholder="Votre société" style="margin-bottom:14px;width:100%" onkeydown="if(event.key==='Enter')doSignup()">
@@ -2502,7 +2506,7 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
       <div style="color:var(--border2);font-size:16px;margin-top:2px">›</div>
       <div class="ob-step" data-step="2" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text3)">
         <div style="width:24px;height:24px;border-radius:50%;background:var(--bg3);color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">2</div>
-        Intégrations
+        C’est prêt
       </div>
     </div>
 
@@ -2523,14 +2527,12 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
 
     <!-- Étape 2 : Intégrations -->
     <div id="ob-page-2" style="display:none">
-      <div style="font-size:20px;font-weight:700;color:var(--blue);margin-bottom:4px">🔌 Connectez vos outils</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Optionnel — vous pourrez configurer ces clés plus tard dans Paramètres.</div>
-      <div style="background:var(--blue-bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px">
-        <div style="font-size:12px;font-weight:600;color:var(--blue-text);margin-bottom:4px">📧 Brevo — Envoi d'emails</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Permet d'envoyer des emails à vos contacts directement depuis Lokentia.</div>
-        <input type="password" id="ob-brevo" placeholder="xkeysib-…" style="width:100%">
-        <div style="font-size:10px;color:var(--text2);margin-top:4px">Obtenir une clé gratuite sur <a href="https://app.brevo.com/settings/keys/api" target="_blank" style="color:var(--blue)">app.brevo.com</a></div>
+      <div style="font-size:20px;font-weight:700;color:var(--blue);margin-bottom:4px">✅ Tout est prêt</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Rien à brancher : vos emails (confirmations, rappels, demandes d’avis) partent automatiquement depuis Lokentia, à votre nom et avec votre logo.</div>
+      <div style="background:var(--blue-bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:20px;font-size:12px;color:var(--text2);line-height:1.7">
+        Pensez à compléter dans <b>Réglages › Profil & identité</b> : votre logo, votre téléphone, votre signature et votre lien d’avis Google. Ils apparaissent dans vos emails, votre page de réservation et l’extranet de vos agences.
       </div>
+      <input type="hidden" id="ob-brevo">
       <input type="hidden" id="ob-mistral">
       <div style="display:flex;gap:10px">
         <button class="btn" style="flex:1;justify-content:center;padding:12px" onclick="obBack(2)">
@@ -2539,9 +2541,6 @@ label{font-size:12.5px;margin-top:14px;margin-bottom:6px}
         <button class="btn btn-primary" style="flex:2;justify-content:center;padding:12px;font-size:13px" onclick="obFinish()">
           <i class="ti ti-check"></i> Commencer !
         </button>
-      </div>
-      <div style="text-align:center;margin-top:12px">
-        <button onclick="obFinish()" style="background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;text-decoration:underline">Passer cette étape →</button>
       </div>
     </div>
   </div>

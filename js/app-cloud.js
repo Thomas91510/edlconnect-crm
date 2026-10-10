@@ -9,6 +9,10 @@ const SUPABASE_URL = 'https://pvuctwflxvvxdawsxceu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2dWN0d2ZseHZ2eGRhd3N4Y2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjgyMjcsImV4cCI6MjA5NzQwNDIyN30.ged0FhO2mPW-FRWdL0r5_fOInMqzZnTC0YRuUOqQ7ic';
 
 let supabaseClient = null;
+// Lien « mot de passe oublié » : repéré AVANT que supabase-js ne lise puis
+// efface le fragment de l'URL (#…type=recovery) — l'écran « nouveau mot de
+// passe » s'affiche ensuite à l'ouverture de session (js/app-settings.js).
+let _recuperationMdp = /(^|[#&?])type=recovery(&|$)/.test(String((typeof location !== 'undefined' && (location.hash + '&' + location.search)) || ''));
 
 // Helper : en-têtes avec jeton de session pour les appels API sécurisés
 async function _authHeaders(extra){

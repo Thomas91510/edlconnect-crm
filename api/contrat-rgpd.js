@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' };
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_lib/supabase.js';
 import { origineAutorisee } from './_lib/cors.js';
 import { ADMIN_EMAILS } from './_lib/admin.js';
+import { limiteAtteinte } from './_lib/rate-limit.js';
 import { VERSION, EDITEUR, contratActif, contratHtml, empreinte } from './_lib/contrat-rgpd.js';
 
 // Contrat de sous-traitance RGPD (api/_lib/contrat-rgpd.js) :
@@ -100,6 +101,10 @@ export default async function handler(req) {
   if (!serviceKey) return reponse({ error: 'Configuration serveur manquante' }, 500);
   if (!contratActif()) return reponse({ error: 'Contrat pas encore disponible à la signature' }, 409);
   if (estAdmin) return reponse({ error: 'Le compte éditeur n’a pas à signer' }, 400);
+  // Chaque signature envoie un email : pas plus de 5 par heure et par compte.
+  if (limiteAtteinte('contrat-rgpd:' + user.id, { max: 5, fenetreMs: 60 * 60 * 1000 })) {
+    return reponse({ error: 'Trop de tentatives, réessayez plus tard' }, 429);
+  }
 
   let body = {};
   try { body = await req.json(); } catch (_) {}
