@@ -103,14 +103,14 @@ export default async function handler(req) {
             <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
               <div style="background:#1A5FA8;padding:24px;text-align:center;border-radius:12px 12px 0 0">
                 <div style="background:#F4F7FA;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:11px;margin-bottom:8px">
-                  <span style="font-size:22px;font-weight:700;color:#1A5FA8">ED</span>
+                  <span style="font-size:22px;font-weight:700;color:#1A5FA8">L</span>
                 </div>
                 <div style="color:#fff;font-size:20px;font-weight:700">Lokentia</div>
               </div>
               <div style="background:#fff;padding:32px;border:1px solid #e5e5e2;border-top:none;border-radius:0 0 12px 12px">
                 <h2 style="font-size:20px;margin-bottom:12px">⏰ Votre essai se termine demain !</h2>
                 <p style="color:#6b6b6b;line-height:1.7;margin-bottom:20px">
-                  Votre période d'essai gratuit d'Lokentia arrive à son terme dans <strong>24 heures</strong>.
+                  Votre période d'essai gratuit de Lokentia arrive à son terme dans <strong>24 heures</strong>.
                 </p>
                 <p style="color:#6b6b6b;line-height:1.7;margin-bottom:24px">
                   Pour continuer à gérer vos missions, contacts et factures sans interruption, 
