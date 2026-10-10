@@ -51,9 +51,10 @@ function ajustementsPourMois(mois){
 // Il est complété par le commit réellement déployé (api/version.js expose
 // VERCEL_GIT_COMMIT_SHA/VERCEL_ENV automatiquement) — utile pour vérifier
 // en un coup d'œil qu'un déploiement a bien pris effet.
-const APP_VERSION = '2.0.17';
+const APP_VERSION = '2.0.18';
 const NOUVEAUTES = [
-  { v:'2.0.17', titre:'Campagnes enregistrées dans le cloud', texte:'Vos campagnes d\u2019emails sont maintenant sauvegardées dans le cloud et retrouvées sur tous vos appareils. Sur l\u2019accueil, la carte Missions indique « au total » ou « sur le mois » selon la période choisie.' },
+  { v:'2.0.18', titre:'Campagnes enregistrées dans le cloud', texte:'Vos campagnes d\u2019emails sont maintenant sauvegardées dans le cloud et retrouvées sur tous vos appareils. Sur l\u2019accueil, la carte Missions indique « au total » ou « sur le mois » selon la période choisie.' },
+  { v:'2.0.17', titre:'Contrat de sous-traitance RGPD', texte:'Réglages › Contrat RGPD : le contrat qui encadre le traitement des données de vos clients, locataires et agents par la plateforme. Il est signé électroniquement dès l\u2019inscription (preuve horodatée et copie par email).' },
   { v:'2.0.16', titre:'Espaces à votre nom', texte:'Extranet des agences, espace agent et page de réservation affichent le nom, l\u2019accroche, le contact et le téléphone renseignés dans vos Réglages (plus aucun nom écrit en dur). Les objets d\u2019emails et titres d\u2019agenda reprennent le nom de votre société.' },
   { v:'2.0.15', titre:'Sécurité renforcée (suite)', texte:'Agents EDL, formulaires et envois d\u2019emails mieux protégés contre les usages abusifs. Rien ne change dans votre utilisation.' },
   { v:'2.0.14', titre:'Sécurité renforcée', texte:'Contrôles serveur renforcés : fichiers privés, adresse d\u2019expédition des emails, page de réservation et espaces extranet strictement séparés entre comptes. Rien ne change dans votre utilisation.' },
