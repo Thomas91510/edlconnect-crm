@@ -103,7 +103,6 @@ export default async function handler(req) {
               </div>
               <div style="background:#f8f8f6;border-radius:8px;padding:14px;font-size:13px;color:#6b6b6b;line-height:1.7">
                 <strong>Une question ?</strong> Nous sommes là pour vous aider à bien démarrer.<br>
-                📞 <a href="tel:0185460033" style="color:#1A5FA8">01 85 46 00 33</a> · 
                 ✉️ <a href="mailto:contact@lokentia.fr" style="color:#1A5FA8">contact@lokentia.fr</a>
               </div>
               <p style="font-size:12px;color:#999;text-align:center;margin-top:20px">
